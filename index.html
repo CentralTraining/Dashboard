@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!--
   DASHBOARD TRAINER — OPPO VIỆT NAM (MIỀN TRUNG)
@@ -505,7 +506,11 @@
 <div id="loginScreen">
   <div class="login-box">
     <div class="brand-mark"><span class="dot"></span><strong>OPPO Việt Nam · Training Miền Trung</strong></div>
-    <div id="setupPane">
+    <div id="authLoadingPane" style="text-align:center;padding:24px 0;color:var(--muted);">
+      <div style="font-size:14pt;margin-bottom:4px;">⏳</div>
+      Đang tải...
+    </div>
+    <div id="setupPane" class="hidden">
       <h2>Thiết lập tài khoản Admin</h2>
       <p class="sub">Chưa có tài khoản nào. Tạo tài khoản Admin đầu tiên (của bạn) để bắt đầu.</p>
       <div class="form-row"><label>Họ và tên</label><input type="text" id="setupName" placeholder="Lê Thành Nghĩa"></div>
@@ -1932,8 +1937,10 @@ async function saveUsers(){ await dbSet('auth_users',users); }
 async function loadSession(){ session=await dbGet('auth_session'); }
 
 async function renderAuthScreen(){
-  await loadUsers(); await loadSession();
+  // Gọi song song (Promise.all) thay vì tuần tự — 2 lệnh này độc lập với nhau.
+  await Promise.all([loadUsers(), loadSession()]);
   if(session && !users.find(x=>x.id===session.userId)){ session=null; await dbSet('auth_session',null); }
+  document.getElementById('authLoadingPane').classList.add('hidden'); // đã biết chắc trạng thái, ẩn "Đang tải"
   if(session){
     const freshUser = users.find(x=>x.id===session.userId);
     if(freshUser){ session.role=freshUser.role; session.region=freshUser.region||''; session.trainerId=freshUser.trainerId||''; session.displayName=freshUser.displayName; }
@@ -2947,12 +2954,19 @@ async function bootApp(){
   const sidebarAvatarEl=document.getElementById('sidebarAvatarInitials');
   if(sidebarAvatarEl) sidebarAvatarEl.textContent=initials||'--';
 
-  config=(await dbGet('config'))||{regions:[],trainers:[]};
-  shopTrainerMap=(await dbGet('shopTrainerMap'))||[];
-  pendingTargetAdjustments=(await dbGet('pendingTargetAdjustments'))||[];
-  pendingPgStatusRequests=(await dbGet('pendingPgStatusRequests'))||[];
-  onoffRoster=(await dbGet('onoffRoster'))||[];
-  campaigns=(await dbGet('campaigns'))||[];
+  // 6 dbGet này ĐỘC LẬP với nhau (không phụ thuộc kết quả của nhau) — gọi SONG SONG (Promise.all)
+  // thay vì tuần tự để rút ngắn thời gian chờ: tổng thời gian ≈ lệnh CHẬM NHẤT, thay vì CỘNG DỒN
+  // cả 6 lệnh lại (mỗi lệnh gọi Google Apps Script mất ~1-2 giây → tuần tự dễ mất 10s+ chỉ riêng đoạn này).
+  const [configVal, shopTrainerMapVal, pendingTargetAdjustmentsVal, pendingPgStatusRequestsVal, onoffRosterVal, campaignsVal] = await Promise.all([
+    dbGet('config'), dbGet('shopTrainerMap'), dbGet('pendingTargetAdjustments'),
+    dbGet('pendingPgStatusRequests'), dbGet('onoffRoster'), dbGet('campaigns'),
+  ]);
+  config = configVal || {regions:[],trainers:[]};
+  shopTrainerMap = shopTrainerMapVal || [];
+  pendingTargetAdjustments = pendingTargetAdjustmentsVal || [];
+  pendingPgStatusRequests = pendingPgStatusRequestsVal || [];
+  onoffRoster = onoffRosterVal || [];
+  campaigns = campaignsVal || [];
 
   if(!currentMonth){ currentMonth = defaultMonth(); }
   await loadMonthlyData(currentMonth);
@@ -2996,18 +3010,24 @@ function getAllSavedMonths(){ return getSavedKeysWithPrefix('records:'); }
    (vì roster Trainer/PG thường không đổi hết mỗi tháng, chỉ trạng thái biến động) —
    rồi lưu thành bản riêng của tháng này để chỉnh sửa không ảnh hưởng tháng cũ. */
 async function loadMonthlyData(month){
-  records = (await dbGet('records:'+month)) || {};
-  monthLocked = !!(await dbGet('monthLock:'+month));
-  coachingReg = (await dbGet('coachingReg:'+month)) || [];
-  surveyResponses = (await dbGet('surveyResponses:'+month)) || [];
-  surveyResponsesNew = (await dbGet('surveyResponsesNew:'+month)) || [];
-  ftfShopList = (await dbGet('ftfShopList:'+month)) || [];
-  brandShopList = (await dbGet('brandShopList:'+month)) || [];
+  // 7 dbGet đầu ĐỘC LẬP với nhau — gọi song song để rút ngắn thời gian chờ (xem giải thích ở bootApp).
+  const [recordsVal, monthLockVal, coachingRegVal, surveyResponsesVal, surveyResponsesNewVal, ftfShopListVal, brandShopListVal, monthPgsFromKey] = await Promise.all([
+    dbGet('records:'+month), dbGet('monthLock:'+month), dbGet('coachingReg:'+month),
+    dbGet('surveyResponses:'+month), dbGet('surveyResponsesNew:'+month),
+    dbGet('ftfShopList:'+month), dbGet('brandShopList:'+month), dbGet('pgs:'+month),
+  ]);
+  records = recordsVal || {};
+  monthLocked = !!monthLockVal;
+  coachingReg = coachingRegVal || [];
+  surveyResponses = surveyResponsesVal || [];
+  surveyResponsesNew = surveyResponsesNewVal || [];
+  ftfShopList = ftfShopListVal || [];
+  brandShopList = brandShopListVal || [];
   mediaScopeKey = null; // reset để tab Truyền thông tự nạp lại đúng phạm vi (chiến dịch/tháng) khi mở
   coachingListFinalized = false;
   coachingAddMode = false;
 
-  let monthPgs = await dbGet('pgs:'+month);
+  let monthPgs = monthPgsFromKey;
   if(!monthPgs){
     const priorMonths = getSavedKeysWithPrefix('pgs:').filter(m=>m<month).sort();
     if(priorMonths.length){
