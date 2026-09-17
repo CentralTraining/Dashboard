@@ -1953,20 +1953,32 @@ document.getElementById('ovFilterTrainer').addEventListener('change', ()=>{ pgCu
 document.getElementById('ovFilterSale').addEventListener('change', ()=>{ pgCurrentPage=1; renderOverviewAll(); });
 
 /* ============ AUTH ============ */
+/* auth_session (ai đang đăng nhập trên ĐÚNG trình duyệt này) PHẢI luôn lưu RIÊNG trên từng trình
+   duyệt (localStorage) — KHÔNG BAO GIỜ được đưa lên database dùng chung (Google Sheet), dù API_URL
+   đã cấu hình hay chưa. Nếu lưu chung, người này đăng nhập trên máy A có thể khiến người khác mở
+   link trên máy B bị tự động vào NHẦM đúng phiên đăng nhập đó (rất nguy hiểm). Chỉ auth_users (danh
+   sách tài khoản hợp lệ) mới cần dùng chung; "ai đang đăng nhập ở đâu" luôn là chuyện RIÊNG của từng
+   trình duyệt, giống hệt cách các trang web thông thường xử lý phiên đăng nhập bằng cookie/token
+   cục bộ chứ không phải 1 giá trị dùng chung toàn hệ thống. */
+function loadSessionLocal_(){
+  try{ const raw=localStorage.getItem('auth_session'); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+}
+function saveSessionLocal_(value){
+  try{ if(value===null){ localStorage.removeItem('auth_session'); } else { localStorage.setItem('auth_session', JSON.stringify(value)); } }catch(e){}
+}
 async function loadUsers(){ users=(await dbGet('auth_users'))||[]; }
 async function saveUsers(){ await dbSet('auth_users',users); }
-async function loadSession(){ session=await dbGet('auth_session'); }
-/* Gộp loadUsers + loadSession thành ĐÚNG 1 LẦN GỌI MẠNG (dbGetMulti) — nhanh hơn nhiều so với 2 lệnh
-   dbGet riêng (kể cả khi chạy song song bằng Promise.all, Apps Script vẫn xử lý tuần tự phía server). */
+async function loadSession(){ session=loadSessionLocal_(); }
+/* Tải danh sách tài khoản (dùng chung, qua mạng) — session luôn đọc từ localStorage RIÊNG của
+   trình duyệt này, không qua mạng, nên không cần gộp chung vào 1 lần gọi dbGetMulti nữa. */
 async function loadUsersAndSession_(){
-  const vals = await dbGetMulti(['auth_users','auth_session']);
-  users = vals['auth_users'] || [];
-  session = vals['auth_session'] || null;
+  users = (await dbGet('auth_users')) || [];
+  session = loadSessionLocal_();
 }
 
 async function renderAuthScreen(){
   await loadUsersAndSession_();
-  if(session && !users.find(x=>x.id===session.userId)){ session=null; await dbSet('auth_session',null); }
+  if(session && !users.find(x=>x.id===session.userId)){ session=null; saveSessionLocal_(null); }
   document.getElementById('authLoadingPane').classList.add('hidden'); // đã biết chắc trạng thái, ẩn "Đang tải"
   if(session){
     const freshUser = users.find(x=>x.id===session.userId);
@@ -1992,7 +2004,7 @@ document.getElementById('setupBtn').addEventListener('click', async ()=>{
     failedLoginAttempts:0, locked:false, lockedAt:'' };
   users=[admin]; await saveUsers();
   session={ userId:admin.id, username:admin.username, role:'admin', displayName:admin.displayName };
-  await dbSet('auth_session',session);
+  saveSessionLocal_(session);
   err.style.display='none'; await renderAuthScreen();
 });
 document.getElementById('loginBtn').addEventListener('click', async ()=>{
@@ -2038,12 +2050,12 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
     await saveUsers();
   }
   session={ userId:u.id, username:u.username, role:u.role, displayName:u.displayName, region:u.region||'', trainerId:u.trainerId||'' };
-  await dbSet('auth_session',session);
+  saveSessionLocal_(session);
   err.style.display='none'; await renderAuthScreen();
 });
 document.getElementById('logoutBtn').addEventListener('click', ()=>{
   session=null;
-  dbSet('auth_session', null); // ghi ở NỀN (không await) — không cần chờ mạng mới hiện màn hình đăng nhập
+  saveSessionLocal_(null); // luôn ghi cục bộ (localStorage), không đụng tới auth_session dùng chung
   document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
   // Không gọi lại renderAuthScreen() (sẽ tải lại users/session qua mạng, tốn thêm 1 lần gọi không cần
