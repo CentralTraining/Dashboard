@@ -1216,8 +1216,13 @@ async function dbSet(key,value){
     try{ localStorage.setItem(key, JSON.stringify(value)); return true; }catch(e){ return false; }
   }
   try{
+    // mode:'no-cors' — Apps Script Web App KHÔNG trả về header Access-Control-Allow-Origin cho request
+    // POST (giới hạn của nền tảng Apps Script), khiến trình duyệt chặn đọc phản hồi dù ghi dữ liệu ở
+    // server đã thành công. dbSet không cần đọc lại nội dung phản hồi (chỉ cần request gửi đi), nên
+    // dùng no-cors để KHÔNG bị chặn — request vẫn tới server và ghi dữ liệu bình thường.
     await fetch(API_URL, {
       method:'POST',
+      mode:'no-cors',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // giữ 'text/plain' để tránh CORS preflight bị chặn bởi Apps Script
       body: JSON.stringify({ action:'set', key, value })
     });
