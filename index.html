@@ -1216,6 +1216,27 @@ async function dbGet(key){
     return (json && 'value' in json) ? json.value : null;
   }catch(e){ console.error('dbGet lỗi:', e); return null; }
 }
+/* Đọc NHIỀU key trong ĐÚNG 1 LẦN GỌI MẠNG duy nhất (thay vì mỗi key 1 lần gọi riêng) — Google Apps
+   Script xử lý nhiều request đồng thời từ cùng 1 script có giới hạn (không thực sự chạy song song
+   hoàn toàn ở phía server), nên dù gọi Promise.all() nhiều dbGet() cùng lúc vẫn có độ trễ cộng dồn.
+   Gộp thành 1 request duy nhất (?keys=a,b,c) loại bỏ hẳn độ trễ này — trả về object {key: value}.
+   Nếu chưa cấu hình database dùng chung (API_URL trống) thì đọc thẳng từ localStorage, không cần
+   gọi mạng nên không cần gộp. */
+async function dbGetMulti(keys){
+  if(!API_URL){
+    const out={};
+    keys.forEach(k=>{ try{ const raw=localStorage.getItem(k); out[k]=raw?JSON.parse(raw):null; }catch(e){ out[k]=null; } });
+    return out;
+  }
+  try{
+    const res = await fetch(`${API_URL}?keys=${encodeURIComponent(keys.join(','))}`);
+    const json = await res.json();
+    return (json && json.values) ? json.values : {};
+  }catch(e){
+    console.error('dbGetMulti lỗi:', e);
+    return {};
+  }
+}
 async function dbSet(key,value){
   if(!API_URL){
     try{ localStorage.setItem(key, JSON.stringify(value)); return true; }catch(e){ return false; }
@@ -1935,10 +1956,16 @@ document.getElementById('ovFilterSale').addEventListener('change', ()=>{ pgCurre
 async function loadUsers(){ users=(await dbGet('auth_users'))||[]; }
 async function saveUsers(){ await dbSet('auth_users',users); }
 async function loadSession(){ session=await dbGet('auth_session'); }
+/* Gộp loadUsers + loadSession thành ĐÚNG 1 LẦN GỌI MẠNG (dbGetMulti) — nhanh hơn nhiều so với 2 lệnh
+   dbGet riêng (kể cả khi chạy song song bằng Promise.all, Apps Script vẫn xử lý tuần tự phía server). */
+async function loadUsersAndSession_(){
+  const vals = await dbGetMulti(['auth_users','auth_session']);
+  users = vals['auth_users'] || [];
+  session = vals['auth_session'] || null;
+}
 
 async function renderAuthScreen(){
-  // Gọi song song (Promise.all) thay vì tuần tự — 2 lệnh này độc lập với nhau.
-  await Promise.all([loadUsers(), loadSession()]);
+  await loadUsersAndSession_();
   if(session && !users.find(x=>x.id===session.userId)){ session=null; await dbSet('auth_session',null); }
   document.getElementById('authLoadingPane').classList.add('hidden'); // đã biết chắc trạng thái, ẩn "Đang tải"
   if(session){
@@ -2014,12 +2041,18 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
   await dbSet('auth_session',session);
   err.style.display='none'; await renderAuthScreen();
 });
-document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
   session=null;
-  await dbSet('auth_session', null);
+  dbSet('auth_session', null); // ghi ở NỀN (không await) — không cần chờ mạng mới hiện màn hình đăng nhập
   document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
-  await renderAuthScreen();
+  // Không gọi lại renderAuthScreen() (sẽ tải lại users/session qua mạng, tốn thêm 1 lần gọi không cần
+  // thiết) — đã biết chắc chắn cần hiện màn hình Đăng nhập NGAY, users vẫn còn nguyên trong bộ nhớ.
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('authLoadingPane').classList.add('hidden');
+  document.getElementById('setupPane').classList.toggle('hidden', users.length>0);
+  document.getElementById('loginPane').classList.toggle('hidden', users.length===0);
 });
 /* ============ IMPORT EXCEL (đúng form PGS.xlsx) ============ */
 function toTitleCaseVN(str){
@@ -2954,19 +2987,15 @@ async function bootApp(){
   const sidebarAvatarEl=document.getElementById('sidebarAvatarInitials');
   if(sidebarAvatarEl) sidebarAvatarEl.textContent=initials||'--';
 
-  // 6 dbGet này ĐỘC LẬP với nhau (không phụ thuộc kết quả của nhau) — gọi SONG SONG (Promise.all)
-  // thay vì tuần tự để rút ngắn thời gian chờ: tổng thời gian ≈ lệnh CHẬM NHẤT, thay vì CỘNG DỒN
-  // cả 6 lệnh lại (mỗi lệnh gọi Google Apps Script mất ~1-2 giây → tuần tự dễ mất 10s+ chỉ riêng đoạn này).
-  const [configVal, shopTrainerMapVal, pendingTargetAdjustmentsVal, pendingPgStatusRequestsVal, onoffRosterVal, campaignsVal] = await Promise.all([
-    dbGet('config'), dbGet('shopTrainerMap'), dbGet('pendingTargetAdjustments'),
-    dbGet('pendingPgStatusRequests'), dbGet('onoffRoster'), dbGet('campaigns'),
-  ]);
-  config = configVal || {regions:[],trainers:[]};
-  shopTrainerMap = shopTrainerMapVal || [];
-  pendingTargetAdjustments = pendingTargetAdjustmentsVal || [];
-  pendingPgStatusRequests = pendingPgStatusRequestsVal || [];
-  onoffRoster = onoffRosterVal || [];
-  campaigns = campaignsVal || [];
+  // Gộp 6 key này thành ĐÚNG 1 LẦN GỌI MẠNG (dbGetMulti) — nhanh hơn nhiều so với gọi riêng từng key
+  // (kể cả khi chạy song song, Apps Script vẫn xử lý nhiều request đồng thời có giới hạn ở phía server).
+  const bootVals = await dbGetMulti(['config','shopTrainerMap','pendingTargetAdjustments','pendingPgStatusRequests','onoffRoster','campaigns']);
+  config = bootVals['config'] || {regions:[],trainers:[]};
+  shopTrainerMap = bootVals['shopTrainerMap'] || [];
+  pendingTargetAdjustments = bootVals['pendingTargetAdjustments'] || [];
+  pendingPgStatusRequests = bootVals['pendingPgStatusRequests'] || [];
+  onoffRoster = bootVals['onoffRoster'] || [];
+  campaigns = bootVals['campaigns'] || [];
 
   if(!currentMonth){ currentMonth = defaultMonth(); }
   await loadMonthlyData(currentMonth);
@@ -3010,24 +3039,24 @@ function getAllSavedMonths(){ return getSavedKeysWithPrefix('records:'); }
    (vì roster Trainer/PG thường không đổi hết mỗi tháng, chỉ trạng thái biến động) —
    rồi lưu thành bản riêng của tháng này để chỉnh sửa không ảnh hưởng tháng cũ. */
 async function loadMonthlyData(month){
-  // 7 dbGet đầu ĐỘC LẬP với nhau — gọi song song để rút ngắn thời gian chờ (xem giải thích ở bootApp).
-  const [recordsVal, monthLockVal, coachingRegVal, surveyResponsesVal, surveyResponsesNewVal, ftfShopListVal, brandShopListVal, monthPgsFromKey] = await Promise.all([
-    dbGet('records:'+month), dbGet('monthLock:'+month), dbGet('coachingReg:'+month),
-    dbGet('surveyResponses:'+month), dbGet('surveyResponsesNew:'+month),
-    dbGet('ftfShopList:'+month), dbGet('brandShopList:'+month), dbGet('pgs:'+month),
+  // Gộp 8 key này thành ĐÚNG 1 LẦN GỌI MẠNG (dbGetMulti) — nhanh hơn nhiều so với gọi riêng từng key.
+  const mVals = await dbGetMulti([
+    'records:'+month, 'monthLock:'+month, 'coachingReg:'+month,
+    'surveyResponses:'+month, 'surveyResponsesNew:'+month,
+    'ftfShopList:'+month, 'brandShopList:'+month, 'pgs:'+month,
   ]);
-  records = recordsVal || {};
-  monthLocked = !!monthLockVal;
-  coachingReg = coachingRegVal || [];
-  surveyResponses = surveyResponsesVal || [];
-  surveyResponsesNew = surveyResponsesNewVal || [];
-  ftfShopList = ftfShopListVal || [];
-  brandShopList = brandShopListVal || [];
+  records = mVals['records:'+month] || {};
+  monthLocked = !!mVals['monthLock:'+month];
+  coachingReg = mVals['coachingReg:'+month] || [];
+  surveyResponses = mVals['surveyResponses:'+month] || [];
+  surveyResponsesNew = mVals['surveyResponsesNew:'+month] || [];
+  ftfShopList = mVals['ftfShopList:'+month] || [];
+  brandShopList = mVals['brandShopList:'+month] || [];
   mediaScopeKey = null; // reset để tab Truyền thông tự nạp lại đúng phạm vi (chiến dịch/tháng) khi mở
   coachingListFinalized = false;
   coachingAddMode = false;
 
-  let monthPgs = monthPgsFromKey;
+  let monthPgs = mVals['pgs:'+month];
   if(!monthPgs){
     const priorMonths = getSavedKeysWithPrefix('pgs:').filter(m=>m<month).sort();
     if(priorMonths.length){
