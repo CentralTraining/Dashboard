@@ -3103,6 +3103,7 @@ async function bootApp(){
   document.querySelectorAll('.admin-only-gsheet').forEach(el=>{ el.style.display=isAdmin()?'':'none'; });
   document.getElementById('adminAccountCard').style.display=isAdmin()?'':'none';
   document.getElementById('backupCard').style.display=isAdmin()?'':'none';
+  document.getElementById('loginStatsCard').style.display=isAdmin()?'':'none';
   document.getElementById('sidebarUserName').textContent=session.displayName;
   document.getElementById('sidebarUserRole').textContent=session.role==='admin'?'Admin · Toàn quyền':(session.role==='trainer'?'Trainer · Sửa giới hạn':'Viewer · Chỉ xem');
   const initials=(session.displayName||'--').trim().split(/\s+/).map(w=>w[0]).slice(-2).join('').toUpperCase();
@@ -6255,8 +6256,13 @@ async function renderFrequencyNoiboBody_(subtype){
       const totalPgs=list.length;
       const qualifiedPct=totalPgs?Math.round(qualified/totalPgs*1000)/10:0;
       const rec=trainerRecord(t.id);
-      const savedTarget=Number(rec.testOnlineTarget||0);
-      const targetPgs=savedTarget>0?savedTarget:totalPgs;
+      // QUAN TRỌNG: Target LUÔN = số PG Đang làm HIỆN TẠI (đếm live mỗi lần hiển thị) — KHÔNG dùng
+      // giá trị rec.testOnlineTarget đã lưu trước đó làm giá trị chính, vì nếu chỉ ưu tiên giá trị cũ
+      // thì sau khi Trainer đổi trạng thái 1 PG (VD: nghỉ thai sản, OFF...), Target hiển thị bị "đứng
+      // hình" ở con số cũ, không phản ánh đúng thực tế — đúng lỗi đã gặp (61 PG cũ dù chỉ còn 51 PG
+      // Đang làm thật). Vẫn ghi lại rec.testOnlineTarget để đồng bộ cho các chỗ khác có đọc giá trị này.
+      const targetPgs=totalPgs;
+      rec.testOnlineTarget=targetPgs;
       rec.testOnlineActual=qualified;
       return {t,list,qualified,totalPgs,targetPgs,qualifiedPct:targetPgs?Math.round(qualified/targetPgs*1000)/10:0};
     });
