@@ -1084,7 +1084,11 @@
         <button data-dsub2="kpi-truyenthong">Truyền thông</button>
       </div>
       <div id="panel-data-kpi-noibo" class="panel active">
-        <div id="coachingImportBox"></div>
+        <div class="cfg-card">
+          <h3>Import kết quả khảo sát Coaching (PGs 0★/1★ &amp; PGs mới)</h3>
+          <p class="section-desc">Mục này cần xem cùng bảng Tiến độ + Danh sách PGs, nên đã chuyển về đúng chỗ: <strong>Tiến độ KPI ▸ Nội bộ ▸ PGs Dev</strong>. Mục này chỉ là lối tắt.</p>
+          <button class="secondary" id="dataGoToCoachingBtn" type="button">→ Đi tới Tiến độ KPI ▸ Nội bộ ▸ PGs Dev</button>
+        </div>
       </div>
       <div id="panel-data-kpi-doitac" class="panel">
         <div class="cfg-card">
@@ -6760,8 +6764,6 @@ function renderKpiCategoryLegacyBody_(catKey){
     html += `<h3 class="kpi-section-title">Tiến độ PGs Dev — ${monthLabel(currentMonth)}</h3>`;
     html += `<div id="noiboProgressTableBox"></div>`;
 
-    html += `<p class="section-desc" style="margin-top:14px;">Import kết quả khảo sát Coaching đã được dời về tag <strong>DATA ▸ Kết quả KPI ▸ Nội bộ</strong> để gom import về 1 mối.</p>`;
-
     html += `<div class="scope-filters" style="margin-bottom:14px;">
       <span class="scope-label">Xem theo:</span>
       <select id="noiboViewSelect">
@@ -6774,12 +6776,13 @@ function renderKpiCategoryLegacyBody_(catKey){
       <select id="noiboFilterRegionSelect"><option value="">Tất cả Khu vực</option></select>
       <select id="noiboFilterTrainerSelect"><option value="">Tất cả Trainer</option></select>
     </div>`;
+    html += `<div id="coachingImportBox"></div>`;
     html += `<div id="noiboView-pg01"></div>`;
     html += `<div id="noiboView-pgMoi" style="display:none;"></div>`;
   }
   container.innerHTML=html;
 
-  if(catKey==='noibo'){ populateNoiboFilters_(); }
+  if(catKey==='noibo'){ populateNoiboFilters_(); renderCoachingImportBox(); }
 
   if(catKey==='doitac'){
     const modeSel = document.getElementById('doitacViewModeSelect');
@@ -7054,7 +7057,7 @@ async function processCoachingHistoryWorkbook_(wb){
   const allRows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
   const dataRows = allRows.slice(1);
 
-  let added01=0, addedMoi=0, skippedOtherMonth=0, skippedDup=0, skippedNoCode=0, skippedOtherRegion=0, invalidStatus=0;
+  let added01=0, addedMoi=0, skippedOtherMonth=0, skippedDup=0, skippedNoCode=0, skippedOtherRegion=0, invalidStatus=0, matchedByNameCount=0;
   const existingKeys01 = new Set(surveyResponses.map(s=> s.timestamp+'|'+s.code));
   const existingKeysMoi = new Set(surveyResponsesNew.map(s=> s.timestamp+'|'+s.code));
 
@@ -7071,11 +7074,22 @@ async function processCoachingHistoryWorkbook_(wb){
     const trangThai = String(row[16]||'').trim();
     if(trangThai!=='Hợp lệ'){ invalidStatus++; return; }
 
-    const code = String(row[5]||'').trim().replace(/\.0$/,'');
-    if(!code || code==='Chưa có'){ skippedNoCode++; return; }
-
     const loaiCoaching = String(row[1]||'').trim();
     const isNew = loaiCoaching==='PGs mới';
+
+    let code = String(row[5]||'').trim().replace(/\.0$/,'');
+    let matchedByName = false;
+    if((!code || code==='Chưa có') && isNew){
+      // Mã NV trống + đúng loại "PGs mới" → rất có thể là PG chưa kịp tạo Code lúc làm khảo sát.
+      // Tra theo TÊN (cột "PGs") trong ĐÚNG "Danh sách PGs mới" của tháng đang xem — tức PG có trong
+      // onoffRoster với Joined at rơi đúng tháng này (khớp CHÍNH XÁC định nghĩa "PGs mới" đang dùng
+      // ở mọi nơi khác trong hệ thống, VD countNewPgsByTrainer) — không tính PG đã bị note OFF/CODE
+      // ĐẠI LÝ. Khớp tên không phân biệt hoa/thường, dấu cách thừa, hay dạng Unicode NFC/NFD.
+      const pgNameRaw = normTrName_(row[6]);
+      const matched = pgNameRaw ? onoffRoster.find(r=> r.joinedAt && monthKeyOf(new Date(r.joinedAt))===currentMonth && normTrName_(r.name)===pgNameRaw && !r.devStatusNote) : null;
+      if(matched){ code = matched.code; matchedByName = true; matchedByNameCount++; }
+    }
+    if(!code || code==='Chưa có'){ skippedNoCode++; return; }
 
     const key = ts.toISOString()+'|'+code;
     const existingKeys = isNew ? existingKeysMoi : existingKeys01;
@@ -7119,7 +7133,7 @@ async function processCoachingHistoryWorkbook_(wb){
 
   if(msg){
     msg.style.display='block'; msg.style.color='var(--green-ok)';
-    msg.textContent = `Đã import ${added01} lượt PGs 0★/1★ + ${addedMoi} lượt PGs mới (hợp lệ). Bỏ qua: ${skippedOtherMonth} khác tháng, ${invalidStatus} Trạng thái không hợp lệ (Trùng/khác), ${skippedDup} trùng lặp, ${skippedNoCode} thiếu Mã NV${skippedOtherRegion?`, ${skippedOtherRegion} ngoài khu vực bạn phụ trách`:''}.`;
+    msg.textContent = `Đã import ${added01} lượt PGs 0★/1★ + ${addedMoi} lượt PGs mới (hợp lệ)${matchedByNameCount?`, trong đó ${matchedByNameCount} lượt tự tra theo Tên (Mã NV để trống, khớp Danh sách PGs mới tháng ${monthLabel(currentMonth)})`:''}. Bỏ qua: ${skippedOtherMonth} khác tháng, ${invalidStatus} Trạng thái không hợp lệ (Trùng/khác), ${skippedDup} trùng lặp, ${skippedNoCode} thiếu Mã NV (không tra được theo Tên)${skippedOtherRegion?`, ${skippedOtherRegion} ngoài khu vực bạn phụ trách`:''}.`;
   }
 }
 function renderCoachingImportBox(){
@@ -7128,7 +7142,7 @@ function renderCoachingImportBox(){
   const canEdit = isAdmin() && !monthLocked;
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import kết quả khảo sát Coaching (PGs 0★/1★ &amp; PGs mới) — ${monthLabel(currentMonth)}</h3>
-    <p class="section-desc" style="margin-bottom:10px;">Import file "Lịch sử Coaching" (cột: Thời gian, Loại Coaching, Khu vực, Trainer, Trainer Username, Mã NV, PGs, SĐT, Shop FC, Nội dung Coaching, Nội dung khác, Hữu ích/5, Tự tin/5, Trainer dễ hiểu/5, Kỹ năng cần hỗ trợ thêm, Góp ý cho Trainer, Trạng thái). <strong>Chỉ cần import 1 lần</strong> — hệ thống tự phân loại đúng theo cột "Loại Coaching" vào cả 2 mục PGs 0★/1★ và PGs mới cùng lúc. Chỉ tính vào kết quả những dòng có Trạng thái = "Hợp lệ" trong ${monthLabel(currentMonth)}; các dòng khác vẫn đếm số lượng để Trainer kiểm tra lại. Import lại tự bỏ qua dòng trùng.</p>
+    <p class="section-desc" style="margin-bottom:10px;">Import file "Lịch sử Coaching" (cột: Thời gian, Loại Coaching, Khu vực, Trainer, Trainer Username, Mã NV, PGs, SĐT, Shop FC, Nội dung Coaching, Nội dung khác, Hữu ích/5, Tự tin/5, Trainer dễ hiểu/5, Kỹ năng cần hỗ trợ thêm, Góp ý cho Trainer, Trạng thái). <strong>Chỉ cần import 1 lần</strong> — hệ thống tự phân loại đúng theo cột "Loại Coaching" vào cả 2 mục PGs 0★/1★ và PGs mới cùng lúc. Chỉ tính vào kết quả những dòng có Trạng thái = "Hợp lệ" trong ${monthLabel(currentMonth)}; các dòng khác vẫn đếm số lượng để Trainer kiểm tra lại. Import lại tự bỏ qua dòng trùng. <strong>Riêng dòng "PGs mới" mà cột Mã NV để trống</strong> (PG chưa kịp tạo Code lúc làm khảo sát): hệ thống tự tra theo cột "PGs" (tên) trong Danh sách PGs mới của tháng — khớp được thì vẫn tính bình thường.</p>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <input type="file" id="coachingImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary" id="downloadCoachingTemplateBtn" type="button">⬇ Tải file mẫu</button>
@@ -9249,7 +9263,6 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     document.getElementById('pageTitleHeader').textContent=btn.dataset.title||btn.textContent.trim();
-    if(btn.dataset.tab==='data'){ renderCoachingImportBox(); }
     if(btn.dataset.tab==='so'){ loadSoData_().then(()=>{ renderSoListTab_(); }); }
   });
 });
@@ -9302,7 +9315,6 @@ document.querySelectorAll('[data-dsub2]').forEach(btn=>{
     parentPanel.querySelectorAll(':scope > .panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-data-'+btn.dataset.dsub2).classList.add('active');
-    if(btn.dataset.dsub2==='kpi-noibo') renderCoachingImportBox();
   });
 });
 const updateAllGoogleSheetBtn = document.getElementById('updateAllGoogleSheetBtn');
@@ -9319,6 +9331,13 @@ if(dataGoToFtfBtn) dataGoToFtfBtn.addEventListener('click', ()=>{
   document.querySelector('#tab-kpi [data-kpi="doitac"]').click();
   kpiSubtype.doitac = 'ftf';
   renderKpiCategory('doitac');
+});
+const dataGoToCoachingBtn = document.getElementById('dataGoToCoachingBtn');
+if(dataGoToCoachingBtn) dataGoToCoachingBtn.addEventListener('click', ()=>{
+  document.querySelector('nav.tabs button[data-tab="kpi"]').click();
+  document.querySelector('#tab-kpi [data-kpi="noibo"]').click();
+  kpiSubtype.noibo = 'pgsdev';
+  renderKpiCategory('noibo');
 });
 
 /* ============ CHỐT DỮ LIỆU THEO THÁNG ============ */
