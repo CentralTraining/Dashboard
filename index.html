@@ -1285,7 +1285,7 @@ function parseCsv_(text){
   return rows;
 }
 /* Lấy 1 sheet (theo tên, hoặc sheet đầu tiên nếu không truyền tên) dưới dạng mảng hàng (array-of-arrays) */
-async function fetchGoogleSheetRows_(sheetId, sheetName){
+async function fetchGoogleSheetRows_(sheetId, sheetName, _isRetry){
   const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1${sheetName?`&sheet=${encodeURIComponent(sheetName)}`:''}`;
   let res;
   try{
@@ -1296,6 +1296,16 @@ async function fetchGoogleSheetRows_(sheetId, sheetName){
   if(!res.ok){
     const bodyText = await res.text().catch(()=>'');
     if(sheetName && (res.status===400 || bodyText.includes('Invalid query'))){
+      // Không tìm thấy đúng tên tab đã nhập — TỰ ĐỘNG thử lại với sheet ĐẦU TIÊN (giống hệt cách
+      // Import file hoạt động — không quan tâm tên sheet, chỉ cần có dữ liệu). Chỉ thử lại 1 lần
+      // (không tự tiếp tục đệ quy nếu lần thử lại cũng lỗi) để tránh vòng lặp và báo lỗi rõ ràng.
+      if(!_isRetry){
+        try{
+          return await fetchGoogleSheetRows_(sheetId, null, true);
+        }catch(fallbackErr){
+          throw new Error(`Không tìm thấy sheet (tab) tên "${sheetName}" trong Google Sheet này (mã lỗi HTTP ${res.status}), và thử lấy sheet đầu tiên cũng thất bại.\nCách khắc phục: mở Google Sheet, kiểm tra đúng tên tab đang chứa dữ liệu (không phân biệt được có thể do Sheet trống hoặc chưa chia sẻ công khai).`);
+        }
+      }
       throw new Error(`Không tìm thấy sheet (tab) tên "${sheetName}" trong Google Sheet này (mã lỗi HTTP ${res.status}).\nCách khắc phục: mở Google Sheet, đổi tên đúng tab đang chứa dữ liệu thành chính xác "${sheetName}" (đúng chữ hoa/thường, không thừa khoảng trắng), lưu lại rồi bấm "Lấy dữ liệu" lại.`);
     }
     if(res.status===401 || res.status===403){
