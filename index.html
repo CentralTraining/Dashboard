@@ -6304,7 +6304,7 @@ async function renderFrequencyNoiboBody_(subtype){
     });
     html+=`</tbody></table>`;
 
-    const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||p.trainerId===session.trainerId));
+    const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||(trainerOf(p.trainerId)&&trainerOf(p.trainerId).region===session.region)));
     html+=`<h3 class="kpi-section-title">Danh sách PGs chưa hoàn thành Test Online</h3><p class="section-desc">Chỉ hiển thị PG có <strong>Lần đạt điểm max &lt; ${x}</strong>. Dữ liệu lấy theo <strong>Mã NV</strong>; khi đạt ≥ ${x} lần, PG tự chuyển trạng thái Đạt.</p>`;
     if(isAdmin()){
       html+=`<div class="form-card" style="max-width:none;margin:0 0 14px;"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -6416,7 +6416,7 @@ async function renderFrequencyNoiboBody_(subtype){
   });
   html+=`</tbody></table>`;
 
-  const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||p.trainerId===session.trainerId));
+  const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||(trainerOf(p.trainerId)&&trainerOf(p.trainerId).region===session.region)));
   html+=`<h3 class="kpi-section-title">Danh sách PGs — Tư vấn AI & Check shop</h3>
     <p class="section-desc">Tư vấn AI lấy từ cột <strong>Kết quả Luyện TV</strong> (ví dụ 3/7 → 3 lần đạt). PG đạt khi ≥ ${aiThreshold}. Check shop lấy từ cột <strong>Kết quả Check</strong>; giá trị <strong>Pass</strong> được tính Đạt.</p>`;
   if(isAdmin()){
