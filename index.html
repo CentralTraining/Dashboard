@@ -5979,6 +5979,11 @@ function aiPracticeCount_(v){
   const n=Number(s.replace(',','.'));
   return Number.isFinite(n)?Math.max(0,Math.round(n)):0;
 }
+/* Bỏ dấu tiếng Việt + viết thường — dùng để so khớp các giá trị dạng chữ bất kể có dấu/hoa-thường
+   hay không (VD: "Đạt"/"dat"/"DAT" đều coi là khớp nhau). */
+function normalizeVN(str){
+  return String(str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
+}
 function aiCheckPassed_(v){
   const s=normalizeVN(String(v??'')).trim().toLowerCase();
   return s==='pass' || s==='passed' || s==='dat' || s==='ok';
@@ -6032,8 +6037,7 @@ async function processAiCheckWorkbook_(wb,camp){
   });
 
   let matched=0,unmatched=0,aiQualified=0,checkQualified=0,bothQualified=0;
-  // Tư vấn AI dùng ngưỡng cố định: PG phải đạt tối thiểu 4 lần mới được tính hoàn thành.
-  const x=4;
+  const x=campaignFrequencyX_(camp); // hệ số X lấy đúng theo Target đã set cho chiến dịch này, không còn cố định 4
   imported.forEach((v,code)=>{
     const p=pgByCode.get(code);
     if(!p){ unmatched++; return; }
@@ -6191,8 +6195,9 @@ async function renderFrequencyNoiboBody_(subtype){
   }
 
   // ===== TƯ VẤN AI & CHECK SHOP =====
-  // Riêng Tư vấn AI: chuẩn đạt cố định 4 lần/PG. Target vẫn là số PG OPPO trạng thái Đang làm.
-  const aiThreshold=4;
+  // Tư vấn AI đạt khi Kết quả Luyện TV ≥ X lần — X lấy đúng theo Target đã set cho chiến dịch này
+  // (Cài đặt ▸ Target), không còn cố định 4. Target (mẫu số) vẫn là số PG OPPO trạng thái Đang làm.
+  const aiThreshold=campaignFrequencyX_(camp);
   const aiCheck=await loadAiCheckProgress_(camp);
   const trainerRows=trainers.map(t=>{
     const list=activePgsOfTrainer_(t.id);
@@ -7968,7 +7973,7 @@ function duplicateCampaign_(campaignId){
     // Test Online / Tư vấn AI & Check shop: lưu snapshot Target = số PG Đang làm; X là ngưỡng đạt/PG.
     const xInp = document.getElementById('frequencyTargetXInput');
     const sub = campaignSubtype(camp);
-    camp.frequencyX = sub==='tuvanai_checkshop' ? 4 : Math.max(1, Math.round(Number(xInp && xInp.value)||1));
+    camp.frequencyX = Math.max(1, Math.round(Number(xInp && xInp.value)||1));
     const metricKeys = sub==='testonline' ? ['testOnline'] : ['tuVanAINb','checkShopNb'];
     config.trainers.forEach(t=>{
       const cnt = activePgsOfTrainer_(t.id).length;
@@ -8837,7 +8842,7 @@ async function renderTargetTable(){
   }
   const locked = !!camp.targetLocked;
   ctx.innerHTML = `Đang set Target cho chiến dịch: <strong>${camp.name}</strong> — Nhóm: ${CAMPAIGN_GROUP_LABELS[camp.group]} · ${campaignSubtypeLabel(camp.group, sub)} — Tháng: ${monthLabel(camp.month)}` +
-    (isFrequencyNoiboCampaign_(camp) ? `<span style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;padding:5px 9px;background:${locked?'var(--bg)':'#fff'};border:1px solid var(--line);border-radius:8px;opacity:${locked?'.55':'1'};"><strong>X lần/PG:</strong><input id="frequencyTargetXInput" type="number" min="1" step="1" value="${sub==='tuvanai_checkshop'?4:campaignFrequencyX_(camp)}" style="width:64px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;" ${(sub==='tuvanai_checkshop'||!isAdmin()||locked)?'disabled':''}><span style="font-size:8pt;color:var(--muted);">${sub==='tuvanai_checkshop'?'Tư vấn AI: chuẩn cố định 4 lần/PG · Target = số PG Đang làm':'Target = số PG Đang làm · X chỉ là ngưỡng đạt/PG'}</span></span>` : '') +
+    (isFrequencyNoiboCampaign_(camp) ? `<span style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;padding:5px 9px;background:${locked?'var(--bg)':'#fff'};border:1px solid var(--line);border-radius:8px;opacity:${locked?'.55':'1'};"><strong>X lần/PG:</strong><input id="frequencyTargetXInput" type="number" min="1" step="1" value="${campaignFrequencyX_(camp)}" style="width:64px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;" ${(!isAdmin()||locked)?'disabled':''}><span style="font-size:8pt;color:var(--muted);">${sub==='tuvanai_checkshop'?'Tư vấn AI đạt khi Kết quả Luyện TV ≥ X lần · Target = số PG Đang làm':'Target = số PG Đang làm · X chỉ là ngưỡng đạt/PG'}</span></span>` : '') +
     (isPartnerTrainingTargetCampaign_(camp) ? `<span style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;padding:5px 9px;background:${locked?'var(--bg)':'#fff'};border:1px solid var(--line);border-radius:8px;opacity:${locked?'.55':'1'};"><strong>Điểm TB khảo sát X:</strong><input id="partnerSurveyTargetXInput" type="number" min="0" max="10" step="0.1" value="${Number(camp.partnerSurveyTargetX??0)}" style="width:70px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;" ${(isAdmin()&&!locked)?'':'disabled'}><span style="font-size:8pt;color:var(--muted);">Áp dụng cho tất cả Khu vực</span></span>` : '');
 
   const viewModeBox = document.getElementById('targetDoitacViewModeBox');
