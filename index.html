@@ -5785,7 +5785,7 @@ function renderKpiCategory(catKey){
   const subnavHtml = subOptions.length>1
     ? `<div class="subnav" style="margin-bottom:12px;">${subOptions.map(o=>`<button data-kpi-sub="${o.key}" class="${o.key===activeSub?'active':''}">${o.label}</button>`).join('')}</div>`
     : '';
-  outerContainer.innerHTML = subnavHtml + `<div id="kpiSubBody-${catKey}"></div>`;
+  outerContainer.innerHTML = subnavHtml + `<div id="kpiSubBody-${catKey}"><div style="text-align:center;padding:40px 0;color:var(--muted);">⏳ Đang tải...</div></div>`;
   outerContainer.querySelectorAll('[data-kpi-sub]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       kpiSubtype[catKey] = btn.getAttribute('data-kpi-sub');
