@@ -5930,6 +5930,7 @@ async function processTestOnlineWorkbook_(wb,camp){
     if(n>=x) qualified++; else incomplete++;
   });
   await dbSet('frequencyProgress:'+camp.id,progress);
+  frequencyProgressCache_[camp.id] = progress; // cập nhật luôn cache — không cần tải lại mạng để thấy data mới
 
   // Render lại ngay để PG đạt đủ X biến mất khỏi danh sách chưa hoàn thành.
   await renderFrequencyNoiboBody_('testonline');
@@ -5982,9 +5983,20 @@ function aiCheckPassed_(v){
   const s=normalizeVN(String(v??'')).trim().toLowerCase();
   return s==='pass' || s==='passed' || s==='dat' || s==='ok';
 }
+/* Cache lại kết quả tiến độ Test Online / Tư vấn AI & Check shop theo từng campaignId — tránh phải
+   tải lại qua mạng (dbGet, ~1-2 giây/lần) mỗi khi bấm vào lại đúng tag đó trong cùng phiên làm việc.
+   Cache tự làm mới khi có Import mới (gọi invalidateFrequencyProgressCache_/invalidateAiCheckProgressCache_
+   ngay sau khi lưu dữ liệu import), nên không lo hiển thị dữ liệu cũ sau khi cập nhật. */
+const frequencyProgressCache_ = {};
+const aiCheckProgressCache_ = {};
+function invalidateFrequencyProgressCache_(campId){ delete frequencyProgressCache_[campId]; }
+function invalidateAiCheckProgressCache_(campId){ delete aiCheckProgressCache_[campId]; }
 async function loadAiCheckProgress_(camp){
   if(!camp) return {};
-  return (await dbGet('aiCheckProgress:'+camp.id)) || {};
+  if(aiCheckProgressCache_[camp.id]) return aiCheckProgressCache_[camp.id];
+  const data = (await dbGet('aiCheckProgress:'+camp.id)) || {};
+  aiCheckProgressCache_[camp.id] = data;
+  return data;
 }
 async function processAiCheckWorkbook_(wb,camp){
   if(!camp || campaignSubtype(camp)!=='tuvanai_checkshop') throw new Error('Không xác định được chiến dịch Tư vấn AI & Check shop đang xem.');
@@ -6032,6 +6044,7 @@ async function processAiCheckWorkbook_(wb,camp){
     if(v.aiCount>=x && v.checkPass) bothQualified++;
   });
   await dbSet('aiCheckProgress:'+camp.id,data);
+  aiCheckProgressCache_[camp.id] = data; // cập nhật luôn cache — không cần tải lại mạng để thấy data mới
   await renderFrequencyNoiboBody_('tuvanai_checkshop');
   const msg=document.getElementById('aiCheckImportMsg');
   if(msg){
@@ -6105,8 +6118,7 @@ async function renderFrequencyNoiboBody_(subtype){
       rec.testOnlineActual=qualified;
       return {t,list,qualified,totalPgs,targetPgs,qualifiedPct:targetPgs?Math.round(qualified/targetPgs*1000)/10:0};
     });
-    await dbSet('records:'+currentMonth, records);
-
+    dbSet('records:'+currentMonth, records); // lưu ở NỀN, không chờ — không cần chặn hiển thị vì records đã cập nhật xong trong bộ nhớ ở trên
     const scopeIds=new Set(topScopeTrainers().map(t=>t.id));
     const scoped=trainerRows.filter(r=>scopeIds.has(r.t.id));
     const sTarget=scoped.reduce((a,r)=>a+r.targetPgs,0), sQualified=scoped.reduce((a,r)=>a+r.qualified,0);
@@ -6209,7 +6221,7 @@ async function renderFrequencyNoiboBody_(subtype){
       checkPct:checkTarget?Math.round(checkQualified/checkTarget*1000)/10:0
     };
   });
-  await dbSet('records:'+currentMonth,records);
+  dbSet('records:'+currentMonth,records); // lưu ở NỀN, không chờ — không cần chặn hiển thị vì records đã cập nhật xong trong bộ nhớ ở trên
 
   const scopeIds=new Set(topScopeTrainers().map(t=>t.id));
   const scoped=trainerRows.filter(r=>scopeIds.has(r.t.id));
@@ -8787,7 +8799,10 @@ function activePgsOfTrainer_(trainerId){
 }
 async function loadFrequencyProgress_(camp){
   if(!camp) return {};
-  return (await dbGet('frequencyProgress:'+camp.id)) || {};
+  if(frequencyProgressCache_[camp.id]) return frequencyProgressCache_[camp.id];
+  const data = (await dbGet('frequencyProgress:'+camp.id)) || {};
+  frequencyProgressCache_[camp.id] = data;
+  return data;
 }
 function frequencyPgKey_(p){ return String(p.code||p.id||'').trim().toUpperCase(); }
 async function renderTargetTable(){
