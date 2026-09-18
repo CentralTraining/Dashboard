@@ -1481,7 +1481,8 @@ function attachGoogleSheetButton_(btnId, msgElId, sheetSpecs, onWorkbook){
       const wb = await fetchGoogleSheetAsWorkbook_(cfg.url, names);
       await onWorkbook(wb);
     }catch(err){
-      if(msg){ msg.style.display='block'; msg.style.color='var(--red)'; msg.textContent='❌ '+err.message; }
+      const freshMsg=document.getElementById(msgElId) || msg;
+      if(freshMsg){ freshMsg.style.display='block'; freshMsg.style.color='var(--red)'; freshMsg.textContent='❌ '+err.message; }
     }
   };
 
@@ -8126,7 +8127,6 @@ function renderTargetPanel(){
 /* ============ TARGET FTF (Đối tác) — import file mẫu theo Shop, tổng hợp Target theo Trainer ============ */
 let ftfTargetViewMode = 'trainer'; // dùng chung cho toggle Trainer/Khu vực của bảng Target Đối tác (FTF)
 async function processFtfTargetWorkbook_(wb, camp){
-  const msg = document.getElementById('ftfTargetImportMsg');
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
 
@@ -8172,9 +8172,15 @@ async function processFtfTargetWorkbook_(wb, camp){
     if(rec.ftfTuVanAITarget_MWG===undefined) rec.ftfTuVanAITarget_MWG = 0;
   });
   await dbSet('records:'+currentMonth, records);
-  renderTargetTable();
+  // QUAN TRỌNG: chờ renderTargetTable() CHẠY XONG HẲN (nó dựng lại toàn bộ khung — kể cả phần tử
+  // thông báo #ftfTargetImportMsg — bên trong renderFtfTargetSection_) rồi MỚI lấy lại đúng phần tử
+  // MỚI để ghi thông báo. Trước đây lấy #ftfTargetImportMsg ở ĐẦU hàm rồi renderTargetTable() lại âm
+  // thầm thay thế phần tử đó bằng 1 phần tử mới — khiến thông báo bị ghi vào phần tử CŨ đã bị gỡ khỏi
+  // trang, không ai nhìn thấy (trông như "không có gì xảy ra" dù dữ liệu đã cập nhật đúng).
+  await renderTargetTable();
   renderKpiAll();
 
+  const msg = document.getElementById('ftfTargetImportMsg');
   if(msg){
     msg.style.display='block'; msg.style.color='var(--green-ok)';
     msg.textContent = `Đã import ${list.length} Shop — Khớp đúng Trainer: ${matched}, Không khớp: ${unmatched}${skippedOtherRegion?`, bỏ qua ${skippedOtherRegion} Shop ngoài khu vực bạn phụ trách`:''}. Target Shop/HR/Test/Khảo sát của từng Trainer đã được cập nhật (ghi đè).`;
@@ -8209,8 +8215,9 @@ function renderFtfTargetSection_(camp){
       const wb = XLSX.read(buf, { type:'array' });
       await processFtfTargetWorkbook_(wb, camp);
     }catch(err){
-      msg.style.color='var(--red)';
-      msg.textContent=formatImportFileError_(err, 'file mẫu Target FTF (Store ID, Khu vực, TRAINER, TARGET SHOP, SL HR Training...)');
+      const freshMsg = document.getElementById('ftfTargetImportMsg') || msg;
+      freshMsg.style.display='block'; freshMsg.style.color='var(--red)';
+      freshMsg.textContent=formatImportFileError_(err, 'file mẫu Target FTF (Store ID, Khu vực, TRAINER, TARGET SHOP, SL HR Training...)');
     }
     e.target.value='';
   });
