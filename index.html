@@ -2861,23 +2861,29 @@ document.getElementById('changePassBtn').addEventListener('click', async ()=>{
   msg.style.color='var(--green-ok)'; msg.textContent='Đổi mật khẩu thành công.'; msg.style.display='block';
   document.getElementById('curPass').value=''; document.getElementById('newPass').value=''; document.getElementById('newPass2').value='';
 });
-document.getElementById('exportAllDataBtn').addEventListener('click', async ()=>{
-  const msg=document.getElementById('backupSaveMsg');
-  try{
+/* Lấy TOÀN BỘ dữ liệu — dùng cho nút "Export toàn bộ dữ liệu". Khi chưa cấu hình database dùng
+   chung (API_URL trống), đọc thẳng localStorage (như trước giờ). Khi ĐÃ dùng Google Sheet dùng
+   chung, gọi thẳng 1 endpoint riêng (?action=exportAll) lấy hết dữ liệu từ Sheet — vì lúc này dữ
+   liệu thật nằm trên Sheet, không còn nằm ở localStorage của từng máy nữa. */
+async function dbGetAll_(){
+  if(!API_URL){
     const data={};
-    if(API_URL){
-      // Chế độ Google Sheet: chỉ export được các key đã biết dùng qua dbGet trong phiên hiện tại là không đủ,
-      // nên vẫn ưu tiên đọc trực tiếp từ localStorage nếu có cache; khuyến nghị chạy export ở chế độ đang dùng localStorage.
-      msg.style.color='var(--red)';
-      msg.textContent='Đang dùng Google Sheet backend — vào Google Sheet để export/backup trực tiếp.';
-      msg.style.display='block';
-      return;
-    }
     for(let i=0;i<localStorage.length;i++){
       const key=localStorage.key(i);
       try{ data[key]=JSON.parse(localStorage.getItem(key)); }
       catch(e){ data[key]=localStorage.getItem(key); }
     }
+    return data;
+  }
+  const res = await fetch(`${API_URL}?action=exportAll`);
+  const json = await res.json();
+  return (json && json.data) ? json.data : {};
+}
+document.getElementById('exportAllDataBtn').addEventListener('click', async ()=>{
+  const msg=document.getElementById('backupSaveMsg');
+  try{
+    msg.style.display='block'; msg.style.color='var(--muted)'; msg.textContent='Đang lấy toàn bộ dữ liệu...';
+    const data = await dbGetAll_();
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
@@ -2910,12 +2916,16 @@ document.getElementById('restoreAllDataInput').addEventListener('change', async 
     const data = JSON.parse(text);
     const keys = Object.keys(data);
     if(keys.length===0){ msg.style.color='var(--red)'; msg.textContent='File rỗng hoặc sai định dạng.'; e.target.value=''; return; }
-    const ok = await showConfirm(`Khôi phục ${keys.length} mục dữ liệu từ file này? Toàn bộ dữ liệu HIỆN CÓ trên máy/trình duyệt đang mở sẽ bị GHI ĐÈ hoàn toàn, không thể hoàn tác. Trang sẽ tự tải lại sau khi khôi phục xong.`);
+    const ok = await showConfirm(`Khôi phục ${keys.length} mục dữ liệu từ file này? Toàn bộ dữ liệu HIỆN CÓ ${API_URL?'trên Google Sheet dùng chung':'trên máy/trình duyệt đang mở'} sẽ bị GHI ĐÈ hoàn toàn, không thể hoàn tác. Trang sẽ tự tải lại sau khi khôi phục xong.`);
     if(!ok){ e.target.value=''; return; }
-    keys.forEach(key=>{
-      const val = data[key];
-      localStorage.setItem(key, typeof val==='string' ? val : JSON.stringify(val));
-    });
+    // Ghi qua dbSet() (không ghi thẳng localStorage) — tự động đi đúng đường: lưu vào Google Sheet
+    // dùng chung nếu đã cấu hình API_URL, hoặc lưu localStorage nếu chưa. Ghi TUẦN TỰ (không phải
+    // song song ồ ạt) để tránh làm quá tải Apps Script khi số lượng key lớn.
+    let doneCount = 0;
+    for(const key of keys){
+      msg.textContent = `Đang khôi phục... (${++doneCount}/${keys.length}: ${key})`;
+      await dbSet(key, data[key]);
+    }
     msg.style.color='var(--green-ok)'; msg.textContent=`Đã khôi phục ${keys.length} mục dữ liệu. Đang tải lại trang...`;
     setTimeout(()=>{ location.reload(); }, 1200);
   }catch(err){
