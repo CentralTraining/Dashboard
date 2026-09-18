@@ -3447,9 +3447,11 @@ function mediaCampaignsThisMonth_(){
 }
 async function loadMediaScope_(scopeKey){
   mediaScopeKey = scopeKey;
-  mediaResponses = (await dbGet('mediaResponses:'+scopeKey)) || [];
-  mediaNotes = (await dbGet('mediaNotes:'+scopeKey)) || {};
-  mediaTargets = (await dbGet('mediaTargets:'+scopeKey)) || {};
+  // Gộp 3 key thành ĐÚNG 1 LẦN GỌI MẠNG (dbGetMulti) thay vì 3 lần riêng.
+  const vals = await dbGetMulti(['mediaResponses:'+scopeKey, 'mediaNotes:'+scopeKey, 'mediaTargets:'+scopeKey]);
+  mediaResponses = vals['mediaResponses:'+scopeKey] || [];
+  mediaNotes = vals['mediaNotes:'+scopeKey] || {};
+  mediaTargets = vals['mediaTargets:'+scopeKey] || {};
 }
 async function ensureMediaScopeLoaded_(){
   const list = mediaCampaignsThisMonth_();
@@ -3519,6 +3521,7 @@ async function processMediaWorkbook_(wb){
     mediaResponses = matched;
   }
   await dbSet('mediaResponses:'+mediaScopeKey, mediaResponses);
+  invalidateMediaCampaignsDataCache_();
 
   if(!mediaScopeKey || mediaScopeKey===currentMonth){
     // Chế độ fallback theo tháng (chưa tạo chiến dịch Truyền thông riêng) — vẫn đồng bộ ttActual cũ
@@ -3557,13 +3560,35 @@ function mediaCoverageStats_(scopeType, scopeValue){
 }
 /* Tổng quan toàn Miền Trung cho TẤT CẢ chiến dịch Truyền thông trong tháng (không đổi phạm vi đang chọn ở dropdown) */
 /* Nhiều thẻ tổng KPI ở đầu tab Truyền thông — mỗi thẻ 1 chiến dịch (khi tháng có nhiều chiến dịch nhỏ) */
+/* Trước đây renderMediaTopCampaignCards_ và renderMediaCampaignsOverview MỖI HÀM đều tự tải riêng
+   mediaResponses/mediaTargets cho TỪNG chiến dịch (2 lệnh gọi mạng × N chiến dịch × 2 hàm) — với vài
+   chiến dịch trong tháng, số lệnh gọi cộng dồn dễ lên tới chục lần, gây chậm rõ rệt (10-15 giây).
+   Giờ gộp TẤT CẢ key cần thiết của TẤT CẢ chiến dịch thành ĐÚNG 1 LẦN GỌI MẠNG duy nhất (dbGetMulti),
+   cache lại theo đúng danh sách chiến dịch đang xem — cả 2 hàm hiển thị dùng chung 1 cache này, không
+   ai phải tải lại. Cache tự làm mới mỗi khi danh sách chiến dịch tháng đang xem thay đổi. */
+let mediaCampaignsDataCache_ = { campIdsKey:null, data:{} };
+async function loadAllMediaCampaignsData_(list){
+  const campIdsKey = list.map(c=>c.id).sort().join(',');
+  if(mediaCampaignsDataCache_.campIdsKey===campIdsKey) return mediaCampaignsDataCache_.data;
+  const keys=[];
+  list.forEach(c=>{ keys.push('mediaResponses:'+c.id, 'mediaTargets:'+c.id); });
+  const vals = keys.length ? await dbGetMulti(keys) : {};
+  const data = {};
+  list.forEach(c=>{
+    data[c.id] = { responses: vals['mediaResponses:'+c.id] || [], targets: vals['mediaTargets:'+c.id] || {} };
+  });
+  mediaCampaignsDataCache_ = { campIdsKey, data };
+  return data;
+}
+function invalidateMediaCampaignsDataCache_(){ mediaCampaignsDataCache_ = { campIdsKey:null, data:{} }; }
 async function renderMediaTopCampaignCards_(){
   const box = document.getElementById('mediaTopCampaignCardsBox');
   if(!box) return;
   const list = mediaCampaignsThisMonth_();
+  const allData = await loadAllMediaCampaignsData_(list);
   await Promise.all(list.map(async c=>{
-    const responses = (await dbGet('mediaResponses:'+c.id)) || [];
-    const campTargets = (await dbGet('mediaTargets:'+c.id)) || {};
+    const responses = allData[c.id].responses;
+    const campTargets = allData[c.id].targets;
     // Thẻ trên cùng: Trainer đăng nhập chỉ xem tiến độ của chính Trainer đó;
     // Admin/Viewer xem tổng toàn Miền Trung. Target và Actual PHẢI cùng một phạm vi.
     const topTrainers = topScopeTrainers();
@@ -3589,10 +3614,11 @@ async function renderMediaCampaignsOverview(){
   if(list.length===0) return;
 
   const allResponsesPerCampaign = [];
+  const allData = await loadAllMediaCampaignsData_(list);
   const rows = await Promise.all(list.map(async c=>{
-    const responses = (await dbGet('mediaResponses:'+c.id)) || [];
+    const responses = allData[c.id].responses;
     allResponsesPerCampaign.push(responses);
-    const campTargets = (await dbGet('mediaTargets:'+c.id)) || {};
+    const campTargets = allData[c.id].targets;
     let target=0;
     visibleTrainers().forEach(t=>{
       target += (campTargets[t.id]!==undefined) ? Number(campTargets[t.id]||0) : Number(trainerRecord(t.id).ttTarget||0);
@@ -3877,6 +3903,7 @@ function renderMediaImportBox(){
     mediaResponses = [];
     mediaNotes = {};
     await dbSet('mediaResponses:'+mediaScopeKey, mediaResponses);
+    invalidateMediaCampaignsDataCache_();
     await dbSet('mediaNotes:'+mediaScopeKey, mediaNotes);
     if(!mediaScopeKey || mediaScopeKey===currentMonth){
       visibleTrainers().forEach(t=>{ const rec=trainerRecord(t.id); rec.ttActual=0; rec.updatedAt=new Date().toISOString(); });
@@ -7984,6 +8011,7 @@ function duplicateCampaign_(campaignId){
         // Truyền thông: Target lưu RIÊNG theo từng chiến dịch (mediaTargets:<campaignId>) — copy đúng key đó
         const srcTargets = (await dbGet('mediaTargets:'+camp.id)) || {};
         await dbSet('mediaTargets:'+newCampaign.id, srcTargets);
+        invalidateMediaCampaignsDataCache_();
       } else {
         // Lấy Target hiện có từ tháng gốc: nếu tháng gốc = tháng đang mở sẵn trong bộ nhớ thì dùng luôn,
         // ngược lại phải tải riêng dữ liệu records của tháng gốc.
@@ -9037,6 +9065,7 @@ document.getElementById('saveTargetBtn').addEventListener('click', async ()=>{
     const campTargets = (await dbGet('mediaTargets:'+camp.id)) || {};
     document.querySelectorAll('.target-input').forEach(inp=>{ campTargets[inp.dataset.trainer] = Number(inp.value)||0; });
     await dbSet('mediaTargets:'+camp.id, campTargets);
+    invalidateMediaCampaignsDataCache_();
     camp.mediaTargetsCache = campTargets;
     if(mediaScopeKey===camp.id) mediaTargets = campTargets;
   } else if(campaignSubtype(camp)==='ftf'){
