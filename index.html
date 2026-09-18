@@ -3480,7 +3480,6 @@ function renderDoitacF2FChart(mode){
 }
 /* ============ IMPORT DỮ LIỆU TRAINING F2F ĐỐI TÁC (file 2 sheet: Tong Hop F2F + Chi Tiet Check-in) ============ */
 async function processFtfWorkbook_(wb){
-  const msg = document.getElementById('ftfImportMsg');
   const sheet1Name = wb.SheetNames.find(n=>n.toLowerCase().includes('tong hop')) || wb.SheetNames[0];
   const sheet2Name = wb.SheetNames.find(n=>n.toLowerCase().includes('check-in')) || wb.SheetNames[1];
   const ws1 = wb.Sheets[sheet1Name];
@@ -3555,8 +3554,12 @@ async function processFtfWorkbook_(wb){
     rec.updatedAt = new Date().toISOString();
   });
   await dbSet('records:'+currentMonth, records);
+  // QUAN TRỌNG: renderKpiCategory('doitac') dựng lại toàn bộ khung Đối tác — kể cả phần tử thông báo
+  // #ftfImportMsg (bên trong renderFtfImportBox) — nên phải lấy lại phần tử MỚI SAU KHI render xong,
+  // không dùng tham chiếu đã lấy ở đầu hàm (nếu không, thông báo bị ghi vào phần tử cũ đã bị gỡ khỏi
+  // trang, không ai nhìn thấy).
   renderKpiCategory('doitac');
-
+  const msg = document.getElementById('ftfImportMsg');
   if(msg){
     msg.style.display='block'; msg.style.color='var(--green-ok)';
     msg.textContent = `Đã import ${shopArr.length} Shop, cập nhật tiến độ cho ${visibleTrainers().length} Trainer${skippedOtherRegion?`, bỏ qua ${skippedOtherRegion} Shop ngoài khu vực bạn phụ trách`:''}.`;
