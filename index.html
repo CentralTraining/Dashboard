@@ -1313,7 +1313,14 @@ async function fetchGoogleSheetRows_(sheetId, sheetName){
   if(!text.trim()){
     throw new Error(`Sheet${sheetName?` "${sheetName}"`:''} không có dữ liệu (kết quả trả về rỗng).\nCách khắc phục: kiểm tra lại đúng tab đang chứa dữ liệu, đảm bảo có ít nhất 1 dòng tiêu đề + 1 dòng dữ liệu.`);
   }
-  return parseCsv_(text);
+  // QUAN TRỌNG: Google Sheet xuất CSV có thể trả về chữ có dấu tiếng Việt ở dạng Unicode "phân rã"
+  // (NFD — ký tự gốc + dấu tách rời) thay vì "ghép sẵn" (NFC — dạng chuẩn khi gõ tay/lưu từ Excel).
+  // 2 dạng NHÌN GIỐNG HỆT NHAU nhưng so sánh chuỗi (kể cả TÊN CỘT, VD: "Kênh") đều sai lệch nếu không
+  // ép về cùng 1 dạng — khiến `row['Kênh']` không tìm thấy giá trị dù cột đó CÓ dữ liệu thật. Chuẩn
+  // hoá về NFC NGAY TẠI ĐÂY (áp dụng cho MỌI ô, kể cả dòng tiêu đề) để toàn bộ code phía sau (mọi
+  // hàm xử lý import) không cần tự lo chuyện này nữa.
+  const rows = parseCsv_(text);
+  return rows.map(row=>row.map(cell=>typeof cell==='string' ? cell.normalize('NFC') : cell));
 }
 /* Trả về 1 "workbook" tương thích XLSX.utils.sheet_to_json, để dùng lại y nguyên toàn bộ logic xử lý import hiện có.
    sheetSpecs = null (lấy sheet mặc định, đặt tên 'Sheet1') hoặc mảng tên sheet cần lấy (VD file FTF 2 sheet). */
@@ -2097,8 +2104,8 @@ async function processPgWorkbook_(wb){
     if(isTrainer() && !isRegionImportAllowed(area)){ skippedOtherRegion++; return; }
     if(area && !config.regions.includes(area) && isAdmin()){ config.regions.push(area); newRegions++; }
 
-    const trainerName = String(row['trainer']||'').trim().toUpperCase();
-    let trainer = trainerName ? config.trainers.find(t=>t.name.trim().toUpperCase()===trainerName) : null;
+    const trainerName = normTrName_(row['trainer']);
+    let trainer = trainerName ? config.trainers.find(t=>normTrName_(t.name)===trainerName) : null;
     if(!trainer && trainerName && isAdmin()){
       trainer = { id: uid('tr'), name: trainerName, region: area };
       config.trainers.push(trainer);
@@ -2352,8 +2359,8 @@ async function processPgShopAssignWorkbook_(wb){
     const trainerName=shopToTrainerName[shopId]||'';
     let trainerId='';
     if(trainerName){
-      const upper=trainerName.trim().toUpperCase();
-      let tr=config.trainers.find(t=>String(t.name||'').trim().toUpperCase()===upper);
+      const upper=normTrName_(trainerName);
+      let tr=config.trainers.find(t=>normTrName_(t.name)===upper);
       if(!tr && isAdmin()){
         tr={id:uid('tr'),name:trainerName,region:area};
         config.trainers.push(tr); trainerCreated++;
@@ -3403,8 +3410,8 @@ async function processFtfWorkbook_(wb){
 
   let shopArr = Object.values(shopMap);
   shopArr.forEach(s=>{
-    const nameUp = s.trainerName.toUpperCase();
-    const tr = config.trainers.find(t=>t.name.trim().toUpperCase()===nameUp);
+    const nameUp = normTrName_(s.trainerName);
+    const tr = config.trainers.find(t=>normTrName_(t.name)===nameUp);
     s.trainerId = tr ? tr.id : '';
     s.id = uid('ftf');
   });
@@ -7066,9 +7073,9 @@ async function processCoachingHistoryWorkbook_(wb){
     existingKeys.add(key);
 
     const trainerUsername = String(row[4]||'').trim().toLowerCase();
-    const trainerNameRaw = String(row[3]||'').trim().toUpperCase();
+    const trainerNameRaw = normTrName_(row[3]);
     let trainerObj = config.trainers.find(t=>(t.username||'').trim().toLowerCase()===trainerUsername && trainerUsername);
-    if(!trainerObj) trainerObj = config.trainers.find(t=>t.name.trim().toUpperCase()===trainerNameRaw);
+    if(!trainerObj) trainerObj = config.trainers.find(t=>normTrName_(t.name)===trainerNameRaw);
 
     if(isNew){
       surveyResponsesNew.push({
@@ -7188,9 +7195,9 @@ async function processSurvey01Workbook_(wb){
     existingKeys.add(key);
 
     const trainerUsername = String(row[4]||'').trim().toLowerCase();
-    const trainerNameRaw = String(row[3]||'').trim().toUpperCase();
+    const trainerNameRaw = normTrName_(row[3]);
     let trainerObj = config.trainers.find(t=>(t.username||'').trim().toLowerCase()===trainerUsername && trainerUsername);
-    if(!trainerObj) trainerObj = config.trainers.find(t=>t.name.trim().toUpperCase()===trainerNameRaw);
+    if(!trainerObj) trainerObj = config.trainers.find(t=>normTrName_(t.name)===trainerNameRaw);
 
     surveyResponses.push({
       id: uid('sv'),
@@ -7522,9 +7529,9 @@ async function processSurveyNewWorkbook_(wb){
     existingKeys.add(key);
 
     const trainerUsername = String(row[4]||'').trim().toLowerCase();
-    const trainerNameRaw = String(row[3]||'').trim().toUpperCase();
+    const trainerNameRaw = normTrName_(row[3]);
     let trainerObj = config.trainers.find(t=>(t.username||'').trim().toLowerCase()===trainerUsername && trainerUsername);
-    if(!trainerObj) trainerObj = config.trainers.find(t=>t.name.trim().toUpperCase()===trainerNameRaw);
+    if(!trainerObj) trainerObj = config.trainers.find(t=>normTrName_(t.name)===trainerNameRaw);
 
     surveyResponsesNew.push({
       id: uid('svn'),
@@ -7854,8 +7861,8 @@ async function processShopTrainerWorkbook_(wb){
     // Size Shop (A/B/C/S), không phải Loại kênh — dễ gây nhầm lẫn nếu đọc thẳng.
     const channelGroupType = channelGroup(channel);
     const shopSize = String(row['SIZE SHOP']||row['Type']||'').trim();
-    const trainerName = String(row['TRAINER']||row['Trainer']||row['Trainer ']||'').trim().toUpperCase();
-    const tr = trainerName ? config.trainers.find(t=>t.name.trim().toUpperCase()===trainerName) : null;
+    const trainerName = normTrName_(row['TRAINER']||row['Trainer']||row['Trainer ']);
+    const tr = trainerName ? config.trainers.find(t=>normTrName_(t.name)===trainerName) : null;
     if(tr) matched++; else unmatched++;
     const sale = toTitleCaseVN(row['Sale']||row['Sale ']||row['SALE']||row['SALE ']||'');
     if(sale) saleCount++;
@@ -8134,8 +8141,8 @@ async function processFtfTargetWorkbook_(wb, camp){
   const list = rows.map(row=>{
     const area = normalizeAreaVN(row['Khu vực']);
     if(isTrainer() && !isRegionImportAllowed(area)){ skippedOtherRegion++; return null; }
-    const trainerName = String(row['TRAINER']||'').trim().toUpperCase();
-    const tr = trainerName ? config.trainers.find(t=>t.name.trim().toUpperCase()===trainerName) : null;
+    const trainerName = normTrName_(row['TRAINER']);
+    const tr = trainerName ? config.trainers.find(t=>normTrName_(t.name)===trainerName) : null;
     if(tr) matched++; else unmatched++;
     return {
       storeId: String(row['Store ID']||'').trim(), storeName: String(row['Store name']||'').trim(),
@@ -9172,6 +9179,12 @@ function resetTrainerForm(){
 document.getElementById('cancelEditTrainerBtn').addEventListener('click', resetTrainerForm);
 /* Sinh Tên đăng nhập mặc định từ Họ tên Trainer: viết thường, bỏ dấu, bỏ khoảng trắng.
    VD: "Nguyễn Thiện Cảm" → "nguyenthiencam". */
+/* Chuẩn hoá tên Trainer để so khớp — BẮT BUỘC gọi .normalize('NFC') vì dữ liệu lấy qua Google Sheet
+   (xuất CSV) có thể trả về chữ có dấu ở dạng Unicode "phân rã" (NFD — ký tự gốc + dấu tách rời),
+   trong khi tên Trainer gõ tay/từ file Excel thường ở dạng "ghép sẵn" (NFC). 2 dạng này NHÌN GIỐNG
+   HỆT NHAU nhưng so sánh bằng === luôn ra false nếu không ép về cùng 1 dạng trước — gây lỗi
+   "Khớp đúng Trainer: 0" dù tên đúng 100% khi nhìn bằng mắt. */
+function normTrName_(s){ return String(s||'').trim().toUpperCase().normalize('NFC'); }
 function toUsernameSlug_(name){
   let s = String(name||'').trim().toLowerCase();
   s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
