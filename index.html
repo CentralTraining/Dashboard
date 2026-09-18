@@ -8152,7 +8152,11 @@ async function processFtfTargetWorkbook_(wb, camp){
     const area = normalizeAreaVN(row['Khu vực']);
     if(isTrainer() && !isRegionImportAllowed(area)){ skippedOtherRegion++; return null; }
     const trainerName = normTrName_(row['TRAINER']);
-    const tr = trainerName ? config.trainers.find(t=>normTrName_(t.name)===trainerName) : null;
+    // Ưu tiên khớp CẢ Trainer + Khu vực cùng lúc (an toàn hơn, tránh nhầm nếu lỡ có 2 Trainer trùng
+    // tên ở 2 khu vực khác nhau) — nếu không tìm thấy khớp cả 2, mới lùi về khớp riêng theo tên
+    // (phòng trường hợp Khu vực ghi trong file khác cách viết/thiếu so với hệ thống, nhưng tên đúng).
+    let tr = trainerName ? config.trainers.find(t=>normTrName_(t.name)===trainerName && normalizeAreaVN(t.region)===area) : null;
+    if(!tr && trainerName) tr = config.trainers.find(t=>normTrName_(t.name)===trainerName);
     if(tr) matched++; else unmatched++;
     return {
       storeId: String(row['Store ID']||'').trim(), storeName: String(row['Store name']||'').trim(),
