@@ -1199,6 +1199,14 @@
           <span class="save-msg" id="restoreSaveMsg" style="display:none;"></span>
         </div>
       </div>
+      <div class="cfg-card" id="loginStatsCard">
+        <h3>Xếp hạng số lượt đăng nhập — 13 Trainer</h3>
+        <div class="scope-filters" style="margin-bottom:10px;">
+          <span class="scope-label">Tháng:</span>
+          <select id="loginStatsMonthSelect"></select>
+        </div>
+        <div id="loginStatsBox"></div>
+      </div>
     </div>
   </section>
   </div>
@@ -1992,6 +2000,72 @@ function loadSessionLocal_(){
 function saveSessionLocal_(value){
   try{ if(value===null){ localStorage.removeItem('auth_session'); } else { localStorage.setItem('auth_session', JSON.stringify(value)); } }catch(e){}
 }
+/* ============ THEO DÕI PHIÊN ĐĂNG NHẬP CỦA TRAINER — THEO TỪNG THÁNG ============
+   Ghi nhận mỗi lần đăng nhập thành công vào ĐÚNG tháng thực tế (theo lịch, không phải tháng đang
+   xem trong Dashboard) — lưu riêng từng tháng (loginStats:YYYY-MM) để xem lại được số liệu tháng
+   trước. Chỉ hiển thị 13 Trainer (bỏ Admin/Viewer), xếp hạng theo số lượt đăng nhập giảm dần. */
+function realMonthKey_(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
+async function recordLoginSession_(u){
+  try{
+    const monthKey = realMonthKey_();
+    const stats = (await dbGet('loginStats:'+monthKey)) || {};
+    const entry = stats[u.id] || { count:0 };
+    entry.count = (Number(entry.count)||0) + 1;
+    entry.lastLogin = new Date().toISOString();
+    entry.username = u.username; entry.displayName = u.displayName; entry.role = u.role;
+    stats[u.id] = entry;
+    await dbSet('loginStats:'+monthKey, stats);
+  }catch(e){}
+}
+function timeAgoVN_(iso){
+  if(!iso) return '—';
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs/60000);
+  if(mins<1) return 'Vừa xong';
+  if(mins<60) return `${mins} phút trước`;
+  const hours = Math.floor(mins/60);
+  if(hours<24) return `${hours} giờ trước`;
+  const days = Math.floor(hours/24);
+  if(days<30) return `${days} ngày trước`;
+  return new Date(iso).toLocaleDateString('vi-VN');
+}
+let loginStatsViewMonth_ = null; // null = mặc định đúng tháng thực tế hiện tại
+async function renderLoginStatsBox_(){
+  const box = document.getElementById('loginStatsBox');
+  if(!box) return;
+  const monthSel = document.getElementById('loginStatsMonthSelect');
+  if(monthSel && !monthSel.dataset.bound){
+    monthSel.dataset.bound='1';
+    const thisMonth = realMonthKey_();
+    const opts=[]; const d=new Date();
+    for(let i=0;i<6;i++){ // 6 tháng gần nhất để chọn lại
+      const mk = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+      opts.push(mk);
+      d.setMonth(d.getMonth()-1);
+    }
+    monthSel.innerHTML = opts.map(mk=>`<option value="${mk}">${monthLabel(mk)}${mk===thisMonth?' (hiện tại)':''}</option>`).join('');
+    monthSel.value = loginStatsViewMonth_ || thisMonth;
+    monthSel.addEventListener('change', ()=>{ loginStatsViewMonth_ = monthSel.value; renderLoginStatsBox_(); });
+  }
+  const viewMonth = loginStatsViewMonth_ || realMonthKey_();
+  const stats = (await dbGet('loginStats:'+viewMonth)) || {};
+  const rows = users.filter(u=>u.role==='trainer').map(u=>{
+    const s = stats[u.id] || {};
+    return { id:u.id, displayName:u.displayName, username:u.username, count:Number(s.count)||0, lastLogin:s.lastLogin||null };
+  }).sort((a,b)=> b.count - a.count || (b.lastLogin?new Date(b.lastLogin).getTime():0) - (a.lastLogin?new Date(a.lastLogin).getTime():0));
+  box.innerHTML = `
+    <table style="font-size:var(--cap);">
+      <thead><tr><th style="width:8%;text-align:center;">#</th><th>Trainer</th><th style="text-align:center;">Số lượt đăng nhập</th><th>Lần gần nhất</th></tr></thead>
+      <tbody>
+        ${rows.length ? rows.map((r,i)=>`<tr>
+          <td style="text-align:center;font-weight:700;color:var(--muted);">${i+1}</td>
+          <td><strong>${r.displayName||r.username}</strong><div style="font-size:var(--tag);color:var(--muted);">${r.username}</div></td>
+          <td style="text-align:center;font-weight:800;color:${r.count>0?'var(--green-dark)':'var(--muted)'};">${r.count}</td>
+          <td>${timeAgoVN_(r.lastLogin)}</td>
+        </tr>`).join('') : '<tr><td colspan="4" class="empty">Chưa có Trainer nào.</td></tr>'}
+      </tbody>
+    </table>`;
+}
 async function loadUsers(){ users=(await dbGet('auth_users'))||[]; }
 async function saveUsers(){ await dbSet('auth_users',users); }
 async function loadSession(){ session=loadSessionLocal_(); }
@@ -2077,6 +2151,7 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
   }
   session={ userId:u.id, username:u.username, role:u.role, displayName:u.displayName, region:u.region||'', trainerId:u.trainerId||'' };
   saveSessionLocal_(session);
+  recordLoginSession_(u); // ghi nhận phiên đăng nhập (tracking) — không chờ (fire-and-forget), không làm chậm đăng nhập
   err.style.display='none'; await renderAuthScreen();
 });
 document.getElementById('logoutBtn').addEventListener('click', ()=>{
@@ -2987,7 +3062,7 @@ function renderAccountList(){
     if(!ok) return;
     users=users.filter(x=>x.id!==id);
     await saveUsers();
-    renderAccountList();
+    renderAccountList(); renderLoginStatsBox_();
   }));
 
   box.querySelectorAll('[data-unlock-user]').forEach(btn=>btn.addEventListener('click', async ()=>{
@@ -3000,7 +3075,7 @@ function renderAccountList(){
     u.failedLoginAttempts=0;
     u.lockedAt='';
     await saveUsers();
-    renderAccountList();
+    renderAccountList(); renderLoginStatsBox_();
   }));
 
   box.querySelectorAll('[data-reset-pass]').forEach(btn=>btn.addEventListener('click', async ()=>{
@@ -3014,7 +3089,7 @@ function renderAccountList(){
     u.failedLoginAttempts=0;
     u.lockedAt='';
     await saveUsers();
-    renderAccountList();
+    renderAccountList(); renderLoginStatsBox_();
     alert(`Đã reset mật khẩu cho ${u.displayName}.\nMật khẩu tạm: 123456`);
   }));
 }
@@ -9428,7 +9503,7 @@ function renderAll(){
   renderOverviewAll();
   renderKpiAll();
   renderSettingsConfig();
-  if(isAdmin()) renderAccountList();
+  if(isAdmin()){ renderAccountList(); renderLoginStatsBox_(); }
   applyPermissionLocks();
   applyMonthLockUI();
   renderPendingTargetBell_();
