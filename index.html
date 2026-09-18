@@ -1297,7 +1297,10 @@ function parseCsv_(text){
   return rows;
 }
 /* Lấy 1 sheet (theo tên, hoặc sheet đầu tiên nếu không truyền tên) dưới dạng mảng hàng (array-of-arrays) */
-async function fetchGoogleSheetRows_(sheetId, sheetName, _isRetry){
+async function fetchGoogleSheetRows_(sheetId, sheetName, opts){
+  opts = opts || {};
+  const _isRetry = opts._isRetry;
+  const allowFallback = opts.allowFallback!==false; // false khi đang lấy 1-trong-nhiều sheet (VD FTF cần cả "Tong Hop F2F" lẫn "Chi Tiet Check-in") — fallback về sheet đầu tiên trong trường hợp này RẤT NGUY HIỂM: có thể vô tình lấy TRÙNG dữ liệu của sheet kia, làm sai lệch số liệu mà không báo lỗi gì. Chỉ nên tự fallback khi CHẮC CHẮN chỉ cần đúng 1 sheet (VD Target FTF).
   const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1${sheetName?`&sheet=${encodeURIComponent(sheetName)}`:''}`;
   let res;
   try{
@@ -1308,17 +1311,16 @@ async function fetchGoogleSheetRows_(sheetId, sheetName, _isRetry){
   if(!res.ok){
     const bodyText = await res.text().catch(()=>'');
     if(sheetName && (res.status===400 || bodyText.includes('Invalid query'))){
-      // Không tìm thấy đúng tên tab đã nhập — TỰ ĐỘNG thử lại với sheet ĐẦU TIÊN (giống hệt cách
-      // Import file hoạt động — không quan tâm tên sheet, chỉ cần có dữ liệu). Chỉ thử lại 1 lần
-      // (không tự tiếp tục đệ quy nếu lần thử lại cũng lỗi) để tránh vòng lặp và báo lỗi rõ ràng.
-      if(!_isRetry){
+      if(allowFallback && !_isRetry){
+        // Chỉ CHẮC CHẮN AN TOÀN khi biết chỉ cần đúng 1 sheet — tự động thử lại với sheet đầu tiên
+        // (giống hệt cách Import file hoạt động — không quan tâm tên sheet, chỉ cần có dữ liệu).
         try{
-          return await fetchGoogleSheetRows_(sheetId, null, true);
+          return await fetchGoogleSheetRows_(sheetId, null, {_isRetry:true, allowFallback});
         }catch(fallbackErr){
           throw new Error(`Không tìm thấy sheet (tab) tên "${sheetName}" trong Google Sheet này (mã lỗi HTTP ${res.status}), và thử lấy sheet đầu tiên cũng thất bại.\nCách khắc phục: mở Google Sheet, kiểm tra đúng tên tab đang chứa dữ liệu (không phân biệt được có thể do Sheet trống hoặc chưa chia sẻ công khai).`);
         }
       }
-      throw new Error(`Không tìm thấy sheet (tab) tên "${sheetName}" trong Google Sheet này (mã lỗi HTTP ${res.status}).\nCách khắc phục: mở Google Sheet, đổi tên đúng tab đang chứa dữ liệu thành chính xác "${sheetName}" (đúng chữ hoa/thường, không thừa khoảng trắng), lưu lại rồi bấm "Lấy dữ liệu" lại.`);
+      throw new Error(`Không tìm thấy sheet (tab) tên "${sheetName}" trong Google Sheet này (mã lỗi HTTP ${res.status}).\nCách khắc phục: mở Google Sheet, đổi tên đúng tab đang chứa dữ liệu thành chính xác "${sheetName}" (đúng chữ hoa/thường, không thừa khoảng trắng — hoặc mở đúng tab đó, bấm chuột phải vào tên tab dưới cùng ▸ Đổi tên, đặt đúng "${sheetName}"), lưu lại rồi bấm "Lấy dữ liệu" lại. Lưu ý: mục này cần nhiều tab cùng lúc nên KHÔNG tự lấy tab khác thay thế được, tránh lấy nhầm dữ liệu.`);
     }
     if(res.status===401 || res.status===403){
       throw new Error(`Không có quyền xem Sheet này (mã lỗi HTTP ${res.status}).\nCách khắc phục: mở Google Sheet ▸ bấm nút "Share/Chia sẻ" ▸ chọn "Anyone with the link" (Bất kỳ ai có đường liên kết) ▸ vai trò "Viewer" (Người xem) ▸ Copy link ▸ dán lại link đó vào đây rồi thử lại.`);
@@ -1353,8 +1355,9 @@ async function fetchGoogleSheetAsWorkbook_(url, sheetSpecs){
   }
   const wb = { SheetNames:[], Sheets:{} };
   const names = sheetSpecs && sheetSpecs.length ? sheetSpecs : [null];
+  const allowFallback = names.length<=1; // nhiều sheet cùng lúc thì KHÔNG tự fallback, tránh lấy nhầm dữ liệu
   for(const name of names){
-    const rows = await fetchGoogleSheetRows_(sheetId, name);
+    const rows = await fetchGoogleSheetRows_(sheetId, name, {allowFallback});
     const sheetKey = name || 'Sheet1';
     wb.SheetNames.push(sheetKey);
     wb.Sheets[sheetKey] = XLSX.utils.aoa_to_sheet(rows);
