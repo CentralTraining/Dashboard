@@ -1109,7 +1109,7 @@
 
     <!-- ===== DATA S.O ===== -->
     <div id="panel-data-so" class="panel">
-      <div class="cfg-card" style="margin-bottom:16px;">
+      <div class="cfg-card" id="soImportCard" style="margin-bottom:16px;">
         <h3 id="soImportTitle">Import dữ liệu S.O tháng trước</h3>
         <p class="section-desc" style="margin-bottom:10px;">Dùng file xuất Sellout theo dòng (mỗi dòng = 1 lượt bán): Store ID, Store name, Staff code, Staff name, Area, Vùng, Title, Sellout date, Channel, Model, Category (Phone/IOT/Accessories), Color, Sellout. Hệ thống tự gộp theo từng PG (Staff code) — ra số lượng bán theo 3 danh mục và chi tiết theo từng Model.</p>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1953,9 +1953,18 @@ function isRegionImportAllowed(regionText){
 function populateOvFilters(){
   const regionSel=document.getElementById('ovFilterRegion');
   const curR=regionSel.value;
-  regionSel.disabled = false;
-  regionSel.innerHTML='<option value="">Tất cả khu vực</option>'+config.regions.map(r=>`<option value="${r}">${r}</option>`).join('');
-  if(config.regions.includes(curR)) regionSel.value=curR;
+  if(isTrainer() && session.region){
+    // Trainer bị khoá cứng ĐÚNG khu vực mình phụ trách trong Tổng quan (Nhân sự/On-Off/Nhân sự các
+    // hãng) — không được chọn xem khu vực khác. Trainer sub-filter và Sale filter bên dưới TỰ ĐỘNG
+    // thu hẹp đúng trong phạm vi khu vực này (đã có sẵn logic phụ thuộc region, không cần sửa thêm).
+    regionSel.innerHTML = `<option value="${session.region}">${session.region}</option>`;
+    regionSel.value = session.region;
+    regionSel.disabled = true;
+  } else {
+    regionSel.disabled = false;
+    regionSel.innerHTML='<option value="">Tất cả khu vực</option>'+config.regions.map(r=>`<option value="${r}">${r}</option>`).join('');
+    if(config.regions.includes(curR)) regionSel.value=curR;
+  }
   populateOvTrainerFilter();
   populateOvSaleFilter();
 }
@@ -3104,6 +3113,8 @@ async function bootApp(){
   document.getElementById('adminAccountCard').style.display=isAdmin()?'':'none';
   document.getElementById('backupCard').style.display=isAdmin()?'':'none';
   document.getElementById('loginStatsCard').style.display=isAdmin()?'':'none';
+  const soImportCardEl = document.getElementById('soImportCard');
+  if(soImportCardEl) soImportCardEl.style.display=isAdmin()?'':'none';
   document.getElementById('sidebarUserName').textContent=session.displayName;
   document.getElementById('sidebarUserRole').textContent=session.role==='admin'?'Admin · Toàn quyền':(session.role==='trainer'?'Trainer · Sửa giới hạn':'Viewer · Chỉ xem');
   const initials=(session.displayName||'--').trim().split(/\s+/).map(w=>w[0]).slice(-2).join('').toUpperCase();
@@ -3996,12 +4007,13 @@ function renderMediaNotDoneRows_(){
 function renderMediaImportBox(){
   const box = document.getElementById('mediaImportBox');
   if(!box) return;
+  if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
   const canEdit = isAdmin() && !monthLocked;
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <input type="file" id="mediaImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
-      ${isAdmin()?`<button class="secondary admin-only-gsheet" id="mediaSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>`:''}
-      ${isAdmin()?`<button class="danger" id="mediaClearBtn" type="button">🗑 Xoá data chiến dịch này</button>`:''}
+      <button class="secondary admin-only-gsheet" id="mediaSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>
+      <button class="danger" id="mediaClearBtn" type="button">🗑 Xoá data chiến dịch này</button>
       <span class="save-msg" id="mediaImportMsg" style="display:none;"></span>
     </div>
   </div>`;
@@ -4136,6 +4148,7 @@ function renderDoitacProgressTable(){
 function renderFtfImportBox(){
   const box=document.getElementById('ftfImportBox');
   if(!box) return;
+  if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
   const canEdit = isAdmin() && !monthLocked;
   let html = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import dữ liệu Training F2F Đối tác — ${monthLabel(currentMonth)}</h3>
@@ -4143,7 +4156,7 @@ function renderFtfImportBox(){
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <input type="file" id="ftfImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary" id="downloadFtfTemplateBtn" type="button">⬇ Tải file mẫu</button>
-      ${isAdmin()?`<button class="secondary admin-only-gsheet" id="ftfSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>`:''}
+      <button class="secondary admin-only-gsheet" id="ftfSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>
       <span class="save-msg" id="ftfImportMsg" style="display:none;"></span>
     </div>
   </div>`;
@@ -5201,6 +5214,15 @@ function populateOnOffDetailMonthFilter(){
 function populateOnOffDetailRegionFilter(){
   const sel = document.getElementById('onoffDetailRegionFilter');
   if(!sel) return;
+  if(isTrainer() && session.region){
+    // Khoá cứng đúng khu vực Trainer — không có bộ lọc riêng nào được phép chọn khu vực khác.
+    sel.innerHTML = `<option value="${session.region}">${session.region}</option>`;
+    sel.value = session.region;
+    sel.disabled = true;
+    onoffDetailRegion = session.region;
+    return;
+  }
+  sel.disabled = false;
   const regions = visibleRegions();
   const cur = sel.value;
   sel.innerHTML = '<option value="">Tất cả khu vực</option>' + regions.map(r=>`<option value="${r}">${r}</option>`).join('');
@@ -6284,11 +6306,13 @@ async function renderFrequencyNoiboBody_(subtype){
 
     const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||p.trainerId===session.trainerId));
     html+=`<h3 class="kpi-section-title">Danh sách PGs chưa hoàn thành Test Online</h3><p class="section-desc">Chỉ hiển thị PG có <strong>Lần đạt điểm max &lt; ${x}</strong>. Dữ liệu lấy theo <strong>Mã NV</strong>; khi đạt ≥ ${x} lần, PG tự chuyển trạng thái Đạt.</p>`;
-    html+=`<div class="form-card" style="max-width:none;margin:0 0 14px;"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <input type="file" id="testOnlineImportInput" accept=".xlsx,.xls" style="display:none;">
-      ${isAdmin()?`<button class="primary" id="testOnlineImportBtn" type="button">📥 Import data Test Online</button><button class="secondary admin-only-gsheet" id="testOnlineSheetLinkBtn" type="button">🔗 Cập nhật data Google Sheet</button>`:''}
-      <span class="save-msg" id="testOnlineImportMsg" style="display:none;"></span></div>
-      <div class="section-desc" style="margin-top:8px;">Hệ thống đọc cột <strong>Mã NV</strong> và <strong>Lần đạt điểm max</strong>.</div></div>`;
+    if(isAdmin()){
+      html+=`<div class="form-card" style="max-width:none;margin:0 0 14px;"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="file" id="testOnlineImportInput" accept=".xlsx,.xls" style="display:none;">
+        <button class="primary" id="testOnlineImportBtn" type="button">📥 Import data Test Online</button><button class="secondary admin-only-gsheet" id="testOnlineSheetLinkBtn" type="button">🔗 Cập nhật data Google Sheet</button>
+        <span class="save-msg" id="testOnlineImportMsg" style="display:none;"></span></div>
+        <div class="section-desc" style="margin-top:8px;">Hệ thống đọc cột <strong>Mã NV</strong> và <strong>Lần đạt điểm max</strong>.</div></div>`;
+    }
     html+=`<div id="testOnlineIncompleteListBox"></div>`;
     container.innerHTML=html;
 
@@ -6395,11 +6419,13 @@ async function renderFrequencyNoiboBody_(subtype){
   const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||p.trainerId===session.trainerId));
   html+=`<h3 class="kpi-section-title">Danh sách PGs — Tư vấn AI & Check shop</h3>
     <p class="section-desc">Tư vấn AI lấy từ cột <strong>Kết quả Luyện TV</strong> (ví dụ 3/7 → 3 lần đạt). PG đạt khi ≥ ${aiThreshold}. Check shop lấy từ cột <strong>Kết quả Check</strong>; giá trị <strong>Pass</strong> được tính Đạt.</p>`;
-  html+=`<div class="form-card" style="max-width:none;margin:0 0 14px;"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <input type="file" id="aiCheckImportInput" accept=".xlsx,.xls" style="display:none;">
-    ${isAdmin()?`<button class="primary" id="aiCheckImportBtn" type="button">📥 Import data Tư vấn AI & Check shop</button><button class="secondary admin-only-gsheet" id="aiCheckSheetLinkBtn" type="button">🔗 Cập nhật từ Google Sheet</button>`:''}
-    <button class="secondary" id="downloadAiCheckTemplateBtn" type="button">⬇ Tải data mẫu</button>
-    <span class="save-msg" id="aiCheckImportMsg" style="display:none;"></span></div></div>`;
+  if(isAdmin()){
+    html+=`<div class="form-card" style="max-width:none;margin:0 0 14px;"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <input type="file" id="aiCheckImportInput" accept=".xlsx,.xls" style="display:none;">
+      <button class="primary" id="aiCheckImportBtn" type="button">📥 Import data Tư vấn AI & Check shop</button><button class="secondary admin-only-gsheet" id="aiCheckSheetLinkBtn" type="button">🔗 Cập nhật từ Google Sheet</button>
+      <button class="secondary" id="downloadAiCheckTemplateBtn" type="button">⬇ Tải data mẫu</button>
+      <span class="save-msg" id="aiCheckImportMsg" style="display:none;"></span></div></div>`;
+  }
   html+=`<div id="aiCheckListBox"></div>`;
   container.innerHTML=html;
 
@@ -6563,12 +6589,14 @@ async function renderPartnerTrainingRegionProgress_(subtype){
       <td><textarea class="partner-training-note" data-region="${r.region.replace(/"/g,'&quot;')}" rows="2" placeholder="Note khi có vấn đề..." style="width:100%;min-width:190px;resize:vertical;">${String(r.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea></td></tr>`;
   });
   html+=`</tbody></table></div>`;
-  html+=`<div class="form-card" style="max-width:none;margin-top:14px;"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <input type="file" id="partnerTrainingActualImportInput-${subtype}" accept=".xlsx,.xls" style="display:none;">
-    ${isAdmin()?`<button class="primary" id="partnerTrainingActualImportBtn-${subtype}" type="button">📥 Import data ${subtype==='hub'?'Hub':'Workshop'}</button><button class="secondary admin-only-gsheet" id="partnerTrainingActualSheetLinkBtn-${subtype}" type="button">🔗 Cập nhật từ Google Sheet</button>`:''}
-    <button class="secondary" id="downloadPartnerTrainingActualTemplateBtn-${subtype}" type="button">⬇ Tải data mẫu</button>
-    <span class="save-msg" id="partnerTrainingActualImportMsg-${subtype}" style="display:none;"></span>
-  </div><div class="section-desc" style="margin-top:9px;">File mẫu dùng cột <strong>oppo_areas</strong> để nhận diện Khu vực; chỉ dòng <strong>status = Done</strong> được tính Số buổi. Số học viên lấy từ <strong>Số lượng thực tế</strong>; khảo sát lấy từ <strong>Điểm Khảo Sát (TB)</strong>.</div></div>`;
+  if(isAdmin()){
+    html+=`<div class="form-card" style="max-width:none;margin-top:14px;"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <input type="file" id="partnerTrainingActualImportInput-${subtype}" accept=".xlsx,.xls" style="display:none;">
+      <button class="primary" id="partnerTrainingActualImportBtn-${subtype}" type="button">📥 Import data ${subtype==='hub'?'Hub':'Workshop'}</button><button class="secondary admin-only-gsheet" id="partnerTrainingActualSheetLinkBtn-${subtype}" type="button">🔗 Cập nhật từ Google Sheet</button>
+      <button class="secondary" id="downloadPartnerTrainingActualTemplateBtn-${subtype}" type="button">⬇ Tải data mẫu</button>
+      <span class="save-msg" id="partnerTrainingActualImportMsg-${subtype}" style="display:none;"></span>
+    </div><div class="section-desc" style="margin-top:9px;">File mẫu dùng cột <strong>oppo_areas</strong> để nhận diện Khu vực; chỉ dòng <strong>status = Done</strong> được tính Số buổi. Số học viên lấy từ <strong>Số lượng thực tế</strong>; khảo sát lấy từ <strong>Điểm Khảo Sát (TB)</strong>.</div></div>`;
+  }
   box.innerHTML=html;
   box.querySelectorAll('.partner-training-note').forEach(el=>{
     el.addEventListener('change',async()=>{
@@ -7230,6 +7258,7 @@ async function processCoachingHistoryWorkbook_(wb){
 function renderCoachingImportBox(){
   const box = document.getElementById('coachingImportBox');
   if(!box) return;
+  if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
   const canEdit = isAdmin() && !monthLocked;
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import kết quả khảo sát Coaching (PGs 0★/1★ &amp; PGs mới) — ${monthLabel(currentMonth)}</h3>
@@ -7237,7 +7266,7 @@ function renderCoachingImportBox(){
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <input type="file" id="coachingImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary" id="downloadCoachingTemplateBtn" type="button">⬇ Tải file mẫu</button>
-      ${isAdmin()?`<button class="secondary admin-only-gsheet" id="coachingSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>`:''}
+      <button class="secondary admin-only-gsheet" id="coachingSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>
       <span class="save-msg" id="coachingImportMsg" style="display:none;"></span>
     </div>
   </div>`;
@@ -8727,6 +8756,7 @@ async function processWorkshopActualWorkbook_(wb, camp){
 function renderWorkshopActualImportBox_(){
   const box=document.getElementById('workshopActualImportBox');
   if(!box) return;
+  if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
   const camp=campaigns.find(c=>c.month===currentMonth && c.group==='noibo' && campaignSubtype(c)==='workshop');
   if(!camp){
     box.innerHTML='<div class="empty">Chưa có chiến dịch Nội bộ - Workshop trong tháng đang xem. Hãy tạo chiến dịch trước.</div>';
@@ -8735,8 +8765,8 @@ function renderWorkshopActualImportBox_(){
   box.innerHTML=`<div class="form-card" style="max-width:none;margin-bottom:16px;">
     <p class="section-desc" style="margin-bottom:10px;">File kết quả dùng cùng cấu trúc với file Target Workshop. <strong>Trạng thái = Done</strong> được tính là hoàn thành 1 buổi Workshop; <strong>HV thực tế</strong> của các dòng Done được cộng vào tiến độ Số học viên. Dòng còn <strong>Plan</strong> chưa tính hoàn thành.</p>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <input type="file" id="workshopActualImportInput" accept=".xlsx,.xls" ${isAdmin()?'':'disabled'}>
-      ${isAdmin()?`<button class="secondary admin-only-gsheet" id="workshopActualSheetLinkBtn" type="button">🔗 Cập nhật từ Google Sheet</button>`:''}
+      <input type="file" id="workshopActualImportInput" accept=".xlsx,.xls">
+      <button class="secondary admin-only-gsheet" id="workshopActualSheetLinkBtn" type="button">🔗 Cập nhật từ Google Sheet</button>
       <button class="secondary" id="downloadWorkshopActualTemplateBtn" type="button">⬇ Tải data mẫu</button>
       <span class="save-msg" id="workshopActualImportMsg" style="display:none;"></span>
     </div>
