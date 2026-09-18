@@ -1087,8 +1087,12 @@
         <div id="coachingImportBox"></div>
       </div>
       <div id="panel-data-kpi-doitac" class="panel">
-        <div id="ftfImportBox"></div>
-        <p class="section-desc">Riêng <strong>Import Target FTF theo từng chiến dịch</strong> cần chọn đúng chiến dịch trước — vẫn nằm ở <strong>Cài đặt ▸ Target</strong> (chọn chiến dịch Loại "FTF").</p>
+        <div class="cfg-card">
+          <h3>Import kết quả FTF Đối tác</h3>
+          <p class="section-desc">Import FTF Đối tác cần xem cùng bảng Tiến độ theo Khu vực/Trainer, nên đã chuyển về đúng chỗ: <strong>Tiến độ KPI ▸ Đối tác ▸ FTF</strong>. Mục này chỉ là lối tắt.</p>
+          <button class="secondary" id="dataGoToFtfBtn" type="button">→ Đi tới Tiến độ KPI ▸ Đối tác ▸ FTF</button>
+        </div>
+        <p class="section-desc">Riêng <strong>Import Target FTF theo từng chiến dịch</strong> cần chọn đúng chiến dịch trước — vẫn nằm ở <strong>Cài đặt ▸ Target</strong> (chọn chiến dịch Loại "FTF"). <strong>Import Hub/Workshop Đối tác</strong> cũng nằm ngay tại <strong>Tiến độ KPI ▸ Đối tác ▸ Hub/Workshop</strong>.</p>
       </div>
       <div id="panel-data-kpi-truyenthong" class="panel">
         <div class="cfg-card">
@@ -6662,8 +6666,7 @@ function renderKpiCategoryLegacyBody_(catKey){
     </div>`;
     html += `<div id="doitacProgressTableBox"></div>`;
 
-    html += `<p class="section-desc" style="margin-top:14px;">Import dữ liệu Training F2F đã được dời về tag <strong>DATA ▸ Kết quả KPI ▸ Đối tác</strong> để gom import về 1 mối.</p>`;
-
+    html += `<div id="ftfImportBox"></div>`;
     html += `<h3 class="kpi-section-title">Danh sách SHOP FTF — ${monthLabel(currentMonth)}</h3>`;
     html += `<div id="ftfShopListBox"></div>`;
   }
@@ -9212,7 +9215,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     document.getElementById('pageTitleHeader').textContent=btn.dataset.title||btn.textContent.trim();
-    if(btn.dataset.tab==='data'){ renderCoachingImportBox(); renderFtfImportBox(); }
+    if(btn.dataset.tab==='data'){ renderCoachingImportBox(); }
     if(btn.dataset.tab==='so'){ loadSoData_().then(()=>{ renderSoListTab_(); }); }
   });
 });
@@ -9266,7 +9269,6 @@ document.querySelectorAll('[data-dsub2]').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('panel-data-'+btn.dataset.dsub2).classList.add('active');
     if(btn.dataset.dsub2==='kpi-noibo') renderCoachingImportBox();
-    if(btn.dataset.dsub2==='kpi-doitac') renderFtfImportBox();
   });
 });
 const updateAllGoogleSheetBtn = document.getElementById('updateAllGoogleSheetBtn');
@@ -9276,6 +9278,13 @@ const dataGoToTTBtn = document.getElementById('dataGoToTruyenThongBtn');
 if(dataGoToTTBtn) dataGoToTTBtn.addEventListener('click', ()=>{
   document.querySelector('nav.tabs button[data-tab="kpi"]').click();
   document.querySelector('#tab-kpi [data-kpi="truyenthong"]').click();
+});
+const dataGoToFtfBtn = document.getElementById('dataGoToFtfBtn');
+if(dataGoToFtfBtn) dataGoToFtfBtn.addEventListener('click', ()=>{
+  document.querySelector('nav.tabs button[data-tab="kpi"]').click();
+  document.querySelector('#tab-kpi [data-kpi="doitac"]').click();
+  kpiSubtype.doitac = 'ftf';
+  renderKpiCategory('doitac');
 });
 
 /* ============ CHỐT DỮ LIỆU THEO THÁNG ============ */
