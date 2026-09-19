@@ -7628,7 +7628,7 @@ function renderNewPgList(){
     let isLate = false;
     if(daysSinceJoin>=14 && cnt<2) isLate = true;
     else if(daysSinceJoin>=7 && cnt<1) isLate = true;
-    if(isLate) lateList.push({ ...r, trainerName: tr?tr.name:'—', cnt, daysSinceJoin });
+    if(isLate && effectivePgMoiStatus_(r)==='Đang làm') lateList.push({ ...r, trainerName: tr?tr.name:'—', cnt, daysSinceJoin });
     return `<tr${isLate?' style="background:var(--red-bg);"':''}${r.statusChangedAt?' class="pg-status-changed"':''}>
       <td>${idx+1}</td>
       <td>${r.code||'—'}</td>
@@ -7687,7 +7687,7 @@ function renderNewPgList25_(){
     let isLate = false;
     if(daysSinceJoin>=14 && cnt<2) isLate = true;
     else if(daysSinceJoin>=7 && cnt<1) isLate = true;
-    if(isLate) lateList.push({ ...r, trainerName: tr?tr.name:'—', cnt, daysSinceJoin });
+    if(isLate && effectivePgMoiStatus_(r)==='Đang làm') lateList.push({ ...r, trainerName: tr?tr.name:'—', cnt, daysSinceJoin });
     return `<tr${isLate?' style="background:var(--red-bg);"':''}${r.statusChangedAt?' class="pg-status-changed"':''}>
       <td>${idx+1}</td>
       <td>${r.code||'—'}</td>
