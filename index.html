@@ -3481,44 +3481,58 @@ function renderDoitacF2FChart(mode){
     }
   });
 }
-/* ============ IMPORT DỮ LIỆU TRAINING F2F ĐỐI TÁC (file 2 sheet: Tong Hop F2F + Chi Tiet Check-in) ============ */
+/* ============ IMPORT DỮ LIỆU TRAINING F2F ĐỐI TÁC (file 2 sheet: Tong Hop F2F + Chi Tiet Check-in) ============
+   QUAN TRỌNG: đọc dữ liệu theo TÊN CỘT (không theo vị trí cố định như trước) — an toàn hơn nhiều nếu
+   Google Sheet thật của người dùng có thêm/bớt/đổi thứ tự cột so với file mẫu gốc (trước đây dùng
+   row[14] để lấy Trạng Thái — nếu Sheet thật lỡ có thêm 1 cột ở đâu đó, mọi thứ phía sau bị lệch
+   hoàn toàn mà không báo lỗi gì, khiến Shop status luôn đọc sai/rỗng → tiến độ hoàn thành không lên). */
 async function processFtfWorkbook_(wb){
   const sheet1Name = wb.SheetNames.find(n=>n.toLowerCase().includes('tong hop')) || wb.SheetNames[0];
   const sheet2Name = wb.SheetNames.find(n=>n.toLowerCase().includes('check-in')) || wb.SheetNames[1];
   const ws1 = wb.Sheets[sheet1Name];
   const ws2 = wb.Sheets[sheet2Name];
-  const rows1 = XLSX.utils.sheet_to_json(ws1, { header:1, defval:'' }).slice(1);
-  const rows2 = ws2 ? XLSX.utils.sheet_to_json(ws2, { header:1, defval:'' }).slice(1) : [];
+  const rows1 = XLSX.utils.sheet_to_json(ws1, { defval:'' });
+  const rows2 = ws2 ? XLSX.utils.sheet_to_json(ws2, { defval:'' }) : [];
+  // V(row, ...keys): thử LẦN LƯỢT các tên cột có thể có (đề phòng người dùng đặt tên hơi khác, VD
+  // "Tỉnh" thay vì "Tỉnh/Thành") — lấy giá trị của tên cột ĐẦU TIÊN khớp và có dữ liệu.
+  const V = (row, ...keys) => { for(const k of keys){ if(row[k]!==undefined && row[k]!=='') return row[k]; } return ''; };
 
   const shopMap = {};
   rows1.forEach(row=>{
-    if(!row || !row[0]) return;
-    const code = String(row[0]).trim();
+    const code = String(V(row,'Mã Shop','Ma Shop','Store ID')||'').trim();
+    if(!code) return;
     shopMap[code] = {
-      shopCode: code, shopName: String(row[1]||'').trim(), channel: String(row[2]||'').trim(),
-      region: String(row[4]||'').trim(), province: String(row[5]||'').trim(),
-      trainerName: String(row[9]||'').trim(),
-      hrTarget: Number(row[12])||0, hrActual: Number(row[13])||0,
-      status: String(row[14]||'').trim(),
+      shopCode: code,
+      shopName: String(V(row,'Tên Shop','Ten Shop','Store name')||'').trim(),
+      channel: String(V(row,'Kênh','Kenh')||'').trim(),
+      region: String(V(row,'Khu vực','Khu vuc')||'').trim(),
+      province: String(V(row,'Tỉnh/Thành','Tỉnh','Tinh')||'').trim(),
+      trainerName: String(V(row,'Người Train','Nguoi Train','TRAINER','Trainer')||'').trim(),
+      hrTarget: Number(V(row,'SL Dự Kiến','SL Du Kien'))||0,
+      hrActual: Number(V(row,'Số Đã Train','So Da Train'))||0,
+      status: String(V(row,'Trạng Thái','Trang Thai')||'').trim().toUpperCase(),
       testTotal:0, testPass:0, aiTotal:0, aiDone:0, surveyTotal:0, surveyDone:0,
     };
   });
   rows2.forEach(row=>{
-    if(!row || !row[1]) return;
-    const code = String(row[1]).trim();
+    const code = String(V(row,'Mã Shop','Ma Shop')||'').trim();
+    if(!code) return;
     if(!shopMap[code]){
       shopMap[code] = {
-        shopCode: code, shopName: String(row[6]||'').trim(), channel: String(row[2]||'').trim(),
-        region: String(row[4]||'').trim(), province: String(row[5]||'').trim(),
-        trainerName: String(row[8]||'').trim(),
+        shopCode: code,
+        shopName: String(V(row,'Shop','Tên Shop','Ten Shop')||'').trim(),
+        channel: String(V(row,'Kênh','Kenh')||'').trim(),
+        region: String(V(row,'Khu vực','Khu vuc')||'').trim(),
+        province: String(V(row,'Tỉnh','Tỉnh/Thành','Tinh')||'').trim(),
+        trainerName: String(V(row,'Người Train','Nguoi Train','TRAINER','Trainer')||'').trim(),
         hrTarget:0, hrActual:0, status:'',
         testTotal:0, testPass:0, aiTotal:0, aiDone:0, surveyTotal:0, surveyDone:0,
       };
     }
     const s = shopMap[code];
-    s.testTotal++; if(String(row[11]||'').trim()==='Pass') s.testPass++;
-    s.aiTotal++; const aiVal=String(row[10]||'').trim(); if(aiVal && aiVal!=='Chưa làm') s.aiDone++;
-    s.surveyTotal++; if(String(row[12]||'').trim()==='Done') s.surveyDone++;
+    s.testTotal++; if(String(V(row,'Test online','Test Online')||'').trim().toUpperCase()==='PASS') s.testPass++;
+    s.aiTotal++; const aiVal=String(V(row,'Trạng thái tư vấn mẫu','Trang thai tu van mau')||'').trim(); if(aiVal && aiVal.toUpperCase()!=='CHƯA LÀM'.toUpperCase() && normTrName_(aiVal)!=='CHUA LAM') s.aiDone++;
+    s.surveyTotal++; if(String(V(row,'Khảo sát','Khao sat')||'').trim().toUpperCase()==='DONE') s.surveyDone++;
   });
 
   let shopArr = Object.values(shopMap);
@@ -3545,7 +3559,7 @@ async function processFtfWorkbook_(wb){
     const rec = trainerRecord(t.id);
     const shopsOfTrainer = ftfShopList.filter(s=>s.trainerId===t.id);
     rec.ftfShopTarget = shopsOfTrainer.length;
-    rec.ftfShopActual = shopsOfTrainer.filter(s=>s.status==='Done').length;
+    rec.ftfShopActual = shopsOfTrainer.filter(s=>s.status==='DONE').length;
     rec.ftfHrTarget = shopsOfTrainer.reduce((sum,s)=>sum+s.hrTarget,0);
     rec.ftfHrActual = shopsOfTrainer.reduce((sum,s)=>sum+s.hrActual,0);
     rec.ftfBaiTestTarget = shopsOfTrainer.reduce((sum,s)=>sum+s.testTotal,0);
@@ -4071,7 +4085,7 @@ function ftfChannelStats_(shops, trainerIds){
   shops.forEach(s=>{
     const g = channelGroup(s.channel);
     if(g!=='K.A' && g!=='MWG') return;
-    if(s.status==='Done') out.ftfShop[g].a += 1;
+    if(s.status==='DONE') out.ftfShop[g].a += 1;
     out.ftfHr[g].a += Number(s.hrActual)||0;
     out.ftfBaiTest[g].a += Number(s.testPass)||0;
     out.ftfTuVanAI[g].a += Number(s.aiDone)||0;
@@ -4236,7 +4250,7 @@ function renderFtfShopListBox(){
       <td>${s.region||'—'}</td>
       <td>${s.shopName||s.shopCode}</td>
       <td>${ftfShopSizeOf_(s)}</td>
-      <td><span class="status-badge ${s.status==='Done'?'st-dangl':'st-tamoff'}">${s.status||'Chưa'}</span></td>
+      <td><span class="status-badge ${s.status==='DONE'?'st-dangl':'st-tamoff'}">${s.status==='DONE'?'Done':(s.status==='PLAN'?'Plan':(s.status||'Chưa'))}</span></td>
       <td>${s.hrActual}/${s.hrTarget}</td>
       <td>${s.testPass}/${s.testTotal}</td>
       <td>${s.aiDone}/${s.aiTotal}</td>
