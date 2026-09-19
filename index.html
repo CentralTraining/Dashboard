@@ -4285,40 +4285,122 @@ function ftfShopSizeOf_(shop){
   const match = ftfTargetByStoreIdMap_.get(shop.shopCode);
   return (match && match.shopSize) ? match.shopSize : '—';
 }
+let ftfShopListPage_ = 1;
+const FTF_SHOP_PAGE_SIZE = 10;
+let ftfShopFilterTrainer_ = '';
+let ftfShopFilterStatus_ = '';
+let ftfShopFilterIncomplete_ = false; // chỉ hiện Shop chưa đủ Test/Khảo sát
 function renderFtfShopListBox(){
   const box=document.getElementById('ftfShopListBox');
   if(!box) return;
   const tList = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
   const trainerIds = new Set(tList.map(t=>t.id));
-  const list = ftfShopList.filter(s=> s.trainerId && trainerIds.has(s.trainerId));
+  let list = ftfShopList.filter(s=> s.trainerId && trainerIds.has(s.trainerId));
   const canEditNote = isAdmin() || isTrainer();
 
   if(list.length===0){
     box.innerHTML = `<div class="empty">Chưa có dữ liệu Shop FTF trong ${monthLabel(currentMonth)} — import ở mục phía trên.</div>`;
     return;
   }
-  let html = `<table class="coaching-table" style="table-layout:auto;"><thead><tr><th>Khu vực</th><th>Shop</th><th>Size shop</th><th>Đã Training</th><th>HR</th><th>Bài test</th><th>Tư vấn mẫu AI</th><th>Khảo sát</th><th>Note (Shop đóng cửa...)</th></tr></thead><tbody>`;
-  list.forEach(s=>{
-    html += `<tr${s.closedNote?' style="background:var(--red-bg);"':''}>
-      <td>${s.region||'—'}</td>
-      <td>${s.shopName||s.shopCode}</td>
-      <td>${ftfShopSizeOf_(s)}</td>
-      <td><span class="status-badge ${s.status==='DONE'?'st-dangl':'st-tamoff'}">${s.status==='DONE'?'Done':(s.status==='PLAN'?'Plan':(s.status||'Chưa'))}</span></td>
-      <td>${s.hrActual}/${s.hrTarget}</td>
-      <td>${s.testPass}/${s.testTotal}</td>
-      <td>${s.aiDone}/${s.aiTotal}</td>
-      <td>${s.surveyDone}/${s.surveyTotal}</td>
-      <td><input type="text" class="ftf-shop-note-input" data-shop-id="${s.id}" value="${(s.closedNote||'').replace(/"/g,'&quot;')}" placeholder="VD: Shop đã đóng cửa" style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);" ${canEditNote?'':'disabled'}></td>
-    </tr>`;
-  });
-  html += `</tbody></table>`;
-  box.innerHTML = html;
-  box.querySelectorAll('.ftf-shop-note-input').forEach(inp=>{
-    inp.addEventListener('change', async ()=>{
-      const shop = ftfShopList.find(s=>s.id===inp.getAttribute('data-shop-id'));
-      if(!shop) return;
-      shop.closedNote = inp.value.trim();
-      await dbSet('ftfShopList:'+currentMonth, ftfShopList);
+
+  // Áp bộ lọc: Trainer, Trạng thái (Đã Training = Done hay chưa), Shop chưa đủ Test/Khảo sát
+  if(ftfShopFilterTrainer_) list = list.filter(s=>s.trainerId===ftfShopFilterTrainer_);
+  if(ftfShopFilterStatus_==='done') list = list.filter(s=>s.status==='DONE');
+  else if(ftfShopFilterStatus_==='chua') list = list.filter(s=>s.status!=='DONE');
+  if(ftfShopFilterIncomplete_) list = list.filter(s=> s.testPass<s.testTotal || s.surveyDone<s.surveyTotal);
+
+  const totalItems = list.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems/FTF_SHOP_PAGE_SIZE));
+  if(ftfShopListPage_>totalPages) ftfShopListPage_ = totalPages;
+  if(ftfShopListPage_<1) ftfShopListPage_ = 1;
+  const startIdx = (ftfShopListPage_-1)*FTF_SHOP_PAGE_SIZE;
+  const pageList = list.slice(startIdx, startIdx+FTF_SHOP_PAGE_SIZE);
+
+  const trainerOptions = tList.slice().sort((a,b)=>a.name.localeCompare(b.name,'vi'))
+    .map(t=>`<option value="${t.id}" ${ftfShopFilterTrainer_===t.id?'selected':''}>${t.name}</option>`).join('');
+
+  let html = `<div class="scope-filters" style="margin-bottom:12px;flex-wrap:wrap;">
+    <span class="scope-label">Trainer:</span>
+    <select id="ftfShopFilterTrainerSel"><option value="">Tất cả Trainer</option>${trainerOptions}</select>
+    <span class="scope-label" style="margin-left:6px;">Đã Training:</span>
+    <select id="ftfShopFilterStatusSel">
+      <option value="" ${ftfShopFilterStatus_===''?'selected':''}>Tất cả</option>
+      <option value="done" ${ftfShopFilterStatus_==='done'?'selected':''}>Done</option>
+      <option value="chua" ${ftfShopFilterStatus_==='chua'?'selected':''}>Chưa Done</option>
+    </select>
+    <label style="display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:var(--cap);cursor:pointer;">
+      <input type="checkbox" id="ftfShopFilterIncompleteChk" ${ftfShopFilterIncomplete_?'checked':''}> Chỉ hiện Shop chưa đủ (Test/Khảo sát)
+    </label>
+  </div>`;
+
+  if(pageList.length===0){
+    html += `<div class="empty">Không có Shop nào khớp bộ lọc.</div>`;
+    box.innerHTML = html;
+  } else {
+    html += `<table class="coaching-table" style="table-layout:auto;"><thead><tr><th>Khu vực</th><th>Shop</th><th>Size shop</th><th>Đã Training</th><th>HR</th><th>Bài test</th><th>Tư vấn mẫu AI</th><th>Khảo sát</th><th>Chưa đủ</th><th>Note (Shop đóng cửa...)</th></tr></thead><tbody>`;
+    pageList.forEach(s=>{
+      const missing = [];
+      if(s.testPass<s.testTotal) missing.push('Test');
+      if(s.surveyDone<s.surveyTotal) missing.push('Khảo sát');
+      html += `<tr${s.closedNote?' style="background:var(--red-bg);"':''}>
+        <td>${s.region||'—'}</td>
+        <td>${s.shopName||s.shopCode}</td>
+        <td>${ftfShopSizeOf_(s)}</td>
+        <td><span class="status-badge ${s.status==='DONE'?'st-dangl':'st-tamoff'}">${s.status==='DONE'?'Done':(s.status==='PLAN'?'Plan':(s.status||'Chưa'))}</span></td>
+        <td>${s.hrActual}/${s.hrTarget}</td>
+        <td>${s.testPass}/${s.testTotal}</td>
+        <td>${s.aiDone}/${s.aiTotal}</td>
+        <td>${s.surveyDone}/${s.surveyTotal}</td>
+        <td>${missing.length?`<span style="color:var(--red);font-weight:700;font-size:var(--tag);">⚠ ${missing.join(', ')}</span>`:'<span style="color:var(--green-ok);">✓ Đủ</span>'}</td>
+        <td><input type="text" class="ftf-shop-note-input" data-shop-id="${s.id}" value="${(s.closedNote||'').replace(/"/g,'&quot;')}" placeholder="VD: Shop đã đóng cửa" style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);" ${canEditNote?'':'disabled'}></td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+    html += `<div class="pagination" id="ftfShopPagination" style="margin-top:12px;"></div>`;
+    box.innerHTML = html;
+    box.querySelectorAll('.ftf-shop-note-input').forEach(inp=>{
+      inp.addEventListener('change', async ()=>{
+        const shop = ftfShopList.find(s=>s.id===inp.getAttribute('data-shop-id'));
+        if(!shop) return;
+        shop.closedNote = inp.value.trim();
+        await dbSet('ftfShopList:'+currentMonth, ftfShopList);
+      });
+    });
+    renderFtfShopPagination_(totalItems);
+  }
+
+  const trainerSel = document.getElementById('ftfShopFilterTrainerSel');
+  if(trainerSel) trainerSel.addEventListener('change', ()=>{ ftfShopFilterTrainer_=trainerSel.value; ftfShopListPage_=1; renderFtfShopListBox(); });
+  const statusSel = document.getElementById('ftfShopFilterStatusSel');
+  if(statusSel) statusSel.addEventListener('change', ()=>{ ftfShopFilterStatus_=statusSel.value; ftfShopListPage_=1; renderFtfShopListBox(); });
+  const incompleteChk = document.getElementById('ftfShopFilterIncompleteChk');
+  if(incompleteChk) incompleteChk.addEventListener('change', ()=>{ ftfShopFilterIncomplete_=incompleteChk.checked; ftfShopListPage_=1; renderFtfShopListBox(); });
+}
+function renderFtfShopPagination_(totalItems){
+  const box = document.getElementById('ftfShopPagination');
+  if(!box) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems/FTF_SHOP_PAGE_SIZE));
+  if(totalItems===0){ box.innerHTML=''; return; }
+  let pageButtons='';
+  const maxShown = 7;
+  let start = Math.max(1, ftfShopListPage_ - 3);
+  let end = Math.min(totalPages, start + maxShown - 1);
+  start = Math.max(1, end - maxShown + 1);
+  for(let i=start;i<=end;i++){
+    pageButtons += `<button data-ftf-shop-page="${i}" class="${i===ftfShopListPage_?'active':''}">${i}</button>`;
+  }
+  const from = (ftfShopListPage_-1)*FTF_SHOP_PAGE_SIZE + 1;
+  const to = Math.min(ftfShopListPage_*FTF_SHOP_PAGE_SIZE, totalItems);
+  box.innerHTML = `
+    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} Shop</span>
+    <button data-ftf-shop-page="${ftfShopListPage_-1}" ${ftfShopListPage_<=1?'disabled':''}>‹</button>
+    ${pageButtons}
+    <button data-ftf-shop-page="${ftfShopListPage_+1}" ${ftfShopListPage_>=totalPages?'disabled':''}>›</button>
+  `;
+  box.querySelectorAll('[data-ftf-shop-page]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      ftfShopListPage_ = Number(btn.getAttribute('data-ftf-shop-page'));
+      renderFtfShopListBox();
     });
   });
 }
