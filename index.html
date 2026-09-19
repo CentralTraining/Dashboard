@@ -6995,6 +6995,7 @@ function renderKpiCategoryLegacyBody_(catKey){
   if(catKey!=='noibo' && catKey!=='doitac'){
     // (Đã bỏ biểu đồ "Tiến độ theo Khu vực"/"Tiến độ theo Trainer" theo yêu cầu — chỉ còn bảng Nhập số liệu Thực tế)
   } else if(catKey==='noibo'){
+    syncAllPgMoiTargets();
     renderNoiboProgressTable();
   }
 
@@ -7086,6 +7087,18 @@ function syncPgMoiActualFromSurvey(trainerId){
 }
 function syncAllPgMoiActuals(){
   visibleTrainers().forEach(t=> syncPgMoiActualFromSurvey(t.id));
+}
+/* Làm mới rec.pgMoiTarget cho MỌI Trainer trước khi hiển thị bảng Tiến độ PGs Dev — tránh hiện giá
+   trị Target cũ đã lưu từ trước (VD: PG vừa bị đổi trạng thái khác "Đang làm" ở Danh sách Nhân sự,
+   Target phải tự giảm ngay, không cần đợi Admin vào lại Cài đặt ▸ Target mới thấy đúng số liệu).
+   Vẫn tôn trọng đúng cơ chế "chờ Admin duyệt": Trainer nào đang có yêu cầu đổi Target chờ duyệt thì
+   GIỮ NGUYÊN giá trị cũ, không tự ghi đè. */
+function syncAllPgMoiTargets(){
+  visibleTrainers().forEach(t=>{
+    const hasPending = pendingTargetAdjustments.some(pa=>pa.trainerId===t.id && pa.month===currentMonth);
+    if(hasPending) return;
+    trainerRecord(t.id).pgMoiTarget = countNewPgsByTrainer(t.id, currentMonth) * 2;
+  });
 }
 /* ============ TOGGLE VIEW: PGs 0-1 sao vs PGs mới ============ */
 let noiboActiveView='pg01';
@@ -8986,9 +8999,12 @@ function ftfTargetFallbackFromShopList_(trainerId, metricKey, chanGroup){
 function countNewPgsByTrainer(trainerId, campaignMonth){
   // "PGs mới tuyển trong tháng X" = tra trực tiếp Danh sách On (onoffRoster, đã xác nhận chính xác
   // ở tag On/Off) — đếm số bản ghi có Joined at rơi đúng vào tháng X và đúng Trainer đó.
-  // PGs nào đã được Trainer note "OFF (chưa cắt Center)" hoặc "CODE ĐẠI LÝ" thì loại khỏi Target
-  // (Target = số PGs mới × 2, nên loại 1 PG tự động trừ đúng 2 lượt Target).
-  return onoffRoster.filter(r=> r.trainerId===trainerId && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===campaignMonth && !r.devStatusNote).length;
+  // QUAN TRỌNG: loại PG khỏi Target nếu Trạng thái THỰC TẾ hiện tại (tra theo Code trong Danh sách
+  // Nhân sự chính — effectivePgMoiStatus_, không phải chỉ riêng devStatusNote) khác "Đang làm" — VD
+  // Trainer đổi trạng thái PG thành "OFF (chưa cắt Center)"/"CODE ĐẠI LÝ"/"Thai sản" ngay tại Danh
+  // sách Nhân sự chính (Tổng quan) thì PG đó phải bị loại khỏi Target ngay, không cần thêm thao tác gì
+  // khác. Loại 1 PG tự động trừ đúng 2 lượt Target (vì Target = số PGs mới × 2).
+  return onoffRoster.filter(r=> r.trainerId===trainerId && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===campaignMonth && effectivePgMoiStatus_(r)==='Đang làm').length;
 }
 /* ============ YÊU CẦU CHỜ ADMIN DUYỆT: đổi Target Coaching PGs mới do Trainer note trạng thái PG ============
    Không tự áp dụng ngay — gộp theo Trainer + Tháng (nếu đã có yêu cầu đang chờ thì cập nhật, không tạo trùng),
