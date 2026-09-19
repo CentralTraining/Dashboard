@@ -4157,11 +4157,9 @@ function ftfChannelStats_(shops, trainerIds){
 function progressBarChannelHtml_(valueText, pctVal, color){
   const p = Math.min(100, Math.max(0, pctVal));
   const like = pctVal>=100 ? ' 👍' : '';
-  return `<div style="display:flex;align-items:center;gap:6px;">
-    <div style="position:relative;background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden;height:20px;width:100%;">
-      <div style="position:absolute;left:0;top:0;bottom:0;width:${p}%;background:${color};"></div>
-      <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:100%;font-size:9px;font-weight:800;color:${p>=45?'#fff':'var(--text)'};">${valueText}</div>
-    </div>${like?`<span style="font-size:12px;">${like}</span>`:''}
+  return `<div style="position:relative;background:var(--bg);border:1px solid var(--line);border-radius:5px;overflow:hidden;height:17px;width:100%;">
+    <div style="position:absolute;left:0;top:0;bottom:0;width:${p}%;background:${color};"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:100%;font-size:8px;font-weight:800;color:${p>=45?'#fff':'var(--text)'};white-space:nowrap;">${valueText}${like}</div>
   </div>`;
 }
 function renderDoitacProgressTable(){
@@ -4174,22 +4172,26 @@ function renderDoitacProgressTable(){
   const activeChannels = doitacChannelFilter==='MWG' ? ['MWG'] : (doitacChannelFilter==='K.A' ? ['K.A'] : ['MWG','K.A']);
   const channelLabel = ch=> ch==='K.A' ? 'K.A' : 'MWG';
   const channelColor = ch=> ch==='K.A' ? '#8B1E1E' : CHANNEL_COLORS.MWG;
+  // QUAN TRỌNG: mỗi chỉ số gộp CHUNG 1 CỘT (xếp K.A/MWG chồng lên nhau trong cùng 1 ô, thay vì tách
+  // riêng 2 cột như trước) — giảm từ 10 cột số liệu xuống còn 5 cột, để cả bảng vừa gọn trong màn
+  // hình, không cần kéo ngang mới xem hết được (đúng theo yêu cầu). Khi chỉ lọc xem 1 kênh (K.A hoặc
+  // MWG riêng), mỗi ô chỉ còn đúng 1 dòng như trước.
   const headHtml = `<thead>
-    <tr><th rowspan="2">${doitacViewMode==='region'?'Khu vực':'Trainer'}</th>${doitacViewMode==='trainer'?'<th rowspan="2">Khu vực</th>':''}
-      ${metricDefs.map(m=>`<th colspan="${activeChannels.length}">${m.label}</th>`).join('')}
+    <tr><th>${doitacViewMode==='region'?'Khu vực':'Trainer'}</th>${doitacViewMode==='trainer'?'<th>Khu vực</th>':''}
+      ${metricDefs.map(m=>`<th style="min-width:88px;">${m.label}</th>`).join('')}
     </tr>
-    <tr>${metricDefs.map(()=>activeChannels.map(ch=>`<th>${channelLabel(ch)}</th>`).join('')).join('')}</tr>
   </thead>`;
   const rowCellsHtml = (shops, trainerIds)=>{
     const stats = ftfChannelStats_(shops, trainerIds);
     let sumPct=0, cnt=0;
     const cells = metricDefs.map(m=>{
-      return activeChannels.map(ch=>{
+      const bars = activeChannels.map(ch=>{
         const v = stats[m.key][ch];
         const pRaw = pct(v.a, v.t); const p = pRaw===null?0:pRaw;
         sumPct += p; cnt += 1;
-        return `<td style="min-width:120px;">${progressBarChannelHtml_(`${v.a}/${v.t}·${p}%`, p, channelColor(ch))}</td>`;
-      }).join('');
+        return progressBarChannelHtml_(`${channelLabel(ch)} ${v.a}/${v.t}·${p}%`, p, channelColor(ch));
+      }).join('<div style="height:2px;"></div>');
+      return `<td style="padding:4px 6px;">${bars}</td>`;
     }).join('');
     return { cells, avgPct: cnt ? sumPct/cnt : 0 };
   };
@@ -4202,7 +4204,7 @@ function renderDoitacProgressTable(){
       const { cells, avgPct } = rowCellsHtml(shops, trainerIdsInRegion);
       return { avgPct, html: `<tr><td><strong>${region}</strong></td>${cells}</tr>` };
     }).sort((a,b)=>b.avgPct-a.avgPct);
-    box.innerHTML = `<table>${headHtml}<tbody>${rowsData.map(r=>r.html).join('')}</tbody></table>`;
+    box.innerHTML = `<div style="overflow-x:auto;"><table style="font-size:var(--tag);">${headHtml}<tbody>${rowsData.map(r=>r.html).join('')}</tbody></table></div>`;
   } else {
     const trainers = visibleTrainers();
     if(trainers.length===0){ box.innerHTML=`<div class="empty">Chưa có Trainer trong phạm vi đang xem.</div>`; return; }
@@ -4211,7 +4213,7 @@ function renderDoitacProgressTable(){
       const { cells, avgPct } = rowCellsHtml(shops, new Set([t.id]));
       return { avgPct, html: `<tr><td><strong>${t.name}</strong></td><td>${t.region||'—'}</td>${cells}</tr>` };
     }).sort((a,b)=>b.avgPct-a.avgPct);
-    box.innerHTML = `<table>${headHtml}<tbody>${rowsData.map(r=>r.html).join('')}</tbody></table>`;
+    box.innerHTML = `<div style="overflow-x:auto;"><table style="font-size:var(--tag);">${headHtml}<tbody>${rowsData.map(r=>r.html).join('')}</tbody></table></div>`;
   }
 }
 function renderFtfImportBox(){
