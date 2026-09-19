@@ -3487,63 +3487,108 @@ function renderDoitacF2FChart(mode){
    row[14] để lấy Trạng Thái — nếu Sheet thật lỡ có thêm 1 cột ở đâu đó, mọi thứ phía sau bị lệch
    hoàn toàn mà không báo lỗi gì, khiến Shop status luôn đọc sai/rỗng → tiến độ hoàn thành không lên). */
 async function processFtfWorkbook_(wb){
+  // QUAN TRỌNG: cột "Người Train" trong "Tong Hop F2F"/"Chi Tiet Check-in" KHÔNG PHẢI lúc nào cũng là
+  // Trainer — có thể là Sale, PG, hoặc người khác tuỳ Shop. KHÔNG dùng cột này để xác định Trainer.
+  // Thay vào đó: mỗi Shop được xác định thuộc Trainer/Khu vực nào theo đúng dữ liệu đã map sẵn ở mục
+  // Target FTF (Cài đặt ▸ Target ▸ Target FTF Đối tác theo Shop, khớp theo Mã Shop = Store ID) — vì
+  // đó là nơi Admin đã chủ động gán đúng Shop nào cho Trainer/Khu vực nào. Nếu 1 Shop trong "Tong Hop
+  // F2F" chưa từng xuất hiện trong Target FTF, sẽ không tính được cho Trainer nào (hiện cảnh báo).
+  const ftfCamp = campaigns.find(c=>c.month===currentMonth && c.group==='doitac' && campaignSubtype(c)==='ftf');
+  let targetRowsForMonth = [];
+  if(ftfCamp){
+    targetRowsForMonth = (ftfTargetRows && ftfTargetRows.length) ? ftfTargetRows : ((await dbGet('ftfTargetRows:'+ftfCamp.id)) || []);
+  }
+  // Chuẩn hoá tên Shop để tra khi KHÔNG có Mã Shop (nhiều Shop trong thực tế chưa được gán mã) — bỏ
+  // dấu, viết thường, gộp khoảng trắng, để "Shop A" và "shop  a" vẫn khớp nhau.
+  const normShopName_ = s => normalizeVN(String(s||'')).toLowerCase().replace(/\s+/g,' ').trim();
+  const targetByStoreId_ = new Map(targetRowsForMonth.filter(r=>r.storeId).map(r=>[String(r.storeId).trim(), r]));
+  const targetByStoreName_ = new Map(targetRowsForMonth.filter(r=>r.storeName).map(r=>[normShopName_(r.storeName), r]));
+  // Tra Target của 1 Shop: ưu tiên Mã Shop nếu có; Shop KHÔNG có Mã (rất phổ biến) thì tra theo Tên Shop.
+  const lookupTarget_ = (code, name) => {
+    if(code && targetByStoreId_.has(code)) return targetByStoreId_.get(code);
+    if(name && targetByStoreName_.has(normShopName_(name))) return targetByStoreName_.get(normShopName_(name));
+    return null;
+  };
+
   const sheet1Name = wb.SheetNames.find(n=>n.toLowerCase().includes('tong hop')) || wb.SheetNames[0];
   const sheet2Name = wb.SheetNames.find(n=>n.toLowerCase().includes('check-in')) || wb.SheetNames[1];
   const ws1 = wb.Sheets[sheet1Name];
   const ws2 = wb.Sheets[sheet2Name];
   const rows1 = XLSX.utils.sheet_to_json(ws1, { defval:'' });
   const rows2 = ws2 ? XLSX.utils.sheet_to_json(ws2, { defval:'' }) : [];
-  // V(row, ...keys): thử LẦN LƯỢT các tên cột có thể có (đề phòng người dùng đặt tên hơi khác, VD
-  // "Tỉnh" thay vì "Tỉnh/Thành") — lấy giá trị của tên cột ĐẦU TIÊN khớp và có dữ liệu.
-  const V = (row, ...keys) => { for(const k of keys){ if(row[k]!==undefined && row[k]!=='') return row[k]; } return ''; };
+  // Chuẩn hoá tên cột để so khớp "mờ" — bỏ dấu, viết thường, gộp khoảng trắng — để dù tên cột thật
+  // trên Google Sheet có khác 1 chút so với tên chuẩn (thừa dấu cách, viết hoa/thường khác, thiếu/
+  // thừa dấu gạch) vẫn khớp đúng.
+  const normKey_ = s => normalizeVN(String(s||'')).toLowerCase().replace(/\s+/g,' ').trim();
+  function colGetter_(sampleRow){
+    const keyMap = {}; // ten cot da chuan hoa -> ten cot GOC trong row
+    Object.keys(sampleRow||{}).forEach(k=>{ keyMap[normKey_(k)] = k; });
+    return (row, ...wantedNames) => {
+      for(const wanted of wantedNames){
+        const wantedNorm = normKey_(wanted);
+        if(keyMap[wantedNorm]!==undefined) return row[keyMap[wantedNorm]];
+        const foundKey = Object.keys(keyMap).find(k=> k.includes(wantedNorm) || wantedNorm.includes(k));
+        if(foundKey) return row[keyMap[foundKey]];
+      }
+      return '';
+    };
+  }
+  const V1 = colGetter_(rows1[0]);
+  const V2 = colGetter_(rows2[0]);
+
+  // Khoá gộp dữ liệu của 1 Shop trong shopMap: ưu tiên Mã Shop; Shop KHÔNG có Mã (rất phổ biến trong
+  // thực tế) thì dùng Tên Shop đã chuẩn hoá làm khoá thay thế — không bỏ sót Shop nào chỉ vì thiếu mã.
+  const shopKeyOf_ = (code, name) => code ? ('CODE:'+code) : (name ? ('NAME:'+normShopName_(name)) : '');
 
   const shopMap = {};
   rows1.forEach(row=>{
-    const code = String(V(row,'Mã Shop','Ma Shop','Store ID')||'').trim();
-    if(!code) return;
-    shopMap[code] = {
+    const code = String(V1(row,'Mã Shop','Ma Shop','Store ID')||'').trim();
+    const name = String(V1(row,'Tên Shop','Ten Shop','Store name')||'').trim();
+    const key = shopKeyOf_(code, name);
+    if(!key) return; // thiếu cả Mã lẫn Tên thì mới thực sự không xác định được Shop nào
+    shopMap[key] = {
       shopCode: code,
-      shopName: String(V(row,'Tên Shop','Ten Shop','Store name')||'').trim(),
-      channel: String(V(row,'Kênh','Kenh')||'').trim(),
-      region: String(V(row,'Khu vực','Khu vuc')||'').trim(),
-      province: String(V(row,'Tỉnh/Thành','Tỉnh','Tinh')||'').trim(),
-      trainerName: String(V(row,'Người Train','Nguoi Train','TRAINER','Trainer')||'').trim(),
-      hrTarget: Number(V(row,'SL Dự Kiến','SL Du Kien'))||0,
-      hrActual: Number(V(row,'Số Đã Train','So Da Train'))||0,
-      status: String(V(row,'Trạng Thái','Trang Thai')||'').trim().toUpperCase(),
+      shopName: name,
+      channel: String(V1(row,'Kênh','Kenh')||'').trim(),
+      region: String(V1(row,'Khu vực','Khu vuc')||'').trim(),
+      province: String(V1(row,'Tỉnh/Thành','Tỉnh','Tinh')||'').trim(),
+      hrTarget: Number(V1(row,'SL Dự Kiến','SL Du Kien'))||0,
+      hrActual: Number(V1(row,'Số Đã Train','So Da Train'))||0,
+      status: String(V1(row,'Trạng Thái','Trang Thai')||'').trim().toUpperCase(),
       testTotal:0, testPass:0, aiTotal:0, aiDone:0, surveyTotal:0, surveyDone:0,
     };
   });
   rows2.forEach(row=>{
-    const code = String(V(row,'Mã Shop','Ma Shop')||'').trim();
-    if(!code) return;
-    if(!shopMap[code]){
-      shopMap[code] = {
+    const code = String(V2(row,'Mã Shop','Ma Shop')||'').trim();
+    const name = String(V2(row,'Shop','Tên Shop','Ten Shop')||'').trim();
+    const key = shopKeyOf_(code, name);
+    if(!key) return;
+    if(!shopMap[key]){
+      shopMap[key] = {
         shopCode: code,
-        shopName: String(V(row,'Shop','Tên Shop','Ten Shop')||'').trim(),
-        channel: String(V(row,'Kênh','Kenh')||'').trim(),
-        region: String(V(row,'Khu vực','Khu vuc')||'').trim(),
-        province: String(V(row,'Tỉnh','Tỉnh/Thành','Tinh')||'').trim(),
-        trainerName: String(V(row,'Người Train','Nguoi Train','TRAINER','Trainer')||'').trim(),
+        shopName: name,
+        channel: String(V2(row,'Kênh','Kenh')||'').trim(),
+        region: String(V2(row,'Khu vực','Khu vuc')||'').trim(),
+        province: String(V2(row,'Tỉnh','Tỉnh/Thành','Tinh')||'').trim(),
         hrTarget:0, hrActual:0, status:'',
         testTotal:0, testPass:0, aiTotal:0, aiDone:0, surveyTotal:0, surveyDone:0,
       };
     }
-    const s = shopMap[code];
-    s.testTotal++; if(String(V(row,'Test online','Test Online')||'').trim().toUpperCase()==='PASS') s.testPass++;
-    s.aiTotal++; const aiVal=String(V(row,'Trạng thái tư vấn mẫu','Trang thai tu van mau')||'').trim(); if(aiVal && aiVal.toUpperCase()!=='CHƯA LÀM'.toUpperCase() && normTrName_(aiVal)!=='CHUA LAM') s.aiDone++;
-    s.surveyTotal++; if(String(V(row,'Khảo sát','Khao sat')||'').trim().toUpperCase()==='DONE') s.surveyDone++;
+    const s = shopMap[key];
+    s.testTotal++; if(String(V2(row,'Test online','Test Online')||'').trim().toUpperCase()==='PASS') s.testPass++;
+    s.aiTotal++; const aiVal=String(V2(row,'Trạng thái tư vấn mẫu','Trang thai tu van mau')||'').trim(); if(aiVal && aiVal.toUpperCase()!=='CHƯA LÀM'.toUpperCase() && normTrName_(aiVal)!=='CHUA LAM') s.aiDone++;
+    s.surveyTotal++; if(String(V2(row,'Khảo sát','Khao sat')||'').trim().toUpperCase()==='DONE') s.surveyDone++;
   });
 
   let shopArr = Object.values(shopMap);
-  let matchedTrainer=0, unmatchedTrainer=0;
-  const unmatchedNames = new Set();
+  let matchedShop=0, unmatchedShop=0;
+  const unmatchedCodes = new Set();
   shopArr.forEach(s=>{
-    const nameUp = normTrName_(s.trainerName);
-    const tr = nameUp ? config.trainers.find(t=>normTrName_(t.name)===nameUp) : null;
-    s.trainerId = tr ? tr.id : '';
+    const tgt = lookupTarget_(s.shopCode, s.shopName);
+    s.trainerId = tgt ? tgt.trainerId : '';
+    if(tgt && tgt.region) s.region = tgt.region; // ưu tiên Khu vực đã gán ở Target FTF (đáng tin hơn cột Khu vực gõ tay trong Tong Hop F2F)
     s.id = uid('ftf');
-    if(tr) matchedTrainer++; else { unmatchedTrainer++; if(s.trainerName) unmatchedNames.add(s.trainerName); }
+    if(tgt && tgt.trainerId) matchedShop++; else { unmatchedShop++; unmatchedCodes.add(s.shopCode||s.shopName||'(không tên)'); }
   });
 
   let skippedOtherRegion = 0;
@@ -3581,9 +3626,9 @@ async function processFtfWorkbook_(wb){
   renderKpiCategory('doitac');
   const msg = document.getElementById('ftfImportMsg');
   if(msg){
-    msg.style.display='block'; msg.style.color=unmatchedTrainer>0?'var(--orange, #b45309)':'var(--green-ok)';
-    const sampleNames = Array.from(unmatchedNames).slice(0,5).join(', ');
-    msg.textContent = `Đã import ${shopArr.length} Shop — Khớp đúng Trainer: ${matchedTrainer}, Không khớp: ${unmatchedTrainer}${unmatchedTrainer>0?` (VD tên chưa khớp: ${sampleNames}${unmatchedNames.size>5?'...':''} — kiểm tra đúng tên Trainer trong Cài đặt ▸ Trainer có khớp cột "Người Train" trong Sheet không)`:''}${skippedOtherRegion?`, bỏ qua ${skippedOtherRegion} Shop ngoài khu vực bạn phụ trách`:''}.`;
+    msg.style.display='block'; msg.style.color=unmatchedShop>0?'var(--orange, #b45309)':'var(--green-ok)';
+    const sampleCodes = Array.from(unmatchedCodes).slice(0,8).join(', ');
+    msg.textContent = `Đã import ${shopArr.length} Shop — Khớp đúng với Target FTF (biết Shop thuộc Trainer/Khu vực nào): ${matchedShop}, Chưa khớp: ${unmatchedShop}${unmatchedShop>0?` (VD Mã Shop chưa có trong Target FTF: ${sampleCodes}${unmatchedCodes.size>8?'...':''} — vào Cài đặt ▸ Target ▸ Target FTF Đối tác import/kiểm tra lại đúng các Mã Shop này trước)`:''}${skippedOtherRegion?`, bỏ qua ${skippedOtherRegion} Shop ngoài khu vực bạn phụ trách`:''}.`;
   }
 }
 /* ============ IMPORT KẾT QUẢ TRUYỀN THÔNG (file không cố định mẫu — quét toàn bộ tìm mã Code PG) ============ */
@@ -4176,7 +4221,7 @@ function renderFtfImportBox(){
   const canEdit = isAdmin() && !monthLocked;
   let html = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import dữ liệu Training F2F Đối tác — ${monthLabel(currentMonth)}</h3>
-    <p class="section-desc" style="margin-bottom:10px;">Import file tổng hợp F2F (đúng mẫu — gồm 2 sheet "Tong Hop F2F" và "Chi Tiet Check-in"). Hệ thống tự tính SL Shop, SL HR, SL Bài Test, Tư vấn AI, SL Khảo sát theo từng Trainer, đồng thời tự tạo danh sách Shop bên dưới. Import lại sẽ <strong>ghi đè toàn bộ</strong> dữ liệu F2F của ${monthLabel(currentMonth)}. Chỉ Admin được import.</p>
+    <p class="section-desc" style="margin-bottom:10px;">Import file tổng hợp F2F (đúng mẫu — gồm 2 sheet "Tong Hop F2F" và "Chi Tiet Check-in"). <strong>Cần import Target FTF (Cài đặt ▸ Target) trước</strong> — hệ thống xác định mỗi Shop thuộc Trainer/Khu vực nào theo đúng Mã Shop đã gán ở Target FTF, KHÔNG dựa vào cột "Người Train" (cột này có thể là Sale/PG, không phải Trainer). Hệ thống tự tính SL Shop, SL HR, SL Bài Test, Tư vấn AI, SL Khảo sát theo từng Trainer, đồng thời tự tạo danh sách Shop bên dưới. Import lại sẽ <strong>ghi đè toàn bộ</strong> dữ liệu F2F của ${monthLabel(currentMonth)}. Chỉ Admin được import.</p>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <input type="file" id="ftfImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary" id="downloadFtfTemplateBtn" type="button">⬇ Tải file mẫu</button>
