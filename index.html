@@ -3536,11 +3536,14 @@ async function processFtfWorkbook_(wb){
   });
 
   let shopArr = Object.values(shopMap);
+  let matchedTrainer=0, unmatchedTrainer=0;
+  const unmatchedNames = new Set();
   shopArr.forEach(s=>{
     const nameUp = normTrName_(s.trainerName);
-    const tr = config.trainers.find(t=>normTrName_(t.name)===nameUp);
+    const tr = nameUp ? config.trainers.find(t=>normTrName_(t.name)===nameUp) : null;
     s.trainerId = tr ? tr.id : '';
     s.id = uid('ftf');
+    if(tr) matchedTrainer++; else { unmatchedTrainer++; if(s.trainerName) unmatchedNames.add(s.trainerName); }
   });
 
   let skippedOtherRegion = 0;
@@ -3578,8 +3581,9 @@ async function processFtfWorkbook_(wb){
   renderKpiCategory('doitac');
   const msg = document.getElementById('ftfImportMsg');
   if(msg){
-    msg.style.display='block'; msg.style.color='var(--green-ok)';
-    msg.textContent = `Đã import ${shopArr.length} Shop, cập nhật tiến độ cho ${visibleTrainers().length} Trainer${skippedOtherRegion?`, bỏ qua ${skippedOtherRegion} Shop ngoài khu vực bạn phụ trách`:''}.`;
+    msg.style.display='block'; msg.style.color=unmatchedTrainer>0?'var(--orange, #b45309)':'var(--green-ok)';
+    const sampleNames = Array.from(unmatchedNames).slice(0,5).join(', ');
+    msg.textContent = `Đã import ${shopArr.length} Shop — Khớp đúng Trainer: ${matchedTrainer}, Không khớp: ${unmatchedTrainer}${unmatchedTrainer>0?` (VD tên chưa khớp: ${sampleNames}${unmatchedNames.size>5?'...':''} — kiểm tra đúng tên Trainer trong Cài đặt ▸ Trainer có khớp cột "Người Train" trong Sheet không)`:''}${skippedOtherRegion?`, bỏ qua ${skippedOtherRegion} Shop ngoài khu vực bạn phụ trách`:''}.`;
   }
 }
 /* ============ IMPORT KẾT QUẢ TRUYỀN THÔNG (file không cố định mẫu — quét toàn bộ tìm mã Code PG) ============ */
