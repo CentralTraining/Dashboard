@@ -7067,8 +7067,21 @@ function newPgsForTrainer(trainerId){
 }
 function syncPgMoiActualFromSurvey(trainerId){
   const rec = trainerRecord(trainerId);
-  // X = tổng số lượt khảo sát PGs mới (đã import) của Trainer trong tháng — so với Y = target lượt coaching Admin giao
-  rec.pgMoiActual = surveyResponsesNew.filter(s=>s.trainerId===trainerId).length;
+  // QUAN TRỌNG: KHÔNG đếm mọi lượt khảo sát "PGs mới" của Trainer — chỉ đếm lượt khảo sát của ĐÚNG
+  // những PG thực sự nằm trong "Danh sách PGs mới" hợp lệ của THÁNG ĐANG XEM (onoffRoster, status=On,
+  // Joined at đúng tháng này). Nếu không lọc, số liệu dễ bị đếm dư (VD PG của tháng khác, hoặc dữ liệu
+  // khảo sát cũ còn sót lại) — khớp theo Mã NV trước, nếu khảo sát thiếu Mã NV thì khớp theo Tên PG.
+  const validPgs = newPgsForTrainer(trainerId);
+  const validCodes = new Set(validPgs.filter(p=>p.code).map(p=>String(p.code).trim()));
+  const validNames = new Set(validPgs.map(p=>normTrName_(p.name)).filter(Boolean));
+  rec.pgMoiActual = surveyResponsesNew.filter(s=>{
+    if(s.trainerId!==trainerId) return false;
+    const code = String(s.code||'').trim();
+    if(code) return validCodes.has(code);
+    // Khảo sát thiếu Mã NV (PG chưa kịp tạo Code lúc làm khảo sát) — khớp theo Tên thay thế.
+    const name = normTrName_(s.pgName);
+    return name ? validNames.has(name) : false;
+  }).length;
   rec.updatedAt = new Date().toISOString();
 }
 function syncAllPgMoiActuals(){
