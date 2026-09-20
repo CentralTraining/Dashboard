@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <!--
   DASHBOARD TRAINER — OPPO VIỆT NAM (MIỀN TRUNG)
@@ -1199,6 +1198,13 @@
         <span class="save-msg" id="accSaveMsg" style="display:none;"></span>
         <div style="margin-top:16px;"><div id="accountList"></div></div>
       </div>
+      <div class="cfg-card" id="migrateCard">
+        <h3>🔄 Chuyển dữ liệu Google Sheet → Supabase</h3>
+        <p class="section-desc" style="margin-bottom:10px;">Dùng <strong>1 lần duy nhất</strong> sau khi đã cấu hình xong <code>SUPABASE_URL</code>/<code>SUPABASE_ANON_KEY</code> trong file — lấy toàn bộ dữ liệu đang có trên Google Sheet cũ, ghi hết sang Supabase. Không xoá gì trên Google Sheet, có thể chạy lại nhiều lần an toàn (ghi đè đúng dữ liệu mới nhất).</p>
+        <div class="form-row"><label>Link Apps Script cũ (Google Sheet)</label><input type="text" id="migrateOldUrl" value="https://script.google.com/macros/s/AKfycbwSbvRDUKlxdfwrUtEAK-z6J4Pzn_NLxR06DR6-JaDSjwYs8w7y9T_kvbcQVcP79oKm7A/exec" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;"></div>
+        <button class="primary" id="migrateToSupabaseBtn" type="button">🔄 Bắt đầu chuyển dữ liệu</button>
+        <span class="save-msg" id="migrateMsg" style="display:none;"></span>
+      </div>
       <div class="cfg-card" id="backupCard">
         <h3>Sao lưu dữ liệu</h3>
         <p class="section-desc" style="margin-bottom:10px;">Tải xuống toàn bộ dữ liệu hiện có (Trainer/Khu vực, PGs, Records, Coaching, Khảo sát, FTF, Truyền thông...) thành 1 file JSON để lưu trữ hoặc phục hồi khi cần.</p>
@@ -1226,62 +1232,94 @@
 </div>
 
 <script>
-/* ============ LỚP DỮ LIỆU ============
-   Trỏ về Google Apps Script Web App (key-value store trên Google Sheet) thay vì localStorage.
-   Xem hướng dẫn deploy trong file Apps_Script_Backend.gs đi kèm.
-   1) Dán API_URL bên dưới (link Web App sau khi Deploy).
-   2) Để trống '' = vẫn dùng localStorage như cũ (chế độ demo, không dùng chung được).
-*/
-const API_URL = 'https://script.google.com/macros/s/AKfycbwSbvRDUKlxdfwrUtEAK-z6J4Pzn_NLxR06DR6-JaDSjwYs8w7y9T_kvbcQVcP79oKm7A/exec'; // <-- dán link Web App Google Apps Script vào đây, ví dụ: 'https://script.google.com/macros/s/XXXX/exec'
+/* ============ KẾT NỐI DATABASE: SUPABASE ============
+   Dán đúng Project URL và anon public key lấy từ Supabase ▸ Project Settings ▸ API vào đây.
+   Để trống '' = vẫn dùng localStorage của từng máy (chế độ demo, không dùng chung được). */
+const SUPABASE_URL = 'https://qruxqlsbhyhwiqjdkyyc.supabase.co'; // <-- dán Project URL vào đây, ví dụ: 'https://xxxxxxxxxxxx.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_afUhXPw280wCE1Sa-UWVLw_wL6tr0QK'; // <-- dán "anon public" key vào đây (KHÔNG dán "service_role")
+const SUPABASE_TABLE = 'kv_store';
+const SUPA_HEADERS_ = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer '+SUPABASE_ANON_KEY, 'Content-Type': 'application/json' };
 
 async function dbGet(key){
-  if(!API_URL){
+  if(!SUPABASE_URL){
     try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):null; }catch(e){ return null; }
   }
   try{
-    const res = await fetch(`${API_URL}?key=${encodeURIComponent(key)}`);
-    const json = await res.json();
-    return (json && 'value' in json) ? json.value : null;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?key=eq.${encodeURIComponent(key)}&select=value`, { headers: SUPA_HEADERS_ });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return (rows && rows.length) ? rows[0].value : null;
   }catch(e){ console.error('dbGet lỗi:', e); return null; }
 }
-/* Đọc NHIỀU key trong ĐÚNG 1 LẦN GỌI MẠNG duy nhất (thay vì mỗi key 1 lần gọi riêng) — Google Apps
-   Script xử lý nhiều request đồng thời từ cùng 1 script có giới hạn (không thực sự chạy song song
-   hoàn toàn ở phía server), nên dù gọi Promise.all() nhiều dbGet() cùng lúc vẫn có độ trễ cộng dồn.
-   Gộp thành 1 request duy nhất (?keys=a,b,c) loại bỏ hẳn độ trễ này — trả về object {key: value}.
-   Nếu chưa cấu hình database dùng chung (API_URL trống) thì đọc thẳng từ localStorage, không cần
-   gọi mạng nên không cần gộp. */
+/* Đọc NHIỀU key trong ĐÚNG 1 LẦN GỌI MẠNG duy nhất — dùng bộ lọc "in.(...)" của Supabase/PostgREST,
+   nhanh hơn nhiều so với việc gọi riêng từng key (Supabase xử lý thật sự song song ở tầng database,
+   không có giới hạn "gần như tuần tự" như Google Apps Script trước đây). */
 async function dbGetMulti(keys){
-  if(!API_URL){
+  if(!SUPABASE_URL){
     const out={};
     keys.forEach(k=>{ try{ const raw=localStorage.getItem(k); out[k]=raw?JSON.parse(raw):null; }catch(e){ out[k]=null; } });
     return out;
   }
   try{
-    const res = await fetch(`${API_URL}?keys=${encodeURIComponent(keys.join(','))}`);
-    const json = await res.json();
-    return (json && json.values) ? json.values : {};
+    const inList = keys.map(k=>`"${String(k).replace(/"/g,'\\"')}"`).join(',');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?key=in.(${inList})&select=key,value`, { headers: SUPA_HEADERS_ });
+    if(!res.ok) return {};
+    const rows = await res.json();
+    const out = {};
+    keys.forEach(k=>{ out[k]=null; }); // mặc định null cho key không tồn tại trong bảng
+    rows.forEach(r=>{ out[r.key]=r.value; });
+    return out;
   }catch(e){
     console.error('dbGetMulti lỗi:', e);
     return {};
   }
 }
 async function dbSet(key,value){
-  if(!API_URL){
+  if(!SUPABASE_URL){
     try{ localStorage.setItem(key, JSON.stringify(value)); return true; }catch(e){ return false; }
   }
   try{
-    // mode:'no-cors' — Apps Script Web App KHÔNG trả về header Access-Control-Allow-Origin cho request
-    // POST (giới hạn của nền tảng Apps Script), khiến trình duyệt chặn đọc phản hồi dù ghi dữ liệu ở
-    // server đã thành công. dbSet không cần đọc lại nội dung phản hồi (chỉ cần request gửi đi), nên
-    // dùng no-cors để KHÔNG bị chặn — request vẫn tới server và ghi dữ liệu bình thường.
-    await fetch(API_URL, {
+    // Upsert (ghi mới hoặc cập nhật nếu key đã tồn tại) — Prefer: resolution=merge-duplicates yêu cầu
+    // Supabase tự xử lý theo kiểu "ghi đè nếu trùng khoá chính", giống đúng hành vi setValue_() của
+    // Apps Script trước đây. Supabase hỗ trợ CORS chuẩn nên không cần no-cors như trước — đọc được
+    // phản hồi thật để biết chắc chắn ghi thành công hay lỗi.
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
       method:'POST',
-      mode:'no-cors',
-      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // giữ 'text/plain' để tránh CORS preflight bị chặn bởi Apps Script
-      body: JSON.stringify({ action:'set', key, value })
+      headers:{ ...SUPA_HEADERS_, 'Prefer':'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify([{ key, value, updated_at: new Date().toISOString() }])
     });
-    return true;
-  }catch(e){ console.error('dbSet lỗi:', e); return false; }
+    return res.ok;
+  }catch(e){
+    console.error('dbSet lỗi:', e);
+    return false;
+  }
+}
+/* Lấy TOÀN BỘ dữ liệu — dùng cho nút "Export toàn bộ dữ liệu". Supabase giới hạn tối đa 1000 dòng/lần
+   gọi mặc định, nên phải phân trang (Range header) nếu có nhiều hơn 1000 key. */
+async function dbGetAll_(){
+  if(!SUPABASE_URL){
+    const data={};
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      try{ data[key]=JSON.parse(localStorage.getItem(key)); }
+      catch(e){ data[key]=localStorage.getItem(key); }
+    }
+    return data;
+  }
+  const data = {};
+  let from = 0;
+  const pageSize = 1000;
+  while(true){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=key,value`, {
+      headers: { ...SUPA_HEADERS_, 'Range': `${from}-${from+pageSize-1}` }
+    });
+    if(!res.ok) break;
+    const rows = await res.json();
+    rows.forEach(r=>{ data[r.key]=r.value; });
+    if(rows.length<pageSize) break;
+    from += pageSize;
+  }
+  return data;
 }
 /* ============ CẬP NHẬT DỮ LIỆU TRỰC TIẾP TỪ GOOGLE SHEET (dán link, không cần tải file) ============ */
 function parseGoogleSheetId_(url){
@@ -2012,7 +2050,7 @@ document.getElementById('ovFilterSale').addEventListener('change', ()=>{ pgCurre
 
 /* ============ AUTH ============ */
 /* auth_session (ai đang đăng nhập trên ĐÚNG trình duyệt này) PHẢI luôn lưu RIÊNG trên từng trình
-   duyệt (localStorage) — KHÔNG BAO GIỜ được đưa lên database dùng chung (Google Sheet), dù API_URL
+   duyệt (localStorage) — KHÔNG BAO GIỜ được đưa lên database dùng chung (Supabase), dù SUPABASE_URL
    đã cấu hình hay chưa. Nếu lưu chung, người này đăng nhập trên máy A có thể khiến người khác mở
    link trên máy B bị tự động vào NHẦM đúng phiên đăng nhập đó (rất nguy hiểm). Chỉ auth_users (danh
    sách tài khoản hợp lệ) mới cần dùng chung; "ai đang đăng nhập ở đâu" luôn là chuyện RIÊNG của từng
@@ -2960,24 +2998,34 @@ document.getElementById('changePassBtn').addEventListener('click', async ()=>{
   msg.style.color='var(--green-ok)'; msg.textContent='Đổi mật khẩu thành công.'; msg.style.display='block';
   document.getElementById('curPass').value=''; document.getElementById('newPass').value=''; document.getElementById('newPass2').value='';
 });
-/* Lấy TOÀN BỘ dữ liệu — dùng cho nút "Export toàn bộ dữ liệu". Khi chưa cấu hình database dùng
-   chung (API_URL trống), đọc thẳng localStorage (như trước giờ). Khi ĐÃ dùng Google Sheet dùng
-   chung, gọi thẳng 1 endpoint riêng (?action=exportAll) lấy hết dữ liệu từ Sheet — vì lúc này dữ
-   liệu thật nằm trên Sheet, không còn nằm ở localStorage của từng máy nữa. */
-async function dbGetAll_(){
-  if(!API_URL){
-    const data={};
-    for(let i=0;i<localStorage.length;i++){
-      const key=localStorage.key(i);
-      try{ data[key]=JSON.parse(localStorage.getItem(key)); }
-      catch(e){ data[key]=localStorage.getItem(key); }
+document.getElementById('migrateToSupabaseBtn').addEventListener('click', async ()=>{
+  const msg = document.getElementById('migrateMsg');
+  const oldUrl = document.getElementById('migrateOldUrl').value.trim();
+  if(!oldUrl){ msg.style.display='block'; msg.style.color='var(--red)'; msg.textContent='Vui lòng dán link Apps Script cũ.'; return; }
+  if(!SUPABASE_URL){ msg.style.display='block'; msg.style.color='var(--red)'; msg.textContent='Chưa cấu hình SUPABASE_URL/SUPABASE_ANON_KEY trong file — cần điền trước khi chuyển dữ liệu.'; return; }
+  const ok = await showConfirm('Chuyển toàn bộ dữ liệu từ Google Sheet cũ sang Supabase? Dữ liệu trùng key trên Supabase sẽ bị GHI ĐÈ bằng dữ liệu từ Google Sheet. Không ảnh hưởng gì tới Google Sheet gốc.');
+  if(!ok) return;
+  msg.style.display='block'; msg.style.color='var(--muted)'; msg.textContent='Đang lấy dữ liệu từ Google Sheet cũ...';
+  try{
+    const res = await fetch(`${oldUrl}?action=exportAll`);
+    if(!res.ok) throw new Error('Không tải được dữ liệu từ Google Sheet cũ (mã lỗi HTTP '+res.status+'). Kiểm tra lại đúng link Apps Script.');
+    const json = await res.json();
+    const data = (json && json.data) ? json.data : null;
+    if(!data || Object.keys(data).length===0) throw new Error('Không lấy được dữ liệu nào từ Google Sheet cũ — kiểm tra lại đúng link, hoặc Apps Script cũ cần cập nhật thêm action "exportAll" (bản mới đã có sẵn).');
+    const keys = Object.keys(data);
+    let done=0, failed=0;
+    for(const key of keys){
+      msg.textContent = `Đang chuyển... (${++done}/${keys.length}: ${key})`;
+      const ok2 = await dbSet(key, data[key]);
+      if(!ok2) failed++;
     }
-    return data;
+    msg.style.color = failed>0 ? 'var(--orange, #b45309)' : 'var(--green-ok)';
+    msg.textContent = `Đã chuyển ${keys.length} mục dữ liệu sang Supabase${failed>0?` — ${failed} mục bị lỗi, thử chạy lại nút này 1 lần nữa`:''}. Tải lại trang để dùng dữ liệu mới.`;
+  }catch(err){
+    msg.style.color='var(--red)';
+    msg.textContent='Lỗi: '+err.message;
   }
-  const res = await fetch(`${API_URL}?action=exportAll`);
-  const json = await res.json();
-  return (json && json.data) ? json.data : {};
-}
+});
 document.getElementById('exportAllDataBtn').addEventListener('click', async ()=>{
   const msg=document.getElementById('backupSaveMsg');
   try{
@@ -3015,10 +3063,10 @@ document.getElementById('restoreAllDataInput').addEventListener('change', async 
     const data = JSON.parse(text);
     const keys = Object.keys(data);
     if(keys.length===0){ msg.style.color='var(--red)'; msg.textContent='File rỗng hoặc sai định dạng.'; e.target.value=''; return; }
-    const ok = await showConfirm(`Khôi phục ${keys.length} mục dữ liệu từ file này? Toàn bộ dữ liệu HIỆN CÓ ${API_URL?'trên Google Sheet dùng chung':'trên máy/trình duyệt đang mở'} sẽ bị GHI ĐÈ hoàn toàn, không thể hoàn tác. Trang sẽ tự tải lại sau khi khôi phục xong.`);
+    const ok = await showConfirm(`Khôi phục ${keys.length} mục dữ liệu từ file này? Toàn bộ dữ liệu HIỆN CÓ ${SUPABASE_URL?'trên Supabase dùng chung':'trên máy/trình duyệt đang mở'} sẽ bị GHI ĐÈ hoàn toàn, không thể hoàn tác. Trang sẽ tự tải lại sau khi khôi phục xong.`);
     if(!ok){ e.target.value=''; return; }
     // Ghi qua dbSet() (không ghi thẳng localStorage) — tự động đi đúng đường: lưu vào Google Sheet
-    // dùng chung nếu đã cấu hình API_URL, hoặc lưu localStorage nếu chưa. Ghi TUẦN TỰ (không phải
+    // dùng chung nếu đã cấu hình SUPABASE_URL, hoặc lưu localStorage nếu chưa. Ghi TUẦN TỰ (không phải
     // song song ồ ạt) để tránh làm quá tải Apps Script khi số lượng key lớn.
     let doneCount = 0;
     for(const key of keys){
@@ -3127,6 +3175,8 @@ async function bootApp(){
   document.querySelectorAll('.admin-only-gsheet').forEach(el=>{ el.style.display=isAdmin()?'':'none'; });
   document.getElementById('adminAccountCard').style.display=isAdmin()?'':'none';
   document.getElementById('backupCard').style.display=isAdmin()?'':'none';
+  const migrateCardEl = document.getElementById('migrateCard');
+  if(migrateCardEl) migrateCardEl.style.display=isAdmin()?'':'none';
   document.getElementById('loginStatsCard').style.display=isAdmin()?'':'none';
   const soImportCardEl = document.getElementById('soImportCard');
   if(soImportCardEl) soImportCardEl.style.display=isAdmin()?'':'none';
