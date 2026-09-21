@@ -528,7 +528,14 @@
       <h2>Đăng nhập</h2>
       <p class="sub">Nhập tài khoản được Admin cấp cho bạn.</p>
       <div class="form-row"><label>Tên đăng nhập</label><input type="text" id="loginUser"></div>
-      <div class="form-row"><label>Mật khẩu</label><input type="password" id="loginPass"></div>
+      <div class="form-row"><label>Mật khẩu</label>
+        <div style="position:relative;">
+          <input type="password" id="loginPass" style="padding-right:40px;width:100%;">
+          <button type="button" id="loginPassToggle" aria-label="Hiện/ẩn mật khẩu" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);display:flex;align-items:center;">
+            <svg id="loginPassEyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
       <button class="primary" id="loginBtn">Đăng nhập</button>
       <div class="login-error" id="loginError"></div>
     </div>
@@ -1342,6 +1349,28 @@ async function dbGetAll_(){
     from += pageSize;
   }
   return data;
+}
+/* Liệt kê TẤT CẢ key bắt đầu bằng 1 tiền tố (VD: 'records:' để tìm mọi tháng đã có dữ liệu) — dùng
+   bộ lọc "like" của PostgREST (Supabase), CHỈ lấy về cột "key" (không tải nguyên giá trị, nhẹ và
+   nhanh). Khi chưa cấu hình Supabase (chế độ demo dùng localStorage), quét thẳng localStorage như cũ. */
+async function dbListKeysWithPrefix(prefix){
+  if(!SUPABASE_URL){
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k && k.indexOf(prefix)===0) keys.push(k);
+    }
+    return keys;
+  }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?key=like.${encodeURIComponent(prefix)}*&select=key`, { headers: SUPA_HEADERS_ });
+    if(!res.ok) return [];
+    const rows = await res.json();
+    return rows.map(r=>r.key);
+  }catch(e){
+    console.error('dbListKeysWithPrefix lỗi:', e);
+    return [];
+  }
 }
 /* ============ CẬP NHẬT DỮ LIỆU TRỰC TIẾP TỪ GOOGLE SHEET (dán link, không cần tải file) ============ */
 function parseGoogleSheetId_(url){
@@ -2191,6 +2220,22 @@ document.getElementById('setupBtn').addEventListener('click', async ()=>{
   saveSessionLocal_(session);
   err.style.display='none'; await renderAuthScreen();
 });
+// Bấm icon mắt để hiện/ẩn mật khẩu đang gõ — đổi icon mắt mở/gạch chéo theo đúng trạng thái.
+document.getElementById('loginPassToggle').addEventListener('click', ()=>{
+  const inp = document.getElementById('loginPass');
+  const icon = document.getElementById('loginPassEyeIcon');
+  const showing = inp.type==='text';
+  inp.type = showing ? 'password' : 'text';
+  icon.innerHTML = showing
+    ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/>'
+    : '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+});
+// Cho phép bấm Enter ở ô Tên đăng nhập hoặc Mật khẩu để đăng nhập ngay, khỏi phải bấm chuột vào nút.
+['loginUser','loginPass'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); document.getElementById('loginBtn').click(); }
+  });
+});
 document.getElementById('loginBtn').addEventListener('click', async ()=>{
   const uname=document.getElementById('loginUser').value.trim();
   const pass=document.getElementById('loginPass').value;
@@ -2997,7 +3042,7 @@ async function seedSampleData(){
   });
   await dbSet('pgs:'+currentMonth, pgs);
 
-  populateMonthPicker();
+  await populateMonthPicker();
   updateSidebarBrandTitle();
   populateOvFilters();
   renderAll();
@@ -3312,7 +3357,7 @@ async function bootApp(){
   if(!currentMonth){ currentMonth = defaultMonth(); }
   await loadMonthlyData(currentMonth);
 
-  populateMonthPicker();
+  await populateMonthPicker();
   updateSidebarBrandTitle();
   populateOvFilters();
   applyPermissionLocks();
@@ -3336,15 +3381,13 @@ function applyPermissionLocks(){
 }
 
 /* ============ THÁNG ============ */
-function getSavedKeysWithPrefix(prefix){
+async function getSavedKeysWithPrefix(prefix){
+  const keys = await dbListKeysWithPrefix(prefix);
   const months=new Set();
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
-    if(key && key.indexOf(prefix)===0){ months.add(key.slice(prefix.length)); }
-  }
+  keys.forEach(key=>{ if(key && key.indexOf(prefix)===0) months.add(key.slice(prefix.length)); });
   return Array.from(months);
 }
-function getAllSavedMonths(){ return getSavedKeysWithPrefix('records:'); }
+async function getAllSavedMonths(){ return await getSavedKeysWithPrefix('records:'); }
 
 /* Nạp dữ liệu Nhân sự (pgs) + On/Off cho đúng tháng đang xem.
    Nếu tháng đó chưa có dữ liệu Nhân sự, tự "kế thừa" danh sách PG của tháng gần nhất trước đó
@@ -3370,7 +3413,7 @@ async function loadMonthlyData(month){
 
   let monthPgs = mVals['pgs:'+month];
   if(!monthPgs){
-    const priorMonths = getSavedKeysWithPrefix('pgs:').filter(m=>m<month).sort();
+    const priorMonths = (await getSavedKeysWithPrefix('pgs:')).filter(m=>m<month).sort();
     if(priorMonths.length){
       const latestPrior = priorMonths[priorMonths.length-1];
       const priorData = (await dbGet('pgs:'+latestPrior)) || [];
@@ -3389,9 +3432,10 @@ async function setMonthLock(month, locked){
   await dbSet('monthLock:'+month, locked);
   if(month===currentMonth) monthLocked = locked;
 }
-function populateMonthPicker(){
+async function populateMonthPicker(){
   const sel=document.getElementById('monthPicker');
-  const months = Array.from(new Set([...getAllSavedMonths(), currentMonth, defaultMonth()])).filter(Boolean).sort().reverse();
+  const savedMonths = await getAllSavedMonths();
+  const months = Array.from(new Set([...savedMonths, currentMonth, defaultMonth()])).filter(Boolean).sort().reverse();
   sel.innerHTML = months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
   sel.value = currentMonth || '';
 }
@@ -6431,7 +6475,7 @@ async function findPgAcrossMonths_(code){
   if(!code) return null;
   const inCurrent = findPgByCode_(pgs, code);
   if(inCurrent) return inCurrent;
-  const priorMonths = getSavedKeysWithPrefix('pgs:').filter(m=>m<currentMonth).sort().reverse();
+  const priorMonths = (await getSavedKeysWithPrefix('pgs:')).filter(m=>m<currentMonth).sort().reverse();
   for(const m of priorMonths){
     const snapshot = await dbGet('pgs:'+m);
     if(!snapshot) continue;
@@ -7466,9 +7510,13 @@ async function renderPartnerTrainingRegionProgress_(subtype){
   const camp=campaignsForGroupMonth('doitac').find(c=>campaignSubtype(c)===subtype);
   if(!camp){ box.innerHTML=`<div class="empty">Chưa có chiến dịch ${subtype==='hub'?'Hub':'Workshop'} Đối tác trong tháng này.</div>`; return; }
   let targetMap={}, actualMap={}, notes={};
-  try{ targetMap=(await dbGet('partnerTrainingTargets:'+camp.id))||{}; }catch(e){ targetMap={}; }
-  try{ actualMap=(await dbGet(partnerTrainingActualKey_(camp)))||{}; }catch(e){ actualMap={}; }
-  try{ notes=(await dbGet(partnerTrainingNoteKey_(camp)))||{}; }catch(e){ notes={}; }
+  try{
+    const keys = ['partnerTrainingTargets:'+camp.id, partnerTrainingActualKey_(camp), partnerTrainingNoteKey_(camp)];
+    const vals = await dbGetMulti(keys);
+    targetMap = vals[keys[0]] || {};
+    actualMap = vals[keys[1]] || {};
+    notes = vals[keys[2]] || {};
+  }catch(e){ targetMap={}; actualMap={}; notes={}; }
   const surveyTarget=Math.max(0,Number(camp.partnerSurveyTargetX||0));
   const allowedRegions=isTrainer()?new Set(visibleRegions().map(normalizeRegionLoose_)):null;
   const regionSet=new Set();
@@ -9214,7 +9262,7 @@ async function onTargetCampaignChange(){
     await dbSet('lastViewedMonth', currentMonth);
     await loadMonthlyData(currentMonth);
     updateSidebarBrandTitle();
-    populateMonthPicker();
+    await populateMonthPicker();
     populateOvFilters(); populatePgTrainerSelect();
   }
   renderTargetTable();
@@ -10297,6 +10345,15 @@ function toUsernameSlug_(name){
 /* Tự động tạo tài khoản đăng nhập cho Trainer mới — Tên đăng nhập theo quy tắc trên, Mật khẩu mặc
    định "123456". Nếu trùng Tên đăng nhập (2 Trainer cùng tên) thì tự thêm số ở cuối (VD: ...cam2).
    Trainer đổi mật khẩu tuỳ ý sau khi đăng nhập tại Tài khoản ▸ Đổi mật khẩu. */
+/* Tìm tài khoản đăng nhập Trainer "mồ côi" (trainerId không còn thuộc Trainer nào hiện có trong
+   config.trainers — do đã bị Xoá trước đó) mà TÊN khớp với tên đang định tạo mới. Đây là nguồn duy
+   nhất còn giữ được TÊN của Trainer cũ (Xoá Trainer không xoá tài khoản đăng nhập liên kết), dùng để
+   tự động nối lại dữ liệu khi tạo lại Trainer trùng tên. So khớp không phân biệt hoa/thường/dấu. */
+function findOrphanAccountByName_(name){
+  const validIds = new Set(config.trainers.map(t=>t.id));
+  const target = normTrName_(name);
+  return users.find(u=> u.role==='trainer' && u.trainerId && !validIds.has(u.trainerId) && normTrName_(u.displayName)===target) || null;
+}
 async function autoCreateTrainerAccount_(trainerRecord){
   const base = toUsernameSlug_(trainerRecord.name) || 'trainer';
   let uname = base, n = 2;
@@ -10312,18 +10369,32 @@ document.getElementById('addTrainerBtn').addEventListener('click', async ()=>{
   const nameInput=document.getElementById('newTrainerName'), regionSel=document.getElementById('newTrainerRegion');
   const name=nameInput.value.trim().toUpperCase(); if(!name) return;
   let createdUsername = null;
+  let relinkedInfo = null;
   if(editingTrainerId){
     const t = config.trainers.find(x=>x.id===editingTrainerId);
     if(t){ t.name=name; t.region=regionSel.value||''; }
   } else {
     const newTrainer = {id:uid('tr'),name,region:regionSel.value||''};
+    // Kiểm tra có tài khoản "mồ côi" nào trùng tên (Trainer đã bị Xoá trước đó, tạo lại đúng tên) —
+    // nếu có, TỰ ĐỘNG nối lại toàn bộ dữ liệu cũ (PGs/On-Off/Khảo sát/Target/FTF...) sang Trainer mới
+    // này, đồng thời tái sử dụng luôn tài khoản đăng nhập cũ (giữ nguyên username/password, khỏi tạo
+    // tài khoản mới) — thay vì phải vào Cài đặt ▸ DATA bấm quét dữ liệu mồ côi thủ công.
+    const orphanAccount = findOrphanAccountByName_(name);
     config.trainers.push(newTrainer);
-    createdUsername = await autoCreateTrainerAccount_(newTrainer);
+    if(orphanAccount){
+      const oldTrainerId = orphanAccount.trainerId;
+      await relinkTrainerId_(oldTrainerId, newTrainer.id);
+      relinkedInfo = { username: orphanAccount.username };
+    } else {
+      createdUsername = await autoCreateTrainerAccount_(newTrainer);
+    }
   }
   resetTrainerForm();
   await dbSet('config',config); renderAll();
   if(createdUsername){
     alert(`Đã tự động tạo tài khoản đăng nhập cho Trainer "${name}":\n\nTên đăng nhập: ${createdUsername}\nMật khẩu mặc định: 123456\n\nTrainer nên đổi mật khẩu ngay sau khi đăng nhập lần đầu (Tài khoản ▸ Đổi mật khẩu).`);
+  } else if(relinkedInfo){
+    alert(`Phát hiện Trainer "${name}" đã từng tồn tại trước đây (đã bị Xoá) — đã TỰ ĐỘNG nối lại toàn bộ dữ liệu cũ (PGs, On/Off, Khảo sát, Target, FTF...) cho Trainer mới này.\n\nTên đăng nhập cũ vẫn dùng được: ${relinkedInfo.username} (mật khẩu giữ nguyên như trước, không đổi).`);
   }
 });
 
