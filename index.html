@@ -233,7 +233,9 @@
 
   .scope-filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 14px;}
   .scope-filters .scope-label{font-size:var(--cap);font-weight:700;color:var(--green-dark);}
-  .scope-filters select{font-family:inherit;font-size:var(--cap);padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;}
+  .scope-filters select{font-family:inherit;font-size:var(--cap);padding:8px 14px;border:1.5px solid #9FD8CB;border-radius:10px;background:#fff;color:var(--text);cursor:pointer;transition:border-color .15s ease;}
+  .scope-filters select:hover{border-color:var(--green);}
+  .scope-filters select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(11,110,56,.12);}
 
   .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
   .kpi-row.cols-2{grid-template-columns:repeat(2,1fr);}
@@ -685,6 +687,16 @@
             <option value="THAI SẢN">THAI SẢN</option>
             <option value="CODE ĐẠI LÝ">CODE ĐẠI LÝ</option>
             <option value="OFF (chưa cắt Center)">OFF (chưa cắt Center)</option>
+          </select>
+          <span class="scope-label">Sao:</span>
+          <select id="pgStarFilterSelect" style="min-width:130px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
+            <option value="">Tất cả Sao</option>
+            <option value="0">★ 0</option>
+            <option value="1">★ 1</option>
+            <option value="2">★★ 2</option>
+            <option value="3">★★★ 3</option>
+            <option value="4">★★★★ 4</option>
+            <option value="5">★★★★★ 5</option>
           </select>
         </div>
         <button class="secondary" id="exportPgBtn">Export danh sách ra Excel</button>
@@ -2889,7 +2901,7 @@ document.getElementById('exportPgFullTemplateBtn').addEventListener('click', ()=
       'Channel':p.channel||'', 'Big Channel':channelGroup(p.channel), 'Joined at':joinedStr, 'Released at':'',
       'Loại gán shop':'PG', 'Là Shop chính':1, 'trainer':tr?tr.name:'', 'sao':Number(p.star)||0,
       'THÂM NIÊN THÁNG':Number(p.seniority)||0, 'LOẠI THÂM NIÊN':seniorityBucket_(p.seniority),
-      'TRẠNG THÁI': p.status==='Đang làm' ? '' : p.status, 'Size shop':p.shopSize||'', 'SALE ':p.sale||'',
+      'TRẠNG THÁI': p.status==='Đang làm' ? '' : p.status, 'Size shop':shopSizeFromMap_(p.shop)||p.shopSize||'', 'SALE ':p.sale||'',
     };
   });
   const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
@@ -4515,7 +4527,7 @@ function renderFtfShopListBox(){
       </tr>`;
     });
     html += `</tbody></table>`;
-    html += `<div class="pagination" id="ftfShopPagination" style="margin-top:12px;"></div>`;
+    html += `<div class="pagination-bar" id="ftfShopPagination" style="margin-top:12px;"></div>`;
     box.innerHTML = html;
     box.querySelectorAll('.ftf-shop-note-input').forEach(inp=>{
       inp.addEventListener('change', async ()=>{
@@ -4613,12 +4625,44 @@ let courseSelectedCampaignId_ = { cvtv:null, pgs3sao:null };
 let courseCandidateFilter_ = { cvtv:{dateFrom:'',dateTo:''}, pgs3sao:{dateFrom:'',dateTo:'',star:''} };
 let courseRegCache_ = {}; // { [campId]: {code:{status,note}} }
 let courseScoreCache_ = {}; // { [campId]: {code:{theory,consult,total,excellent,note}} }
+let courseViewFilter_ = { region:'', trainerId:'', regStatus:'' }; // bộ lọc rà soát tạm thời (Khu vực/Trainer/Trạng thái) ở màn hình đăng ký
+let courseRegPage_ = 1;
+let courseScorePage_ = 1;
+let courseCompletePage_ = 1;
+const COURSE_REG_PAGE_SIZE = 10;
 function courseCampaignsList_(subtype){
   return campaigns.filter(c=>c.group==='noibo' && campaignSubtype(c)===subtype).sort((a,b)=>b.month.localeCompare(a.month));
 }
 async function loadCourseData_(campId){
   if(!courseRegCache_[campId]) courseRegCache_[campId] = (await dbGet('courseRegistrations:'+campId)) || {};
   if(!courseScoreCache_[campId]) courseScoreCache_[campId] = (await dbGet('courseScores:'+campId)) || {};
+}
+/* Danh sách Mã Code các PG ĐÃ tham gia + ĐÃ có điểm ở khoá CÙNG LOẠI (CVTV hoặc PGs 3★) TRƯỚC ĐÓ
+   (không tính khoá đang tạo/xem) — mặc định các PG này KHÔNG hiển thị lại trong danh sách ứng viên
+   của khoá MỚI CÙNG LOẠI nữa (đã tham gia CVTV rồi thì không hiện lại ở khoá CVTV sau; tương tự cho
+   PGs 3★ — 2 loại khoá TÁCH RIÊNG, không loại chéo lẫn nhau: đã học CVTV vẫn hiện bình thường ở
+   PGs 3★ và ngược lại). Gộp thành ĐÚNG 1 LẦN GỌI MẠNG (dbGetMulti) dù cần đọc nhiều key.*/
+let courseAlreadyTrainedCache_ = null; // Set<code> — cache lại trong phiên, tránh quét lại mỗi lần render
+let courseAlreadyTrainedForCampId_ = null;
+async function loadAlreadyTrainedCodes_(excludeCampId, subtype){
+  if(courseAlreadyTrainedCache_ && courseAlreadyTrainedForCampId_===excludeCampId) return courseAlreadyTrainedCache_;
+  const otherCamps = campaigns.filter(c=> c.group==='noibo' && campaignSubtype(c)===subtype && c.id!==excludeCampId);
+  const keys = [];
+  otherCamps.forEach(c=>{ keys.push('courseRegistrations:'+c.id, 'courseScores:'+c.id); });
+  const excluded = new Set();
+  if(keys.length){
+    const vals = await dbGetMulti(keys);
+    otherCamps.forEach(c=>{
+      const reg = vals['courseRegistrations:'+c.id] || {};
+      const sc = vals['courseScores:'+c.id] || {};
+      Object.keys(reg).forEach(code=>{
+        if(reg[code] && reg[code].status==='Tham gia' && sc[code]) excluded.add(code);
+      });
+    });
+  }
+  courseAlreadyTrainedCache_ = excluded;
+  courseAlreadyTrainedForCampId_ = excludeCampId;
+  return excluded;
 }
 function courseCanEditRegistration_(pg){
   return isAdmin() || (isTrainer() && pg.trainerId===session.trainerId);
@@ -4628,19 +4672,55 @@ function courseCanScore_(camp){
 }
 /* Danh sách ứng viên: lấy từ On/Off (status='On'), lọc theo Ngày vào làm trong khoảng đã chọn — ghép
    sống với PGs để lấy đủ Khu vực/Tỉnh/Shop/Kênh/Thâm niên/Sao hiện tại (không lưu trùng dữ liệu). */
-function courseCandidates_(camp, subtype){
-  const from = camp.dateFrom ? new Date(camp.dateFrom) : null;
-  const to = camp.dateTo ? new Date(camp.dateTo+'T23:59:59') : null;
-  let list = onoffRoster.filter(r=>{
-    if(r.status!=='On' || !r.joinedAt) return false;
-    const d = new Date(r.joinedAt);
-    if(from && d<from) return false;
-    if(to && d>to) return false;
-    return true;
-  });
-  const tList = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
-  const trainerIds = new Set(tList.map(t=>t.id));
-  list = list.filter(r=>trainerIds.has(r.trainerId));
+function courseCandidates_(camp, subtype, scopeToOwnTrainer){
+  let list;
+  if(subtype==='pgs3sao'){
+    // QUAN TRỌNG: PGs 3★ là PG ĐÃ LÀM LÂU NĂM (không phải PG mới) — KHÔNG có "Ngày vào làm" gần đây
+    // để lọc qua dữ liệu On/Off như CVTV. Lấy TRỰC TIẾP từ Danh sách Nhân sự chính (pgs), lọc đúng
+    // theo cột Sao đã chọn + trạng thái hiện tại "Đang làm" — không dùng khoảng ngày On/Off (khoảng
+    // ngày trên màn hình chỉ áp dụng riêng cho CVTV, không có ý nghĩa với PGs 3★).
+    const starNeed = camp.starFilter ? Number(camp.starFilter) : null;
+    list = pgs.filter(p=> p.status==='Đang làm' && (starNeed===null || Number(p.star)===starNeed))
+      .map(p=>{
+        // Giới tính có thể chỉ mới được lưu ở dữ liệu On/Off (Import gần đây), Danh sách Nhân sự
+        // chính có thể CHƯA đồng bộ — tra thêm qua onoffRoster (khớp Code) làm dự phòng.
+        const oo = onoffRoster.find(r=>r.code===p.code);
+        return { code:p.code, name:p.name, trainerId:p.trainerId, area:trainerOf(p.trainerId)?trainerOf(p.trainerId).region:'', gender:p.gender||(oo?oo.gender:'')||'' };
+      });
+  } else {
+    const from = camp.dateFrom ? new Date(camp.dateFrom) : null;
+    const to = camp.dateTo ? new Date(camp.dateTo+'T23:59:59') : null;
+    list = onoffRoster.filter(r=>{
+      if(r.status!=='On' || !r.joinedAt) return false;
+      const d = new Date(r.joinedAt);
+      if(from && d<from) return false;
+      if(to && d>to) return false;
+      return true;
+    });
+  }
+  // QUAN TRỌNG: chỉ giới hạn theo đúng Trainer sở hữu PG ở GIAI ĐOẠN ĐĂNG KÝ (mỗi Trainer chỉ đăng
+  // ký PG của mình). Sau khi đã CHỐT danh sách, Lead Khoá cần thấy ĐỦ mọi PG đã đăng ký "Tham gia"
+  // trong lớp — kể cả PG không thuộc Trainer/khu vực của chính Lead Khoá — nên KHÔNG áp giới hạn này
+  // ở giai đoạn Chấm điểm/Đã hoàn thành (gọi hàm với scopeToOwnTrainer=false).
+  if(scopeToOwnTrainer!==false){
+    // Chỉ đổ vào danh sách ứng viên những PG có trạng thái THỰC TẾ HIỆN TẠI vẫn là "Đang làm" — tra
+    // theo effectivePgMoiStatus_ (ưu tiên trạng thái ở Danh sách Nhân sự chính, không chỉ dựa vào
+    // status='On' lúc Import On/Off, vì PG có thể đã OFF/Thai sản... sau đó). Chỉ áp dụng ở GIAI ĐOẠN
+    // ĐĂNG KÝ — không áp dụng ở Chấm điểm/Đã hoàn thành (vẫn cần hiện đúng PG đã đăng ký dù sau đó có
+    // đổi trạng thái). PGs 3★ đã tự lọc "Đang làm" ở bước lấy dữ liệu phía trên rồi, gọi lại
+    // effectivePgMoiStatus_ ở đây không ảnh hưởng gì (PG nào cũng đã qua bước lọc status='Đang làm').
+    if(subtype!=='pgs3sao') list = list.filter(r=>effectivePgMoiStatus_(r)==='Đang làm');
+    const tList = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
+    const trainerIds = new Set(tList.map(t=>t.id));
+    list = list.filter(r=>trainerIds.has(r.trainerId));
+    // Loại PG đã Tham gia + đã có điểm ở 1 khoá CVTV/PGs 3★ khác trước đó — mặc định không cần đăng
+    // ký lại. CHỈ áp dụng ở đây (giai đoạn Đăng ký) — không áp dụng khi Chấm điểm/Đã hoàn thành (gọi
+    // với scopeToOwnTrainer=false), vì lúc đó cần hiện đúng PG đã đăng ký "Tham gia" của CHÍNH khoá
+    // đang xem, dù PG đó có từng học khoá khác trước đây hay không.
+    if(courseAlreadyTrainedCache_ && courseAlreadyTrainedCache_.size){
+      list = list.filter(r=>!courseAlreadyTrainedCache_.has(r.code));
+    }
+  }
   const enriched = list.map(r=>{
     const pg = pgs.find(p=>p.code===r.code);
     const tr = trainerOf(r.trainerId);
@@ -4682,7 +4762,7 @@ function renderCourseClassBody_(subtype){
     return;
   }
   const camp = campaigns.find(c=>c.id===selId);
-  loadCourseData_(selId).then(()=> renderCourseStage_(camp, subtype));
+  Promise.all([loadCourseData_(selId), loadAlreadyTrainedCodes_(selId, subtype)]).then(()=> renderCourseStage_(camp, subtype));
 }
 function renderCourseStage_(camp, subtype){
   const body = document.getElementById('courseBody');
@@ -4695,12 +4775,11 @@ function renderCourseStage_(camp, subtype){
 /* ===== GIAI ĐOẠN 1: ĐĂNG KÝ ===== */
 function renderCourseStageRegistration_(body, camp, subtype){
   const label = subtype==='cvtv' ? 'CVTV' : 'PGs 3★';
-  const filt = courseCandidateFilter_[subtype];
   let html = `<div class="form-card" style="max-width:none;margin-bottom:14px;">
-    <h4 style="margin:0 0 10px;color:var(--green-dark);">Bước 1 — Lọc danh sách ứng viên (từ dữ liệu On/Off)</h4>
+    <h4 style="margin:0 0 10px;color:var(--green-dark);">Bước 1 — Lọc danh sách ứng viên ${subtype==='pgs3sao'?'(từ Danh sách Nhân sự, theo đúng Hạng Sao)':'(từ dữ liệu On/Off, theo Ngày vào làm)'}</h4>
     <div class="scope-filters" style="flex-wrap:wrap;">
-      <span class="scope-label">Ngày vào làm từ:</span><input type="date" id="courseDateFrom" value="${camp.dateFrom||''}" ${isAdmin()?'':'disabled'}>
-      <span class="scope-label">đến:</span><input type="date" id="courseDateTo" value="${camp.dateTo||''}" ${isAdmin()?'':'disabled'}>
+      ${subtype==='cvtv'?`<span class="scope-label">Ngày vào làm từ:</span><input type="date" id="courseDateFrom" value="${camp.dateFrom||''}" ${isAdmin()?'':'disabled'}>
+      <span class="scope-label">đến:</span><input type="date" id="courseDateTo" value="${camp.dateTo||''}" ${isAdmin()?'':'disabled'}>`:''}
       ${subtype==='pgs3sao'?`<span class="scope-label">Sao:</span><select id="courseStarFilter" ${isAdmin()?'':'disabled'}>
         <option value="">— Chọn Sao —</option>
         ${[1,2,3,4,5].map(s=>`<option value="${s}" ${Number(camp.starFilter)===s?'selected':''}>${'★'.repeat(s)}</option>`).join('')}
@@ -4709,19 +4788,54 @@ function renderCourseStageRegistration_(body, camp, subtype){
     </div>
   </div>`;
 
-  const candidates = (camp.dateFrom||camp.dateTo||camp.starFilter) ? courseCandidates_(camp, subtype) : [];
+  const candidatesAll = (camp.dateFrom||camp.dateTo||camp.starFilter) ? courseCandidates_(camp, subtype) : [];
   const regMap = courseRegCache_[camp.id] || {};
 
-  if(candidates.length===0){
-    html += `<div class="empty">${(camp.dateFrom||camp.dateTo)?'Không có PG nào khớp bộ lọc.':'Chọn khoảng ngày (và Sao nếu là PGs 3★) rồi bấm "Lọc danh sách" để bắt đầu.'}</div>`;
+  // Bộ lọc THÊM để RÀ SOÁT danh sách sau khi đã lọc (không lưu vào campaign, chỉ lọc hiển thị tạm
+  // thời) — theo Trainer, theo Khu vực, và theo Trạng thái đăng ký (Tham gia/Không tham gia/Chưa
+  // chọn) — giúp Admin/Trainer dễ tìm đúng PG cần đăng ký hoặc rà soát khi danh sách dài.
+  let candidates = candidatesAll;
+  if(candidatesAll.length>0){
+    const regionOptions = Array.from(new Set(candidatesAll.map(c=>c.region).filter(Boolean))).sort().map(r=>`<option value="${r}" ${courseViewFilter_.region===r?'selected':''}>${r}</option>`).join('');
+    const trainerOptionsFilter = Array.from(new Map(candidatesAll.map(c=>[c.trainerId,c.trainerName])).entries()).sort((a,b)=>a[1].localeCompare(b[1],'vi')).map(([id,name])=>`<option value="${id}" ${courseViewFilter_.trainerId===id?'selected':''}>${name}</option>`).join('');
+    html += `<div class="scope-filters" style="margin:10px 0;flex-wrap:wrap;">
+      <span class="scope-label">Lọc theo Khu vực:</span>
+      <select id="courseViewRegionSel"><option value="">Tất cả Khu vực</option>${regionOptions}</select>
+      <span class="scope-label">Lọc theo Trainer:</span>
+      <select id="courseViewTrainerSel"><option value="">Tất cả Trainer</option>${trainerOptionsFilter}</select>
+      <span class="scope-label">Lọc theo Trạng thái đăng ký:</span>
+      <select id="courseViewRegStatusSel">
+        <option value="" ${courseViewFilter_.regStatus===''?'selected':''}>Tất cả</option>
+        <option value="chuachonn" ${courseViewFilter_.regStatus==='chuachonn'?'selected':''}>— Chưa chọn —</option>
+        <option value="Tham gia" ${courseViewFilter_.regStatus==='Tham gia'?'selected':''}>✅ Tham gia</option>
+        <option value="Không tham gia" ${courseViewFilter_.regStatus==='Không tham gia'?'selected':''}>❌ Không tham gia</option>
+      </select>
+    </div>`;
+    if(courseViewFilter_.region) candidates = candidates.filter(c=>c.region===courseViewFilter_.region);
+    if(courseViewFilter_.trainerId) candidates = candidates.filter(c=>c.trainerId===courseViewFilter_.trainerId);
+    if(courseViewFilter_.regStatus==='chuachonn') candidates = candidates.filter(c=>!(regMap[c.code]||{}).status);
+    else if(courseViewFilter_.regStatus) candidates = candidates.filter(c=>(regMap[c.code]||{}).status===courseViewFilter_.regStatus);
+  }
+
+  if(candidatesAll.length===0){
+    html += `<div class="empty">${(camp.dateFrom||camp.dateTo||camp.starFilter)?'Không có PG nào khớp bộ lọc.':(subtype==='cvtv'?'Chọn khoảng ngày rồi bấm "Lọc danh sách" để bắt đầu.':'Chọn Hạng Sao rồi bấm "Lọc danh sách" để bắt đầu.')}</div>`;
   } else {
     html += `<h4 style="margin:14px 0 8px;color:var(--green-dark);">Bước 2 — Từng Trainer đăng ký Tham gia / Không tham gia cho đúng PG của mình</h4>`;
+    if(candidates.length===0){
+      html += `<div class="empty">Không có PG nào khớp bộ lọc Khu vực/Trainer đang chọn.</div>`;
+    } else {
+    const totalItems = candidates.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems/COURSE_REG_PAGE_SIZE));
+    if(courseRegPage_>totalPages) courseRegPage_ = totalPages;
+    if(courseRegPage_<1) courseRegPage_ = 1;
+    const startIdx = (courseRegPage_-1)*COURSE_REG_PAGE_SIZE;
+    const pageCandidates = candidates.slice(startIdx, startIdx+COURSE_REG_PAGE_SIZE);
     html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Tỉnh</th><th>Giới tính</th><th>Shop</th><th>Kênh</th><th>Thâm niên</th>${subtype==='pgs3sao'?'<th>Sao</th>':''}<th>Trainer</th><th>Trạng thái</th><th>Note</th></tr></thead><tbody>`;
-    candidates.forEach((c,i)=>{
+    pageCandidates.forEach((c,i)=>{
       const reg = regMap[c.code] || {status:'',note:''};
       const canEdit = courseCanEditRegistration_(c);
       html += `<tr>
-        <td>${i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.province||'—'}</td>
+        <td>${startIdx+i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.province||'—'}</td>
         <td>${c.gender||'—'}</td>
         <td>${c.shop||'—'}</td><td>${c.channel||'—'}</td><td>${c.seniority} tháng</td>
         ${subtype==='pgs3sao'?`<td>${'★'.repeat(c.star)}</td>`:''}
@@ -4735,18 +4849,32 @@ function renderCourseStageRegistration_(body, camp, subtype){
       </tr>`;
     });
     html += `</tbody></table>`;
+    html += `<div class="pagination-bar" id="courseRegPagination" style="margin-top:12px;"></div>`;
+    }
     if(isAdmin()){
-      const readyCount = candidates.filter(c=>(regMap[c.code]||{}).status==='Tham gia').length;
+      const readyCount = candidatesAll.filter(c=>(regMap[c.code]||{}).status==='Tham gia').length;
       html += `<div style="margin-top:14px;"><button class="primary" id="courseLockBtn" type="button">🔒 Chốt danh sách &amp; Tạo lớp (${readyCount} PG đã chọn Tham gia)</button></div>`;
     }
   }
   body.innerHTML = html;
+  if(candidates.length>0) renderCourseRegPagination_(candidates.length, camp, subtype);
+
+  const regionSel = document.getElementById('courseViewRegionSel');
+  if(regionSel) regionSel.addEventListener('change', ()=>{ courseViewFilter_.region = regionSel.value; courseRegPage_=1; renderCourseStage_(camp, subtype); });
+  const trainerSel = document.getElementById('courseViewTrainerSel');
+  if(trainerSel) trainerSel.addEventListener('change', ()=>{ courseViewFilter_.trainerId = trainerSel.value; courseRegPage_=1; renderCourseStage_(camp, subtype); });
+  const regStatusSel = document.getElementById('courseViewRegStatusSel');
+  if(regStatusSel) regStatusSel.addEventListener('change', ()=>{ courseViewFilter_.regStatus = regStatusSel.value; courseRegPage_=1; renderCourseStage_(camp, subtype); });
 
   const applyBtn = document.getElementById('courseApplyFilterBtn');
   if(applyBtn) applyBtn.addEventListener('click', async ()=>{
-    camp.dateFrom = document.getElementById('courseDateFrom').value;
-    camp.dateTo = document.getElementById('courseDateTo').value;
-    if(subtype==='pgs3sao') camp.starFilter = document.getElementById('courseStarFilter').value;
+    if(subtype==='cvtv'){
+      camp.dateFrom = document.getElementById('courseDateFrom').value;
+      camp.dateTo = document.getElementById('courseDateTo').value;
+    } else {
+      camp.starFilter = document.getElementById('courseStarFilter').value;
+    }
+    courseRegPage_ = 1;
     await dbSet('campaigns', campaigns);
     renderCourseStage_(camp, subtype);
   });
@@ -4769,26 +4897,72 @@ function renderCourseStageRegistration_(body, camp, subtype){
   const lockBtn = document.getElementById('courseLockBtn');
   if(lockBtn) lockBtn.addEventListener('click', ()=> openCourseLockModal_(camp, subtype));
 }
+function renderCourseRegPagination_(totalItems, camp, subtype){
+  const box = document.getElementById('courseRegPagination');
+  if(!box) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems/COURSE_REG_PAGE_SIZE));
+  let pageButtons='';
+  const maxShown = 7;
+  let start = Math.max(1, courseRegPage_ - 3);
+  let end = Math.min(totalPages, start + maxShown - 1);
+  start = Math.max(1, end - maxShown + 1);
+  for(let i=start;i<=end;i++){
+    pageButtons += `<button data-course-reg-page="${i}" class="${i===courseRegPage_?'active':''}">${i}</button>`;
+  }
+  const from = (courseRegPage_-1)*COURSE_REG_PAGE_SIZE + 1;
+  const to = Math.min(courseRegPage_*COURSE_REG_PAGE_SIZE, totalItems);
+  box.innerHTML = `
+    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} PG</span>
+    <button data-course-reg-page="${courseRegPage_-1}" ${courseRegPage_<=1?'disabled':''}>‹</button>
+    ${pageButtons}
+    <button data-course-reg-page="${courseRegPage_+1}" ${courseRegPage_>=totalPages?'disabled':''}>›</button>
+  `;
+  box.querySelectorAll('[data-course-reg-page]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      courseRegPage_ = Number(btn.getAttribute('data-course-reg-page'));
+      renderCourseStage_(camp, subtype);
+    });
+  });
+}
 function openCourseLockModal_(camp, subtype){
   const trainerOptions = visibleTrainers().map(t=>`<option value="${t.id}">${t.name} (${t.region||'—'})</option>`).join('');
   const html = `
-    <div class="form-row"><label>Ngày tổ chức</label><input type="date" id="courseClassDate"></div>
-    <div class="form-row"><label>Địa điểm tổ chức</label><input type="text" id="courseClassVenue" placeholder="VD: Hội trường Trung tâm..."></div>
-    <div class="form-row"><label>Tỉnh tổ chức</label><input type="text" id="courseClassProvince" placeholder="VD: Bình Định"></div>
+    <div class="form-row"><label>Ngày tổ chức — từ</label><input type="date" id="courseClassDateFrom" value="${camp.classDateFrom||''}"></div>
+    <div class="form-row"><label>đến (khoá diễn ra nhiều ngày liên tục thì điền đủ)</label><input type="date" id="courseClassDateTo" value="${camp.classDateTo||camp.classDateFrom||''}"></div>
+    <div class="form-row"><label>Địa điểm tổ chức</label><input type="text" id="courseClassVenue" value="${(camp.classVenue||'').replace(/"/g,'&quot;')}" placeholder="VD: Hội trường Trung tâm..."></div>
+    <div class="form-row"><label>Tỉnh tổ chức</label><input type="text" id="courseClassProvince" value="${(camp.classProvince||'').replace(/"/g,'&quot;')}" placeholder="VD: Bình Định"></div>
     <div class="form-row"><label>Lead khoá (Trainer)</label><select id="courseLeadTrainer"><option value="">— Chọn Trainer —</option>${trainerOptions}</select></div>
   `;
   showFormModal_('Chốt danh sách & Tạo lớp '+(subtype==='cvtv'?'CVTV':'PGs 3★'), html, async ()=>{
-    const classDate = document.getElementById('courseClassDate').value;
+    const classDateFrom = document.getElementById('courseClassDateFrom').value;
+    const classDateTo = document.getElementById('courseClassDateTo').value || classDateFrom;
     const classVenue = document.getElementById('courseClassVenue').value.trim();
     const classProvince = document.getElementById('courseClassProvince').value.trim();
     const leadTrainerId = document.getElementById('courseLeadTrainer').value;
-    if(!classDate || !classVenue || !leadTrainerId){ alert('Vui lòng nhập đủ Ngày tổ chức, Địa điểm và chọn Lead khoá.'); return false; }
-    camp.classDate = classDate; camp.classVenue = classVenue; camp.classProvince = classProvince;
+    if(!classDateFrom || !classVenue || !leadTrainerId){ alert('Vui lòng nhập đủ Ngày tổ chức, Địa điểm và chọn Lead khoá.'); return false; }
+    if(classDateTo<classDateFrom){ alert('Ngày kết thúc không được trước ngày bắt đầu.'); return false; }
+    camp.classDateFrom = classDateFrom; camp.classDateTo = classDateTo;
+    camp.classVenue = classVenue; camp.classProvince = classProvince;
     camp.leadTrainerId = leadTrainerId; camp.locked = true;
     await dbSet('campaigns', campaigns);
     renderCourseStage_(camp, subtype);
     return true;
   });
+  document.getElementById('courseLeadTrainer').value = camp.leadTrainerId||'';
+}
+function courseDateRangeLabel_(camp){
+  if(!camp.classDateFrom) return '—';
+  const f = new Date(camp.classDateFrom).toLocaleDateString('vi-VN');
+  const t = camp.classDateTo && camp.classDateTo!==camp.classDateFrom ? new Date(camp.classDateTo).toLocaleDateString('vi-VN') : '';
+  return t ? `${f} → ${t}` : f;
+}
+async function unlockCourseRegistration_(camp, subtype){
+  const ok = await showConfirm('Quay lại danh sách Đăng ký? Thông tin lớp (Ngày/Địa điểm/Lead khoá) đã nhập vẫn được giữ nguyên, chỉ mở lại để bổ sung/sửa Trạng thái Tham gia của PGs. Điểm số (nếu đã nhập) vẫn được giữ nguyên, không mất.');
+  if(!ok) return;
+  camp.locked = false;
+  courseRegPage_ = 1;
+  await dbSet('campaigns', campaigns);
+  renderCourseStage_(camp, subtype);
 }
 
 /* ===== GIAI ĐOẠN 2: CHẤM ĐIỂM (sau khi chốt) ===== */
@@ -4796,26 +4970,34 @@ function renderCourseStageScoring_(body, camp, subtype){
   const lead = trainerOf(camp.leadTrainerId);
   const regMap = courseRegCache_[camp.id] || {};
   const scoreMap = courseScoreCache_[camp.id] || {};
-  const candidates = courseCandidates_(camp, subtype).filter(c=>(regMap[c.code]||{}).status==='Tham gia');
+  const candidates = courseCandidates_(camp, subtype, false).filter(c=>(regMap[c.code]||{}).status==='Tham gia');
   const canScore = courseCanScore_(camp);
 
   let html = `<div class="form-card" style="max-width:none;margin-bottom:14px;">
     <h4 style="margin:0 0 8px;color:var(--green-dark);">📋 Thông tin lớp</h4>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:var(--cap);">
-      <div><strong>Ngày tổ chức:</strong> ${new Date(camp.classDate).toLocaleDateString('vi-VN')}</div>
+      <div><strong>Ngày tổ chức:</strong> ${courseDateRangeLabel_(camp)}</div>
       <div><strong>Địa điểm:</strong> ${camp.classVenue}</div>
       <div><strong>Tỉnh:</strong> ${camp.classProvince||'—'}</div>
       <div><strong>Lead khoá:</strong> ${lead?lead.name:'—'}</div>
     </div>
+    ${isAdmin()?`<div style="margin-top:10px;"><button class="secondary" id="courseUnlockBtn" type="button">↩ Quay Lại</button></div>`:''}
   </div>`;
 
   if(!canScore) html += `<p class="section-desc" style="margin-bottom:10px;">Chỉ <strong>${lead?lead.name:'Lead khoá'}</strong> hoặc Admin mới được nhập điểm — bạn đang ở chế độ xem.</p>`;
 
+  const totalItems = candidates.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems/COURSE_REG_PAGE_SIZE));
+  if(courseScorePage_>totalPages) courseScorePage_ = totalPages;
+  if(courseScorePage_<1) courseScorePage_ = 1;
+  const startIdx = (courseScorePage_-1)*COURSE_REG_PAGE_SIZE;
+  const pageCandidates = candidates.slice(startIdx, startIdx+COURSE_REG_PAGE_SIZE);
+
   html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Trainer</th><th>Lý thuyết</th><th>Tư vấn</th><th>Tổng</th><th>⭐ Xuất sắc</th><th>Note đánh giá</th></tr></thead><tbody>`;
-  candidates.forEach((c,i)=>{
+  pageCandidates.forEach((c,i)=>{
     const sc = scoreMap[c.code] || {theory:'',consult:'',total:0,excellent:false,note:''};
     html += `<tr>
-      <td>${i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.trainerName}</td>
+      <td>${startIdx+i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.trainerName}</td>
       <td>${canScore?`<input type="number" min="0" max="10" step="0.1" class="course-score-theory" data-code="${c.code}" value="${sc.theory}" style="width:70px;padding:5px;border:1px solid var(--line);border-radius:6px;">`:sc.theory}</td>
       <td>${canScore?`<input type="number" min="0" max="10" step="0.1" class="course-score-consult" data-code="${c.code}" value="${sc.consult}" style="width:70px;padding:5px;border:1px solid var(--line);border-radius:6px;">`:sc.consult}</td>
       <td><strong class="course-score-total" data-code="${c.code}">${sc.total||0}</strong></td>
@@ -4824,8 +5006,10 @@ function renderCourseStageScoring_(body, camp, subtype){
     </tr>`;
   });
   html += `</tbody></table>`;
+  html += `<div class="pagination-bar" id="courseScorePagination" style="margin-top:12px;"></div>`;
   if(canScore) html += `<div style="margin-top:14px;"><button class="primary" id="courseCompleteBtn" type="button">✅ Hoàn thành khoá học</button></div>`;
   body.innerHTML = html;
+  if(totalItems>0) renderCourseScorePagination_(totalItems, camp, subtype);
 
   const saveScore = async (code)=>{
     const theoryEl = body.querySelector(`.course-score-theory[data-code="${code}"]`);
@@ -4843,42 +5027,119 @@ function renderCourseStageScoring_(body, camp, subtype){
   body.querySelectorAll('.course-score-theory, .course-score-consult, .course-score-excellent, .course-score-note').forEach(el=>{
     el.addEventListener('change', ()=> saveScore(el.getAttribute('data-code')));
   });
+  const unlockBtn = document.getElementById('courseUnlockBtn');
+  if(unlockBtn) unlockBtn.addEventListener('click', ()=> unlockCourseRegistration_(camp, subtype));
   const completeBtn = document.getElementById('courseCompleteBtn');
   if(completeBtn) completeBtn.addEventListener('click', async ()=>{
     const ok = await showConfirm('Hoàn thành khoá học? Sau khi hoàn thành sẽ KHOÁ LẠI toàn bộ điểm số, không sửa được nữa.');
     if(!ok) return;
     camp.completed = true;
+    courseCompletePage_ = 1;
     await dbSet('campaigns', campaigns);
     renderCourseStage_(camp, subtype);
   });
 }
 
-/* ===== GIAI ĐOẠN 3: ĐÃ HOÀN THÀNH (chỉ xem) ===== */
+function renderCourseScorePagination_(totalItems, camp, subtype){
+  const box = document.getElementById('courseScorePagination');
+  if(!box) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems/COURSE_REG_PAGE_SIZE));
+  let pageButtons='';
+  const maxShown = 7;
+  let start = Math.max(1, courseScorePage_ - 3);
+  let end = Math.min(totalPages, start + maxShown - 1);
+  start = Math.max(1, end - maxShown + 1);
+  for(let i=start;i<=end;i++){
+    pageButtons += `<button data-course-score-page="${i}" class="${i===courseScorePage_?'active':''}">${i}</button>`;
+  }
+  const from = (courseScorePage_-1)*COURSE_REG_PAGE_SIZE + 1;
+  const to = Math.min(courseScorePage_*COURSE_REG_PAGE_SIZE, totalItems);
+  box.innerHTML = `
+    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} PG</span>
+    <button data-course-score-page="${courseScorePage_-1}" ${courseScorePage_<=1?'disabled':''}>‹</button>
+    ${pageButtons}
+    <button data-course-score-page="${courseScorePage_+1}" ${courseScorePage_>=totalPages?'disabled':''}>›</button>
+  `;
+  box.querySelectorAll('[data-course-score-page]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      courseScorePage_ = Number(btn.getAttribute('data-course-score-page'));
+      renderCourseStage_(camp, subtype);
+    });
+  });
+}
+
+/* ===== GIAI ĐOẠN 3: ĐÃ HOÀN THÀNH (chỉ xem, có thể mở lại Chỉnh sửa) ===== */
 function renderCourseStageComplete_(body, camp, subtype){
   const lead = trainerOf(camp.leadTrainerId);
   const regMap = courseRegCache_[camp.id] || {};
   const scoreMap = courseScoreCache_[camp.id] || {};
-  const candidates = courseCandidates_(camp, subtype).filter(c=>(regMap[c.code]||{}).status==='Tham gia');
+  const candidates = courseCandidates_(camp, subtype, false).filter(c=>(regMap[c.code]||{}).status==='Tham gia');
+  const canEditAgain = courseCanScore_(camp); // Admin hoặc đúng Lead Khoá mới được mở lại Chỉnh sửa
   let html = `<div class="form-card" style="max-width:none;margin-bottom:14px;background:var(--green-bg,#f0fdf4);">
     <h4 style="margin:0 0 8px;color:var(--green-dark);">✅ Khoá học đã hoàn thành</h4>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:var(--cap);">
-      <div><strong>Ngày tổ chức:</strong> ${new Date(camp.classDate).toLocaleDateString('vi-VN')}</div>
+      <div><strong>Ngày tổ chức:</strong> ${courseDateRangeLabel_(camp)}</div>
       <div><strong>Địa điểm:</strong> ${camp.classVenue}</div>
       <div><strong>Tỉnh:</strong> ${camp.classProvince||'—'}</div>
       <div><strong>Lead khoá:</strong> ${lead?lead.name:'—'}</div>
     </div>
+    ${canEditAgain?`<div style="margin-top:10px;"><button class="secondary" id="courseReopenBtn" type="button">↩ Quay Lại</button></div>`:''}
   </div>`;
   html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Trainer</th><th>Lý thuyết</th><th>Tư vấn</th><th>Tổng</th><th>⭐</th><th>Note</th></tr></thead><tbody>`;
-  candidates.forEach((c,i)=>{
+  const totalItems = candidates.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems/COURSE_REG_PAGE_SIZE));
+  if(courseCompletePage_>totalPages) courseCompletePage_ = totalPages;
+  if(courseCompletePage_<1) courseCompletePage_ = 1;
+  const startIdx = (courseCompletePage_-1)*COURSE_REG_PAGE_SIZE;
+  const pageCandidates = candidates.slice(startIdx, startIdx+COURSE_REG_PAGE_SIZE);
+  pageCandidates.forEach((c,i)=>{
     const sc = scoreMap[c.code] || {theory:0,consult:0,total:0,excellent:false,note:''};
     html += `<tr${sc.excellent?' style="background:#fffbeb;"':''}>
-      <td>${i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.trainerName}</td>
+      <td>${startIdx+i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.trainerName}</td>
       <td>${sc.theory}</td><td>${sc.consult}</td><td><strong>${sc.total}</strong></td>
       <td style="text-align:center;">${sc.excellent?'⭐':''}</td><td>${sc.note||'—'}</td>
     </tr>`;
   });
   html += `</tbody></table>`;
+  html += `<div class="pagination-bar" id="courseCompletePagination" style="margin-top:12px;"></div>`;
   body.innerHTML = html;
+  if(totalItems>0) renderCourseCompletePagination_(totalItems, camp, subtype);
+  const reopenBtn = document.getElementById('courseReopenBtn');
+  if(reopenBtn) reopenBtn.addEventListener('click', async ()=>{
+    const ok = await showConfirm('Mở lại để chỉnh sửa điểm số? Khoá học sẽ quay về trạng thái "Chấm điểm" — bấm "Hoàn thành" lại sau khi sửa xong.');
+    if(!ok) return;
+    camp.completed = false;
+    courseScorePage_ = 1;
+    await dbSet('campaigns', campaigns);
+    renderCourseStage_(camp, subtype);
+  });
+}
+function renderCourseCompletePagination_(totalItems, camp, subtype){
+  const box = document.getElementById('courseCompletePagination');
+  if(!box) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems/COURSE_REG_PAGE_SIZE));
+  let pageButtons='';
+  const maxShown = 7;
+  let start = Math.max(1, courseCompletePage_ - 3);
+  let end = Math.min(totalPages, start + maxShown - 1);
+  start = Math.max(1, end - maxShown + 1);
+  for(let i=start;i<=end;i++){
+    pageButtons += `<button data-course-complete-page="${i}" class="${i===courseCompletePage_?'active':''}">${i}</button>`;
+  }
+  const from = (courseCompletePage_-1)*COURSE_REG_PAGE_SIZE + 1;
+  const to = Math.min(courseCompletePage_*COURSE_REG_PAGE_SIZE, totalItems);
+  box.innerHTML = `
+    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} PG</span>
+    <button data-course-complete-page="${courseCompletePage_-1}" ${courseCompletePage_<=1?'disabled':''}>‹</button>
+    ${pageButtons}
+    <button data-course-complete-page="${courseCompletePage_+1}" ${courseCompletePage_>=totalPages?'disabled':''}>›</button>
+  `;
+  box.querySelectorAll('[data-course-complete-page]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      courseCompletePage_ = Number(btn.getAttribute('data-course-complete-page'));
+      renderCourseStage_(camp, subtype);
+    });
+  });
 }
 let chartNoiboSummaryInstance=null;
 function renderNoiboSummaryChart(labels, v01, vMoi){
@@ -5243,6 +5504,7 @@ function populatePgSearchSelects(){
   }
 }
 let pgStatusFilter='';
+let pgStarFilter='';
 function visiblePgList(){
   let list = scopedPgs('OPPO');
   if(pgSearchMode==='trainer'){
@@ -5257,6 +5519,7 @@ function visiblePgList(){
     if(term) list = list.filter(p=> (p.code||'').toLowerCase().includes(term) || (p.name||'').toLowerCase().includes(term));
   }
   if(pgStatusFilter) list = list.filter(p=> p.status===pgStatusFilter);
+  if(pgStarFilter!=='') list = list.filter(p=> Number(p.star)===Number(pgStarFilter));
   return list;
 }
 function renderPgPagination(totalItems){
@@ -5342,6 +5605,7 @@ document.getElementById('pgSearchInput').addEventListener('input', ()=>{ pgCurre
 document.getElementById('pgSearchTrainerSelect').addEventListener('change', ()=>{ pgCurrentPage=1; renderPgOppoTable(); });
 document.getElementById('pgSearchSaleSelect').addEventListener('change', ()=>{ pgCurrentPage=1; renderPgOppoTable(); });
 document.getElementById('pgStatusFilterSelect').addEventListener('change', (e)=>{ pgStatusFilter=e.target.value; pgCurrentPage=1; renderPgOppoTable(); });
+document.getElementById('pgStarFilterSelect').addEventListener('change', (e)=>{ pgStarFilter=e.target.value; pgCurrentPage=1; renderPgOppoTable(); });
 document.querySelectorAll('[data-pgsearchmode]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('[data-pgsearchmode]').forEach(b=>b.classList.remove('active'));
@@ -5372,7 +5636,7 @@ document.getElementById('exportPgBtn').addEventListener('click', ()=>{
       'Tỉnh': p.province||'',
       'Phường': p.district||'',
       'Shop': p.shop||'',
-      'Size shop': p.shopSize||'',
+      'Size shop': shopSizeFromMap_(p.shop)||p.shopSize||'',
       'Kênh': p.channel||'',
       'Nhóm kênh': channelGroup(p.channel),
       'Thâm niên (tháng)': p.seniority||0,
@@ -6145,6 +6409,7 @@ async function processOnOffWorkbook_(wb){
   const rowsOff = wsOff ? XLSX.utils.sheet_to_json(wsOff, { defval:'' }) : [];
 
   let added=0, updated=0, skippedOtherRegion=0, tracedBack=0;
+  let pgsGenderSynced = false;
 
   async function processRow(row, forcedStatus){
     const code = String(row['Code']||'').trim();
@@ -6155,13 +6420,17 @@ async function processOnOffWorkbook_(wb){
     const status = forcedStatus || String(row['Status']||'').trim() || 'On';
     const joinedAt = parseVNDate(row['Joined at']);
     const offDate = parseVNDate(row['Off date']);
-    const gender = String(row['Gender']||'').trim();
+    const gender = String(row['Gender']||row['Giới tính']||row['Gioi tinh']||'').trim();
 
     let matchedPg = findPgByCode_(pgs, code);
     if(!matchedPg){
       matchedPg = await findPgAcrossMonths_(code);
       if(matchedPg) tracedBack++;
     }
+    // Đồng bộ luôn Giới tính thẳng vào Danh sách Nhân sự chính (không chỉ lưu riêng ở On/Off) — để
+    // các nơi khác (VD danh sách đăng ký PGs 3★, lấy PG trực tiếp từ Nhân sự) cũng thấy đúng Giới
+    // tính mà không cần tra vòng qua On/Off.
+    if(matchedPg && gender && !matchedPg.gender){ matchedPg.gender = gender; pgsGenderSynced = true; }
     const trainerId = matchedPg ? matchedPg.trainerId : '';
     const channel = matchedPg ? (matchedPg.channel||'') : '';
     const shop = matchedPg ? (matchedPg.shop||'') : '';
@@ -6207,6 +6476,7 @@ async function processOnOffWorkbook_(wb){
   const removedStale = beforeCount - onoffRoster.length;
 
   await dbSet('onoffRoster', onoffRoster);
+  if(pgsGenderSynced) await dbSet('pgs:'+currentMonth, pgs);
   renderAll();
 
   msg.style.display='block'; msg.style.color='var(--green-ok)';
