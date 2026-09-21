@@ -559,6 +559,7 @@
       <button id="uiViewToggleBtn" type="button">🖥 Tự động</button>
       <button class="ghost" id="pendingTargetBellBtn" style="display:none;color:var(--red);border-color:var(--red);">🔔 <span id="pendingTargetCount">0</span> chờ duyệt Target</button>
       <button class="ghost" id="pendingPgStatusBellBtn" style="display:none;color:var(--amber);border-color:var(--amber);">🔔 <span id="pendingPgStatusCount">0</span> chờ duyệt PG</button>
+      <button class="ghost" id="courseLeadTaskBellBtn" style="display:none;color:var(--green-dark);border-color:var(--green-dark);">🔔 <span id="courseLeadTaskCount">0</span> nhiệm vụ Lead khoá</button>
       <div class="avatar-circle" id="avatarInitials">--</div>
       <div class="userinfo">
         <span class="uname" id="currentUserName"></span>
@@ -677,27 +678,27 @@
         </div>
       </div>
       <div class="scope-filters" style="justify-content:space-between;">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <span class="scope-label">Tìm nhanh:</span>
           <div class="subnav" style="margin:0;">
-            <button data-pgsearchmode="name" class="active">Theo Tên hoặc Code</button>
+            <button data-pgsearchmode="name" class="active">Theo Tên/Code</button>
             <button data-pgsearchmode="trainer">Theo Trainer</button>
             <button data-pgsearchmode="sale">Theo Sale</button>
           </div>
-          <input type="text" id="pgSearchInput" placeholder="Nhập Code hoặc Họ và Tên..." style="min-width:220px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
-          <select id="pgSearchTrainerSelect" style="display:none;min-width:220px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Trainer</option></select>
-          <select id="pgSearchSaleSelect" style="display:none;min-width:220px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Sale</option></select>
+          <input type="text" id="pgSearchInput" placeholder="Nhập Code hoặc Họ và Tên..." style="width:150px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
+          <select id="pgSearchTrainerSelect" style="display:none;max-width:150px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Trainer</option></select>
+          <select id="pgSearchSaleSelect" style="display:none;max-width:150px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Sale</option></select>
           <span class="scope-label">Trạng thái:</span>
-          <select id="pgStatusFilterSelect" style="min-width:170px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
-            <option value="">Tất cả trạng thái</option>
+          <select id="pgStatusFilterSelect" style="max-width:140px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
+            <option value="">Tất cả</option>
             <option value="Đang làm">Đang làm</option>
             <option value="THAI SẢN">THAI SẢN</option>
             <option value="CODE ĐẠI LÝ">CODE ĐẠI LÝ</option>
-            <option value="OFF (chưa cắt Center)">OFF (chưa cắt Center)</option>
+            <option value="OFF (chưa cắt Center)">OFF (chưa cắt)</option>
           </select>
           <span class="scope-label">Sao:</span>
-          <select id="pgStarFilterSelect" style="min-width:130px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
-            <option value="">Tất cả Sao</option>
+          <select id="pgStarFilterSelect" style="max-width:100px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
+            <option value="">Tất cả</option>
             <option value="0">★ 0</option>
             <option value="1">★ 1</option>
             <option value="2">★★ 2</option>
@@ -706,9 +707,9 @@
             <option value="5">★★★★★ 5</option>
           </select>
           <span class="scope-label">Size shop:</span>
-          <select id="pgShopSizeFilterSelect" style="min-width:150px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Size shop</option></select>
+          <select id="pgShopSizeFilterSelect" style="max-width:120px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả</option></select>
+          <button class="secondary" id="exportPgBtn" style="white-space:nowrap;">Export Excel</button>
         </div>
-        <button class="secondary" id="exportPgBtn">Export danh sách ra Excel</button>
       </div>
       <div id="pgSearchResultCount" style="font-size:var(--cap);color:var(--green-dark);font-weight:700;margin-bottom:8px;"></div>
       <table class="pg-table">
@@ -4672,7 +4673,7 @@ let courseSelectedCampaignId_ = { cvtv:null, pgs3sao:null };
 let courseCandidateFilter_ = { cvtv:{dateFrom:'',dateTo:''}, pgs3sao:{dateFrom:'',dateTo:'',star:''} };
 let courseRegCache_ = {}; // { [campId]: {code:{status,note}} }
 let courseScoreCache_ = {}; // { [campId]: {code:{theory,consult,total,excellent,note}} }
-let courseViewFilter_ = { region:'', trainerId:'', regStatus:'' }; // bộ lọc rà soát tạm thời (Khu vực/Trainer/Trạng thái) ở màn hình đăng ký
+let courseViewFilter_ = { region:'', trainerId:'', regStatus:'', search:'' }; // bộ lọc rà soát tạm thời (Khu vực/Trainer/Trạng thái/Tìm kiếm) ở màn hình đăng ký
 let courseRegPage_ = 1;
 let courseScorePage_ = 1;
 let courseCompletePage_ = 1;
@@ -4835,8 +4836,13 @@ function renderCourseStageRegistration_(body, camp, subtype){
     </div>
   </div>`;
 
-  const candidatesAll = (camp.dateFrom||camp.dateTo||camp.starFilter) ? courseCandidates_(camp, subtype) : [];
   const regMap = courseRegCache_[camp.id] || {};
+  // Nếu đã từng lọc + đăng ký trước đó (Trạng thái đã lưu cho ít nhất 1 PG), vẫn hiện danh sách dù
+  // vì lý do gì đó camp.dateFrom/dateTo/starFilter bị trống — tránh tình huống bấm "Quay Lại" xong bị
+  // "kẹt" ở màn hình trống, không thấy nút Chốt lại để tiếp tục, dữ liệu Điểm/Đăng ký đã nhập vẫn giữ
+  // nguyên trong lưu trữ, chỉ cần hiện lại đúng danh sách là thao tác tiếp được ngay.
+  const hasExistingRegs = Object.keys(regMap).length>0;
+  const candidatesAll = (camp.dateFrom||camp.dateTo||camp.starFilter||hasExistingRegs) ? courseCandidates_(camp, subtype) : [];
 
   // Bộ lọc THÊM để RÀ SOÁT danh sách sau khi đã lọc (không lưu vào campaign, chỉ lọc hiển thị tạm
   // thời) — theo Trainer, theo Khu vực, và theo Trạng thái đăng ký (Tham gia/Không tham gia/Chưa
@@ -4846,18 +4852,24 @@ function renderCourseStageRegistration_(body, camp, subtype){
     const regionOptions = Array.from(new Set(candidatesAll.map(c=>c.region).filter(Boolean))).sort().map(r=>`<option value="${r}" ${courseViewFilter_.region===r?'selected':''}>${r}</option>`).join('');
     const trainerOptionsFilter = Array.from(new Map(candidatesAll.map(c=>[c.trainerId,c.trainerName])).entries()).sort((a,b)=>a[1].localeCompare(b[1],'vi')).map(([id,name])=>`<option value="${id}" ${courseViewFilter_.trainerId===id?'selected':''}>${name}</option>`).join('');
     html += `<div class="scope-filters" style="margin:10px 0;flex-wrap:wrap;">
-      <span class="scope-label">Lọc theo Khu vực:</span>
-      <select id="courseViewRegionSel"><option value="">Tất cả Khu vực</option>${regionOptions}</select>
-      <span class="scope-label">Lọc theo Trainer:</span>
-      <select id="courseViewTrainerSel"><option value="">Tất cả Trainer</option>${trainerOptionsFilter}</select>
-      <span class="scope-label">Lọc theo Trạng thái đăng ký:</span>
-      <select id="courseViewRegStatusSel">
+      <span class="scope-label">Tìm Tên/Code:</span>
+      <input type="text" id="courseViewSearchInput" value="${(courseViewFilter_.search||'').replace(/"/g,'&quot;')}" placeholder="Nhập Tên hoặc Code..." style="padding:8px 12px;border:1.5px solid #9FD8CB;border-radius:10px;font-family:inherit;font-size:var(--cap);width:150px;">
+      <span class="scope-label">Khu vực:</span>
+      <select id="courseViewRegionSel" style="max-width:130px;"><option value="">Tất cả</option>${regionOptions}</select>
+      <span class="scope-label">Trainer:</span>
+      <select id="courseViewTrainerSel" style="max-width:150px;"><option value="">Tất cả</option>${trainerOptionsFilter}</select>
+      <span class="scope-label">Trạng thái:</span>
+      <select id="courseViewRegStatusSel" style="max-width:150px;">
         <option value="" ${courseViewFilter_.regStatus===''?'selected':''}>Tất cả</option>
-        <option value="chuachonn" ${courseViewFilter_.regStatus==='chuachonn'?'selected':''}>— Chưa chọn —</option>
+        <option value="chuachonn" ${courseViewFilter_.regStatus==='chuachonn'?'selected':''}>Chưa chọn</option>
         <option value="Tham gia" ${courseViewFilter_.regStatus==='Tham gia'?'selected':''}>✅ Tham gia</option>
         <option value="Không tham gia" ${courseViewFilter_.regStatus==='Không tham gia'?'selected':''}>❌ Không tham gia</option>
       </select>
     </div>`;
+    if(courseViewFilter_.search){
+      const term = courseViewFilter_.search.trim().toLowerCase();
+      candidates = candidates.filter(c=> (c.name||'').toLowerCase().includes(term) || (c.code||'').toLowerCase().includes(term));
+    }
     if(courseViewFilter_.region) candidates = candidates.filter(c=>c.region===courseViewFilter_.region);
     if(courseViewFilter_.trainerId) candidates = candidates.filter(c=>c.trainerId===courseViewFilter_.trainerId);
     if(courseViewFilter_.regStatus==='chuachonn') candidates = candidates.filter(c=>!(regMap[c.code]||{}).status);
@@ -4915,6 +4927,23 @@ function renderCourseStageRegistration_(body, camp, subtype){
   if(trainerSel) trainerSel.addEventListener('change', ()=>{ courseViewFilter_.trainerId = trainerSel.value; courseRegPage_=1; renderCourseStage_(camp, subtype); });
   const regStatusSel = document.getElementById('courseViewRegStatusSel');
   if(regStatusSel) regStatusSel.addEventListener('change', ()=>{ courseViewFilter_.regStatus = regStatusSel.value; courseRegPage_=1; renderCourseStage_(camp, subtype); });
+  const searchInput = document.getElementById('courseViewSearchInput');
+  if(searchInput){
+    let searchDebounce_;
+    searchInput.addEventListener('input', ()=>{
+      clearTimeout(searchDebounce_);
+      const cursorPos = searchInput.selectionStart;
+      searchDebounce_ = setTimeout(()=>{
+        courseViewFilter_.search = searchInput.value;
+        courseRegPage_ = 1;
+        renderCourseStage_(camp, subtype);
+        // Vẽ lại toàn bộ bảng sẽ tạo ô tìm kiếm MỚI (mất focus) — chủ động focus lại + đặt đúng vị
+        // trí con trỏ như cũ để gõ tiếp không bị gián đoạn.
+        const newInput = document.getElementById('courseViewSearchInput');
+        if(newInput){ newInput.focus(); newInput.setSelectionRange(cursorPos, cursorPos); }
+      }, 350);
+    });
+  }
 
   const applyBtn = document.getElementById('courseApplyFilterBtn');
   if(applyBtn) applyBtn.addEventListener('click', async ()=>{
@@ -5017,12 +5046,112 @@ function openCourseLockModal_(camp, subtype){
     camp.classDateFrom = classDateFrom; camp.classDateTo = classDateTo;
     camp.classVenue = classVenue; camp.classProvince = classProvince;
     camp.leadTrainerId = leadTrainerId; camp.locked = true;
+  renderCourseLeadTaskBell_();
     await dbSet('campaigns', campaigns);
     renderCourseStage_(camp, subtype);
     return true;
   });
   document.getElementById('courseLeadTrainer').value = camp.leadTrainerId||'';
 }
+/* ============ KHẢO SÁT KHOÁ HỌC (CVTV/PGs 3★) — Import file mẫu Google Form, hiện Kết quả khoá học ============
+   File mẫu là export từ Google Form (dòng 1 = tiêu đề, dòng 2 = câu hỏi đầy đủ, dòng 3+ = dữ liệu).
+   Đọc theo ĐÚNG VỊ TRÍ CỘT (không theo tên cột — câu hỏi quá dài, dễ lệch khi Form có chỉnh sửa nhỏ):
+   cột 2 = Họ và Tên PGs, cột 4 = Tên Trainer, cột 12-19 = 8 câu điểm thang 1-5, cột 25 = câu Tổng quan
+   thang 1-10. Tên hạng mục trong file gốc khá dài — rút ngắn lại để vừa biểu đồ, vẫn giữ đúng nghĩa. */
+const COURSE_SURVEY_CATEGORIES = [
+  { col: 12, label: 'Năng lực trước khoá' },
+  { col: 13, label: 'Năng lực sau khoá' },
+  { col: 14, label: 'Tự tin thương hiệu OPPO' },
+  { col: 15, label: 'Tự tin kỹ năng bán hàng' },
+  { col: 16, label: 'Tự tin kiến thức sản phẩm' },
+  { col: 17, label: 'Trainer truyền đạt rõ ràng' },
+  { col: 18, label: 'Trainer nghiêm khắc & công bằng' },
+  { col: 19, label: 'Cảm hứng học tập' },
+];
+const COURSE_SURVEY_OVERALL_COL = 25; // Câu tổng quan, thang điểm 1-10 (khác thang các câu trên) — tách riêng
+async function loadCourseSurveyData_(campId){
+  return (await dbGet('courseSurveyResponses:'+campId)) || null;
+}
+function parseCourseSurveyWorkbook_(wb){
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' }); // đọc dạng mảng-của-mảng theo VỊ TRÍ cột
+  const dataRows = rows.slice(2); // bỏ dòng 1 (tiêu đề) + dòng 2 (câu hỏi)
+  return dataRows.filter(r=>r && r.length>2 && String(r[2]||'').trim()).map(r=>({
+    pgName: String(r[2]||'').trim(),
+    trainerName: String(r[4]||'').trim(),
+    scores: COURSE_SURVEY_CATEGORIES.map(cat=> Number(r[cat.col])||0),
+    overall: Number(r[COURSE_SURVEY_OVERALL_COL])||0,
+  }));
+}
+async function renderCourseSurveyResults_(camp, subtype){
+  const box = document.getElementById('courseSurveyResultsBox');
+  if(!box) return;
+  const data = await loadCourseSurveyData_(camp.id);
+  if(!data || data.length===0){
+    box.innerHTML = '';
+    return;
+  }
+  const n = data.length;
+  const avgByCategory = COURSE_SURVEY_CATEGORIES.map((cat,idx)=>{
+    const sum = data.reduce((s,r)=> s + (r.scores[idx]||0), 0);
+    return Math.round((sum/n)*100)/100;
+  });
+  const avgOverall = Math.round((data.reduce((s,r)=>s+(r.overall||0),0)/n)*100)/100;
+  const chartId = 'courseSurveyChart_'+camp.id;
+  // Chiều cao khung tính theo đúng số hạng mục (mỗi cột ~42px) để KHÔNG bị chật/cắt bớt cột nào, dù
+  // sau này có thêm/bớt câu hỏi trong file mẫu khảo sát.
+  const chartHeight = Math.max(220, COURSE_SURVEY_CATEGORIES.length*42 + 40);
+  let html = `<h4 style="margin:0 0 10px;color:var(--green-dark);">📊 Kết quả khoá học — ${n} phiếu khảo sát</h4>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:1 1 420px;min-width:320px;background:var(--white);border:1px solid var(--line);border-radius:10px;padding:14px 22px 14px 14px;">
+        <div style="height:${chartHeight}px;"><canvas id="${chartId}"></canvas></div>
+      </div>
+      <div style="flex:0 0 180px;background:var(--green-pale);border-radius:10px;padding:18px;text-align:center;">
+        <div style="font-size:11px;color:var(--green-dark);font-weight:700;margin-bottom:6px;">ĐÁNH GIÁ TỔNG QUAN</div>
+        <div style="font-size:34px;font-weight:800;color:var(--green-dark);">${avgOverall}<span style="font-size:16px;">/10</span></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Trung bình ${n} phiếu</div>
+      </div>
+    </div>`;
+  box.innerHTML = html;
+  const ctx = document.getElementById(chartId);
+  if(ctx && courseChartLibLoaded_()){
+    // Plugin nhỏ tự vẽ: ghi số điểm trung bình ngay BÊN NGOÀI, sát đầu mút mỗi cột — dễ thấy ngay,
+    // không cần rê chuột vào mới xem được số (khác hẳn tooltip mặc định).
+    const valueLabelPlugin = {
+      id: 'courseSurveyValueLabel',
+      afterDatasetsDraw(chart){
+        const { ctx: c } = chart;
+        c.save();
+        c.font = '700 12px inherit';
+        c.fillStyle = '#0B5E36';
+        c.textAlign = 'left';
+        c.textBaseline = 'middle';
+        chart.getDatasetMeta(0).data.forEach((bar, i)=>{
+          const val = chart.data.datasets[0].data[i];
+          c.fillText(String(val), bar.x + 6, bar.y);
+        });
+        c.restore();
+      }
+    };
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: COURSE_SURVEY_CATEGORIES.map(c=>c.label),
+        datasets: [{ label: 'Điểm trung bình (/5)', data: avgByCategory, backgroundColor: '#0B5E36', borderRadius:6 }]
+      },
+      plugins: [valueLabelPlugin],
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { right: 30 } }, // chừa chỗ cho số liệu vẽ ngoài cột, không bị cắt mất ở mép phải
+        plugins: { legend: { display:false }, tooltip:{ callbacks:{ label: c=> c.parsed.x + '/5' } } },
+        scales: { x: { min:0, max:5.5, ticks:{ stepSize:1 } } } // max nhích lên 5.5 (thay vì đúng 5) để số liệu ghi ngoài cột luôn còn đủ chỗ kể cả khi điểm đạt tối đa 5/5
+      }
+    });
+  }
+}
+function courseChartLibLoaded_(){ return typeof Chart !== 'undefined'; }
 function courseDateRangeLabel_(camp){
   if(!camp.classDateFrom) return '—';
   const f = new Date(camp.classDateFrom).toLocaleDateString('vi-VN');
@@ -5033,6 +5162,7 @@ async function unlockCourseRegistration_(camp, subtype){
   const ok = await showConfirm('Quay lại danh sách Đăng ký? Thông tin lớp (Ngày/Địa điểm/Lead khoá) đã nhập vẫn được giữ nguyên, chỉ mở lại để bổ sung/sửa Trạng thái Tham gia của PGs. Điểm số (nếu đã nhập) vẫn được giữ nguyên, không mất.');
   if(!ok) return;
   camp.locked = false;
+  renderCourseLeadTaskBell_();
   courseRegPage_ = 1;
   await dbSet('campaigns', campaigns);
   renderCourseStage_(camp, subtype);
@@ -5053,6 +5183,7 @@ function renderCourseStageScoring_(body, camp, subtype){
       <div><strong>Địa điểm:</strong> ${camp.classVenue}</div>
       <div><strong>Tỉnh:</strong> ${camp.classProvince||'—'}</div>
       <div><strong>Lead khoá:</strong> ${lead?lead.name:'—'}</div>
+      <div><strong>Số lượng học viên:</strong> ${candidates.length}</div>
     </div>
     ${isAdmin()?`<div style="margin-top:10px;"><button class="secondary" id="courseUnlockBtn" type="button">↩ Quay Lại</button></div>`:''}
   </div>`;
@@ -5066,42 +5197,64 @@ function renderCourseStageScoring_(body, camp, subtype){
   const startIdx = (courseScorePage_-1)*COURSE_REG_PAGE_SIZE;
   const pageCandidates = candidates.slice(startIdx, startIdx+COURSE_REG_PAGE_SIZE);
 
-  html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Trainer</th><th>Lý thuyết</th><th>Tư vấn</th><th>Tổng</th><th>⭐ Xuất sắc</th><th>Note đánh giá</th></tr></thead><tbody>`;
+  html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Trainer</th><th>Điểm cuối khoá</th><th>⭐ Xuất sắc</th><th>Note đánh giá</th></tr></thead><tbody>`;
   pageCandidates.forEach((c,i)=>{
-    const sc = scoreMap[c.code] || {theory:'',consult:'',total:0,excellent:false,note:''};
+    const sc = scoreMap[c.code] || {total:'',excellent:false,note:''};
     html += `<tr>
       <td>${startIdx+i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.trainerName}</td>
-      <td>${canScore?`<input type="number" min="0" max="10" step="0.1" class="course-score-theory" data-code="${c.code}" value="${sc.theory}" style="width:70px;padding:5px;border:1px solid var(--line);border-radius:6px;">`:sc.theory}</td>
-      <td>${canScore?`<input type="number" min="0" max="10" step="0.1" class="course-score-consult" data-code="${c.code}" value="${sc.consult}" style="width:70px;padding:5px;border:1px solid var(--line);border-radius:6px;">`:sc.consult}</td>
-      <td><strong class="course-score-total" data-code="${c.code}">${sc.total||0}</strong></td>
+      <td>${canScore?`<input type="number" min="0" max="10" step="0.1" class="course-score-total" data-code="${c.code}" value="${sc.total}" style="width:80px;padding:5px;border:1px solid var(--line);border-radius:6px;">`:`<strong>${sc.total||0}</strong>`}</td>
       <td style="text-align:center;">${canScore?`<input type="checkbox" class="course-score-excellent" data-code="${c.code}" ${sc.excellent?'checked':''}>`:(sc.excellent?'⭐':'')}</td>
       <td>${canScore?`<input type="text" class="course-score-note" data-code="${c.code}" value="${(sc.note||'').replace(/"/g,'&quot;')}" placeholder="Nhận xét..." style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;">`:(sc.note||'—')}</td>
     </tr>`;
   });
   html += `</tbody></table>`;
   html += `<div class="pagination-bar" id="courseScorePagination" style="margin-top:12px;"></div>`;
-  if(canScore) html += `<div style="margin-top:14px;"><button class="primary" id="courseCompleteBtn" type="button">✅ Hoàn thành khoá học</button></div>`;
+  if(canScore) html += `<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <button class="primary" id="courseCompleteBtn" type="button">✅ Hoàn thành khoá học</button>
+    <label class="secondary" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 16px;border:1px solid var(--line);border-radius:8px;">
+      📊 Import Khảo sát khoá học
+      <input type="file" id="courseSurveyImportInput" accept=".xlsx,.xls" style="display:none;">
+    </label>
+    <span class="save-msg" id="courseSurveyImportMsg" style="display:none;"></span>
+  </div>`;
+  html += `<div id="courseSurveyResultsBox" style="margin-top:18px;"></div>`;
   body.innerHTML = html;
   if(totalItems>0) renderCourseScorePagination_(totalItems, camp, subtype);
+  renderCourseSurveyResults_(camp, subtype);
 
   const saveScore = async (code)=>{
-    const theoryEl = body.querySelector(`.course-score-theory[data-code="${code}"]`);
-    const consultEl = body.querySelector(`.course-score-consult[data-code="${code}"]`);
+    const totalEl = body.querySelector(`.course-score-total[data-code="${code}"]`);
     const excellentEl = body.querySelector(`.course-score-excellent[data-code="${code}"]`);
     const noteEl = body.querySelector(`.course-score-note[data-code="${code}"]`);
-    const theory = Number(theoryEl.value)||0, consult = Number(consultEl.value)||0;
-    const total = Math.round((theory+consult)*10)/10;
-    const totalEl = body.querySelector(`.course-score-total[data-code="${code}"]`);
-    if(totalEl) totalEl.textContent = total;
+    const total = Math.round((Number(totalEl.value)||0)*10)/10;
     const scoreMap2 = courseScoreCache_[camp.id] || (courseScoreCache_[camp.id]={});
-    scoreMap2[code] = { theory, consult, total, excellent: excellentEl.checked, note: noteEl.value.trim() };
+    scoreMap2[code] = { total, excellent: excellentEl.checked, note: noteEl.value.trim() };
     await dbSet('courseScores:'+camp.id, scoreMap2);
   };
-  body.querySelectorAll('.course-score-theory, .course-score-consult, .course-score-excellent, .course-score-note').forEach(el=>{
+  body.querySelectorAll('.course-score-total, .course-score-excellent, .course-score-note').forEach(el=>{
     el.addEventListener('change', ()=> saveScore(el.getAttribute('data-code')));
   });
   const unlockBtn = document.getElementById('courseUnlockBtn');
   if(unlockBtn) unlockBtn.addEventListener('click', ()=> unlockCourseRegistration_(camp, subtype));
+  const surveyInput = document.getElementById('courseSurveyImportInput');
+  if(surveyInput) surveyInput.addEventListener('change', async ()=>{
+    const file = surveyInput.files[0];
+    if(!file) return;
+    const msg = document.getElementById('courseSurveyImportMsg');
+    msg.style.display='block'; msg.style.color='var(--muted)'; msg.textContent='⏳ Đang đọc file...';
+    try{
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      const parsed = parseCourseSurveyWorkbook_(wb);
+      if(parsed.length===0){ msg.style.color='var(--red)'; msg.textContent='Không đọc được dòng dữ liệu nào — kiểm tra lại đúng file mẫu.'; return; }
+      await dbSet('courseSurveyResponses:'+camp.id, parsed);
+      msg.style.color='var(--green-ok)'; msg.textContent=`Đã import ${parsed.length} phiếu khảo sát.`;
+      renderCourseSurveyResults_(camp, subtype);
+    }catch(e){
+      msg.style.color='var(--red)'; msg.textContent='Lỗi đọc file: '+e.message;
+    }
+    surveyInput.value = '';
+  });
   const completeBtn = document.getElementById('courseCompleteBtn');
   if(completeBtn) completeBtn.addEventListener('click', async ()=>{
     const ok = await showConfirm('Hoàn thành khoá học? Sau khi hoàn thành sẽ KHOÁ LẠI toàn bộ điểm số, không sửa được nữa.');
@@ -5155,10 +5308,11 @@ function renderCourseStageComplete_(body, camp, subtype){
       <div><strong>Địa điểm:</strong> ${camp.classVenue}</div>
       <div><strong>Tỉnh:</strong> ${camp.classProvince||'—'}</div>
       <div><strong>Lead khoá:</strong> ${lead?lead.name:'—'}</div>
+      <div><strong>Số lượng học viên:</strong> ${candidates.length}</div>
     </div>
-    ${canEditAgain?`<div style="margin-top:10px;"><button class="secondary" id="courseReopenBtn" type="button">↩ Quay Lại</button></div>`:''}
+    ${canEditAgain?`<div style="margin-top:10px;"><button class="secondary" id="courseReopenBtn" type="button">✏️ Sửa lại (nếu có sai sót)</button></div>`:''}
   </div>`;
-  html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Trainer</th><th>Lý thuyết</th><th>Tư vấn</th><th>Tổng</th><th>⭐</th><th>Note</th></tr></thead><tbody>`;
+  html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Trainer</th><th>Điểm cuối khoá</th><th>⭐</th><th>Note</th></tr></thead><tbody>`;
   const totalItems = candidates.length;
   const totalPages = Math.max(1, Math.ceil(totalItems/COURSE_REG_PAGE_SIZE));
   if(courseCompletePage_>totalPages) courseCompletePage_ = totalPages;
@@ -5166,17 +5320,19 @@ function renderCourseStageComplete_(body, camp, subtype){
   const startIdx = (courseCompletePage_-1)*COURSE_REG_PAGE_SIZE;
   const pageCandidates = candidates.slice(startIdx, startIdx+COURSE_REG_PAGE_SIZE);
   pageCandidates.forEach((c,i)=>{
-    const sc = scoreMap[c.code] || {theory:0,consult:0,total:0,excellent:false,note:''};
+    const sc = scoreMap[c.code] || {total:0,excellent:false,note:''};
     html += `<tr${sc.excellent?' style="background:#fffbeb;"':''}>
       <td>${startIdx+i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.trainerName}</td>
-      <td>${sc.theory}</td><td>${sc.consult}</td><td><strong>${sc.total}</strong></td>
+      <td><strong>${sc.total}</strong></td>
       <td style="text-align:center;">${sc.excellent?'⭐':''}</td><td>${sc.note||'—'}</td>
     </tr>`;
   });
   html += `</tbody></table>`;
   html += `<div class="pagination-bar" id="courseCompletePagination" style="margin-top:12px;"></div>`;
+  html += `<div id="courseSurveyResultsBox" style="margin-top:18px;"></div>`;
   body.innerHTML = html;
   if(totalItems>0) renderCourseCompletePagination_(totalItems, camp, subtype);
+  renderCourseSurveyResults_(camp, subtype);
   const reopenBtn = document.getElementById('courseReopenBtn');
   if(reopenBtn) reopenBtn.addEventListener('click', async ()=>{
     const ok = await showConfirm('Mở lại để chỉnh sửa điểm số? Khoá học sẽ quay về trạng thái "Chấm điểm" — bấm "Hoàn thành" lại sau khi sửa xong.');
@@ -5581,7 +5737,7 @@ function populatePgSearchSelects(){
     // Ưu tiên Size shop từ bảng Gán Shop chuẩn (giống hệt cách hiển thị/Export) — chỉ dùng shopSize
     // riêng của PG khi Shop đó chưa có trong bảng Gán Shop.
     const sizeNames = Array.from(new Set(scopedPgs('OPPO').map(p=> shopSizeFromMap_(p.shop)||p.shopSize||'').filter(Boolean))).sort();
-    sizeSel.innerHTML = '<option value="">Tất cả Size shop</option>' + sizeNames.map(s=>`<option value="${s}">${s}</option>`).join('');
+    sizeSel.innerHTML = '<option value="">Tất cả</option>' + sizeNames.map(s=>`<option value="${s}">${s}</option>`).join('');
     if(sizeNames.includes(cur)) sizeSel.value=cur;
   }
 }
@@ -8090,7 +8246,7 @@ function renderCoachingRegistration(){
         <td><strong>${p.name}</strong></td>
         <td>${trainer?trainer.region:'—'}</td>
         <td>${p.province||'—'}</td>
-        <td>${p.shop||'—'}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(p.shop||'').replace(/"/g,'&quot;')}">${p.shop||'—'}</td>
         <td>${p.channel||'—'}</td>
         <td>${p.shopSize||'—'}</td>
         <td>${p.seniority||0} tháng</td>
@@ -8363,6 +8519,9 @@ async function processSurvey01Workbook_(wb){
     msg.textContent = `Đã import ${added} lượt khảo sát PGs 0★/1★ hợp lệ. Bỏ qua: ${skippedOtherMonth} khác tháng, ${skippedOtherLoai} thuộc nhóm PGs mới (dùng đúng nút import PGs mới), ${invalidStatus} Trạng thái không hợp lệ (Trùng/khác), ${skippedDup} trùng lặp, ${skippedNoCode} thiếu Mã NV${skippedOtherRegion?`, ${skippedOtherRegion} ngoài khu vực bạn phụ trách`:''}.`;
   }
 }
+let surveyFormPage_ = 1;
+let surveyFormLuotFilter_ = '';
+const SURVEY_FORM_PAGE_SIZE = 10;
 function renderSurveyForm(){
   const box=document.getElementById('surveyFormBox');
   if(!box) return;
@@ -8374,17 +8533,34 @@ function renderSurveyForm(){
   let html = '';
   const monthEntries = scopedResponses.length;
   const completedCount = coachingReg.filter(r=> surveyCountForCode(r.code) >= COACHING_SESSIONS_TO_COMPLETE).length;
-  html += `<div class="scope-filters" style="justify-content:space-between;margin-bottom:8px;">
-    <span class="scope-label">Đã nhập <strong>${monthEntries}</strong> lượt khảo sát trong ${monthLabel(currentMonth)} (khớp bộ lọc)</span>
+  html += `<div class="scope-filters" style="justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span class="scope-label">Đã nhập <strong>${monthEntries}</strong> lượt khảo sát trong ${monthLabel(currentMonth)} (khớp bộ lọc)</span>
+      <span class="scope-label">Lượt:</span>
+      <select id="surveyFormLuotSel" style="max-width:100px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
+        <option value="" ${surveyFormLuotFilter_===''?'selected':''}>Tất cả</option>
+        <option value="1" ${surveyFormLuotFilter_==='1'?'selected':''}>1/${COACHING_SESSIONS_TO_COMPLETE}</option>
+        <option value="2" ${surveyFormLuotFilter_==='2'?'selected':''}>${COACHING_SESSIONS_TO_COMPLETE}/${COACHING_SESSIONS_TO_COMPLETE}</option>
+      </select>
+    </div>
     <span class="scope-label">PG đã đủ ${COACHING_SESSIONS_TO_COMPLETE} lượt (hoàn thành Target): <strong>${completedCount}</strong></span>
   </div>`;
 
-  if(scopedResponses.length===0){
+  let filteredResponses = scopedResponses;
+  if(surveyFormLuotFilter_) filteredResponses = filteredResponses.filter(s=> String(surveyCountForCode(s.code))===surveyFormLuotFilter_);
+
+  if(filteredResponses.length===0){
     html += `<div class="empty">Chưa có khảo sát nào khớp bộ lọc trong tháng này.</div>`;
   } else {
-    const sorted = [...scopedResponses].sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
+    const sorted = [...filteredResponses].sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
+    const totalItems = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems/SURVEY_FORM_PAGE_SIZE));
+    if(surveyFormPage_>totalPages) surveyFormPage_ = totalPages;
+    if(surveyFormPage_<1) surveyFormPage_ = 1;
+    const startIdx = (surveyFormPage_-1)*SURVEY_FORM_PAGE_SIZE;
+    const pageItems = sorted.slice(startIdx, startIdx+SURVEY_FORM_PAGE_SIZE);
     html += `<table><thead><tr><th>Thời gian</th><th>Mã NV</th><th>Họ & Tên PGs</th><th>Trainer</th><th>Nhóm</th><th>Buổi thứ</th><th>Lượt/2</th>${isAdmin()?'<th></th>':''}</tr></thead><tbody>`;
-    sorted.forEach(s=>{
+    pageItems.forEach(s=>{
       const cnt = surveyCountForCode(s.code);
       const done = cnt >= COACHING_SESSIONS_TO_COMPLETE;
       html += `<tr>
@@ -8399,9 +8575,13 @@ function renderSurveyForm(){
       </tr>`;
     });
     html += `</tbody></table>`;
+    html += `<div class="pagination-bar" id="surveyFormPagination"></div>`;
   }
 
   box.innerHTML = html;
+  const luotSel = document.getElementById('surveyFormLuotSel');
+  if(luotSel) luotSel.addEventListener('change', ()=>{ surveyFormLuotFilter_=luotSel.value; surveyFormPage_=1; renderSurveyForm(); });
+  if(filteredResponses.length>0) renderSurveyFormPagination_(filteredResponses.length);
 
   box.querySelectorAll('[data-del-survey]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
@@ -8416,6 +8596,7 @@ function renderSurveyForm(){
 }
 /* ============ COACHING PGs MỚI: PANEL + DANH SÁCH + IMPORT ============ */
 let pgMoiStatusFilter='';
+let pgMoiLuotFilter='';
 function renderPgMoiPanel(){
   const box=document.getElementById('noiboView-pgMoi');
   if(!box) return;
@@ -8429,6 +8610,13 @@ function renderPgMoiPanel(){
       <option value="CODE ĐẠI LÝ" ${pgMoiStatusFilter==='CODE ĐẠI LÝ'?'selected':''}>CODE ĐẠI LÝ</option>
       <option value="OFF (chưa cắt Center)" ${pgMoiStatusFilter==='OFF (chưa cắt Center)'?'selected':''}>OFF (chưa cắt Center)</option>
     </select>
+    <span class="scope-label">Số khảo sát:</span>
+    <select id="pgMoiLuotFilterSelect">
+      <option value="" ${pgMoiLuotFilter===''?'selected':''}>Tất cả</option>
+      <option value="0" ${pgMoiLuotFilter==='0'?'selected':''}>0/${COACHING_SESSIONS_TO_COMPLETE}</option>
+      <option value="1" ${pgMoiLuotFilter==='1'?'selected':''}>1/${COACHING_SESSIONS_TO_COMPLETE}</option>
+      <option value="2" ${pgMoiLuotFilter==='2'?'selected':''}>${COACHING_SESSIONS_TO_COMPLETE}/${COACHING_SESSIONS_TO_COMPLETE}</option>
+    </select>
   </div>`;
   html += `<h3 class="kpi-section-title">Danh sách PGs mới (nhóm "On" trong ${monthLabel(currentMonth)})</h3>`;
   html += `<div id="newPgListBox"></div>`;
@@ -8438,7 +8626,9 @@ function renderPgMoiPanel(){
   renderNewPgList();
   renderNewPgList25_();
   const statusSel = document.getElementById('pgMoiStatusFilterSelect');
-  if(statusSel) statusSel.addEventListener('change', (e)=>{ pgMoiStatusFilter=e.target.value; renderNewPgList(); renderNewPgList25_(); });
+  if(statusSel) statusSel.addEventListener('change', (e)=>{ pgMoiStatusFilter=e.target.value; newPgListPage_=1; renderNewPgList(); renderNewPgList25_(); });
+  const luotSel = document.getElementById('pgMoiLuotFilterSelect');
+  if(luotSel) luotSel.addEventListener('change', (e)=>{ pgMoiLuotFilter=e.target.value; newPgListPage_=1; renderNewPgList(); });
 }
 /* Bộ lọc chung "Xem theo Khu vực/Trainer" cho toàn bộ danh sách trong tag Nội bộ */
 let noiboFilterRegion = '';
@@ -8514,6 +8704,35 @@ function effectivePgMoiStatus_(r){
   const matchedPg = pgs.find(p=>p.code && r.code && p.code===r.code);
   return matchedPg ? matchedPg.status : (r.devStatusNote || 'Đang làm');
 }
+function renderSurveyFormPagination_(totalItems){
+  const box = document.getElementById('surveyFormPagination');
+  if(!box) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems/SURVEY_FORM_PAGE_SIZE));
+  let pageButtons='';
+  const maxShown = 7;
+  let start = Math.max(1, surveyFormPage_ - 3);
+  let end = Math.min(totalPages, start + maxShown - 1);
+  start = Math.max(1, end - maxShown + 1);
+  for(let i=start;i<=end;i++){
+    pageButtons += `<button data-survey-form-page="${i}" class="${i===surveyFormPage_?'active':''}">${i}</button>`;
+  }
+  const from = (surveyFormPage_-1)*SURVEY_FORM_PAGE_SIZE + 1;
+  const to = Math.min(surveyFormPage_*SURVEY_FORM_PAGE_SIZE, totalItems);
+  box.innerHTML = `
+    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} lượt</span>
+    <button data-survey-form-page="${surveyFormPage_-1}" ${surveyFormPage_<=1?'disabled':''}>‹</button>
+    ${pageButtons}
+    <button data-survey-form-page="${surveyFormPage_+1}" ${surveyFormPage_>=totalPages?'disabled':''}>›</button>
+  `;
+  box.querySelectorAll('[data-survey-form-page]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      surveyFormPage_ = Number(btn.getAttribute('data-survey-form-page'));
+      renderSurveyForm();
+    });
+  });
+}
+let newPgListPage_ = 1;
+const NEW_PG_LIST_PAGE_SIZE = 10;
 function renderNewPgList(){
   const box=document.getElementById('newPgListBox');
   if(!box) return;
@@ -8521,6 +8740,7 @@ function renderNewPgList(){
   const trainerIds = noiboFilteredTrainerIds_(new Set(tList.map(t=>t.id)));
   let newPgs = onoffRoster.filter(r=> r.status==='On' && r.trainerId && trainerIds.has(r.trainerId) && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===currentMonth);
   if(pgMoiStatusFilter) newPgs = newPgs.filter(r=>effectivePgMoiStatus_(r)===pgMoiStatusFilter);
+  if(pgMoiLuotFilter!=='') newPgs = newPgs.filter(r=> String(surveyCountForCodeNew(r.code))===pgMoiLuotFilter);
   newPgs = newPgs.sort((a,b)=> (b.statusChangedAt?1:0) - (a.statusChangedAt?1:0));
 
   if(newPgs.length===0){
@@ -8531,20 +8751,36 @@ function renderNewPgList(){
   const lateList = [];
   let html = '';
   const canEditNote = isAdmin() || isTrainer();
-  const tableRows = newPgs.map((r,idx)=>{
+  // Tính cảnh báo trễ TRÊN TOÀN BỘ danh sách đã lọc (không phải chỉ trang đang xem) — để cảnh báo đầu
+  // trang luôn đúng, không phụ thuộc đang xem trang mấy.
+  newPgs.forEach(r=>{
+    const tr = config.trainers.find(t=>t.id===r.trainerId);
+    const cnt = surveyCountForCodeNew(r.code);
+    const joinedDate = new Date(r.joinedAt);
+    const daysSinceJoin = Math.floor((now - joinedDate) / (1000*60*60*24));
+    let isLate = false;
+    if(daysSinceJoin>=14 && cnt<2) isLate = true;
+    else if(daysSinceJoin>=7 && cnt<1) isLate = true;
+    if(isLate && effectivePgMoiStatus_(r)==='Đang làm') lateList.push({ ...r, trainerName: tr?tr.name:'—', cnt, daysSinceJoin });
+  });
+
+  const totalItems = newPgs.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems/NEW_PG_LIST_PAGE_SIZE));
+  if(newPgListPage_>totalPages) newPgListPage_ = totalPages;
+  if(newPgListPage_<1) newPgListPage_ = 1;
+  const startIdx = (newPgListPage_-1)*NEW_PG_LIST_PAGE_SIZE;
+  const pageItems = newPgs.slice(startIdx, startIdx+NEW_PG_LIST_PAGE_SIZE);
+  const tableRows = pageItems.map((r,idx)=>{
     const tr = config.trainers.find(t=>t.id===r.trainerId);
     const cnt = surveyCountForCodeNew(r.code);
     const done = cnt >= COACHING_SESSIONS_TO_COMPLETE;
     const joinedDate = new Date(r.joinedAt);
     const daysSinceJoin = Math.floor((now - joinedDate) / (1000*60*60*24));
-    // Quy định: sau 1 tuần (7 ngày) phải có ít nhất 1 lượt coaching + khảo sát;
-    // sau 2 tuần (14 ngày) phải đủ 2 lượt. Trễ 1 trong 2 mốc trên đều tính là vi phạm.
     let isLate = false;
     if(daysSinceJoin>=14 && cnt<2) isLate = true;
     else if(daysSinceJoin>=7 && cnt<1) isLate = true;
-    if(isLate && effectivePgMoiStatus_(r)==='Đang làm') lateList.push({ ...r, trainerName: tr?tr.name:'—', cnt, daysSinceJoin });
     return `<tr${isLate?' style="background:var(--red-bg);"':''}${r.statusChangedAt?' class="pg-status-changed"':''}>
-      <td>${idx+1}</td>
+      <td>${startIdx+idx+1}</td>
       <td>${r.code||'—'}</td>
       <td><strong>${r.name||'—'}</strong></td>
       <td>${r.area||'—'}</td>
@@ -8563,8 +8799,37 @@ function renderNewPgList(){
     </div>`;
   }
   html += `<table class="pgmoi-table"><thead><tr><th>STT</th><th>Code</th><th>Họ và Tên</th><th>Khu vực</th><th>Trainer</th><th>Ngày vào</th><th>Số khảo sát</th><th>Cảnh báo trễ</th><th>Trạng thái</th></tr></thead><tbody>${tableRows.join('')}</tbody></table>`;
+  html += `<div class="pagination-bar" id="newPgListPagination"></div>`;
   box.innerHTML = html;
   wireDevStatusNoteSelects_(box);
+  renderNewPgListPagination_(totalItems);
+}
+function renderNewPgListPagination_(totalItems){
+  const box = document.getElementById('newPgListPagination');
+  if(!box) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems/NEW_PG_LIST_PAGE_SIZE));
+  let pageButtons='';
+  const maxShown = 7;
+  let start = Math.max(1, newPgListPage_ - 3);
+  let end = Math.min(totalPages, start + maxShown - 1);
+  start = Math.max(1, end - maxShown + 1);
+  for(let i=start;i<=end;i++){
+    pageButtons += `<button data-new-pg-page="${i}" class="${i===newPgListPage_?'active':''}">${i}</button>`;
+  }
+  const from = (newPgListPage_-1)*NEW_PG_LIST_PAGE_SIZE + 1;
+  const to = Math.min(newPgListPage_*NEW_PG_LIST_PAGE_SIZE, totalItems);
+  box.innerHTML = `
+    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} PG</span>
+    <button data-new-pg-page="${newPgListPage_-1}" ${newPgListPage_<=1?'disabled':''}>‹</button>
+    ${pageButtons}
+    <button data-new-pg-page="${newPgListPage_+1}" ${newPgListPage_>=totalPages?'disabled':''}>›</button>
+  `;
+  box.querySelectorAll('[data-new-pg-page]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      newPgListPage_ = Number(btn.getAttribute('data-new-pg-page'));
+      renderNewPgList();
+    });
+  });
 }
 /* Tính khoảng ngày "từ 25 tháng trước" — dùng cho chu kỳ coaching PGs mới lệch mốc (26 tháng trước → 25 tháng này) */
 function get25CycleRange_(currentMonthStr){
@@ -10613,6 +10878,7 @@ function renderAll(){
   applyMonthLockUI();
   renderPendingTargetBell_();
   renderPendingPgStatusBell_();
+  renderCourseLeadTaskBell_();
   updateSoTitle_();
   requestAnimationFrame(()=>{
     const maxY=Math.max(0, document.documentElement.scrollHeight-window.innerHeight);
@@ -10620,6 +10886,38 @@ function renderAll(){
   });
 }
 
+/* Thông báo "Nhiệm vụ Lead khoá" — hiện cho đúng Trainer được Admin chọn làm Lead khi Chốt danh sách
+   CVTV/PGs 3★ (đã locked=true nhưng completed=false, đang chờ nhập điểm). Quét trên TOÀN BỘ chiến
+   dịch CVTV/PGs 3★ đang có (không giới hạn theo currentMonth, vì khoá có thể được tạo ở tháng khác
+   tháng đang xem) — chỉ hiện cho role Trainer (Admin không cần, họ tự thấy qua Cài đặt ▸ Chiến dịch). */
+function pendingLeadCourseTasks_(){
+  if(!isTrainer()) return [];
+  return campaigns.filter(c=> c.group==='noibo' && (campaignSubtype(c)==='cvtv'||campaignSubtype(c)==='pgs3sao')
+    && c.locked && !c.completed && c.leadTrainerId===session.trainerId);
+}
+function renderCourseLeadTaskBell_(){
+  const btn = document.getElementById('courseLeadTaskBellBtn');
+  if(!btn) return;
+  const tasks = pendingLeadCourseTasks_();
+  if(tasks.length>0){
+    btn.style.display='inline-flex';
+    document.getElementById('courseLeadTaskCount').textContent = tasks.length;
+  } else {
+    btn.style.display='none';
+  }
+}
+document.getElementById('courseLeadTaskBellBtn').addEventListener('click', ()=>{
+  const tasks = pendingLeadCourseTasks_();
+  if(tasks.length===0) return;
+  const task = tasks[0]; // Vào thẳng nhiệm vụ đầu tiên — nếu có nhiều hơn 1, làm xong cái này chuông sẽ tự cập nhật số còn lại.
+  const subtype = campaignSubtype(task);
+  document.querySelector('nav.tabs button[data-tab="kpi"]').click();
+  document.querySelector(`#tab-kpi [data-kpi="noibo"]`).click();
+  kpiSubtype.noibo = subtype;
+  courseSelectedCampaignId_[subtype] = task.id;
+  renderKpiCategory('noibo');
+  document.querySelectorAll('#kpi-noibo [data-sub]').forEach(b=>b.classList.toggle('active', b.getAttribute('data-sub')===subtype));
+});
 document.getElementById('pendingTargetBellBtn').addEventListener('click', ()=>{
   renderPendingTargetModal_();
   const modal = document.getElementById('pendingTargetModal');
