@@ -698,6 +698,8 @@
             <option value="4">★★★★ 4</option>
             <option value="5">★★★★★ 5</option>
           </select>
+          <span class="scope-label">Size shop:</span>
+          <select id="pgShopSizeFilterSelect" style="min-width:150px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Size shop</option></select>
         </div>
         <button class="secondary" id="exportPgBtn">Export danh sách ra Excel</button>
       </div>
@@ -925,6 +927,7 @@
           <select id="shopTrainerFilterProvince" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Tỉnh</option></select>
           <select id="shopTrainerFilterChannel" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Kênh</option></select>
           <select id="shopTrainerFilterTrainer" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Trainer</option></select>
+          <select id="shopTrainerFilterSize" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Size shop</option></select>
         </div>
         <table>
           <thead><tr><th>Code Shop</th><th>Tên Shop</th><th>Khu vực</th><th>Tỉnh</th><th>Kênh</th><th>Loại kênh</th><th>Size shop</th><th>Trainer</th><th>Sale</th></tr></thead>
@@ -4820,7 +4823,10 @@ function renderCourseStageRegistration_(body, camp, subtype){
   if(candidatesAll.length===0){
     html += `<div class="empty">${(camp.dateFrom||camp.dateTo||camp.starFilter)?'Không có PG nào khớp bộ lọc.':(subtype==='cvtv'?'Chọn khoảng ngày rồi bấm "Lọc danh sách" để bắt đầu.':'Chọn Hạng Sao rồi bấm "Lọc danh sách" để bắt đầu.')}</div>`;
   } else {
-    html += `<h4 style="margin:14px 0 8px;color:var(--green-dark);">Bước 2 — Từng Trainer đăng ký Tham gia / Không tham gia cho đúng PG của mình</h4>`;
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0 8px;">
+      <h4 style="margin:0;color:var(--green-dark);">Bước 2 — Từng Trainer đăng ký Tham gia / Không tham gia cho đúng PG của mình</h4>
+      <button class="secondary" id="courseExportRegBtn" type="button">⬇ Export Excel</button>
+    </div>`;
     if(candidates.length===0){
       html += `<div class="empty">Không có PG nào khớp bộ lọc Khu vực/Trainer đang chọn.</div>`;
     } else {
@@ -4896,6 +4902,29 @@ function renderCourseStageRegistration_(body, camp, subtype){
   });
   const lockBtn = document.getElementById('courseLockBtn');
   if(lockBtn) lockBtn.addEventListener('click', ()=> openCourseLockModal_(camp, subtype));
+  const exportBtn = document.getElementById('courseExportRegBtn');
+  if(exportBtn) exportBtn.addEventListener('click', ()=>{
+    // Export đúng danh sách đang hiển thị (đã áp bộ lọc Khu vực/Trainer/Trạng thái rà soát nếu có),
+    // đầy đủ các cột giống hệt bảng trên màn hình.
+    const rows = candidates.map((c,i)=>{
+      const reg = regMap[c.code] || {status:'',note:''};
+      const row = {
+        'STT': i+1, 'Code': c.code, 'Họ tên': c.name, 'Khu vực': c.region||'', 'Tỉnh': c.province||'',
+        'Giới tính': c.gender||'', 'Shop': c.shop||'', 'Kênh': c.channel||'', 'Thâm niên (tháng)': c.seniority,
+      };
+      if(subtype==='pgs3sao') row['Sao'] = c.star;
+      row['Trainer'] = c.trainerName;
+      row['Trạng thái'] = reg.status||'Chưa chọn';
+      row['Note'] = reg.note||'';
+      return row;
+    });
+    if(rows.length===0){ alert('Không có dữ liệu để export.'); return; }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Đăng ký');
+    const today = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `DangKy_${subtype==='cvtv'?'CVTV':'PGs3Sao'}_${today}.xlsx`);
+  });
 }
 function renderCourseRegPagination_(totalItems, camp, subtype){
   const box = document.getElementById('courseRegPagination');
@@ -5502,9 +5531,19 @@ function populatePgSearchSelects(){
     saleSel.innerHTML = '<option value="">Tất cả Sale</option>' + saleNames.map(s=>`<option value="${s}">${s}</option>`).join('');
     if(saleNames.includes(cur)) saleSel.value=cur;
   }
+  const sizeSel = document.getElementById('pgShopSizeFilterSelect');
+  if(sizeSel){
+    const cur = sizeSel.value;
+    // Ưu tiên Size shop từ bảng Gán Shop chuẩn (giống hệt cách hiển thị/Export) — chỉ dùng shopSize
+    // riêng của PG khi Shop đó chưa có trong bảng Gán Shop.
+    const sizeNames = Array.from(new Set(scopedPgs('OPPO').map(p=> shopSizeFromMap_(p.shop)||p.shopSize||'').filter(Boolean))).sort();
+    sizeSel.innerHTML = '<option value="">Tất cả Size shop</option>' + sizeNames.map(s=>`<option value="${s}">${s}</option>`).join('');
+    if(sizeNames.includes(cur)) sizeSel.value=cur;
+  }
 }
 let pgStatusFilter='';
 let pgStarFilter='';
+let pgShopSizeFilter='';
 function visiblePgList(){
   let list = scopedPgs('OPPO');
   if(pgSearchMode==='trainer'){
@@ -5520,6 +5559,7 @@ function visiblePgList(){
   }
   if(pgStatusFilter) list = list.filter(p=> p.status===pgStatusFilter);
   if(pgStarFilter!=='') list = list.filter(p=> Number(p.star)===Number(pgStarFilter));
+  if(pgShopSizeFilter) list = list.filter(p=> (shopSizeFromMap_(p.shop)||p.shopSize||'')===pgShopSizeFilter);
   return list;
 }
 function renderPgPagination(totalItems){
@@ -5606,6 +5646,7 @@ document.getElementById('pgSearchTrainerSelect').addEventListener('change', ()=>
 document.getElementById('pgSearchSaleSelect').addEventListener('change', ()=>{ pgCurrentPage=1; renderPgOppoTable(); });
 document.getElementById('pgStatusFilterSelect').addEventListener('change', (e)=>{ pgStatusFilter=e.target.value; pgCurrentPage=1; renderPgOppoTable(); });
 document.getElementById('pgStarFilterSelect').addEventListener('change', (e)=>{ pgStarFilter=e.target.value; pgCurrentPage=1; renderPgOppoTable(); });
+document.getElementById('pgShopSizeFilterSelect').addEventListener('change', (e)=>{ pgShopSizeFilter=e.target.value; pgCurrentPage=1; renderPgOppoTable(); });
 document.querySelectorAll('[data-pgsearchmode]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('[data-pgsearchmode]').forEach(b=>b.classList.remove('active'));
@@ -8763,12 +8804,14 @@ function visibleShopTrainerList(){
   const fProvince = document.getElementById('shopTrainerFilterProvince')?.value||'';
   const fChannel = document.getElementById('shopTrainerFilterChannel')?.value||'';
   const fTrainer = document.getElementById('shopTrainerFilterTrainer')?.value||'';
+  const fSize = document.getElementById('shopTrainerFilterSize')?.value||'';
 
   if(term) list = list.filter(s=> (s.shopId||'').toLowerCase().includes(term) || (s.shopName||'').toLowerCase().includes(term));
   if(fRegion) list = list.filter(s=> (s.area||'')===fRegion);
   if(fProvince) list = list.filter(s=> (s.province||'')===fProvince);
   if(fChannel) list = list.filter(s=> (s.channel||'')===fChannel);
   if(fTrainer) list = list.filter(s=> s.trainerId===fTrainer);
+  if(fSize) list = list.filter(s=> (s.shopSize||'')===fSize);
   return list;
 }
 function populateShopTrainerFilters_(){
@@ -8800,11 +8843,16 @@ function populateShopTrainerFilters_(){
   const afterChannel = document.getElementById('shopTrainerFilterChannel').value ? afterProvince.filter(s=>s.channel===document.getElementById('shopTrainerFilterChannel').value) : afterProvince;
   const trainerIds = Array.from(new Set(afterChannel.map(s=>s.trainerId).filter(Boolean)));
   fillSelect('shopTrainerFilterTrainer', trainerIds.map(id=>{ const t=trainerOf(id); return { value:id, label: t?t.name:id }; }).sort((a,b)=>a.label.localeCompare(b.label)), fTrainer);
+
+  // Size shop lọc ĐỘC LẬP (không phụ thuộc chuỗi Khu vực/Tỉnh/Kênh/Trainer ở trên) — luôn hiện đủ mọi
+  // Size shop có trong phạm vi (Trainer chỉ thấy Size shop của khu vực mình).
+  const fSize = document.getElementById('shopTrainerFilterSize').value;
+  fillSelect('shopTrainerFilterSize', Array.from(new Set(scopedAll.map(s=>s.shopSize).filter(Boolean))).sort().map(v=>({value:v,label:v})), fSize);
 }
 ['shopTrainerSearchInput'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{ shopTrainerPage=1; renderShopTrainerList(); });
 });
-['shopTrainerFilterRegion','shopTrainerFilterProvince','shopTrainerFilterChannel','shopTrainerFilterTrainer'].forEach(id=>{
+['shopTrainerFilterRegion','shopTrainerFilterProvince','shopTrainerFilterChannel','shopTrainerFilterTrainer','shopTrainerFilterSize'].forEach(id=>{
   document.getElementById(id).addEventListener('change', ()=>{ shopTrainerPage=1; renderShopTrainerList(); });
 });
 function renderShopTrainerList(){
