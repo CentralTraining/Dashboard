@@ -11001,8 +11001,15 @@ async function computeTrainerCategoryProgress_(trainerId){
   if(pg01T>0) pgDevSub.push({ name:'PGs 0★/1★', pct: pct(pg01A, pg01T) });
   if(pgMoiT>0) pgDevSub.push({ name:'PGs mới', pct: pct(pgMoiA, pgMoiT) });
   if(pgDevSub.length) noiboGroups.push({ name:'PGs Dev (Coaching)', sub: pgDevSub });
-  const wsT = Number(rec.wsNbBuoiTarget||0), wsA = Number(rec.wsNbBuoiActual||0);
-  if(wsT>0) noiboGroups.push({ name:'Workshop', pct: pct(wsA, wsT) });
+  // Workshop tách 2 chỉ số riêng (Số buổi / Số học viên) — khớp đúng METRIC_DEFS đang hiển thị trên
+  // trang Tiến độ KPI gốc. Trước đây chỉ tính "Số buổi", gây lệch với con số Trainer thấy trên trang
+  // gốc nếu 2 chỉ số này không cùng % (VD đủ buổi nhưng thiếu học viên hoặc ngược lại).
+  const wsBuoiSub = [];
+  const wsBuoiT = Number(rec.wsNbBuoiTarget||0), wsBuoiA = Number(rec.wsNbBuoiActual||0);
+  if(wsBuoiT>0) wsBuoiSub.push({ name:'Số buổi', pct: pct(wsBuoiA, wsBuoiT) });
+  const wsHvT = Number(rec.wsNbHocVienTarget||0), wsHvA = Number(rec.wsNbHocVienActual||0);
+  if(wsHvT>0) wsBuoiSub.push({ name:'Số học viên', pct: pct(wsHvA, wsHvT) });
+  if(wsBuoiSub.length) noiboGroups.push({ name:'Workshop', sub: wsBuoiSub });
   const testOnlineCamp = campaignsForGroupMonth('noibo').find(c=>campaignSubtype(c)==='testonline');
   if(testOnlineCamp){
     const progress = await loadFrequencyProgress_(testOnlineCamp);
