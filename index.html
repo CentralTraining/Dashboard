@@ -829,8 +829,30 @@
         </div>
         <div class="chart-wrap" style="height:340px;"><canvas id="chartBrandDist"></canvas></div>
       </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <h3 class="kpi-section-title" style="margin:0;">Danh sách Shop Miền Trung</h3>
+        <button class="secondary" id="exportBrandShopListBtn" type="button">⬇ Export Excel</button>
+      </div>
+      <div class="scope-filters" style="justify-content:space-between;">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <span class="scope-label">Tìm ID/Tên Shop:</span>
+          <input type="text" id="brandShopListSearch" placeholder="Nhập ID hoặc Tên Shop..." style="min-width:180px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
+          <span class="scope-label">Khu vực:</span>
+          <select id="brandShopListRegionSel"><option value="">Tất cả</option></select>
+          <span class="scope-label">Tỉnh:</span>
+          <select id="brandShopListProvinceSel"><option value="">Tất cả</option></select>
+          <span class="scope-label">Kênh:</span>
+          <select id="brandShopListChannelSel"><option value="">Tất cả</option></select>
+          <span class="scope-label">Size shop:</span>
+          <select id="brandShopListSizeSel"><option value="">Tất cả</option></select>
+        </div>
+      </div>
+      <div id="brandShopListSummary" class="kpi-row cols-6" style="margin-bottom:14px;"></div>
+      <div id="brandShopListBox"></div>
     </div>
   </section>
+
 
   <!-- ============ 2. TIẾN ĐỘ KPI ============ -->
   <section id="tab-kpi" class="maintab">
@@ -6869,6 +6891,371 @@ function shopMatchesScope_(shop){
   if(regionVal) return normalizeAreaVN(shop.region)===regionVal;
   return true;
 }
+/* ============ Danh sách Shop Miền Trung (Tổng quan HR ▸ Nhân sự các hãng) ============
+   Hợp nhất 2 nguồn: brandShopList (Shop có dữ liệu HR đối thủ — Samsung/Vivo/Realme/Honor) và
+   shopTrainerMap (Shop đã Gán Trainer/Sale của OPPO) — khớp theo shopId (storeId) trước, nếu không có
+   thì khớp theo TÊN Shop (đã trim) — để không bỏ sót Shop chỉ có 1 trong 2 nguồn. */
+let brandShopListPage_ = 1;
+const BRAND_SHOP_LIST_PAGE_SIZE = 10;
+let brandShopListFilter_ = { search:'', region:'', province:'', channel:'', size:'' };
+let brandShopListCurrentPageItems_ = [];
+// Chuẩn hoá ID/Tên Shop dùng CHUNG cho cả việc hợp nhất danh sách lẫn tìm-đúng-bản-ghi khi Sửa —
+// chuẩn hoá Unicode (NFC), gộp các loại dấu gạch ngang (- – —) về 1 loại, gộp khoảng trắng thừa.
+function normShopKey_(s){ return (s||'').normalize('NFC').trim().toLowerCase().replace(/[–—]/g,'-').replace(/\s+/g,' '); }
+function buildUnifiedShopList_(){
+  // Hợp nhất theo nguyên tắc: 2 bản ghi được coi là CÙNG 1 Shop nếu khớp ID **HOẶC** khớp Tên (không
+  // cần khớp cả 2). Dùng 2 chỉ mục byId/byName cùng trỏ về đúng 1 object Shop — khi xử lý 1 bản ghi
+  // mới, thử tìm theo ID trước, không thấy thì thử tìm theo Tên; tìm thấy ở chỉ mục nào thì cập nhật
+  // luôn CẢ 2 chỉ mục để chỉ mục còn thiếu (VD nguồn A có ID nhưng nguồn B chỉ có Tên) cũng trỏ đúng
+  // về chung 1 Shop cho những lần khớp sau.
+  const byId = new Map();
+  const byName = new Map();
+  const normId = normShopKey_;
+  const normName = normShopKey_;
+
+  function findOrCreate(id, name, seed){
+    const idKey = normId(id), nameKey = normName(name);
+    let rec = (idKey && byId.get(idKey)) || (nameKey && byName.get(nameKey)) || null;
+    if(!rec){
+      rec = seed();
+      if(idKey) byId.set(idKey, rec);
+      if(nameKey) byName.set(nameKey, rec);
+      return { rec, isNew:true };
+    }
+    // Đã tìm thấy qua 1 trong 2 chỉ mục — đăng ký thêm chỉ mục còn thiếu để khớp nhất quán về sau.
+    if(idKey && !byId.has(idKey)) byId.set(idKey, rec);
+    if(nameKey && !byName.has(nameKey)) byName.set(nameKey, rec);
+    return { rec, isNew:false };
+  }
+
+  const allRecs = [];
+  brandShopList.forEach(shop=>{
+    const { rec, isNew } = findOrCreate(shop.storeId, shop.storeName, ()=>({
+      shopId: shop.storeId||'', shopName: shop.storeName||'', region: shop.region||'', province: shop.province||'', channel: shop.channel||'',
+      shopSize: '', trainerId: '', brands: {}, nameVariants: new Set(),
+    }));
+    if(isNew) allRecs.push(rec);
+    if(shop.storeName) rec.nameVariants.add(normName(shop.storeName));
+    // Nhiều dòng brandShopList có thể cùng khớp 1 Shop (hiếm, nhưng vẫn cộng dồn brands cho chắc)
+    Object.keys(shop.brands||{}).forEach(b=>{
+      if(!rec.brands[b]) rec.brands[b] = { count:0, seniorities:[] };
+      rec.brands[b].count += Number((shop.brands[b]&&shop.brands[b].count)||0);
+    });
+    if(!rec.shopId && shop.storeId) rec.shopId = shop.storeId;
+    if(!rec.shopName && shop.storeName) rec.shopName = shop.storeName;
+  });
+  shopTrainerMap.forEach(sm=>{
+    const { rec, isNew } = findOrCreate(sm.shopId, sm.shopName, ()=>({
+      shopId: sm.shopId||'', shopName: sm.shopName||'', region: sm.area||'', province: sm.province||'', channel: sm.channel||'',
+      shopSize: sm.shopSize||'', trainerId: sm.trainerId||'', brands: {}, nameVariants: new Set(),
+    }));
+    if(sm.shopName) rec.nameVariants.add(normName(sm.shopName));
+    if(isNew){ allRecs.push(rec); return; }
+    // Đã có từ brandShopList (hoặc 1 dòng Gán Shop khác) — bổ sung thêm Khu vực/Tỉnh/Kênh/Size
+    // shop/Trainer nếu bên kia còn thiếu (Gán Shop thường đầy đủ hơn vì Admin OPPO tự nhập).
+    if(!rec.region) rec.region = sm.area||'';
+    if(!rec.province) rec.province = sm.province||'';
+    if(!rec.channel) rec.channel = sm.channel||'';
+    if(!rec.shopId) rec.shopId = sm.shopId||'';
+    if(!rec.shopName) rec.shopName = sm.shopName||'';
+    rec.shopSize = sm.shopSize||rec.shopSize;
+    rec.trainerId = sm.trainerId||rec.trainerId;
+  });
+
+  // Tính SL OPPO — đếm PGs OPPO trạng thái "Đang làm", khớp theo TÊN Shop (PGs chỉ lưu tên Shop dạng
+  // text, không có mã Shop riêng) — dùng đúng cách so khớp đã áp dụng nhất quán ở shopSizeFromMap_().
+  const activeOppoPgsByShopName = {};
+  let pgsWithoutShop = 0;
+  pgs.filter(p=>p.brand==='OPPO' && p.status==='Đang làm').forEach(p=>{
+    if(!p.shop || !p.shop.trim()){ pgsWithoutShop++; return; }
+    const k = p.shop.trim().toLowerCase();
+    activeOppoPgsByShopName[k] = (activeOppoPgsByShopName[k]||0) + 1;
+  });
+
+  // Đánh dấu MỌI biến thể tên Shop đã từng thấy (từ cả 2 nguồn) — tên Shop nào của PG không khớp
+  // bất kỳ biến thể nào trong toàn bộ danh sách hợp nhất sẽ bị "rơi mất" khỏi tổng nếu không được
+  // cộng bù riêng — đây chính là nguyên nhân Tổng SL OPPO hiển thị ít hơn số PGs "Đang làm" thực tế.
+  const matchedShopNameKeys = new Set();
+  allRecs.forEach(s=> s.nameVariants.forEach(v=>matchedShopNameKeys.add(v)));
+  let pgsUnmatchedShop = 0;
+  Object.keys(activeOppoPgsByShopName).forEach(k=>{ if(!matchedShopNameKeys.has(k)) pgsUnmatchedShop += activeOppoPgsByShopName[k]; });
+
+  // Chốt chặn chống đếm nhân đôi — dùng ID Shop (nếu có) làm mốc claim chính, vì đã hợp nhất theo
+  // ID/Tên ở bước trên nên về lý thuyết mỗi Shop chỉ còn 1 bản ghi; vẫn giữ Set claimedNames để chắc
+  // chắn 1 biến thể tên KHÔNG bị cộng 2 lần nếu lỡ vẫn còn sót 2 bản ghi cùng dùng chung 1 tên.
+  const shopNameClaimed = new Set();
+  const list = allRecs.map(shop=>{
+    // Cộng dồn SL PGs khớp BẤT KỲ biến thể tên nào của Shop này (VD Gán Shop ghi "Shop A khác tên",
+    // Nhân sự hãng ghi "Shop A" — PG có thể đang dùng 1 trong 2 tên đó, đều phải tính đúng vào Shop
+    // này thay vì chỉ khớp đúng 1 tên duy nhất được lưu làm shopName hiển thị).
+    let slOppo = 0;
+    shop.nameVariants.forEach(v=>{
+      if(!shopNameClaimed.has(v)){
+        slOppo += activeOppoPgsByShopName[v]||0;
+        shopNameClaimed.add(v);
+      }
+    });
+    const slOf = (brand)=> Number((shop.brands[brand]&&shop.brands[brand].count)||0);
+    // Phân biệt rõ 2 tình huống để dễ chẩn đoán: (1) Shop CHƯA từng được gán Trainer nào (shop.
+    // trainerId rỗng) — hiện "—" như bình thường; (2) Shop CÓ trainerId nhưng không khớp Trainer nào
+    // đang tồn tại (VD Trainer đã bị xoá, ID cũ còn sót lại trong Gán Shop) — hiện cảnh báo rõ ràng
+    // thay vì để trống im lặng, để Admin biết cần vào Cài đặt ▸ DATA ▸ Gán Shop cập nhật lại.
+    const tr = shop.trainerId ? config.trainers.find(t=>t.id===shop.trainerId) : null;
+    const trainerName = shop.trainerId ? (tr ? tr.name : '⚠ ID Trainer không khớp (đã xoá?)') : '';
+    return {
+      shopId: shop.shopId, shopName: shop.shopName, region: shop.region, province: shop.province, channel: shop.channel,
+      shopSize: shop.shopSize||'', trainerName, trainerId: shop.trainerId||'',
+      slOppo, slSS: slOf('Samsung'), slXM: slOf('Xiaomi'), slVV: slOf('Vivo'), slRM: slOf('Realme'), slHonor: slOf('Honor'),
+    };
+  }).filter(s=>s.shopName || s.shopId);
+
+  // Cộng bù 2 nhóm PGs "Đang làm" đáng lẽ bị rơi mất — hiện thành dòng riêng, có cảnh báo rõ ràng để
+  // Admin biết cần bổ sung dữ liệu Gán Shop cho đúng Shop đó, thay vì âm thầm biến mất khỏi Tổng.
+  if(pgsUnmatchedShop>0){
+    list.push({ shopId:'—', shopName:'⚠ Tên Shop chưa khớp Gán Shop/Nhân sự hãng', region:'—', province:'—', channel:'—', shopSize:'—', trainerName:'—',
+      slOppo: pgsUnmatchedShop, slSS:0, slXM:0, slVV:0, slRM:0, slHonor:0 });
+  }
+  if(pgsWithoutShop>0){
+    list.push({ shopId:'—', shopName:'⚠ PGs chưa được gán vào Shop nào', region:'—', province:'—', channel:'—', shopSize:'—', trainerName:'—',
+      slOppo: pgsWithoutShop, slSS:0, slXM:0, slVV:0, slRM:0, slHonor:0 });
+  }
+
+  return list;
+}
+/* Lấy đúng danh sách Shop ĐANG HIỂN THỊ trên màn hình (đã áp dụng đầy đủ: giới hạn theo vai trò +
+   toàn bộ bộ lọc đang chọn) — dùng riêng cho nút Export, đảm bảo file xuất ra luôn khớp 100% với
+   những gì Trainer/Admin đang thấy trên bảng, không cần lặp lại logic lọc 1 lần nữa. */
+function getFilteredBrandShopListForExport_(){
+  let list = buildUnifiedShopList_();
+  if(isTrainer() && session.region){
+    list = list.filter(s=> (s.region||'').trim().toUpperCase()===String(session.region).trim().toUpperCase() || s.region==='—');
+  }
+  if(brandShopListFilter_.region) list = list.filter(s=>s.region===brandShopListFilter_.region);
+  if(brandShopListFilter_.province) list = list.filter(s=>s.province===brandShopListFilter_.province);
+  if(brandShopListFilter_.channel) list = list.filter(s=>s.channel===brandShopListFilter_.channel);
+  if(brandShopListFilter_.size) list = list.filter(s=>s.shopSize===brandShopListFilter_.size);
+  if(brandShopListFilter_.search){
+    const term = brandShopListFilter_.search.trim().toLowerCase();
+    list = list.filter(s=> (s.shopId||'').toLowerCase().includes(term) || (s.shopName||'').toLowerCase().includes(term));
+  }
+  return list;
+}
+function renderBrandShopList_(){
+  const box = document.getElementById('brandShopListBox');
+  if(!box) return;
+  let fullList = buildUnifiedShopList_();
+  // Trainer CHỈ thấy Shop thuộc đúng Khu vực mình phụ trách — Admin thấy toàn bộ Miền Trung. Áp dụng
+  // đúng mẫu giới hạn theo vai trò đã dùng nhất quán ở các màn hình khác trong Dashboard.
+  if(isTrainer() && session.region){
+    fullList = fullList.filter(s=> (s.region||'').trim().toUpperCase()===String(session.region).trim().toUpperCase() || s.region==='—');
+  }
+
+  const regionSel = document.getElementById('brandShopListRegionSel');
+  const provinceSel = document.getElementById('brandShopListProvinceSel');
+  const channelSel = document.getElementById('brandShopListChannelSel');
+  const sizeSel = document.getElementById('brandShopListSizeSel');
+  const fillSel = (sel, values, cur)=>{
+    if(!sel) return;
+    sel.innerHTML = '<option value="">Tất cả</option>' + values.map(v=>`<option value="${v}">${v}</option>`).join('');
+    if(values.includes(cur)) sel.value = cur;
+  };
+  // Bộ lọc PHỤ THUỘC THEO CHUỖI (Khu vực → Tỉnh → Kênh → Size shop) — mỗi dropdown chỉ đổ ra lựa
+  // chọn khớp với các dropdown ĐÃ CHỌN TRƯỚC ĐÓ trong chuỗi, không đổ hết toàn bộ dữ liệu ra cùng lúc
+  // (đúng mẫu đã dùng ở bộ lọc Gán Shop — Cài đặt ▸ DATA).
+  const afterRegion = brandShopListFilter_.region ? fullList.filter(s=>s.region===brandShopListFilter_.region) : fullList;
+  fillSel(regionSel, Array.from(new Set(fullList.map(s=>s.region).filter(Boolean))).sort(), brandShopListFilter_.region);
+  if(isTrainer() && session.region && regionSel){
+    // Trainer không cần (và không được) đổi sang khu vực khác — khoá cứng dropdown về đúng 1 lựa chọn.
+    regionSel.innerHTML = `<option value="${session.region}">${session.region}</option>`;
+    regionSel.value = session.region;
+    regionSel.disabled = true;
+    brandShopListFilter_.region = session.region;
+  }
+
+  const afterProvince = brandShopListFilter_.province ? afterRegion.filter(s=>s.province===brandShopListFilter_.province) : afterRegion;
+  fillSel(provinceSel, Array.from(new Set(afterRegion.map(s=>s.province).filter(Boolean))).sort(), brandShopListFilter_.province);
+
+  const afterChannel = brandShopListFilter_.channel ? afterProvince.filter(s=>s.channel===brandShopListFilter_.channel) : afterProvince;
+  fillSel(channelSel, Array.from(new Set(afterProvince.map(s=>s.channel).filter(Boolean))).sort(), brandShopListFilter_.channel);
+
+  fillSel(sizeSel, Array.from(new Set(afterChannel.map(s=>s.shopSize).filter(Boolean))).sort(), brandShopListFilter_.size);
+
+  let list = afterChannel;
+  if(brandShopListFilter_.size) list = list.filter(s=>s.shopSize===brandShopListFilter_.size);
+  if(brandShopListFilter_.search){
+    const term = brandShopListFilter_.search.trim().toLowerCase();
+    list = list.filter(s=> (s.shopId||'').toLowerCase().includes(term) || (s.shopName||'').toLowerCase().includes(term));
+  }
+
+  // Dòng số liệu động — tính TRÊN ĐÚNG danh sách đã lọc (không phải toàn bộ dữ liệu gốc), để luôn khớp
+  // với những gì bảng bên dưới đang hiển thị.
+  const summaryBox = document.getElementById('brandShopListSummary');
+  if(summaryBox){
+    const sum = (key)=> list.reduce((s,x)=>s+Number(x[key]||0),0);
+    summaryBox.innerHTML = `
+      <div class="kpi-card"><div class="label">SL Shop</div><div class="value">${list.length}</div></div>
+      <div class="kpi-card"><div class="label">SL OPPO</div><div class="value" style="color:#016C38;">${sum('slOppo')}</div></div>
+      <div class="kpi-card"><div class="label">SL SS</div><div class="value">${sum('slSS')}</div></div>
+      <div class="kpi-card"><div class="label">SL XM</div><div class="value">${sum('slXM')}</div></div>
+      <div class="kpi-card"><div class="label">SL VV</div><div class="value">${sum('slVV')}</div></div>
+      <div class="kpi-card"><div class="label">SL RM</div><div class="value">${sum('slRM')}</div></div>
+      <div class="kpi-card"><div class="label">SL HN</div><div class="value">${sum('slHonor')}</div></div>
+    `;
+  }
+
+  if(list.length===0){
+    box.innerHTML = '<div class="empty">Chưa có Shop nào khớp bộ lọc.</div>';
+    return;
+  }
+  const totalItems = list.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems/BRAND_SHOP_LIST_PAGE_SIZE));
+  if(brandShopListPage_>totalPages) brandShopListPage_ = totalPages;
+  if(brandShopListPage_<1) brandShopListPage_ = 1;
+  const startIdx = (brandShopListPage_-1)*BRAND_SHOP_LIST_PAGE_SIZE;
+  const pageItems = list.slice(startIdx, startIdx+BRAND_SHOP_LIST_PAGE_SIZE);
+
+  let html = `<table><thead><tr><th>ID Shop</th><th>Tên Shop</th><th>Khu vực</th><th>Tỉnh</th><th>Kênh</th><th>Size shop</th><th>Trainer</th><th>SL OPPO</th><th>SL SS</th><th>SL XM</th><th>SL VV</th><th>SL RM</th><th>SL Honor</th><th></th></tr></thead><tbody>`;
+  brandShopListCurrentPageItems_ = pageItems;
+  pageItems.forEach((s,idx)=>{
+    // Không cho sửa 2 dòng cảnh báo gộp ("⚠ Tên Shop chưa khớp...", "⚠ PGs chưa được gán...") — đây
+    // không phải 1 Shop cụ thể để sửa, chỉ là dòng tổng hợp cảnh báo.
+    const isRealShop = s.shopId!=='—' || (s.shopName && !s.shopName.startsWith('⚠'));
+    html += `<tr>
+      <td>${s.shopId||'—'}</td><td>${s.shopName||'—'}</td><td>${s.region||'—'}</td><td>${s.province||'—'}</td><td>${s.channel||'—'}</td>
+      <td>${s.shopSize||'—'}</td><td>${s.trainerName||'—'}</td>
+      <td style="text-align:center;font-weight:700;color:var(--green-dark);">${s.slOppo}</td>
+      <td style="text-align:center;">${s.slSS}</td><td style="text-align:center;">${s.slXM}</td><td style="text-align:center;">${s.slVV}</td><td style="text-align:center;">${s.slRM}</td><td style="text-align:center;">${s.slHonor}</td>
+      <td>${isRealShop?`<button class="secondary" data-edit-shop-idx="${idx}" type="button" style="padding:4px 10px;font-size:11.5px;">✏ Sửa</button>`:''}</td>
+    </tr>`;
+  });
+  html += `</tbody></table><div class="pagination-bar" id="brandShopListPagination"></div>`;
+  box.innerHTML = html;
+  box.querySelectorAll('[data-edit-shop-idx]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openEditShopModal_(brandShopListCurrentPageItems_[Number(btn.getAttribute('data-edit-shop-idx'))]));
+  });
+  renderBrandShopListPagination_(totalItems);
+}
+/* Sửa thông tin 1 Shop trong danh sách hợp nhất — mọi trường sửa được (Tên/Khu vực/Tỉnh/Kênh/Size
+   shop/Trainer) đều thuộc về dữ liệu "Gán Shop" (shopTrainerMap), vì đây là nguồn OPPO tự quản lý —
+   KHÔNG sửa vào brandShopList (dữ liệu Nhân sự các hãng, chỉ Import lại mới đổi được). Nếu Shop này
+   trước giờ CHƯA có trong Gán Shop (chỉ có ở Nhân sự hãng), lưu sẽ TỰ TẠO MỚI 1 dòng Gán Shop cho
+   Shop đó — từ giờ Shop sẽ được quản lý đầy đủ trong Gán Shop luôn. */
+async function openEditShopModal_(shop){
+  if(!shop) return;
+  const regions = visibleRegions();
+  const trainers = visibleTrainers();
+  const bodyHtml = `
+    <div class="form-row"><label>ID Shop</label><input type="text" id="editShopId" value="${(shop.shopId||'').replace(/"/g,'&quot;')}" placeholder="(không bắt buộc)"></div>
+    <div class="form-row"><label>Tên Shop</label><input type="text" id="editShopName" value="${(shop.shopName||'').replace(/"/g,'&quot;')}"></div>
+    <div class="form-row"><label>Khu vực</label><select id="editShopRegion"><option value="">— Chọn —</option>${regions.map(r=>`<option value="${r}" ${shop.region===r?'selected':''}>${r}</option>`).join('')}</select></div>
+    <div class="form-row"><label>Tỉnh</label><input type="text" id="editShopProvince" value="${(shop.province||'').replace(/"/g,'&quot;')}"></div>
+    <div class="form-row"><label>Kênh</label><input type="text" id="editShopChannel" value="${(shop.channel||'').replace(/"/g,'&quot;')}"></div>
+    <div class="form-row"><label>Size shop</label><input type="text" id="editShopSize" value="${(shop.shopSize||'').replace(/"/g,'&quot;')}" placeholder="VD: A, B, C..."></div>
+    <div class="form-row"><label>Trainer phụ trách</label><select id="editShopTrainer"><option value="">— Chưa gán —</option>${trainers.map(t=>`<option value="${t.id}" ${shop.trainerId===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div>
+  `;
+  const result = await showFormModal_(`Sửa thông tin Shop: ${shop.shopName||shop.shopId}`, bodyHtml, async ()=>{
+    const newId = document.getElementById('editShopId').value.trim();
+    const newName = document.getElementById('editShopName').value.trim();
+    if(!newName && !newId){ alert('Cần nhập ít nhất Tên Shop hoặc ID Shop.'); return false; }
+    const newRegion = document.getElementById('editShopRegion').value;
+    const newProvince = document.getElementById('editShopProvince').value.trim();
+    const newChannel = document.getElementById('editShopChannel').value.trim();
+    const newSize = document.getElementById('editShopSize').value.trim();
+    const newTrainerId = document.getElementById('editShopTrainer').value;
+
+    // Tìm đúng bản ghi Gán Shop hiện có của Shop này (khớp ID HOẶC Tên CŨ, trước khi sửa) — nếu chưa
+    // có thì tạo mới, đảm bảo không tạo trùng 1 Shop thành 2 dòng khác nhau trong Gán Shop.
+    const oldIdKey = normShopKey_(shop.shopId), oldNameKey = normShopKey_(shop.shopName);
+    let rec = shopTrainerMap.find(r=> (oldIdKey && normShopKey_(r.shopId)===oldIdKey) || (oldNameKey && normShopKey_(r.shopName)===oldNameKey));
+    if(!rec){
+      rec = { id: uid('shoptr') };
+      shopTrainerMap.push(rec);
+    }
+    rec.shopId = newId; rec.shopName = newName; rec.area = newRegion; rec.province = newProvince;
+    rec.channel = newChannel; rec.shopSize = newSize; rec.trainerId = newTrainerId;
+    await dbSet('shopTrainerMap', shopTrainerMap);
+    renderBrandShopList_();
+    return true;
+  });
+}
+function renderBrandShopListPagination_(totalItems){
+  const box = document.getElementById('brandShopListPagination');
+  if(!box) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems/BRAND_SHOP_LIST_PAGE_SIZE));
+  let pageButtons='';
+  const maxShown = 7;
+  let start = Math.max(1, brandShopListPage_ - 3);
+  let end = Math.min(totalPages, start + maxShown - 1);
+  start = Math.max(1, end - maxShown + 1);
+  for(let i=start;i<=end;i++){
+    pageButtons += `<button data-brand-shop-page="${i}" class="${i===brandShopListPage_?'active':''}">${i}</button>`;
+  }
+  const from = (brandShopListPage_-1)*BRAND_SHOP_LIST_PAGE_SIZE + 1;
+  const to = Math.min(brandShopListPage_*BRAND_SHOP_LIST_PAGE_SIZE, totalItems);
+  box.innerHTML = `
+    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} Shop</span>
+    <button data-brand-shop-page="${brandShopListPage_-1}" ${brandShopListPage_<=1?'disabled':''}>‹</button>
+    ${pageButtons}
+    <button data-brand-shop-page="${brandShopListPage_+1}" ${brandShopListPage_>=totalPages?'disabled':''}>›</button>
+  `;
+  box.querySelectorAll('[data-brand-shop-page]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ brandShopListPage_ = Number(btn.getAttribute('data-brand-shop-page')); renderBrandShopList_(); });
+  });
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const searchInput = document.getElementById('brandShopListSearch');
+  if(searchInput){
+    let debounceTimer_;
+    searchInput.addEventListener('input', ()=>{
+      clearTimeout(debounceTimer_);
+      const cursorPos = searchInput.selectionStart;
+      debounceTimer_ = setTimeout(()=>{
+        brandShopListFilter_.search = searchInput.value;
+        brandShopListPage_ = 1;
+        renderBrandShopList_();
+        const newInput = document.getElementById('brandShopListSearch');
+        if(newInput){ newInput.focus(); newInput.setSelectionRange(cursorPos, cursorPos); }
+      }, 350);
+    });
+  }
+  const regionSel = document.getElementById('brandShopListRegionSel');
+  if(regionSel) regionSel.addEventListener('change', (e)=>{
+    brandShopListFilter_.region = e.target.value;
+    // Đổi Khu vực -> Tỉnh/Kênh/Size đã chọn trước đó có thể không còn phù hợp -> reset về "Tất cả"
+    brandShopListFilter_.province = ''; brandShopListFilter_.channel = ''; brandShopListFilter_.size = '';
+    brandShopListPage_=1; renderBrandShopList_();
+  });
+  const provinceSel = document.getElementById('brandShopListProvinceSel');
+  if(provinceSel) provinceSel.addEventListener('change', (e)=>{
+    brandShopListFilter_.province = e.target.value;
+    brandShopListFilter_.channel = ''; brandShopListFilter_.size = '';
+    brandShopListPage_=1; renderBrandShopList_();
+  });
+  const channelSel = document.getElementById('brandShopListChannelSel');
+  if(channelSel) channelSel.addEventListener('change', (e)=>{
+    brandShopListFilter_.channel = e.target.value;
+    brandShopListFilter_.size = '';
+    brandShopListPage_=1; renderBrandShopList_();
+  });
+  const sizeSel = document.getElementById('brandShopListSizeSel');
+  if(sizeSel) sizeSel.addEventListener('change', (e)=>{ brandShopListFilter_.size = e.target.value; brandShopListPage_=1; renderBrandShopList_(); });
+  const exportBtn = document.getElementById('exportBrandShopListBtn');
+  if(exportBtn) exportBtn.addEventListener('click', ()=>{
+    const list = getFilteredBrandShopListForExport_();
+    if(list.length===0){ alert('Không có Shop nào để xuất (kiểm tra lại bộ lọc đang chọn).'); return; }
+    const rows = list.map((s,i)=>({
+      'STT': i+1, 'ID Shop': s.shopId||'', 'Tên Shop': s.shopName||'', 'Khu vực': s.region||'', 'Tỉnh': s.province||'',
+      'Kênh': s.channel||'', 'Size shop': s.shopSize||'', 'Trainer': s.trainerName||'',
+      'SL OPPO': s.slOppo, 'SL SS': s.slSS, 'SL XM': s.slXM, 'SL VV': s.slVV, 'SL RM': s.slRM, 'SL Honor': s.slHonor,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Danh sách Shop');
+    const today = new Date().toISOString().slice(0,10);
+    const scopeLabel = (isTrainer() && session.region) ? session.region.replace(/\s+/g,'') : 'MienTrung';
+    XLSX.writeFile(wb, `DanhSachShop_${scopeLabel}_${today}.xlsx`);
+  });
+});
 function renderBrandStats(){
   const kpiRow=document.getElementById('brandKpiRow');
   kpiRow.innerHTML='';
@@ -6924,6 +7311,7 @@ function renderBrandStats(){
   `;
 
   renderBrandDistChart(brandDistMode);
+  renderBrandShopList_();
 }
 const BRAND_COLORS = { 'OPPO':'#016C38','Samsung':'#2F6FB0','Xiaomi':'#E8B923','Vivo':'#2F9BD6','Realme':'#E8C023','Honor':'#9098A0' };
 function competitorCountByPredicate_(brand, predicate){
@@ -10724,7 +11112,15 @@ document.getElementById('addTrainerBtn').addEventListener('click', async ()=>{
   let relinkedInfo = null;
   if(editingTrainerId){
     const t = config.trainers.find(x=>x.id===editingTrainerId);
-    if(t){ t.name=name; t.region=regionSel.value||''; }
+    if(t){
+      t.name=name; t.region=regionSel.value||'';
+      // QUAN TRỌNG: đồng bộ luôn sang tài khoản đăng nhập của đúng Trainer này — vì lúc đăng nhập,
+      // hệ thống lấy Khu vực từ TÀI KHOẢN (users[].region), KHÔNG phải từ hồ sơ Trainer trực tiếp.
+      // Nếu chỉ sửa hồ sơ mà không đồng bộ tài khoản, Trainer vẫn bị kẹt ở Khu vực CŨ (lúc tài khoản
+      // được tạo) dù hồ sơ đã hiện đúng Khu vực mới — đây chính là lỗi đã xảy ra thực tế.
+      const acc = users.find(u=>u.trainerId===editingTrainerId);
+      if(acc){ acc.region = t.region; acc.displayName = toTitleCaseVN(t.name); await saveUsers(); }
+    }
   } else {
     const newTrainer = {id:uid('tr'),name,region:regionSel.value||''};
     // Kiểm tra có tài khoản "mồ côi" nào trùng tên (Trainer đã bị Xoá trước đó, tạo lại đúng tên) —
