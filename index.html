@@ -2672,6 +2672,7 @@ async function processPgShopAssignWorkbook_(wb){
   // Lưu chính xác tập Code từ DS gán Shop PG để Sheet Sao PGs dùng Mã NV đối chiếu.
   pgShopSourceCodes = new Set(Object.keys(byCode).map(normalizePgMatchCode_).filter(Boolean));
   await savePgShopSourceCodes_();
+  const saleRosterCount = isAdmin() ? await saveSaleRosterFromShopAssign_(rows,V) : 0; // chỉ Admin cập nhật DS Sale
 
   let count=0,trainerMatched=0,trainerCreated=0,saleMatched=0,trainerFromGanShop=0;
   const shopsWithoutTrainerMap={};
@@ -2734,7 +2735,7 @@ async function processPgShopAssignWorkbook_(wb){
   renderPgMergePreview_();
   if(msg){
     msg.style.display='block'; msg.style.color='var(--green-ok)';
-    msg.textContent=`✅ Đã đọc tab ${detected.name} (header dòng ${detected.headerRow+1}): ${count} PG · nguồn đối chiếu Sao = cột Code (${pgShopSourceCodes.size} mã) · khớp Trainer theo Shop ${trainerMatched}${trainerCreated?` (tạo mới ${trainerCreated})`:''}${trainerFromGanShop?` · khớp thêm từ Gán Shop ${trainerFromGanShop}`:''} · khớp Sale ${saleMatched}. Tổng bản nháp: ${pgMergePreview.length}.`;
+    msg.textContent=`✅ Đã đọc tab ${detected.name} (header dòng ${detected.headerRow+1}): ${count} PG · nguồn đối chiếu Sao = cột Code (${pgShopSourceCodes.size} mã) · khớp Trainer theo Shop ${trainerMatched}${trainerCreated?` (tạo mới ${trainerCreated})`:''}${trainerFromGanShop?` · khớp thêm từ Gán Shop ${trainerFromGanShop}`:''} · khớp Sale ${saleMatched}${saleRosterCount?` · 👔 DS Sale: ${saleRosterCount} người (Loại gán shop = Sales)`:''}. Tổng bản nháp: ${pgMergePreview.length}.`;
   }
 }
 document.getElementById('pgShopAssignImportInput').addEventListener('change', async (e)=>{
@@ -6932,7 +6933,7 @@ function buildUnifiedShopList_(){
   brandShopList.forEach(shop=>{
     const { rec, isNew } = findOrCreate(shop.storeId, shop.storeName, ()=>({
       shopId: shop.storeId||'', shopName: shop.storeName||'', region: shop.region||'', province: shop.province||'', channel: shop.channel||'',
-      shopSize: '', trainerId: '', brands: {}, nameVariants: new Set(),
+      shopSize: '', trainerId: '', brands: {}, nameVariants: new Set(), manualSl: {},
     }));
     if(isNew) allRecs.push(rec);
     if(shop.storeName) rec.nameVariants.add(normName(shop.storeName));
@@ -6947,10 +6948,10 @@ function buildUnifiedShopList_(){
   shopTrainerMap.forEach(sm=>{
     const { rec, isNew } = findOrCreate(sm.shopId, sm.shopName, ()=>({
       shopId: sm.shopId||'', shopName: sm.shopName||'', region: sm.area||'', province: sm.province||'', channel: sm.channel||'',
-      shopSize: sm.shopSize||'', trainerId: sm.trainerId||'', brands: {}, nameVariants: new Set(),
+      shopSize: sm.shopSize||'', trainerId: sm.trainerId||'', brands: {}, nameVariants: new Set(), manualSl: {},
     }));
     if(sm.shopName) rec.nameVariants.add(normName(sm.shopName));
-    if(isNew){ allRecs.push(rec); return; }
+    if(isNew){ allRecs.push(rec); }
     // Đã có từ brandShopList (hoặc 1 dòng Gán Shop khác) — bổ sung thêm Khu vực/Tỉnh/Kênh/Size
     // shop/Trainer nếu bên kia còn thiếu (Gán Shop thường đầy đủ hơn vì Admin OPPO tự nhập).
     if(!rec.region) rec.region = sm.area||'';
@@ -6958,8 +6959,11 @@ function buildUnifiedShopList_(){
     if(!rec.channel) rec.channel = sm.channel||'';
     if(!rec.shopId) rec.shopId = sm.shopId||'';
     if(!rec.shopName) rec.shopName = sm.shopName||'';
-    rec.shopSize = sm.shopSize||rec.shopSize;
-    rec.trainerId = sm.trainerId||rec.trainerId;
+    if(!isNew){ rec.shopSize = sm.shopSize||rec.shopSize; rec.trainerId = sm.trainerId||rec.trainerId; }
+    // Số liệu SL từng hãng đã được Trainer/Admin SỬA TAY (ghi đè) qua nút "Sửa" — chỉ có ở nguồn Gán
+    // Shop (nơi duy nhất lưu được việc chỉnh sửa tay), lưu riêng biệt để không lẫn với số tự tính từ
+    // PGs/Nhân sự hãng ở trên.
+    rec.manualSl = sm.manualSl || {};
   });
 
   // Tính SL OPPO — đếm PGs OPPO trạng thái "Đang làm", khớp theo TÊN Shop (PGs chỉ lưu tên Shop dạng
@@ -6996,6 +7000,11 @@ function buildUnifiedShopList_(){
       }
     });
     const slOf = (brand)=> Number((shop.brands[brand]&&shop.brands[brand].count)||0);
+    // Nếu Trainer/Admin đã SỬA TAY 1 chỉ số nào đó qua nút "Sửa" (VD số tự tính bị sai do lệch dữ
+    // liệu), dùng ĐÚNG số đã sửa tay đó thay vì số tự tính — kiểm tra != null vì 0 là 1 giá trị hợp
+    // lệ (không được coi 0 là "chưa sửa").
+    const manualSl = shop.manualSl || {};
+    const finalSl = (key, computed)=> (manualSl[key]!==undefined && manualSl[key]!==null) ? Number(manualSl[key]) : computed;
     // Phân biệt rõ 2 tình huống để dễ chẩn đoán: (1) Shop CHƯA từng được gán Trainer nào (shop.
     // trainerId rỗng) — hiện "—" như bình thường; (2) Shop CÓ trainerId nhưng không khớp Trainer nào
     // đang tồn tại (VD Trainer đã bị xoá, ID cũ còn sót lại trong Gán Shop) — hiện cảnh báo rõ ràng
@@ -7005,7 +7014,9 @@ function buildUnifiedShopList_(){
     return {
       shopId: shop.shopId, shopName: shop.shopName, region: shop.region, province: shop.province, channel: shop.channel,
       shopSize: shop.shopSize||'', trainerName, trainerId: shop.trainerId||'',
-      slOppo, slSS: slOf('Samsung'), slXM: slOf('Xiaomi'), slVV: slOf('Vivo'), slRM: slOf('Realme'), slHonor: slOf('Honor'),
+      slOppo: finalSl('oppo', slOppo), slSS: finalSl('ss', slOf('Samsung')), slXM: finalSl('xm', slOf('Xiaomi')),
+      slVV: finalSl('vv', slOf('Vivo')), slRM: finalSl('rm', slOf('Realme')), slHonor: finalSl('honor', slOf('Honor')),
+      manualSl,
     };
   }).filter(s=>s.shopName || s.shopId);
 
@@ -7144,6 +7155,14 @@ async function openEditShopModal_(shop){
   if(!shop) return;
   const regions = visibleRegions();
   const trainers = visibleTrainers();
+  const manualSl = shop.manualSl || {};
+  // Mỗi ô số lượng: nếu ĐÃ từng sửa tay trước đó thì điền sẵn đúng số đã sửa; nếu chưa, để TRỐNG và
+  // hiện số tự tính hiện tại làm placeholder (gợi ý) — để trống = tiếp tục tự tính như bình thường,
+  // chỉ cần gõ số vào thì mới coi là ghi đè tay.
+  const slField = (id, label, manualKey, computedVal)=> `
+    <div class="form-row"><label>${label}</label>
+      <input type="number" id="${id}" min="0" value="${manualSl[manualKey]!==undefined && manualSl[manualKey]!==null ? manualSl[manualKey] : ''}" placeholder="Tự tính: ${computedVal}">
+    </div>`;
   const bodyHtml = `
     <div class="form-row"><label>ID Shop</label><input type="text" id="editShopId" value="${(shop.shopId||'').replace(/"/g,'&quot;')}" placeholder="(không bắt buộc)"></div>
     <div class="form-row"><label>Tên Shop</label><input type="text" id="editShopName" value="${(shop.shopName||'').replace(/"/g,'&quot;')}"></div>
@@ -7152,6 +7171,15 @@ async function openEditShopModal_(shop){
     <div class="form-row"><label>Kênh</label><input type="text" id="editShopChannel" value="${(shop.channel||'').replace(/"/g,'&quot;')}"></div>
     <div class="form-row"><label>Size shop</label><input type="text" id="editShopSize" value="${(shop.shopSize||'').replace(/"/g,'&quot;')}" placeholder="VD: A, B, C..."></div>
     <div class="form-row"><label>Trainer phụ trách</label><select id="editShopTrainer"><option value="">— Chưa gán —</option>${trainers.map(t=>`<option value="${t.id}" ${shop.trainerId===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div>
+    <div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--green-dark);">Số lượng PGs từng hãng (để trống = tiếp tục tự động tính)</div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">
+      ${slField('editSlOppo','SL OPPO','oppo',shop.slOppo)}
+      ${slField('editSlSS','SL SS','ss',shop.slSS)}
+      ${slField('editSlXM','SL XM','xm',shop.slXM)}
+      ${slField('editSlVV','SL VV','vv',shop.slVV)}
+      ${slField('editSlRM','SL RM','rm',shop.slRM)}
+      ${slField('editSlHonor','SL Honor','honor',shop.slHonor)}
+    </div>
   `;
   const result = await showFormModal_(`Sửa thông tin Shop: ${shop.shopName||shop.shopId}`, bodyHtml, async ()=>{
     const newId = document.getElementById('editShopId').value.trim();
@@ -7162,6 +7190,13 @@ async function openEditShopModal_(shop){
     const newChannel = document.getElementById('editShopChannel').value.trim();
     const newSize = document.getElementById('editShopSize').value.trim();
     const newTrainerId = document.getElementById('editShopTrainer').value;
+    // Ô nào có nhập số thì lưu làm ghi đè tay (manualSl); ô nào để trống thì XÓA ghi đè cũ (nếu có)
+    // để quay lại tự tính bình thường — không giữ mãi giá trị cũ đã lỡ ghi đè trước đó.
+    const newManualSl = {};
+    [['editSlOppo','oppo'],['editSlSS','ss'],['editSlXM','xm'],['editSlVV','vv'],['editSlRM','rm'],['editSlHonor','honor']].forEach(([inputId,key])=>{
+      const v = document.getElementById(inputId).value.trim();
+      if(v!=='') newManualSl[key] = Math.max(0, Math.round(Number(v)||0));
+    });
 
     // Tìm đúng bản ghi Gán Shop hiện có của Shop này (khớp ID HOẶC Tên CŨ, trước khi sửa) — nếu chưa
     // có thì tạo mới, đảm bảo không tạo trùng 1 Shop thành 2 dòng khác nhau trong Gán Shop.
@@ -7172,7 +7207,7 @@ async function openEditShopModal_(shop){
       shopTrainerMap.push(rec);
     }
     rec.shopId = newId; rec.shopName = newName; rec.area = newRegion; rec.province = newProvince;
-    rec.channel = newChannel; rec.shopSize = newSize; rec.trainerId = newTrainerId;
+    rec.channel = newChannel; rec.shopSize = newSize; rec.trainerId = newTrainerId; rec.manualSl = newManualSl;
     await dbSet('shopTrainerMap', shopTrainerMap);
     renderBrandShopList_();
     return true;
@@ -7678,14 +7713,15 @@ async function processTestOnlineWorkbook_(wb,camp){
   });
   await dbSet('frequencyProgress:'+camp.id,progress);
   frequencyProgressCache_[camp.id] = progress; // cập nhật luôn cache — không cần tải lại mạng để thấy data mới
+  const saleInfo=await saveSaleFreqFromRows_(rows,camp,'test'); // cùng file: tách dòng Sale
 
   // Render lại ngay để PG đạt đủ X biến mất khỏi danh sách chưa hoàn thành.
   await renderFrequencyNoiboBody_('testonline');
   const msg=document.getElementById('testOnlineImportMsg');
   if(msg){
     msg.style.display='block';
-    msg.style.color=unmatched?'var(--amber)':'var(--green-ok)';
-    msg.textContent=`✅ Đã cập nhật Test Online: ${matched} PG khớp mã · ${qualified} PG đạt chuẩn ≥ ${x} lần · ${incomplete} PG chưa đạt${unmatched?` · ${unmatched} mã không tìm thấy trong danh sách PG OPPO`:''}${blank?` · bỏ qua ${blank} dòng thiếu Mã NV`:''}.`;
+    msg.style.color='var(--green-ok)';
+    msg.textContent=`✅ Đã cập nhật Test Online: ${matched} PG khớp mã · ${qualified} PG đạt chuẩn ≥ ${x} lần · ${incomplete} PG chưa đạt${blank?` · bỏ qua ${blank} dòng thiếu Mã NV`:''} | 👔 Sale: ${saleInfo.matched}/${saleInfo.total} mã khớp DS Sale · hoàn thành ${saleInfo.done} · chưa ${saleInfo.total-saleInfo.done}.`;
   }
 }
 function bindTestOnlineImportControls_(camp){
@@ -7796,12 +7832,13 @@ async function processAiCheckWorkbook_(wb,camp){
   });
   await dbSet('aiCheckProgress:'+camp.id,data);
   aiCheckProgressCache_[camp.id] = data; // cập nhật luôn cache — không cần tải lại mạng để thấy data mới
+  const saleInfo=await saveSaleFreqFromRows_(rows,camp,'ai'); // cùng file: tách dòng Sale
   await renderFrequencyNoiboBody_('tuvanai_checkshop');
   const msg=document.getElementById('aiCheckImportMsg');
   if(msg){
     msg.style.display='block';
-    msg.style.color=unmatched?'var(--amber)':'var(--green-ok)';
-    msg.textContent=`✅ Đã cập nhật ${matched} PG · Tư vấn AI đạt ≥ ${x} lần: ${aiQualified} · Check shop Pass: ${checkQualified} · Hoàn thành cả 2: ${bothQualified}${unmatched?` · ${unmatched} mã không khớp PG OPPO`:''}${blank?` · bỏ qua ${blank} dòng thiếu Mã NV`:''}.`;
+    msg.style.color='var(--green-ok)';
+    msg.textContent=`✅ Đã cập nhật ${matched} PG · Tư vấn AI đạt ≥ ${x} lần: ${aiQualified} · Check shop Pass: ${checkQualified} · Hoàn thành cả 2: ${bothQualified}${blank?` · bỏ qua ${blank} dòng thiếu Mã NV`:''} | 👔 Sale Tư vấn AI: ${saleInfo.matched}/${saleInfo.total} mã khớp DS Sale · hoàn thành ${saleInfo.done} · chưa ${saleInfo.total-saleInfo.done}.`;
   }
 }
 function bindAiCheckImportControls_(camp){
@@ -7840,6 +7877,154 @@ function bindAiCheckImportControls_(camp){
     XLSX.utils.book_append_sheet(wb,ws,'Data');
     XLSX.writeFile(wb,'Mau_Import_Tu_Van_AI_Check_Shop.xlsx');
   };
+}
+/* ============ SALE — TEST ONLINE & TƯ VẤN AI (dùng CHUNG file/Google Sheet với PGs) ============
+   DANH SÁCH SALE CHUẨN = các dòng "Loại gán shop" = Sales/Sale trong DS gán Shop PGs (Nhân sự).
+   Lấy Code, Staff Name, Area (1 Sale nhiều shop -> gộp theo Code, khu vực = Area xuất hiện nhiều nhất).
+   Khi Import / Google Sheet Test Online hoặc Tư vấn AI (form chung với PGs): dòng có Mã NV khớp Code Sale
+   -> ghi số lần. Sale có trong DS nhưng không có trong file = 0 lần (Chưa hoàn thành), giống logic PGs.
+   Hoàn thành: Test Online = Lần đạt điểm max ≥ X · Tư vấn AI = Kết quả Luyện TV ≥ X (X của chiến dịch).
+   Lưu: saleRoster · saleTestOnline:<campId> / saleAi:<campId> = {counts:{code:n}, importedAt}. */
+const SALE_FREQ_KINDS_={
+  test:{key:'saleTestOnline:', box:'saleTestOnlineBox', title:'Test Online', rule:'Lần đạt điểm max', count:row=>Math.max(0,Math.round(testOnlineNumber_(row['Lần đạt điểm max'])))},
+  ai:{key:'saleAi:', box:'saleAiBox', title:'Tư vấn mẫu AI', rule:'Kết quả Luyện TV', count:row=>aiPracticeCount_(row['Kết quả Luyện TV'])}
+};
+const saleFreqCache_={};
+let saleRosterCache_=null;
+function saleCodeNorm_(v){ return normalizePgMatchCode_(String(v??'').trim().replace(/\.0$/,'')); }
+function saleRegionLabel_(raw){ return configuredRegionFromLoose_(raw) || String(raw||'').trim(); }
+function saleInScope_(s){
+  if(!isTrainer()) return true;
+  return normalizeRegionLoose_(s.region)===normalizeRegionLoose_(session.region||'');
+}
+async function loadSaleRoster_(){
+  if(saleRosterCache_) return saleRosterCache_;
+  const d=(await dbGet('saleRoster'))||{list:[]};
+  if(!Array.isArray(d.list)) d.list=[];
+  saleRosterCache_=d;
+  return d;
+}
+async function saveSaleRosterFromShopAssign_(rows,V){
+  const byCode=new Map();
+  rows.forEach(row=>{
+    const loai=String(V(row,'Loại gán shop','Loai gan shop')).trim().toLowerCase();
+    if(loai!=='sales' && loai!=='sale') return;
+    const code=saleCodeNorm_(V(row,'Code'));
+    if(!code) return;
+    const cur=byCode.get(code)||{code:String(V(row,'Code')).trim().replace(/\.0$/,''),name:'',areas:{}};
+    if(!cur.name) cur.name=toTitleCaseVN(V(row,'Staff Name','Nhân viên','Nhan vien'));
+    const area=saleRegionLabel_(normalizeAreaVN(V(row,'Area','Khu vực','Khu vuc')));
+    if(area) cur.areas[area]=(cur.areas[area]||0)+1;
+    byCode.set(code,cur);
+  });
+  const list=Array.from(byCode.entries()).map(([key,v])=>{
+    const region=Object.entries(v.areas).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+    return {key,code:v.code,name:v.name,region};
+  });
+  if(!list.length) return 0; // file không có dòng Sales -> giữ nguyên DS Sale cũ
+  saleRosterCache_={list,updatedAt:new Date().toISOString()};
+  await dbSet('saleRoster',saleRosterCache_);
+  return list.length;
+}
+async function loadSaleFreq_(camp,kind){
+  if(!camp) return {counts:{}};
+  const ck=SALE_FREQ_KINDS_[kind].key+camp.id;
+  if(saleFreqCache_[ck]) return saleFreqCache_[ck];
+  const data=(await dbGet(ck))||{};
+  if(!data.counts || typeof data.counts!=='object') data.counts={};
+  saleFreqCache_[ck]=data;
+  return data;
+}
+/* Ghi số lần của Sale từ file chung (Test Online / Tư vấn AI). Trả về thống kê cho thông báo import. */
+async function saveSaleFreqFromRows_(rows,camp,kind){
+  const K=SALE_FREQ_KINDS_[kind];
+  const roster=(await loadSaleRoster_()).list;
+  const saleKeys=new Set(roster.map(s=>s.key));
+  const counts={};
+  rows.forEach(row=>{
+    const code=saleCodeNorm_(row['Mã NV']);
+    if(!code || !saleKeys.has(code)) return;
+    counts[code]=Math.max(K.count(row),counts[code]||0);
+  });
+  const data={counts,importedAt:new Date().toISOString()};
+  const ck=K.key+camp.id;
+  await dbSet(ck,data);
+  saleFreqCache_[ck]=data;
+  const x=campaignFrequencyX_(camp);
+  return {total:roster.length, matched:Object.keys(counts).length, done:roster.filter(s=>(counts[s.key]||0)>=x).length};
+}
+async function renderSaleFreqSection_(camp,kind){
+  const K=SALE_FREQ_KINDS_[kind];
+  const box=document.getElementById(K.box);
+  if(!box || !camp) return;
+  const x=campaignFrequencyX_(camp);
+  const data=await loadSaleFreq_(camp,kind);
+  const roster=(await loadSaleRoster_()).list;
+  const sales=roster.map(r=>({code:r.code,name:r.name,region:r.region,count:Number(data.counts[r.key]||0)})).filter(saleInScope_);
+  const pctOf=(a,b)=>b?Math.round(a/b*1000)/10:0;
+  const pfx='sale'+kind;
+
+  let html=`<div style="margin-top:28px;padding-top:18px;border-top:2px solid var(--line);"></div>`;
+  html+=`<h3 class="kpi-section-title">${K.title} — SALE</h3><p class="section-desc">Danh sách Sale lấy từ <strong>DS gán Shop PGs</strong> (Loại gán shop = Sales) · số lần lấy từ data import chung với PGs. Sale hoàn thành khi <strong>${K.rule} ≥ ${x}</strong>. Sale chưa có trong file = 0 lần.${data.importedAt?` Cập nhật lần cuối: ${new Date(data.importedAt).toLocaleString('vi-VN')}.`:''}</p>`;
+  if(!sales.length){
+    html+=`<div class="empty">${roster.length?`Không có Sale thuộc khu vực của bạn.`:`Chưa có danh sách Sale — Admin cần Import / cập nhật <strong>DS gán Shop PGs</strong> (Nhân sự) có dòng Loại gán shop = Sales.`}</div>`;
+    box.innerHTML=html; return;
+  }
+  const total=sales.length, doneAll=sales.filter(s=>s.count>=x).length, pAll=pctOf(doneAll,total);
+  const regMap=new Map();
+  sales.forEach(s=>{ const k=s.region||'(Chưa có khu vực)'; const r=regMap.get(k)||{region:k,total:0,done:0}; r.total++; if(s.count>=x) r.done++; regMap.set(k,r); });
+  const regRows=Array.from(regMap.values()).map(r=>({...r,pct:pctOf(r.done,r.total)})).sort((a,b)=>b.pct-a.pct||a.region.localeCompare(b.region,'vi'));
+  html+=`<div class="kpi-row"><div class="kpi-card"><div class="label">Sale hoàn thành ${x} lần</div><div class="value ${statusClass(pAll).status}">${pAll}%</div><div class="frac">${doneAll} / ${total} Sale</div></div></div>`;
+  html+=`<h3 class="kpi-section-title">Tiến độ hoàn thành theo khu vực — Sale</h3>`;
+  html+=`<div class="table-scroll"><table><thead><tr><th>Khu vực</th><th style="text-align:center;">Tổng Sale</th><th style="text-align:center;">Hoàn thành</th><th style="text-align:center;">Chưa hoàn thành</th><th>Tiến độ</th></tr></thead><tbody>`;
+  regRows.forEach(r=>{
+    html+=`<tr><td><strong>${escapeHtml(r.region)}</strong></td><td style="text-align:center;">${r.total}</td><td style="text-align:center;color:var(--green-ok);font-weight:700;">${r.done}</td><td style="text-align:center;color:var(--amber);font-weight:700;">${r.total-r.done}</td><td style="min-width:190px;">${progressBarHtml_(`${r.done}/${r.total} · ${r.pct}%`,r.pct)}</td></tr>`;
+  });
+  html+=`<tr style="background:var(--bg);"><td><strong>TỔNG</strong></td><td style="text-align:center;"><strong>${total}</strong></td><td style="text-align:center;"><strong>${doneAll}</strong></td><td style="text-align:center;"><strong>${total-doneAll}</strong></td><td>${progressBarHtml_(`${doneAll}/${total} · ${pAll}%`,pAll)}</td></tr>`;
+  html+=`</tbody></table></div>`;
+  // ---- Danh sách Sale chưa hoàn thành — cùng logic & giao diện với danh sách PGs ----
+  html+=`<h3 class="kpi-section-title">Danh sách Sale chưa hoàn thành ${K.title}</h3><p class="section-desc">Chỉ hiển thị Sale có <strong>${K.rule} &lt; ${x}</strong>. Dữ liệu lấy theo <strong>Mã NV</strong>; khi đạt ≥ ${x} lần, Sale tự chuyển trạng thái Đạt.</p>`;
+  html+=`<div id="${pfx}ListBox"></div>`;
+  box.innerHTML=html;
+
+  const listBox=document.getElementById(pfx+'ListBox');
+  let page=1, fRegion='', fStatus='incomplete';
+  const pageSize=10;
+  const regionOf_=s=>s.region||'(Chưa có khu vực)';
+  const regions=Array.from(new Set(sales.map(regionOf_))).sort((a,b)=>a.localeCompare(b,'vi'));
+  const filtered_=()=>sales.filter(s=>{
+    const ok=s.count>=x;
+    if(fRegion && regionOf_(s)!==fRegion) return false;
+    if(fStatus==='complete'&&!ok) return false;
+    if(fStatus==='incomplete'&&ok) return false;
+    return true;
+  });
+  const renderList=()=>{
+    const list=filtered_(); const totalPages=Math.max(1,Math.ceil(list.length/pageSize));
+    page=Math.max(1,Math.min(page,totalPages));
+    const start=(page-1)*pageSize, pageRows=list.slice(start,start+pageSize);
+    let t=`<div class="form-card" style="max-width:none;margin:0 0 12px;padding:12px 14px;"><div style="display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:10px;align-items:end;">`;
+    t+=`<div><label style="display:block;font-size:var(--cap);font-weight:700;margin-bottom:5px;">Khu vực</label><select id="${pfx}FilterRegion"><option value="">Tất cả khu vực</option>${regions.map(r=>`<option value="${escapeHtml(r)}" ${fRegion===r?'selected':''}>${escapeHtml(r)}</option>`).join('')}</select></div>`;
+    t+=`<div><label style="display:block;font-size:var(--cap);font-weight:700;margin-bottom:5px;">Trạng thái</label><select id="${pfx}FilterStatus"><option value="incomplete" ${fStatus==='incomplete'?'selected':''}>Chưa đạt</option><option value="complete" ${fStatus==='complete'?'selected':''}>Đạt</option><option value="all" ${fStatus==='all'?'selected':''}>Tất cả</option></select></div></div></div>`;
+    t+=`<div class="table-scroll"><table><thead><tr><th style="width:58px;">STT</th><th>Code</th><th>Họ và Tên</th><th>Khu vực</th><th>Số lần hoàn thành</th><th>Trạng thái</th></tr></thead><tbody>`;
+    if(!pageRows.length) t+=`<tr><td colspan="6" class="empty">Không có Sale phù hợp với bộ lọc hiện tại.</td></tr>`;
+    else pageRows.forEach((s,i)=>{
+      const ok=s.count>=x;
+      t+=`<tr><td>${start+i+1}</td><td>${escapeHtml(s.code||'—')}</td><td><strong>${escapeHtml(s.name||'—')}</strong></td><td>${escapeHtml(s.region||'—')}</td><td><strong>${s.count}</strong></td><td><span class="pill ${ok?'pill-ok':'pill-warn'}">${ok?'Đạt':'Chưa đạt'} (${s.count}/${x})</span></td></tr>`;
+    });
+    t+=`</tbody></table></div>`;
+    if(list.length>pageSize){
+      let first=Math.max(1,page-2),last=Math.min(totalPages,first+4); first=Math.max(1,last-4);
+      t+=`<div class="pagination-bar" style="margin-top:14px;"><button class="${pfx}-page-btn" data-page="${Math.max(1,page-1)}" ${page===1?'disabled':''}>‹</button>`;
+      for(let i=first;i<=last;i++) t+=`<button class="${pfx}-page-btn ${i===page?'active':''}" data-page="${i}">${i}</button>`;
+      t+=`<button class="${pfx}-page-btn" data-page="${Math.min(totalPages,page+1)}" ${page===totalPages?'disabled':''}>›</button><span class="pagination-info">${list.length} Sale · Trang ${page}/${totalPages}</span></div>`;
+    } else t+=`<div style="text-align:right;margin-top:8px;font-size:var(--cap);color:var(--muted);">${list.length} Sale</div>`;
+    listBox.innerHTML=t;
+    listBox.querySelector('#'+pfx+'FilterRegion').onchange=e=>{fRegion=e.target.value;page=1;renderList();};
+    listBox.querySelector('#'+pfx+'FilterStatus').onchange=e=>{fStatus=e.target.value;page=1;renderList();};
+    listBox.querySelectorAll('.'+pfx+'-page-btn').forEach(b=>b.onclick=()=>{page=Number(b.dataset.page)||1;renderList();});
+  };
+  renderList();
 }
 async function renderFrequencyNoiboBody_(subtype){
   const container=document.getElementById('kpiSubBody-noibo');
@@ -7900,6 +8085,7 @@ async function renderFrequencyNoiboBody_(subtype){
         <div class="section-desc" style="margin-top:8px;">Hệ thống đọc cột <strong>Mã NV</strong> và <strong>Lần đạt điểm max</strong>.</div></div>`;
     }
     html+=`<div id="testOnlineIncompleteListBox"></div>`;
+    html+=`<div id="saleTestOnlineBox"></div>`;
     container.innerHTML=html;
 
     const box=document.getElementById('testOnlineIncompleteListBox');
@@ -7945,6 +8131,7 @@ async function renderFrequencyNoiboBody_(subtype){
     };
     renderPage();
     bindTestOnlineImportControls_(camp);
+    renderSaleFreqSection_(camp,'test').catch(err=>console.error('Sale Test Online:',err));
     return;
   }
 
@@ -8012,7 +8199,7 @@ async function renderFrequencyNoiboBody_(subtype){
       <button class="secondary" id="downloadAiCheckTemplateBtn" type="button">⬇ Tải data mẫu</button>
       <span class="save-msg" id="aiCheckImportMsg" style="display:none;"></span></div></div>`;
   }
-  html+=`<div id="aiCheckListBox"></div>`;
+  html+=`<div id="aiCheckListBox"></div><div id="saleAiBox"></div>`;
   container.innerHTML=html;
 
   const box=document.getElementById('aiCheckListBox');
@@ -8070,6 +8257,7 @@ async function renderFrequencyNoiboBody_(subtype){
   };
   renderPage();
   bindAiCheckImportControls_(camp);
+  renderSaleFreqSection_(camp,'ai').catch(err=>console.error('Sale Tư vấn AI:',err));
 }
 
 const PARTNER_TRAINING_ACTUAL_SAMPLE_B64='UEsDBBQABgAIAAAAIQBi7p1oXgEAAJAEAAATAAgCW0NvbnRlbnRfVHlwZXNdLnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACslMtOwzAQRfdI/EPkLUrcskAINe2CxxIqUT7AxJPGqmNbnmlp/56J+xBCoRVqN7ESz9x7MvHNaLJubbaCiMa7UgyLgcjAVV4bNy/Fx+wlvxcZknJaWe+gFBtAMRlfX41mmwCYcbfDUjRE4UFKrBpoFRY+gOOd2sdWEd/GuQyqWqg5yNvB4E5W3hE4yqnTEOPRE9RqaSl7XvPjLUkEiyJ73BZ2XqVQIVhTKWJSuXL6l0u+cyi4M9VgYwLeMIaQvQ7dzt8Gu743Hk00GrKpivSqWsaQayu/fFx8er8ojov0UPq6NhVoXy1bnkCBIYLS2ABQa4u0Fq0ybs99xD8Vo0zL8MIg3fsl4RMcxN8bZLqej5BkThgibSzgpceeRE85NyqCfqfIybg4wE/tYxx8bqbRB+QERfj/FPYR6brzwEIQycAhJH2H7eDI6Tt77NDlW4Pu8ZbpfzL+BgAA//8DAFBLAwQUAAYACAAAACEAtVUwI/QAAABMAgAACwAIAl9yZWxzLy5yZWxzIKIEAiigAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKySTU/DMAyG70j8h8j31d2QEEJLd0FIuyFUfoBJ3A+1jaMkG92/JxwQVBqDA0d/vX78ytvdPI3qyCH24jSsixIUOyO2d62Gl/pxdQcqJnKWRnGs4cQRdtX11faZR0p5KHa9jyqruKihS8nfI0bT8USxEM8uVxoJE6UchhY9mYFaxk1Z3mL4rgHVQlPtrYawtzeg6pPPm3/XlqbpDT+IOUzs0pkVyHNiZ9mufMhsIfX5GlVTaDlpsGKecjoieV9kbMDzRJu/E/18LU6cyFIiNBL4Ms9HxyWg9X9atDTxy515xDcJw6vI8MmCix+o3gEAAP//AwBQSwMEFAAGAAgAAAAhAIE+lJfzAAAAugIAABoACAF4bC9fcmVscy93b3JrYm9vay54bWwucmVscyCiBAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKxSTUvEMBC9C/6HMHebdhUR2XQvIuxV6w8IybQp2yYhM3703xsqul1Y1ksvA2+Gee/Nx3b3NQ7iAxP1wSuoihIEehNs7zsFb83zzQMIYu2tHoJHBRMS7Orrq+0LDppzE7k+ksgsnhQ45vgoJRmHo6YiRPS50oY0as4wdTJqc9Adyk1Z3su05ID6hFPsrYK0t7cgmilm5f+5Q9v2Bp+CeR/R8xkJSTwNeQDR6NQhK/jBRfYI8rz8Zk15zmvBo/oM5RyrSx6qNT18hnQgh8hHH38pknPlopm7Ve/hdEL7yim/2/Isy/TvZuTJx9XfAAAA//8DAFBLAwQUAAYACAAAACEAUVDeYmEDAAA4CAAADwAAAHhsL3dvcmtib29rLnhtbKxVXW+jOBR9X2n/A+Kd2iZAAJWO+AiaSp3dqu20jyMXnGAFMGtMk6qa/77XJKTtZDXKdLZKbexrjs+599icf9o2tfHEZM9FG5nkDJsGawtR8nYVmV/vcss3jV7RtqS1aFlkPrPe/HTx5x/nGyHXj0KsDQBo+8islOpChPqiYg3tz0THWogshWyogqFcob6TjJZ9xZhqamRj7KGG8tbcIYTyFAyxXPKCZaIYGtaqHYhkNVVAv694109oTXEKXEPleuisQjQdQDzymqvnEdQ0miK8XLVC0scaZG+Ja2wl/Dz4Jxgae9oJQkdbNbyQohdLdQbQaEf6SD/BiJB3Kdge5+A0JAdJ9sR1DQ+spPdBVt4By3sFI/i30QhYa/RKCMn7IJp74GabF+dLXrP7nXUN2nV/0UZXqjaNmvZqUXLFysicw1Bs2LsJOXTJwGuIEoIJMdHFwc7X0ijZkg61ugMjT/Cw0PMC29UrwRhxrZhsqWKpaBX4cK/rdz03YqeVAIcbN+yfgUsGBwv8BVqhpUVIH/trqipjkHVkoq89iEftquL0rGYoY/1aiQ5l8e3n5O/4JkNvLEqPz8MvmJQWWjkC6Tt6u+cf0wAsZTgZ8VpJA54vsysoxi19gtKAAcr9yb2E3PvfXtLczYMkTq0gm3nWzHfgvrFdYnle7sWzNAuyfPEdVEgvLAQdVLUvt8aMTAdqexT6QrdThOBw4OXr/i94/2fp/odmin3XSvXFds/Zpn81hh4a2wfelmIDG/gg5nkaeRhGmzH0wEtVRabtYucw95nxVQV8iWN7+hBIW/OKzBdMUuzkfmpl6cK3fC0/zlPXsjFxF3hmkyCdj3zQG0LjBQrExt5oR9Pf6kuVwE2te51beJah3kNelqO/0fRaQesCTK67caFPsB1ozWyrrno19uAvDvSIg+M5DhwLL2au5fiBbfnOzLZSJ7MX7nyRLRJXV0d/AML/4xocbR5OXxbNsqJS3UlarOF7dMOWCe3BRztBwPct2cT1EzwDik5OcsshAbaSxHMsN8tn7pxAht38layWv/zgJeSj8W1G1QAHVJ/NcRzqNt/PHiaXu4l9nd4dufAm03nfv/2zhfn9iQuvFnffHvJTF8dfkizer0f/KQKNSdbtaA00lebiXwAAAP//AwBQSwMEFAAGAAgAAAAhAPAIWPSlAgAAUgYAAA0AAAB4bC9zdHlsZXMueG1spFVta9swEP4+2H8Q+u7KduMsCbbL0tRQ6MagHeyrYsuJqF6MJGfOxv77TnZeHDq20X6JTufTc8/dc1LSm04KtGPGcq0yHF2FGDFV6oqrTYa/PhXBDCPrqKqo0IpleM8svsnfv0ut2wv2uGXMIYBQNsNb55oFIbbcMkntlW6Ygi+1NpI62JoNsY1htLL+kBQkDsMpkZQrPCAsZPk/IJKa57YJSi0b6viaC+72PRZGslzcb5Q2dC2AahdNaIm6aGpi1Jljkt77Io/kpdFW1+4KcImua16yl3TnZE5oeUYC5NchRQkJ44vaO/NKpAkxbMe9fDhPa62cRaVulQMxgahvweJZ6e+q8J+8c4jKU/sD7agAT4xJnpZaaIMcSAedi7xHUcmGiFsq+Npw76yp5GI/uPtzvdqHOMmh9z6KeB6HxcIhLsSJVewJgCNPQT7HjCpggw72076B9AombYDp4/4RvTF0H8XJ6ADpE+bpWpsKJvvcj6MrTwWrHRA1fLP1q9MN/K61c6B+nlacbrSiwpcygJwMKKdkQjz66f9WX2B3NVKtLKS7rzIM98g34WhCIQdzwBs2Hn+MNmC/GRZ19SU+II5oX5A+pUde7wx/9tdVwOQcINC65cJx9QfCgFl15xaEXgHnr17fnFMW6ETFatoK93T6mOGz/YlVvJXxKeoL32nXQ2T4bD94paKpz8E692BhvGBFreEZ/nm3/DBf3RVxMAuXs2ByzZJgnixXQTK5Xa5WxTyMw9tfowfgDde/f6/yFC7Wwgp4JMyh2EOJj2dfhkebgX4/o0B7zH0eT8OPSRQGxXUYBZMpnQWz6XUSFEkUr6aT5V1SJCPuySufiZBE0fDgePLJwnHJBFdHrY4Kjb0gEmz/UgQ5KkHOfwb5bwAAAP//AwBQSwMEFAAGAAgAAAAhAMEXEL5OBwAAxiAAABMAAAB4bC90aGVtZS90aGVtZTEueG1s7FnNixs3FL8X+j8Mc3f8NeOPJd7gz2yT3SRknZQctbbsUVYzMpK8GxMCJTn1UiikpZdCbz2U0kADDb30jwkktOkf0SfN2COt5SSbbEpadg2LR/69p6f3nn5683Tx0r2YekeYC8KSll++UPI9nIzYmCTTln9rOCg0fE9IlIwRZQlu+Qss/Evbn35yEW3JCMfYA/lEbKGWH0k52yoWxQiGkbjAZjiB3yaMx0jCI58Wxxwdg96YFiulUq0YI5L4XoJiUHt9MiEj7A2VSn97qbxP4TGRQg2MKN9XqrElobHjw7JCiIXoUu4dIdryYZ4xOx7ie9L3KBISfmj5Jf3nF7cvFtFWJkTlBllDbqD/MrlMYHxY0XPy6cFq0iAIg1p7pV8DqFzH9ev9Wr+20qcBaDSClaa22DrrlW6QYQ1Q+tWhu1fvVcsW3tBfXbO5HaqPhdegVH+whh8MuuBFC69BKT5cw4edZqdn69egFF9bw9dL7V5Qt/RrUERJcriGLoW1ane52hVkwuiOE94Mg0G9kinPUZANq+xSU0xYIjflWozuMj4AgAJSJEniycUMT9AIsriLKDngxNsl0wgSb4YSJmC4VCkNSlX4rz6B/qYjirYwMqSVXWCJWBtS9nhixMlMtvwroNU3IC+ePXv+8Onzh789f/To+cNfsrm1KktuByVTU+7Vj1///f0X3l+//vDq8Tfp1CfxwsS//PnLl7//8Tr1sOLcFS++ffLy6ZMX333150+PHdrbHB2Y8CGJsfCu4WPvJothgQ778QE/ncQwQsSSQBHodqjuy8gCXlsg6sJ1sO3C2xxYxgW8PL9r2bof8bkkjpmvRrEF3GOMdhh3OuCqmsvw8HCeTN2T87mJu4nQkWvuLkqsAPfnM6BX4lLZjbBl5g2KEommOMHSU7+xQ4wdq7tDiOXXPTLiTLCJ9O4Qr4OI0yVDcmAlUi60Q2KIy8JlIITa8s3eba/DqGvVPXxkI2FbIOowfoip5cbLaC5R7FI5RDE1Hb6LZOQycn/BRyauLyREeoop8/pjLIRL5jqH9RpBvwoM4w77Hl3ENpJLcujSuYsYM5E9dtiNUDxz2kySyMR+Jg4hRZF3g0kXfI/ZO0Q9QxxQsjHctwm2wv1mIrgF5GqalCeI+mXOHbG8jJm9Hxd0grCLZdo8tti1zYkzOzrzqZXauxhTdIzGGHu3PnNY0GEzy+e50VciYJUd7EqsK8jOVfWcYAFlkqpr1ilylwgrZffxlG2wZ29xgngWKIkR36T5GkTdSl045ZxUep2ODk3gNQLlH+SL0ynXBegwkru/SeuNCFlnl3oW7nxdcCt+b7PHYF/ePe2+BBl8ahkg9rf2zRBRa4I8YYYICgwX3YKIFf5cRJ2rWmzulJvYmzYPAxRGVr0Tk+SNxc+Jsif8d8oedwFzBgWPW/H7lDqbKGXnRIGzCfcfLGt6aJ7cwHCSrHPWeVVzXtX4//uqZtNePq9lzmuZ81rG9fb1QWqZvHyByibv8uieT7yx5TMhlO7LBcW7Qnd9BLzRjAcwqNtRuie5agHOIviaNZgs3JQjLeNxJj8nMtqP0AxaQ2XdwJyKTPVUeDMmoGOkh3UrFZ/QrftO83iPjdNOZ7msupqpCwWS+XgpXI1Dl0qm6Fo9796t1Ot+6FR3WZcGKNnTGGFMZhtRdRhRXw5CFF5nhF7ZmVjRdFjRUOqXoVpGceUKMG0VFXjl9uBFveWHQdpBhmYclOdjFae0mbyMrgrOmUZ6kzOpmQFQYi8zII90U9m6cXlqdWmqvUWkLSOMdLONMNIwghfhLDvNlvtZxrqZh9QyT7liuRtyM+qNDxFrRSInuIEmJlPQxDtu+bVqCLcqIzRr+RPoGMPXeAa5I9RbF6JTuHYZSZ5u+HdhlhkXsodElDpck07KBjGRmHuUxC1fLX+VDTTRHKJtK1eAED5a45pAKx+bcRB0O8h4MsEjaYbdGFGeTh+B4VOucP6qxd8drCTZHMK9H42PvQM65zcRpFhYLysHjomAi4Ny6s0xgZuwFZHl+XfiYMpo17yK0jmUjiM6i1B2ophknsI1ia7M0U8rHxhP2ZrBoesuPJiqA/a9T903H9XKcwZp5memxSrq1HST6Yc75A2r8kPUsiqlbv1OLXKuay65DhLVeUq84dR9iwPBMC2fzDJNWbxOw4qzs1HbtDMsCAxP1Db4bXVGOD3xric/yJ3MWnVALOtKnfj6yty81WYHd4E8enB/OKdS6FBCb5cjKPrSG8iUNmCL3JNZjQjfvDknLf9+KWwH3UrYLZQaYb8QVINSoRG2q4V2GFbL/bBc6nUqD+BgkVFcDtPr+gFcYdBFdmmvx9cu7uPlLc2FEYuLTF/MF7Xh+uK+XNl8ce8RIJ37tcqgWW12aoVmtT0oBL1Oo9Ds1jqFXq1b7w163bDRHDzwvSMNDtrVblDrNwq1crdbCGolZX6jWagHlUo7qLcb/aD9ICtjYOUpfWS+APdqu7b/AQAA//8DAFBLAwQUAAYACAAAACEACeLoJJ8NAAAnVQAAGAAAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbJyT246bMBCG7yv1HZDviTkkJKCQVUSCundVj9fGDMGKjantnFT13TsQJbtSbqKVjDQM9vfPML+XL2clvSMYK3SXk3ASEA86rmvR7XLy80fpL4hnHetqJnUHObmAJS+rz5+WJ232tgVwHhI6m5PWuT6j1PIWFLMT3UOHXxptFHP4anbU9gZYPR5SkkZBkFDFREeuhMw8w9BNIzhsND8o6NwVYkAyh/XbVvT2RlP8GZxiZn/ofa5Vj4hKSOEuI5R4imevu04bVkns+xxOGffOBleET3yTGfMPSkpwo61u3ATJ9FrzY/spTSnjd9Jj/09hwik1cBTDAN9Q0cdKCmd3VvQGiz8IS+6w4XeZ7CDqnPwt09kiWiQzv4yDuR+vp3M/LYqFH6ZxXBbzdLudb/+R1bIWOOGhK89Ak5N1mK03UULoajk66JeAk30Xe45V30ECd4AqIfEGg1Za74eNr5gKkGnHDQOTcSeOUICUOSkT9PifUQVDFKB3hffxTa0cLf3VeBWzUGj5W9SuRUm8OjU07CDdN336AmLXOswie/RIVl82YDmaFkuZRCjzHwAA//8AAAD//5ScbXPbuBWF/0rGP6ARKfltx+sZKopp14m4cdtsyW+ZNDP9tO2sM2n77wuZoIXnHPHO8lui4wtcXOAxAB7KN8///Pbt++7L9y+3N7//6z9vfv/5rDp78/zvL789p3/9tF6dvflvtfny9ad//G/37fnrt9++/3y2+lN9dnvz9fCzTfrh9Mlz+v+P29XN2x+3N2+/Zm1bahW1d6VWU9uV2pra+1LbULsrtXNqbaldULsvtUtqD6V2Re3PpXZN7RFjl8J8gCiV+QhRSrOHKLXpIEpxfoEo1fkEUcrzBFHq8xeIUqC/QpQK/a0Ua6nQZ4hSoV8hSoX+DlEq1EOUCg0QpUINFnotJWqw1GupUcPFLkVqsNzrY5XeJhxfmayXMHmg88dtfS55bMfPK0ngXWr7FeG1TMQOokzEe4gyEXeR2OZUpLd7xMjkPUCUyXuEKJP3AaLM3UeIUrI9RClcNw5CxvALQmTRfyrFjUQ+QZRaf84V46+ZXxGiKESd9ZE4RGLTQJVZatIqOy6njUxTkxbbYW1WGoV1tjnOHyBYL4FgnSGQ6d6OnxsEqe1XCDYSsyvFtUIAUSGIxDanohAgRiGAqBBAVAggKgQYvkIAUSEYB6EQoDOFAO0pBBAVglwxgQAhCkHUWR+JQyQ2DVSDAKpBkIcho2uwzjYzO8FmCQSbDIGshe34uUGQ2n6F4Fx3glI0CCAqBJHY5lQUAqQihXpAgwoBRIUAokKAPvXkBVFPXuMgFAJ0phCUou0EEBWCXDGBACEKQdRZH4lDJDYNVIMAJTMI8jBsJ0CbMzvB+RIIzjMEksF2/NwgSG0fIZD1sytFgwCiQhCJbU5FIUAqslof0KBCAFEhgKgQoE/dCSDqTjAOQiFAZwpBKRoEEBWCXDGBACEKQdRZH4lDJDYNVIMAJZPxN+/yMPS2gXU2txNcLIHgIkMgddyOnxsEqe1XCC50J4CoxyGICkEktjkVqcU9YvQ4VIprhQCRIn5ApEKASEloH4ndOAiFAJ0pBKVoEEBUCHLFBAKEKARRZ30kDpHYNCiKXY+h2vX49MQ3O0Qdf9vgTnC5BILLDIFMz3b83CBIbR8hkFnbQVQIICoEkdjmVBQCxCgEpXgpY3ssxbXuBBAVAjQrI9xDlBF24yAUAnSmEJSiQQBRIcgVEwgQohBEnfWROERi00C1nQBzaBDktanHJKyzuZ3gagkEVyMExSX75UnudvzcIEhtv0JwKWPaQZTU30OUlXcXiW1ORY9DiNHjEESp7mMpXuhOUIprhQDNyolnH4ndOAiFAJ0pBKVoEEBUCHLFBAKEKARRZ30kDpHYNKi17QQomR2HxmHYE1J0OHMvvl7CwHVmQK8E4+fGQGr7lYErPQ2V4qUyAFEZiMQ2pyLE3Zcxa90I0KAygEjdCDBCWVwfIeq9OBK7cRDKADJRBkrRGICoDOSKCQMIUQaizvpIHCKxaaDaRgDV7sV5GFK0ZodCH9vEaahKdt0C726VMZAMt6mZl6e06hQcmp8HAaqRQFVRCNV2ykdhQJTRwGz1cgDV9gS2rJsCW9b7Qah2eSzKBDtUKKAaFVQVi6l4wgWDFIywwz5Uh1BNRlq5iDYGB2WjYxqN4cG4mU2iSh7fAj6qzIdUZ5uaOc1HaSFeqYtw6Px4lNKdAuqV/PK+C9V2ykcPTIg61xMT2zQ+ymydj1K1QxNb1lMTVVnqXR6L8YEOjY9SdT6gGh95MpUPBBkfUYc9RqjpDKGa+EDTzkcpn9sJaloKknBymdHsHB/JvFvARzaaN/pQqZpxmtPnRwKu9SAF1fePMtb5iNR2ykdv1ejxXF0G5qPHKajOB/LRAxXroFfrUO3yWIyP0HZGk85HaDxPxVM+Qus57LAP1SFUEx+x/cw59f0jL00peuIDzc7xkXy9BXxkD1oLvq1mTOj0eXG+sv2jVJ0PxNr+EantlI8U5R75+P6BfIyPUnU+YBDb+apUr/XGgaxU7fJYjA90aPtH5PU+oUP9Zfd5Kp7ygSZt/4g67NmhDGUI1cRH7ExzTn3/OP1SQuIDzc7xkcy7BXxke3otJ4RtNeNPp8+L/UMfRlG18xVi7f4RqW3OR99Su0ePzkfZ5qXxUarOR6le2f6BbIWePesg/XZ5LMZH2eTa+Ihs4Cd06Hyc9qsZZHyEjjVjjY/Ys2Z59FnTYe0V/q/zMa1Z4p74QK9zfCQ3cAEf2bnWl/K21Yx1nT4v+JDcd1B9/yhj/XwVqe2Uj90/yqhqJfIDEjL3DqoDAl/ZNhB2bCcsympf5OEYIujSEIlM4icMxhE57WYzyBAJ/WzGGiKxo43gauV3ENbPD1njeBQersA5M6NKtt8CRrKxXbw4O9oZqZnTd/TSVaxW+oLHoffj27Dq60GtVrLs7mK5nVKya0jZp28jTNj2Ebik6m1IRvLb7qPIMmH7WO7yeIyT0O1Gm34VCf3uqYB61Aod77DDPlSHUE1HLU6Nc4KJ9b1kXKL+QjjGM7eVJDtxASbZXqztqDXjfVelW1lVdleHmWuYINgxCeU2df1Cru0mZZhjwoQlpUeMx3xwjnZlmLBtu5CEcpfHY5ighLadRE7zE/L17eS0Jc4g205CU5yxtp3EtjiCr/3EhXl1SsbRKFw7pjRHSbIOF1CSvXH9Bse2mjHH0+fH3aLSt9p3kO11QQY7JWhb5XZKySiB/6oOoSRslMCeVpNQEjZKWAzZivbStchdHo9REhrmaNM3k9Aynwqom0lomocd9qE6hGraTDjfvplgYv07RjPeuZT9OKc0DpO7uICT7J/r96C21YyBnj4vObEnW3CEbTdBsHMSyu2Ukh26mJLU84EZr+zUVUb75YQpGSjs2vyRUO7ygAwU1NC2k8ivfsJgfTs5bawzyLaTqMOesbadRLEJFFbXQWH9fEMZx+O3E3Q7s6HUixz29NMvX8WrZfVts+DfxSvN0UofOO0Ovc/fTqD67SSW2yklBYVhlYIisu4ozFh3FElJQaFc6zU+lrs8IAWFGSko0qYs6yfIRspUQv2SHhxvJYVNSrZ9qA6hmr6oh9Xk93iZOyNlGo9MW8N1OHeRrxeZ7emnR1T0nawsOCqloVnV+jT40Pu82w7VnnaFajslpCcv9qhuO9SqVrsdsm0oUM1ul6b1fRSRJbEuD8cwCQ13tOlfZA0N96l+SklouIcd9qE6hGqiBAvpBCVYSQ7J6ZdBEiR/xHGvFznu6adHSPSNrSw4JKWrWem9ZnfoPYCEwfLb+Q7BlT5ZaKeUDBM41XpBkUYNkzLYMUHT+lBYmtaHXZT1mXuXh2OYhL472nRMQt99qp9iEvruYYd9qA6hmjDBajiBCRKzZ8LTcMx4Z7dzx65FxnudjfdaX9zKgmNSmpuV3tR3KSzCBMHKwR2CT2Ay8y1whNm7KWx0LeN8hOyYhOa7NC2A7kXWa3yusGES2u9o0zGB8yzr5/M0pYpJaL+HHfahOoRqwgTvLtjDLk6rUzJnv7PXOUoW2e91tjL1XL3NglNSWpyVPkTdpbCIEgQ7JaHcTinZZsKU7NBF2TAJPXiMxw9dbFq/KYvgSt9w6PJ4DJPQhUebjgkMaMPktAvPJu1qErrwYTpDqCZMUL4TuwnL66euPB7fTv6ID18v8uHTT7+cuhSIbRYcFPijOlO7Q+/HLxbq4y6qMiV3UCu9gbZTqsYJvGs7dJWqfYMQXZp1QtXOXKyEOicyGsmry6MxSkIjHm06JXC+jZLTRjybNEpCIz5MZwjVRAnLp9vFYQEeV9KJP7aTh6NxXIGz9/dFRnydjXh9QLTNgkMC81S/jrhLYdGjLjqvasQjuNK/59PmlPSMf48wP3OVfTolyNcedEE1SlgK20tCucujMUoYJSeRT1Ii+QX7BNkfdJ3+5jmDjBPY2vagK1IHtiyxiROMVf90TfqbVDDi/dSVhyPzkq7wZdzFsYSjd/L2+LcT/w8AAP//AAAA//+yKUhMT/VNLErPzCtWyElNK7FVMtAzV1IoykzPgLFL8gvAoqZKCkn5JSX5uTBeRmpiSmoRiGespJCWn18C4+jb2eiX5xdlF2ekppbYAQAAAP//AwBQSwMEFAAGAAgAAAAhAIjpS37TBwAAIBoAABQAAAB4bC9zaGFyZWRTdHJpbmdzLnhtbKxZW2/bRhZ+X6D/YcCnLtaWSEqUrMB2IVuO5Tpi3Yh2nAQLgSsxJDfSkCUp1e5TLyiKtiiQtiiKYl/szRZFui2avfShFhZ5oOH/oX/SbyhLlmdI2ckaCGxz5szlfOf2ncnyGwe9LhlYQeh6dEVScrJELNr2Oi61V6Rd4/bikkTCyKQds+tRa0U6tELpjdXX/rAchhHBWhquSE4U+bfy+bDtWD0zzHm+RTHzyAt6ZoTPwM6HfmCZndCxrKjXzauyXMr3TJdKpO31abQiaQWc26fuO31rfTyiaIq0uhy6q8vRqttZzkery3n2NR5pmz3fdG3aSpnqmmHYombP4hd5vu+1TFwkFGYC26Tue9C55QfewKVtS5Bx6cCNLCtbIDID24paYdTvWDQS1kcBFGYndMxIuBoQDqJW5IqXtmgndTy0QmYyXhOz33FhP+GArtc2I8inAjOdtHumz+/o42aH/CCUGVjdVtgHpOzih75wIifSsSLT7QqoQPGoL4z6nkujluezGwuTPfOglQiELd8KWv3QCvjrcSLvesHj0PEE1drwhcjqtP5y2Eqsg91Ef9qLf6M2f8C20yeD0fBfbX5Cd+KnlDjxkbjGGA0/pU7e2BE2i3+kjrCRHR8dktMv4yOPRKOTY48XaI6GX5Lu2fPR8Cm1SeSw2zDJF7zg6RN3NPyoR7ad0clTjzTj44i8bqz9kZdrQOwDSoygj/0WSa2qV/VN/PF2H+swpJs9fDXusTG1kpdL+K0UbxVkfqOHUq1K2GLpz+LUzG7itCqrpUW5tKguGUr5lizjX06W5Qf8Noo6nuTHqw3xQFjk75QMXIAsLUjj40k3/p94egLUJ5Q04uNDsm9ShxTKClkfDX82yekT2MDld2eJL0TmQ9iEOdP3c7bn5exu/pFZ2f1r8129HPXurzWWwiV+4WMn/i8ghdG+JVEAE3IC+UvZrobMK1hra0Mnxt1dfVO0d2N/gRibtdMn/BTMVkL2VUv8xLpz9twk7fg/N+IUzDqpXngJXLUkkx345HGP7J1+RBnEw6/FsMnCWKeVwmM1XH+07mjaA7dZ5k/U4Dr/lzqlOT4+9VRtvqcaUPAFsRFaf3NJzUVAj4bfwfKyluj7LX5Cd5sY/UMEqZDOMx1s8GCwZDbf3Kwq+xuFu7sVwdKlDEu/VJRr10GgOB8BMaqKWhGGNylZAxYuWUeA9q8bWQdvhrpxt3ef2vfecTvOPSGyVC1L8a3R8P3zkEHm2q7HH+h1Uo+/qp5nNQT6PxpEN9SUHFKvItYyMtq2Ex8jV9Tjf5tzMlphPko7QuZKApgo4ErkTvwZqY+GXyEd79TfEiM+EV2AKzX2BT8oZsBRzFUE7BrXhUjhj5Er6Ql5Vom6UPiupRznsGvxTwCb5YrP8XsRjhSfkPtI7tPaVJDzSWnSHDH+H0prW7B6DT/SitN0szmGrFxRmrR0JLYdb5yTiSorKLKjkx8oqZ89R+wntcXD/ZEESN2Lj2bV4pFm2qWm8JfGiRUDVsLTcZoplAvSbA0VavqMZsXiWppqvA7wPSEzK4Vs3GqNfaKqKkIMVIzsnT0/O04oynXwugIW3p3O6Q2SSDY0l9aInvIYlu70DgDs1M7MrzgQWO90K/TNNnoqNEcgsQNLWmVY1sS15Io6xmuRoRVqQpZW7GCtVLyO9ZI7wiJQ6jeyDjZ5xeXq4I8vmHcbJPlzkUxI5AzKREyAD6X67kZalKKmDv9pEsNhnG68pyjGbsk4/3nQaWWyhsAyAlTiT/qgR35uvFJgDYJgulwqv3olZ1Py5bFVRCY9YRkFeX7SYcqKdZalEpfEH/KsIt31FKVEdJvRkI/RBIxOvo+AMPoYlmSnOwmOmFZzoFBahko/loPs9AmspI9Ofk0C/PLXNDYnrQdKo1irZ9aIXoF+JekqUkr8TJsgpLhxGVskWqVQBBxQ+k6rpldbd9br+CwUKsQAn0+q0rM2YBud/CIQ2ZtWnzVHgvoKG01h3xMF1CLzNXwl1ze2k+urjIuyuAAjS0IKrHz4w7Xy1ctbr3hOKVOvP7mmgvegWZzrCc5qUb3wUPChX/oM6uEXKeWFbwZuCHzlou1NAX8SrcoV3etUS1XTRC3lMvjej6SGrPlM6AdwgdTqf9P6zbeOCo+ZiYKmcRefe/Gv4z5um7mSUBTGHe+N1LELgidmTEXDg0RKAKRnSDQg6DhJE3xC4FnlAl4+TNaaJQ8iC6xbyRK+Iu9P3zzs+Kk75akX/CvtCeXSGiGRZbOHlHZribVbQp8t5I5ihhw0Tzh3Gkqvpjh6kqyKlzwoZdgvKefI/XXTPS/mjD4LrQgvcPGAxeB/lbTG06kMe47pDCPUyF4CvNMXg9Kr1HK1rAmtXVnjPPTSvUTxjMZBnzS3LIiN5qXO+E9EZ/2SUd8dnfyki1VztvdFm+CCLRgOMtfPNI2Rxcdth4TwRIrHRNsMwCsiq8tcwU2M9D17fQTzAKmbZfr8sYk0e9Q7FwY/4RuDnZzugCEGiF9+9d7WhmFs3OGHb+8YLDLZj8usQwVrns8yJq+KyROpqHcjQcXDe0ezenuLvNW28OdEc1UtJpmTMS/GZjfd+NhfIFVI4NXVXUhyExSJj1h/P+VG/IUuHhLJIH5GDqx8FB8Jjyqomd+MnxvPpVJAuBjK4394Vn8HAAD//wMAUEsDBBQABgAIAAAAIQDR4ttBSwEAAHsCAAARAAgBZG9jUHJvcHMvY29yZS54bWwgogQBKKAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACMkl9LwzAUxd8Fv0PJe5u224qWtgOVPTkU3FB8C8ntFmz+kETrvr1pu9XKFHxMzrm/nHNJsfwUTfABxnIlS5REMQpAUsW43JVou1mFVyiwjkhGGiWhRAewaFldXhRU51QZeDRKg3EcbOBJ0uZUl2jvnM4xtnQPgtjIO6QXa2UEcf5odlgT+kZ2gNM4zrAARxhxBHfAUI9EdEQyOiL1u2l6AKMYGhAgncVJlOBvrwMj7K8DvTJxCu4O2nc6xp2yGR3E0f1p+Whs2zZqZ30Mnz/BL+v7p75qyGW3KwqoKhjNqQHilKnWnBplVe2Ch7rmFIKtBVPgiaPbZkOsW/vF1xzYzeGvoXOjf6kvNjwHLPBR86HYSXme3d5tVqhK4zQL4+swmW+SLJ8v8nn62uX4Md9FHy7EMc3/iVm+iCfEE6Aq8Nl3qb4AAAD//wMAUEsDBBQABgAIAAAAIQDCXlkIkAEAABsDAAAQAAgBZG9jUHJvcHMvYXBwLnhtbCCiBAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJySTW/bMAyG7wP6HwzdGzltUQyBrGJIV/SwYgGSdmdOpmOhsiSIrJHs10+20dTZdtqNHy9ePqKo7g6dK3pMZIOvxHJRigK9CbX1+0o87x4uP4uCGHwNLnisxBFJ3OmLT2qTQsTEFqnIFp4q0TLHlZRkWuyAFrntc6cJqQPOadrL0DTW4H0wbx16lldleSvxwOhrrC/jyVBMjque/9e0Dmbgo5fdMWZgrb7E6KwBzq/UT9akQKHh4gmM9RyoLb4eDDol5zKVObdo3pLloy6VnKdqa8DhOo/QDThCJT8K6hFhWN8GbCKtel71aDikguyvvMArUfwEwgGsEj0kC54z4CCbkjF2kTjpHyG9UovIpGQWTMUxnGvnsb3Ry1GQg3PhYDCB5MY54s6yQ/rebCDxP4iXc+KRYeKdcLYD3zRzzjc+OU/6w3sdugj+mBun6Jv1r/Qcd+EeGN/XeV5U2xYS1vkHTus+FdRj3mRyg8m6Bb/H+l3zd2M4g5fp1vXydlFel/lfZzUlP65a/wYAAP//AwBQSwECLQAUAAYACAAAACEAYu6daF4BAACQBAAAEwAAAAAAAAAAAAAAAAAAAAAAW0NvbnRlbnRfVHlwZXNdLnhtbFBLAQItABQABgAIAAAAIQC1VTAj9AAAAEwCAAALAAAAAAAAAAAAAAAAAJcDAABfcmVscy8ucmVsc1BLAQItABQABgAIAAAAIQCBPpSX8wAAALoCAAAaAAAAAAAAAAAAAAAAALwGAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc1BLAQItABQABgAIAAAAIQBRUN5iYQMAADgIAAAPAAAAAAAAAAAAAAAAAO8IAAB4bC93b3JrYm9vay54bWxQSwECLQAUAAYACAAAACEA8AhY9KUCAABSBgAADQAAAAAAAAAAAAAAAAB9DAAAeGwvc3R5bGVzLnhtbFBLAQItABQABgAIAAAAIQDBFxC+TgcAAMYgAAATAAAAAAAAAAAAAAAAAE0PAAB4bC90aGVtZS90aGVtZTEueG1sUEsBAi0AFAAGAAgAAAAhAAni6CSfDQAAJ1UAABgAAAAAAAAAAAAAAAAAzBYAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbFBLAQItABQABgAIAAAAIQCI6Ut+0wcAACAaAAAUAAAAAAAAAAAAAAAAAKEkAAB4bC9zaGFyZWRTdHJpbmdzLnhtbFBLAQItABQABgAIAAAAIQDR4ttBSwEAAHsCAAARAAAAAAAAAAAAAAAAAKYsAABkb2NQcm9wcy9jb3JlLnhtbFBLAQItABQABgAIAAAAIQDCXlkIkAEAABsDAAAQAAAAAAAAAAAAAAAAACgvAABkb2NQcm9wcy9hcHAueG1sUEsFBgAAAAAKAAoAgAIAAO4xAAAAAA==';
