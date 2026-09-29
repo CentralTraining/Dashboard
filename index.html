@@ -8976,6 +8976,116 @@ function renderCoachingRegistration(){
 }
 /* ============ FORM NHẬP KẾT QUẢ KHẢO SÁT COACHING (theo mẫu Google Form) ============ */
 /* ============ IMPORT GỘP CHUNG "Lịch sử Coaching" (PGs 0★/1★ + PGs mới, 1 lần duy nhất) ============ */
+/* ============ CẬP NHẬT COACHING PGs DEV TRỰC TIẾP TỪ GOOGLE SHEET (COACHING_LOG) ============
+   Nguồn: OPPO TRAINING KPI - DATABASE, tab COACHING_LOG. Cột thực tế:
+     Timestamp, Period, DayKey, CoachingType(ZERO_ONE_STAR|NEW_PG), TrainerArea, TrainerRegion,
+     TrainerName, TrainerUsername, PGCode, PGName, Phone, FCStatus, UsefulnessScore,
+     ConfidenceScore, TrainerClarityScore, SkillNeeded, TrainerFeedback, Status(VALID), CoachingContents...
+   Quy tắc:
+   - Chỉ lấy TrainerRegion = MIEN TRUNG.
+   - Lọc ĐÚNG THÁNG đang xem qua Period (đầu tháng); nếu thiếu Period thì dùng Timestamp.
+   - Chỉ tính Status = VALID.
+   - GỘP TRÙNG 60 PHÚT: cùng PG (PGCode, hoặc theo Tên nếu thiếu Code) + cùng loại + cùng ngày,
+     2 khảo sát cách nhau <= 60 phút -> chỉ tính 1 (giữ khảo sát SỚM nhất).
+   Sau khi map, dựng lại workbook đúng thứ tự cột cũ rồi gọi processCoachingHistoryWorkbook_ (giữ nguyên
+   toàn bộ logic tính tiến độ, chống trùng theo timestamp, tra tên PG mới). */
+const COACHING_LOG_SHEET_URL_='https://docs.google.com/spreadsheets/d/1sMmiVQU8iTmJKTpPlUsJsosmuWcP_2A9GzW3VTXpLdE/edit';
+const COACHING_LOG_SHEET_TAB_='COACHING_LOG';
+function clNorm_(s){ return String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function clPick_(row, idx, names){ for(const n of names){ const k=clNorm_(n); if(k in idx) return row[idx[k]]; } return ''; }
+function clParseDate_(v){
+  if(v instanceof Date && !isNaN(v)) return v;
+  const s=String(v??'').trim(); if(!s) return null;
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  m=s.match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+  if(m) return new Date(+m[1],+m[2],+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  const d=new Date(s); return isNaN(d)?null:d;
+}
+function clFmtDateTime_(d){ if(!(d instanceof Date)||isNaN(d)) return ''; const p=n=>String(n).padStart(2,'0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+function clMonthKey_(d){ return d instanceof Date && !isNaN(d) ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : ''; }
+function clTypeLabel_(v){ const k=clNorm_(v); return (k.includes('newpg')||k.includes('pgmoi')||k.includes('new')) ? 'PGs mới' : 'PGs 0-1 sao'; }
+async function processCoachingLogSheet_(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  if(!ws) throw new Error('Không đọc được tab COACHING_LOG. Kiểm tra tên tab và quyền chia sẻ Sheet.');
+  const arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  if(!arr.length) throw new Error('Sheet COACHING_LOG rỗng.');
+  const header=arr[0].map(h=>String(h||''));
+  const idx={}; header.forEach((h,i)=>{ const k=clNorm_(h); if(k && !(k in idx)) idx[k]=i; });
+  for(const req of ['Timestamp','CoachingType','TrainerRegion']){ if(!(clNorm_(req) in idx)) throw new Error('COACHING_LOG thiếu cột: '+req+'. Cột hiện có: '+header.filter(Boolean).join(', ')); }
+
+  // 1) Đọc + lọc region/tháng/status, gom bản ghi thô của MIEN TRUNG.
+  const recs=[]; let skipRegion=0, skipMonth=0, skipStatus=0, total=0;
+  for(let r=1;r<arr.length;r++){
+    const row=arr[r]; if(!row||!row.length) continue;
+    const P=(...n)=>clPick_(row,idx,n);
+    const ts=clParseDate_(P('Timestamp')); if(!ts) continue;
+    total++;
+    if(clNorm_(P('TrainerRegion'))!=='mientrung'){ skipRegion++; continue; }
+    const periodD=clParseDate_(P('Period')); const mk=clMonthKey_(periodD||ts);
+    if(mk!==currentMonth){ skipMonth++; continue; }
+    const st=clNorm_(P('Status'));
+    if(st && st!=='valid' && st!=='hople'){ skipStatus++; continue; }
+    const area=String(P('TrainerArea','Khu vực','SelectedArea')||'').trim();
+    if(isTrainer() && !isRegionImportAllowed(area)) continue;
+    const code=String(P('PGCode','Mã NV','StaffCode')||'').trim().replace(/\.0$/,'');
+    const type=clTypeLabel_(P('CoachingType'));
+    recs.push({ts, type, code, area,
+      pgName:String(P('PGName','PGs')||'').trim(), phone:String(P('Phone','SĐT')||'').trim(),
+      trainerName:String(P('TrainerName','Trainer')||'').trim(), trainerUser:String(P('TrainerUsername','Trainer Username','Email')||'').trim(),
+      fc:String(P('FCStatus','Shop FC')||'').trim(), content:String(P('CoachingContents','Nội dung Coaching')||'').trim(),
+      other:String(P('CoachingContentsOther','Nội dung khác')||'').trim(),
+      useful:P('UsefulnessScore','Hữu ích /5')||'', confident:P('ConfidenceScore','Tự tin /5')||'',
+      clarity:P('TrainerClarityScore','Trainer dễ hiểu /5')||'', skill:String(P('SkillNeeded')||'').trim(), fb:String(P('TrainerFeedback','Góp ý')||'').trim() });
+  }
+  if(!recs.length) throw new Error(`Không có dòng VALID nào thuộc MIEN TRUNG trong ${monthLabel(currentMonth)} (đọc ${total} dòng · bỏ ${skipRegion} khác vùng · ${skipMonth} khác tháng · ${skipStatus} không VALID).`);
+
+  // 2) GỘP TRÙNG 60 PHÚT: cùng PG + loại + ngày, cách <=60p -> giữ bản ghi sớm nhất.
+  const dayKey=d=>`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  const pgKeyOf=rc=>rc.code ? 'C:'+rc.code : 'N:'+clNorm_(rc.pgName);
+  const groups=new Map();
+  recs.forEach(rc=>{ const k=rc.type+'|'+pgKeyOf(rc)+'|'+dayKey(rc.ts); (groups.get(k)||groups.set(k,[]).get(k)).push(rc); });
+  let mergedCount=0; const kept=[];
+  groups.forEach(list=>{
+    list.sort((a,b)=>a.ts-b.ts);
+    let anchor=null;
+    list.forEach(rc=>{
+      if(anchor && (rc.ts-anchor.ts)<=3600*1000){ mergedCount++; return; } // trong 60p kể từ mốc đang giữ -> bỏ
+      kept.push(rc); anchor=rc;
+    });
+  });
+  kept.sort((a,b)=>a.ts-b.ts);
+
+  // 3) Dựng workbook đúng thứ tự cột mà processCoachingHistoryWorkbook_ đọc.
+  const out=[['Thời gian','Loại Coaching','Khu vực','Trainer','Trainer Username','Mã NV','PGs','SĐT','Shop FC','Nội dung Coaching','Nội dung khác','Hữu ích /5','Tự tin /5','Trainer dễ hiểu /5','Kỹ năng cần hỗ trợ thêm','Góp ý cho Trainer','Trạng thái']];
+  kept.forEach(rc=>out.push([clFmtDateTime_(rc.ts), rc.type, rc.area, rc.trainerName, rc.trainerUser, rc.code, rc.pgName, rc.phone, rc.fc, rc.content, rc.other, rc.useful, rc.confident, rc.clarity, rc.skill, rc.fb, 'Hợp lệ']));
+  const newWs=XLSX.utils.aoa_to_sheet(out); const newWb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(newWb,newWs,'Lich_su_Coaching');
+
+  window.__coachingLogMergeInfo_={merged:mergedCount, kept:kept.length};
+  // COACHING_LOG luôn là DANH SÁCH ĐẦY ĐỦ của tháng -> XÓA SẠCH data khảo sát Coaching của tháng đang
+  // xem trước khi nạp lại, tránh cộng dồn (bấm cập nhật nhiều lần sẽ nhân đôi số liệu). Chỉ áp dụng cho
+  // MIEN TRUNG vì nguồn này chỉ chứa MIEN TRUNG; Admin là người duy nhất bấm nút này.
+  surveyResponses = [];
+  surveyResponsesNew = [];
+  await processCoachingHistoryWorkbook_(newWb);
+  // Bổ sung dòng thông tin gộp trùng vào cuối thông báo.
+  const msg=document.getElementById('coachingImportMsg');
+  if(msg && mergedCount){ msg.textContent += ` · Đã gộp ${mergedCount} khảo sát trùng (cùng PG, cùng ngày, cách ≤60 phút).`; }
+}
+async function updateCoachingFromLogSheet_(){
+  const msg=document.getElementById('coachingImportMsg');
+  if(!isAdmin()){ if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Chỉ Admin được cập nhật.';} return; }
+  if(monthLocked){ if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Tháng đã khoá — không cập nhật được.';} return; }
+  if(msg){ msg.style.display='block'; msg.style.color='var(--muted)'; msg.textContent='⏳ Đang tải COACHING_LOG và lọc '+monthLabel(currentMonth)+' · MIEN TRUNG...'; }
+  try{
+    const wb=await fetchGoogleSheetAsWorkbook_(COACHING_LOG_SHEET_URL_,[COACHING_LOG_SHEET_TAB_]);
+    await processCoachingLogSheet_(wb);
+  }catch(err){
+    if(msg){ msg.style.display='block'; msg.style.color='var(--red)'; msg.textContent='Lỗi cập nhật: '+(err&&err.message?err.message:err); }
+  }
+}
 async function processCoachingHistoryWorkbook_(wb){
   const msg = document.getElementById('coachingImportMsg');
   const ws = wb.Sheets[wb.SheetNames[0]];
@@ -9025,6 +9135,7 @@ async function processCoachingHistoryWorkbook_(wb){
     const trainerNameRaw = normTrName_(row[3]);
     let trainerObj = config.trainers.find(t=>(t.username||'').trim().toLowerCase()===trainerUsername && trainerUsername);
     if(!trainerObj) trainerObj = config.trainers.find(t=>normTrName_(t.name)===trainerNameRaw);
+    if(!trainerObj){ const _lr=normTrNameLoose_(trainerNameRaw); if(_lr) trainerObj = config.trainers.find(t=> normTrNameLoose_(t.name)===_lr || (t.username||'').trim().toLowerCase()===_lr); } // bắt tên viết liền không dấu
 
     if(isNew){
       surveyResponsesNew.push({
@@ -9068,13 +9179,17 @@ function renderCoachingImportBox(){
   const canEdit = isAdmin() && !monthLocked;
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import kết quả khảo sát Coaching (PGs 0★/1★ &amp; PGs mới) — ${monthLabel(currentMonth)}</h3>
-    <p class="section-desc" style="margin-bottom:10px;">Import file "Lịch sử Coaching" (cột: Thời gian, Loại Coaching, Khu vực, Trainer, Trainer Username, Mã NV, PGs, SĐT, Shop FC, Nội dung Coaching, Nội dung khác, Hữu ích/5, Tự tin/5, Trainer dễ hiểu/5, Kỹ năng cần hỗ trợ thêm, Góp ý cho Trainer, Trạng thái). <strong>Chỉ cần import 1 lần</strong> — hệ thống tự phân loại đúng theo cột "Loại Coaching" vào cả 2 mục PGs 0★/1★ và PGs mới cùng lúc. Chỉ tính vào kết quả những dòng có Trạng thái = "Hợp lệ" trong ${monthLabel(currentMonth)}; các dòng khác vẫn đếm số lượng để Trainer kiểm tra lại. Import lại tự bỏ qua dòng trùng. <strong>Riêng dòng "PGs mới" mà cột Mã NV để trống</strong> (PG chưa kịp tạo Code lúc làm khảo sát): hệ thống tự tra theo cột "PGs" (tên) trong Danh sách PGs mới của tháng — khớp được thì vẫn tính bình thường.</p>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <input type="file" id="coachingImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
-      <button class="secondary" id="downloadCoachingTemplateBtn" type="button">⬇ Tải file mẫu</button>
-      <button class="secondary admin-only-gsheet" id="coachingSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>
+    <p class="section-desc" style="margin-bottom:10px;">Bấm <strong>↻ Cập nhật tiến độ từ COACHING_LOG</strong> để tự lấy dữ liệu khảo sát PGs Dev đúng <strong>${monthLabel(currentMonth)}</strong>, chỉ vùng <strong>MIEN TRUNG</strong> — không cần import tay. (Cũ) Import file "Lịch sử Coaching" (cột: Thời gian, Loại Coaching, Khu vực, Trainer, Trainer Username, Mã NV, PGs, SĐT, Shop FC, Nội dung Coaching, Nội dung khác, Hữu ích/5, Tự tin/5, Trainer dễ hiểu/5, Kỹ năng cần hỗ trợ thêm, Góp ý cho Trainer, Trạng thái). <strong>Chỉ cần import 1 lần</strong> — hệ thống tự phân loại đúng theo cột "Loại Coaching" vào cả 2 mục PGs 0★/1★ và PGs mới cùng lúc. Chỉ tính vào kết quả những dòng có Trạng thái = "Hợp lệ" trong ${monthLabel(currentMonth)}; các dòng khác vẫn đếm số lượng để Trainer kiểm tra lại. Import lại tự bỏ qua dòng trùng. <strong>Riêng dòng "PGs mới" mà cột Mã NV để trống</strong> (PG chưa kịp tạo Code lúc làm khảo sát): hệ thống tự tra theo cột "PGs" (tên) trong Danh sách PGs mới của tháng — khớp được thì vẫn tính bình thường.</p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="primary" id="coachingLogUpdateBtn" type="button" ${canEdit?'':'disabled'}>↻ Cập nhật tiến độ từ COACHING_LOG</button>
       <span class="save-msg" id="coachingImportMsg" style="display:none;"></span>
     </div>
+    <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / link khác) — chỉ dùng khi cần</summary>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+      <input type="file" id="coachingImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
+      <button class="secondary" id="downloadCoachingTemplateBtn" type="button">⬇ Tải file mẫu</button>
+      <button class="secondary admin-only-gsheet" id="coachingSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet khác</button>
+    </div></details>
   </div>`;
 
   const importInput = document.getElementById('coachingImportInput');
@@ -9095,6 +9210,8 @@ function renderCoachingImportBox(){
     e.target.value='';
   });
   attachGoogleSheetButton_('coachingSheetLinkBtn','coachingImportMsg', null, processCoachingHistoryWorkbook_);
+  const logBtn=document.getElementById('coachingLogUpdateBtn');
+  if(logBtn) logBtn.addEventListener('click', updateCoachingFromLogSheet_);
 
   const templateBtn = document.getElementById('downloadCoachingTemplateBtn');
   if(templateBtn) templateBtn.addEventListener('click', ()=>{
@@ -9148,6 +9265,7 @@ async function processSurvey01Workbook_(wb){
     const trainerNameRaw = normTrName_(row[3]);
     let trainerObj = config.trainers.find(t=>(t.username||'').trim().toLowerCase()===trainerUsername && trainerUsername);
     if(!trainerObj) trainerObj = config.trainers.find(t=>normTrName_(t.name)===trainerNameRaw);
+    if(!trainerObj){ const _lr=normTrNameLoose_(trainerNameRaw); if(_lr) trainerObj = config.trainers.find(t=> normTrNameLoose_(t.name)===_lr || (t.username||'').trim().toLowerCase()===_lr); } // bắt tên viết liền không dấu
 
     surveyResponses.push({
       id: uid('sv'),
@@ -9591,6 +9709,7 @@ async function processSurveyNewWorkbook_(wb){
     const trainerNameRaw = normTrName_(row[3]);
     let trainerObj = config.trainers.find(t=>(t.username||'').trim().toLowerCase()===trainerUsername && trainerUsername);
     if(!trainerObj) trainerObj = config.trainers.find(t=>normTrName_(t.name)===trainerNameRaw);
+    if(!trainerObj){ const _lr=normTrNameLoose_(trainerNameRaw); if(_lr) trainerObj = config.trainers.find(t=> normTrNameLoose_(t.name)===_lr || (t.username||'').trim().toLowerCase()===_lr); } // bắt tên viết liền không dấu
 
     surveyResponsesNew.push({
       id: uid('svn'),
@@ -11263,6 +11382,7 @@ document.getElementById('cancelEditTrainerBtn').addEventListener('click', resetT
    HỆT NHAU nhưng so sánh bằng === luôn ra false nếu không ép về cùng 1 dạng trước — gây lỗi
    "Khớp đúng Trainer: 0" dù tên đúng 100% khi nhìn bằng mắt. */
 function normTrName_(s){ return String(s||'').trim().toUpperCase().normalize('NFC'); }
+function normTrNameLoose_(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,''); } // bỏ dấu + viết liền: 'Trần Phong Độ' -> 'tranphongdo'
 function toUsernameSlug_(name){
   let s = String(name||'').trim().toLowerCase();
   s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
