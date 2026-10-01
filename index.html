@@ -1835,7 +1835,7 @@ function googleSheetUpdateModules_(){
       const sel=document.getElementById('targetCampaignSelect');
       const camp=campaigns.find(c=>c.id===sel?.value);
       if(!camp || campaignSubtype(camp)!=='ftf') return {status:'skip', message:'Chưa chọn chiến dịch FTF'};
-      return runGoogleSheetWorkbookUpdate_('ftfTargetSheetLinkBtn',['Target_FTF'], async wb=>processFtfTargetWorkbook_(wb,camp));
+      return runGoogleSheetWorkbookUpdate_('ftfTargetSheetLinkBtn',null, async wb=>processFtfTargetWorkbook_(wb,camp));
     }},
     {key:'workshopTargetSheetLinkBtn', label:'Target Nội bộ - Workshop', prepare:()=>{ try{ renderTargetTable(); }catch(e){} }, run:async()=>{
       let camp=campaigns.find(c=>c.id===document.getElementById('targetCampaignSelect')?.value && c.group==='noibo' && campaignSubtype(c)==='workshop');
@@ -3571,9 +3571,15 @@ function renderBarBlock(containerId, dataMap, totalOverride){
 }
 
 function channelGroup(channel){
-  const c = String(channel||'').trim().toUpperCase();
-  if(c==='TGDĐ' || c==='TGDD' || c==='ĐMX' || c==='DMX') return 'MWG';
-  if(['VIETTEL','FPT','ĐIỆN MÁY CHỢ LỚN','DIEN MAY CHO LON','CELLPHONES','HOÀNG HÀ','HOANG HA'].includes(c)) return 'K.A';
+  // Chuẩn hoá mạnh: bỏ dấu, bỏ ký tự đặc biệt, viết liền -> nhận diện được nhiều cách ghi Kênh.
+  const raw = String(channel||'').trim().toUpperCase();
+  const k = raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đ]/g,'D').replace(/[^A-Z0-9]/g,'');
+  // MWG: TGDĐ, ĐMX, và các cách viết gộp/đầy đủ.
+  if(/^(TGDD|DMX|MWG|TGDDDMX|DMXTGDD)$/.test(k)) return 'MWG';
+  if(k.includes('THEGIOIDIDONG') || k.includes('DIENMAYXANH')) return 'MWG';
+  // K.A: FPT, Viettel, Điện máy Chợ Lớn, CellphoneS, Hoàng Hà.
+  if(/^(FPT|VIETTEL|CELLPHONES?|CPS)$/.test(k)) return 'K.A';
+  if(k.includes('DIENMAYCHOLON') || k.includes('CHOLON') || k.includes('HOANGHA') || k.includes('CELLPHONE')) return 'K.A';
   return 'IND';
 }
 
@@ -4480,6 +4486,10 @@ function ftfChannelStats_(shops, trainerIds){
       out[mk]['MWG'].t += Math.round(mwg)||0;
     });
   });
+  // Target KHẢO SÁT là SỐ ĐỘNG = số HR thực tế được Training (không lấy target từ file). Mỗi khi số HR
+  // Training thực tế thay đổi, target Khảo sát cũng đổi theo. VD: HR Training MWG = 159 -> target Khảo sát MWG = 159.
+  out.ftfKhaoSat['K.A'].t = out.ftfHr['K.A'].a;
+  out.ftfKhaoSat['MWG'].t = out.ftfHr['MWG'].a;
   return out;
 }
 /* Thanh tiến độ ngang với MÀU CỐ ĐỊNH theo Kênh (không theo mức độ hoàn thành) — MWG vàng, K.A đỏ sậm */
@@ -10431,25 +10441,33 @@ async function processFtfTargetWorkbook_(wb, camp){
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
 
+  // Đọc ô theo tên cột CHUẨN HOÁ (bỏ dấu, bỏ khoảng trắng/ký tự đặc biệt, viết thường) — tránh lệch
+  // tên cột giữa file Excel và Google Sheet (CSV có thể thêm khoảng trắng kép, khác hoa/thường, v.v.).
+  const ftfColNorm_ = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const ftfCellGetter_ = (row)=>{
+    const idx={}; Object.keys(row).forEach(k=>{ const kk=ftfColNorm_(k); if(!(kk in idx)) idx[kk]=k; });
+    return (names)=>{ for(const n of names){ const kk=ftfColNorm_(n); if(kk in idx) return row[idx[kk]]; } return ''; };
+  };
   let matched=0, unmatched=0, skippedOtherRegion=0;
   const list = rows.map(row=>{
-    const area = normalizeAreaVN(row['Khu vực']);
+    const G = ftfCellGetter_(row);
+    const area = normalizeAreaVN(G(['Khu vực','Khu Vuc','KHU VỰC']));
     if(isTrainer() && !isRegionImportAllowed(area)){ skippedOtherRegion++; return null; }
-    const trainerName = normTrName_(row['TRAINER']);
+    const trainerName = normTrName_(G(['TRAINER','Trainer']));
     // Ưu tiên khớp CẢ Trainer + Khu vực cùng lúc (an toàn hơn, tránh nhầm nếu lỡ có 2 Trainer trùng
-    // tên ở 2 khu vực khác nhau) — nếu không tìm thấy khớp cả 2, mới lùi về khớp riêng theo tên
-    // (phòng trường hợp Khu vực ghi trong file khác cách viết/thiếu so với hệ thống, nhưng tên đúng).
+    // tên ở 2 khu vực khác nhau) — nếu không tìm thấy khớp cả 2, mới lùi về khớp riêng theo tên.
     let tr = trainerName ? config.trainers.find(t=>normTrName_(t.name)===trainerName && normalizeAreaVN(t.region)===area) : null;
     if(!tr && trainerName) tr = config.trainers.find(t=>normTrName_(t.name)===trainerName);
     if(tr) matched++; else unmatched++;
+    const num = v => { const n=Number(String(v==null?'':v).toString().trim().replace(/[^0-9.-]/g,'')); return Number.isFinite(n)?n:0; };
     return {
-      storeId: String(row['Store ID']||'').trim(), storeName: String(row['Store name']||'').trim(),
-      region: area, province: String(row['Tỉnh']||'').trim(), channel: String(row['Kênh']||'').trim(),
+      storeId: String(G(['Store ID','StoreID'])||'').trim(), storeName: String(G(['Store name','Store Name'])||'').trim(),
+      region: area, province: String(G(['Tỉnh','Tinh'])||'').trim(), channel: String(G(['Kênh','Kenh'])||'').trim(),
       trainerId: tr?tr.id:'', trainerName: tr?tr.name:trainerName,
-      targetShop: Number(row['TARGET SHOP'])||0,
-      targetHr: Number(row['SL HR Training'])||0,
-      targetTest: Number(row['SL HR Pass Test'])||0,
-      targetKhaoSat: Number(row['SL HR Khảo Sát'])||0,
+      targetShop: num(G(['TARGET SHOP','Target Shop'])),
+      targetHr: num(G(['SL HR Training','SL HR Train'])),
+      targetTest: num(G(['SL HR Pass Test','SL HR PassTest'])),
+      targetKhaoSat: num(G(['SL HR Khảo Sát','SL HR Khao Sat'])),
     };
   }).filter(Boolean);
 
@@ -10527,7 +10545,7 @@ function renderFtfTargetSection_(camp){
     e.target.value='';
   });
 
-  attachGoogleSheetButton_('ftfTargetSheetLinkBtn','ftfTargetImportMsg', ['Target_FTF'], async (wb)=>{
+  attachGoogleSheetButton_('ftfTargetSheetLinkBtn','ftfTargetImportMsg', null, async (wb)=>{
     await processFtfTargetWorkbook_(wb, camp);
   });
 
