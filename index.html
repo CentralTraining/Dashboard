@@ -34,16 +34,23 @@
   #olieQrWidget a:hover img{transform:scale(1.06) rotate(-2deg);}
   @media(max-width:900px){ #olieQrWidget{display:none !important;} } /* màn hình nhỏ: ẩn để không che nội dung */
 
-  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, var(--green-dark), var(--green));padding:20px;}
-  .login-box{background:#fff;border-radius:14px;padding:32px 30px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,.2);}
-  .login-box .brand-mark{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
-  .login-box .brand-mark .dot{width:10px;height:10px;border-radius:50%;background:var(--green);}
-  .login-box h2{font-size:var(--title);margin:0 0 4px;color:var(--green-dark);}
-  .login-box .sub{font-size:var(--cap);color:var(--muted);margin-bottom:20px;}
-  .login-box .form-row{margin-bottom:14px;}
-  .login-box label{display:block;font-size:var(--cap);font-weight:600;color:var(--muted);margin-bottom:5px;}
-  .login-box input,.login-box select{width:100%;font-family:inherit;font-size:var(--body);padding:9px 11px;border:1px solid var(--line);border-radius:7px;}
-  .login-box button.primary{width:100%;margin-top:6px;}
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#F0F4F2,#E6EEE9);padding:20px;}
+  .login-box{background:#fff;border-radius:22px;padding:36px 34px;width:100%;max-width:430px;box-shadow:0 20px 60px rgba(8,51,31,.14),0 4px 14px rgba(0,0,0,.05);}
+  /* Logo KPI gradient bo góc giống ảnh */
+  .login-logo{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#34B873,#0E8A48);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;letter-spacing:.5px;box-shadow:0 8px 20px rgba(14,138,72,.35);margin-bottom:18px;}
+  .login-box .brand-mark{display:block;margin-bottom:8px;}
+  .login-box .brand-kicker{font-size:12px;font-weight:800;color:#0E8A48;letter-spacing:2.5px;text-transform:uppercase;}
+  .login-box h2{font-size:28px;margin:4px 0 6px;color:#1A1A1A;font-weight:800;letter-spacing:-.5px;}
+  .login-box .sub{font-size:14px;color:#8A959E;margin-bottom:20px;}
+  /* Dải thông báo xám nhạt */
+  .login-note{background:#F6F8F7;border:1px solid #EAEFEC;border-radius:12px;padding:14px 16px;font-size:13.5px;color:#7A858E;margin-bottom:20px;}
+  .login-box .form-row{margin-bottom:16px;}
+  .login-box label{display:block;font-size:13.5px;font-weight:700;color:#2B3139;margin-bottom:7px;}
+  .login-box input,.login-box select{width:100%;font-family:inherit;font-size:15px;padding:13px 15px;border:1px solid #E4E9E6;border-radius:12px;background:#fff;transition:border-color .15s,box-shadow .15s;}
+  .login-box input:focus,.login-box select:focus{outline:none;border-color:#34B873;box-shadow:0 0 0 3px rgba(52,184,115,.15);}
+  .login-box input::placeholder{color:#AEB7BF;}
+  .login-box button.primary{width:100%;margin-top:8px;background:linear-gradient(135deg,#2BA862,#0E8A48);border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;color:#fff;box-shadow:0 8px 20px rgba(14,138,72,.3);}
+  .login-foot{text-align:center;font-size:13px;color:#AEB7BF;margin-top:22px;padding-top:18px;border-top:1px solid #EEF2F0;}
   .login-error{font-size:var(--cap);color:var(--red);margin-top:10px;display:none;}
   .login-note{font-size:var(--cap);color:var(--muted);margin-top:18px;padding-top:14px;border-top:1px solid var(--line);line-height:1.5;}
   .demo-tag{display:inline-block;background:var(--amber-bg);color:var(--amber);font-size:var(--tag);font-weight:600;padding:3px 10px;border-radius:var(--radius-tag);margin-left:8px;vertical-align:middle;letter-spacing:.2px;}
@@ -90,14 +97,19 @@
     .sidebar-brand-text,.sidebar-scope .scope-label,.sidebar-scope .scope-value,.sidebar-scope .scope-sub,
     nav.tabs .nav-group-label,nav.tabs button .nav-label{ opacity:1 !important; pointer-events:auto !important; }
     .sidebar-brand,.sidebar-scope{flex:1 1 200px;}
-    nav.tabs{flex-direction:row;flex-wrap:wrap;width:100%;gap:6px;}
-    /* display:contents: bỏ nav-group ra khỏi cây flex, để TẤT CẢ nút nav là item ngang hàng của
-       nav.tabs — tránh vỡ thành từng cụm lệch nhau do 2 tầng flex-wrap lồng nhau trước đây. */
+    /* MENU ICON 1 HÀNG NGANG — 7 mục chia đều, KHÔNG xuống dòng, KHÔNG cuộn. Mỗi nút: icon trên, nhãn
+       ngắn bên dưới. Dùng flex:1 + min-width:0 để 7 nút tự co vừa khít bề ngang màn hình. */
+    nav.tabs{flex-direction:row;flex-wrap:nowrap;width:100%;gap:3px;}
     nav.tabs .nav-group{display:contents;}
     nav.tabs .nav-group-label{display:none;}
-    nav.tabs button{flex:1 1 auto;text-align:center;justify-content:center;border-bottom:3px solid transparent;}
-    nav.tabs button.active{border-bottom-color:var(--green);}
+    nav.tabs button{flex:1 1 0;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;padding:7px 2px;border-radius:9px;border-bottom:none;}
+    nav.tabs button .nav-ic{font-size:17px;width:auto;opacity:1;}
+    nav.tabs button .nav-label{display:none;}          /* ẩn nhãn dài */
+    nav.tabs button .nav-short{display:block;font-size:8.5px;font-weight:700;line-height:1.1;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+    nav.tabs button.active{background:var(--green);color:#fff;}
+    nav.tabs button.active .nav-ic{opacity:1;}
   }
+  nav.tabs button .nav-short{display:none;}           /* mặc định (desktop) ẩn nhãn ngắn */
 
   /* ===== CHUẨN HOÁ RESPONSIVE: TABLET (≤900px) ===== */
   @media (max-width:900px){
@@ -125,8 +137,7 @@
     .kpi-card .value{font-size:18px;}
     .form-grid-4{grid-template-columns:1fr;}
     .form-grid-6{grid-template-columns:repeat(2,1fr);}
-    .metric-row{grid-template-columns:96px 1fr 44px;gap:6px;}
-    .metric-row .m-name{font-size:8pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    /* (metric-row cân đối thống nhất ở khối dưới) */
     .subnav{gap:4px;}
     .subnav button{padding:6px 10px;font-size:8pt;}
     .scope-filters{flex-direction:column;align-items:stretch;}
@@ -136,6 +147,202 @@
     .login-box{padding:24px 18px;}
     .cylinder-row,.star-cyl-row{gap:12px;}
     .table-scroll table{min-width:640px;}
+    /* ===== TỐI ƯU THÊM CHO ĐIỆN THOẠI ===== */
+    .home-trainer-grid{grid-template-columns:1fr;gap:12px;}   /* thẻ Trainer xếp DỌC 1 cột */
+    .sidebar-brand{flex:1 1 100%;padding:8px 10px;}           /* logo chiếm trọn 1 hàng */
+    .sidebar-scope{display:none;}                              /* ẩn khối avatar/tên trùng (đã có ở header) */
+    header.top{position:sticky;top:0;z-index:40;}             /* header dính trên khi cuộn */
+    /* nút & ô nhập trong form import: xếp dọc, full chiều ngang, dễ bấm 1 tay */
+    .form-card{padding:12px;}
+    .form-card>div[style*="display:flex"]{flex-direction:column;align-items:stretch !important;}
+    .form-card input[type="number"],.form-card input[type="text"]{width:100% !important;}
+    .form-card button{width:100%;justify-content:center;}
+    /* biểu đồ không tràn */
+    canvas{max-width:100% !important;height:auto !important;}
+    /* cuộn ngang mượt + gợi ý vuốt cho bảng rộng */
+    .table-scroll{position:relative;}
+    .table-scroll::-webkit-scrollbar{height:6px;}
+    .table-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
+  }
+  /* Màn hình rất nhỏ (≤380px): menu icon vẫn 1 hàng, thu nhãn nhỏ hơn chút để không vỡ */
+  @media (max-width:380px){
+    nav.tabs button .nav-short{font-size:7.5px;}
+    nav.tabs button{padding:6px 1px;}
+    nav.tabs button .nav-ic{font-size:16px;}
+  }
+
+  /* ========= GIAO DIỆN ĐIỆN THOẠI: HEADER 1 HÀNG GỌN + ĐỔ BÓNG, BO GÓC ========= */
+  @media (max-width:860px){
+    .app{padding:10px 10px 44px;}
+    /* Header: gộp tên TK · chọn tháng · đăng xuất thành 1 hàng xanh bo góc, nổi bóng */
+    header.top{
+      background:linear-gradient(135deg,var(--green-dark),var(--green));
+      border-radius:16px;padding:10px 12px;margin-bottom:12px;
+      box-shadow:0 6px 20px rgba(8,51,31,.22),0 2px 6px rgba(0,0,0,.08);
+      display:flex;flex-direction:row;align-items:center;gap:8px;flex-wrap:nowrap;position:sticky;top:6px;z-index:40;
+    }
+    header.top .page-title{display:none;}                 /* tiêu đề trang ẩn, đã có ở nav */
+    header.top #uiViewToggleBtn,
+    header.top .ghost[id^="pending"],
+    header.top #courseLeadTaskBellBtn{display:none !important;} /* ẩn các nút phụ cho gọn */
+    header.top .userbox{width:100%;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;justify-content:space-between;}
+    header.top .avatar-circle{width:34px;height:34px;flex:0 0 auto;background:#fff;color:var(--green-dark);font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.18);}
+    header.top .userinfo{min-width:0;flex:1 1 auto;display:flex;flex-direction:column;line-height:1.2;}
+    header.top .userinfo .uname{color:#fff;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    header.top .userinfo .role-pill{color:#B6E2CB !important;background:transparent !important;font-size:8.5px;padding:0;}
+    header.top #monthPicker{flex:0 0 auto;width:auto;max-width:120px;background:#fff;color:var(--green-dark);border:none;border-radius:9px;padding:6px 8px;font-size:10px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,.12);}
+    header.top #openMyAccountBtn{display:none;}           /* gộp: bấm avatar xem tài khoản */
+    header.top #logoutBtn{flex:0 0 auto;background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:9px;padding:6px 10px;font-size:10px;font-weight:600;white-space:nowrap;}
+    /* Thanh trạng thái tháng: bo góc, nền xanh nhạt, bóng lõm nhẹ */
+    #monthStatusBar{background:var(--green-pale);border-radius:12px;padding:9px 12px;margin-bottom:12px;box-shadow:inset 0 1px 3px rgba(11,94,54,.08);font-size:11px;}
+    /* Sidebar (logo + nav) thành 1 khối bo góc nổi bóng */
+    .sidebar-inner{background:#fff;border-radius:16px;padding:10px;box-shadow:0 4px 16px rgba(8,51,31,.1),0 1px 3px rgba(0,0,0,.06);}
+    .sidebar-brand{flex:1 1 100%;padding:4px 6px 8px;}
+    /* Thẻ Trainer / KPI card: bo góc 14px + bóng nổi */
+    .home-trainer-grid>*{border-radius:14px;box-shadow:0 4px 14px rgba(8,51,31,.1),0 1px 3px rgba(0,0,0,.06);}
+    .kpi-card{border-radius:14px;box-shadow:0 3px 12px rgba(8,51,31,.08);}
+    .form-card{border-radius:14px;box-shadow:0 2px 10px rgba(8,51,31,.06);}
+    /* Tag active trong nav: thêm bóng xanh glow cho nổi */
+    nav.tabs button.active{box-shadow:0 3px 10px rgba(29,158,117,.45);}
+    /* ===== ÉP NỘI DUNG FULL CHIỀU NGANG — KHÔNG THỤT QUA 1 BÊN Ở MỌI TAB ===== */
+    .app-body{display:block;}                 /* bỏ flex: sidebar + nội dung xếp dọc, mỗi khối full width */
+    .sidebar-col{display:block;width:100%;margin-bottom:12px;}
+    .main-content{display:block;width:100%;flex:none;min-width:0;}
+    .main-content>section,.main-content>div{max-width:100%;}
+    /* Mọi card/khối trong nội dung: full chiều ngang, căn giữa cân đối */
+    .card,.panel,.form-card,.kpi-row,.table-scroll,.chart-card,.section{max-width:100% !important;margin-left:0;margin-right:0;}
+    .form-card{max-width:100% !important;}
+
+    /* ===== THU NHỎ FONT + CÂN ĐỐI FORM/CARD CHO ĐIỆN THOẠI ===== */
+    html,body{font-size:11pt;}
+    /* Tiêu đề tab nhỏ lại */
+    .tab-section>h2,.main-content h2{font-size:17px;margin:6px 0 4px;}
+    .section-desc{font-size:11px;line-height:1.45;}
+    /* TẤT CẢ thẻ KPI tiến độ trên 1 HÀNG NGANG, chia đều, thu nhỏ, đều chiều cao */
+    .kpi-row,.kpi-row.cols-2,.kpi-row.cols-4,.kpi-row.cols-6{
+      display:flex !important;flex-wrap:nowrap !important;gap:5px !important;align-items:stretch !important;}
+    .kpi-card{flex:1 1 0 !important;min-width:0 !important;display:flex !important;flex-direction:column;
+      justify-content:flex-start;padding:7px 5px !important;min-height:66px;text-align:center;}
+    .kpi-card .label{font-size:7px !important;line-height:1.2;letter-spacing:0;min-height:22px;
+      display:flex;align-items:center;justify-content:center;text-align:center;
+      overflow:hidden;word-break:break-word;}
+    .kpi-card .value{font-size:15px !important;margin-top:auto;line-height:1.05;}
+    .kpi-card .frac,.kpi-card .sub{font-size:7px !important;margin-top:1px;}
+    /* Nút lọc dạng pill (Nhân sự / On-Off / Các hãng): nhỏ gọn, cuộn ngang 1 hàng */
+    .subnav{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:5px;margin-bottom:10px;padding-bottom:2px;}
+    .subnav::-webkit-scrollbar{height:0;}
+    .subnav button,.pill-tab,.seg-btn{flex:0 0 auto;font-size:10px;padding:6px 11px;white-space:nowrap;border-radius:16px;}
+    /* Khối "Xem theo" (scope-filters): TẤT CẢ ô lọc trên 1 HÀNG NGANG, chia đều, gọn */
+    .scope-filters{display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;align-items:center;gap:5px;padding:8px 9px;overflow-x:auto;}
+    .scope-filters::-webkit-scrollbar{height:0;}
+    .scope-filters .scope-label{display:none;}   /* ẩn nhãn "Xem theo:" cho gọn 1 hàng */
+    .scope-filters select,.scope-filters input{flex:1 1 0 !important;min-width:0 !important;width:auto !important;font-size:10px !important;min-height:32px;padding:5px 6px !important;}
+    /* Form thêm/sửa: ô nhập nhỏ gọn, 2 cột, nhãn nhỏ */
+    .form-grid-4,.form-grid-6{grid-template-columns:repeat(2,1fr) !important;gap:8px !important;}
+    /* mỗi field: nhãn nằm TRÊN ô (xếp dọc), không để nhãn cạnh ô gây lệch */
+    .form-grid-4>div,.form-grid-6>div,.form-card .field{display:flex;flex-direction:column;}
+    .form-grid-4 label,.form-grid-6 label,.form-card label{font-size:10px;margin-bottom:3px;display:block;}
+    .form-card input,.form-card select,.form-card textarea,
+    .scope-filters select,.scope-filters input,select,input[type="text"],input[type="number"]{
+      font-size:12px;padding:7px 8px;height:auto;min-height:34px;border-radius:8px;
+    }
+    .form-card .primary,.form-card button{font-size:12px;padding:9px 12px;}
+    /* Bộ lọc "Xem theo" / "Tìm nhanh": mỗi ô 1 hàng, full width, nhãn nhỏ */
+    .scope-filters{gap:7px;}
+    .scope-filters label{font-size:10px;}
+    /* Bảng danh sách: chữ nhỏ để nhiều cột vẫn đọc được khi vuốt ngang */
+    .table-scroll table{font-size:10.5px;}
+    .table-scroll th{font-size:9.5px;padding:6px 7px;}
+    .table-scroll td{padding:6px 7px;}
+    /* Phân trang nhỏ gọn */
+    .pagination-bar button,.page-btn{font-size:11px;padding:5px 9px;min-width:30px;}
+    .pagination-info{font-size:10px;}
+
+    /* ===== CHỐNG CHỒNG CHỮ TOÀN BỘ CÁC TAB ===== */
+    /* Chữ dài luôn tự xuống dòng, không tràn/đè */
+    .kpi-card .label,.kpi-section-title,.section-title,.cfg-card,.region-card,
+    .home-tcard-name,.modal-text,.campaign-context,.coaching-table td,.pg-table td{
+      overflow-wrap:break-word;word-break:break-word;}
+    /* Tiêu đề mục trong KPI nhỏ lại */
+    .kpi-section-title,.section-title{font-size:13px;line-height:1.35;margin:10px 0 6px;}
+    /* Thanh sub-nav (Nội bộ/Đối tác/Truyền thông, Nhân sự/On-Off…): cuộn ngang, không vỡ dòng */
+    .subnav{display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:5px;padding-bottom:3px;}
+    .subnav::-webkit-scrollbar{height:0;}
+    .subnav button{flex:0 0 auto;font-size:11px;padding:6px 12px;white-space:nowrap;}
+    /* Thanh maintab (nếu có) cũng cuộn ngang */
+    .maintab{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:5px;}
+    .maintab button{flex:0 0 auto;white-space:nowrap;font-size:11px;}
+    /* Cấu hình (Cài đặt): cfg-grid 1 cột, cfg-card gọn */
+    .cfg-grid{grid-template-columns:1fr !important;gap:10px;}
+    .cfg-card{padding:12px !important;font-size:11px;}
+    .cfg-card h3,.cfg-card h4{font-size:13px;}
+    /* Thẻ khu vực */
+    .region-card{padding:10px !important;font-size:11px;}
+    /* Thanh trạng thái chiến dịch: cho xuống dòng, chữ nhỏ */
+    .campaign-context{font-size:11px;line-height:1.5;}
+    /* Hàng metric (tên | thanh | %): căn thẳng hàng, 3 cột cố định cân đối */
+    .metric-row{display:grid !important;grid-template-columns:84px 1fr 40px !important;gap:7px !important;align-items:center !important;padding:5px 0 !important;}
+    .metric-row .m-name{font-size:9px !important;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .metric-row .mini-progress-pct{text-align:right;}
+    .mini-progress{width:100% !important;height:7px !important;}            /* thanh kéo giãn đều theo cột giữa */
+    .mini-progress-pct{font-size:9px !important;}
+    .compact-metric-cell{font-size:9px;min-width:0 !important;}
+    /* Thanh tiến độ: chữ bên trong nhỏ để không tràn */
+    .bar-label,.progress-text{font-size:9px;}
+    /* Popup / Modal: full gần hết màn, chữ nhỏ gọn, nút xuống dòng */
+    .modal-overlay{padding:10px;}
+    .modal-box{width:100% !important;max-width:100% !important;max-height:88vh;overflow-y:auto;padding:16px !important;border-radius:16px;}
+    .modal-box h2,.modal-box h3{font-size:15px;}
+    .modal-text{font-size:12px;line-height:1.5;}
+    .modal-actions{flex-wrap:wrap;gap:8px;}
+    .modal-actions button{flex:1 1 auto;font-size:12px;padding:9px 10px;}
+    .home-popup-card{width:100% !important;max-width:100% !important;border-radius:18px;}
+    .home-popup-header{font-size:14px;}
+    /* Ô nhập ID chiến dịch otraining + nút: xếp dọc full width đã có ở .form-card flex column */
+    .save-msg{font-size:10.5px;display:block;margin-top:4px;}
+
+    /* ===== BẢNG THƯỜNG (không phải danh sách PGs): thu gọn font, tự co ===== */
+    .table-scroll table,.main-content table{font-size:8px !important;table-layout:auto !important;}
+    .table-scroll th,.main-content table th{font-size:7.5px !important;padding:3px 4px !important;white-space:normal;word-break:break-word;}
+    .table-scroll td,.main-content table td{padding:3px 4px !important;white-space:normal;word-break:break-word;line-height:1.3;}
+    .table-scroll table th,.table-scroll table td,.main-content table th,.main-content table td{width:auto !important;}
+
+    /* ===== DANH SÁCH PGs -> THẺ GỌN (chiều cao nhỏ, không dài) ===== */
+    .coaching-table,.pgmoi-table,.pg-table{display:block;border:none;background:transparent;}
+    .coaching-table thead,.pgmoi-table thead,.pg-table thead{display:none;}
+    /* tbody = lưới 2 CỘT -> 2 thẻ PG song song mỗi hàng (tận dụng chỗ trống bên phải) */
+    .table-scroll{overflow-x:hidden;}   /* thẻ đã tự co 2 cột, không cần cuộn ngang */
+    .coaching-table,.pgmoi-table,.pg-table{width:100% !important;max-width:100% !important;min-width:0 !important;}
+    .coaching-table tbody,.pgmoi-table tbody,.pg-table tbody{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:100%;}
+    .coaching-table tbody tr,.pgmoi-table tbody tr,.pg-table tbody tr{
+      display:block;background:#fff;border:0.5px solid var(--line);border-radius:10px;
+      padding:8px 9px;margin-bottom:0;box-shadow:0 1px 5px rgba(8,51,31,.06);line-height:1.35;
+      min-width:0;overflow:hidden;}
+    .coaching-table tbody td,.pgmoi-table tbody td,.pg-table tbody td{overflow-wrap:break-word;}
+    /* mặc định: các ô chạy inline gọn, có nhãn nhỏ -> thẻ ngắn (vài dòng) */
+    .coaching-table tbody td,.pgmoi-table tbody td,.pg-table tbody td{
+      display:inline;border:none !important;padding:0 !important;font-size:9.5px;white-space:normal;}
+    .coaching-table tbody td::before,.pgmoi-table tbody td::before,.pg-table tbody td::before{
+      content:attr(data-label) ": ";font-weight:600;color:var(--muted);font-size:8.5px;}
+    /* ngăn cách giữa các ô inline */
+    .coaching-table tbody td:not(:last-child)::after,.pgmoi-table tbody td:not(:last-child)::after,.pg-table tbody td:not(:last-child)::after{
+      content:" · ";color:var(--line);}
+    /* Họ và Tên = tiêu đề thẻ: xuống dòng riêng, in đậm, KHÔNG hiện nhãn */
+    .coaching-table tbody td[data-label="Họ và Tên"],.coaching-table tbody td[data-label="Họ Tên"],
+    .pgmoi-table tbody td[data-label="Họ và Tên"],.pgmoi-table tbody td[data-label="Họ Tên"],
+    .pg-table tbody td[data-label="Họ và Tên"],.pg-table tbody td[data-label="Họ Tên"]{
+      display:block;font-size:10.5px;font-weight:700;color:var(--green-dark);margin-bottom:3px;line-height:1.25;}
+    .coaching-table tbody td[data-label="Họ và Tên"]::before,.coaching-table tbody td[data-label="Họ Tên"]::before,
+    .pgmoi-table tbody td[data-label="Họ và Tên"]::before,.pgmoi-table tbody td[data-label="Họ Tên"]::before,
+    .pg-table tbody td[data-label="Họ và Tên"]::before,.pg-table tbody td[data-label="Họ Tên"]::before{content:"";}
+    .coaching-table tbody td[data-label="Họ và Tên"]::after,.pgmoi-table tbody td[data-label="Họ và Tên"]::after,.pg-table tbody td[data-label="Họ và Tên"]::after{content:"";}
+    /* Shop = dòng riêng cuối thẻ */
+    .coaching-table tbody td[data-label="Shop"],.pgmoi-table tbody td[data-label="Shop"],.pg-table tbody td[data-label="Shop"]{
+      display:block;margin-top:3px;font-size:9px;color:var(--text);}
+    .coaching-table tbody td[data-label="Shop"]::after,.pgmoi-table tbody td[data-label="Shop"]::after,.pg-table tbody td[data-label="Shop"]::after{content:"";}
+    /* STT: ẩn trong thẻ cho gọn */
+    .coaching-table tbody td[data-label="STT"],.pgmoi-table tbody td[data-label="STT"],.pg-table tbody td[data-label="STT"]{display:none;}
   }
 
   /* Bảng nhiều cột (FTF, Coaching...) luôn cuộn ngang bên trong khung riêng — áp dụng MỌI kích thước màn hình,
@@ -152,17 +359,22 @@
 
   /* ÉP XEM MOBILE (kể cả trên máy tính) — lặp lại đúng nội dung 3 khối @media ở trên dưới dạng class,
      để luôn có tác dụng bất kể chiều rộng cửa sổ thật. */
-  html.ui-force-mobile .app-body{flex-direction:column;}
-  html.ui-force-mobile .sidebar-col{flex-direction:row;flex-wrap:wrap;width:100%;flex-basis:auto;position:static;}
+  html.ui-force-mobile .app-body{display:block;}
+  html.ui-force-mobile .main-content{display:block;width:100%;flex:none;min-width:0;}
+  html.ui-force-mobile .card,html.ui-force-mobile .panel,html.ui-force-mobile .form-card,html.ui-force-mobile .kpi-row,html.ui-force-mobile .table-scroll,html.ui-force-mobile .section{max-width:100% !important;margin-left:0;margin-right:0;}
+  html.ui-force-mobile .sidebar-col{display:block;flex-direction:row;flex-wrap:wrap;width:100%;flex-basis:auto;position:static;margin-bottom:12px;}
   html.ui-force-mobile .sidebar-inner{width:100% !important;position:static !important;box-shadow:none !important;flex-direction:row;flex-wrap:wrap;}
   html.ui-force-mobile .sidebar-brand-text,html.ui-force-mobile .sidebar-scope .scope-label,html.ui-force-mobile .sidebar-scope .scope-value,
   html.ui-force-mobile .sidebar-scope .scope-sub,html.ui-force-mobile nav.tabs .nav-group-label,html.ui-force-mobile nav.tabs button .nav-label{ opacity:1 !important; pointer-events:auto !important; }
   html.ui-force-mobile .sidebar-brand,html.ui-force-mobile .sidebar-scope{flex:1 1 200px;}
-  html.ui-force-mobile nav.tabs{flex-direction:row;flex-wrap:wrap;width:100%;gap:6px;}
+  html.ui-force-mobile nav.tabs{flex-direction:row;flex-wrap:nowrap;width:100%;gap:3px;}
   html.ui-force-mobile nav.tabs .nav-group{display:contents;}
   html.ui-force-mobile nav.tabs .nav-group-label{display:none;}
-  html.ui-force-mobile nav.tabs button{flex:1 1 auto;text-align:center;justify-content:center;border-bottom:3px solid transparent;}
-  html.ui-force-mobile nav.tabs button.active{border-bottom-color:var(--green);}
+  html.ui-force-mobile nav.tabs button{flex:1 1 0;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;padding:7px 2px;border-radius:9px;border-bottom:none;}
+  html.ui-force-mobile nav.tabs button .nav-ic{font-size:17px;width:auto;opacity:1;}
+  html.ui-force-mobile nav.tabs button .nav-label{display:none;}
+  html.ui-force-mobile nav.tabs button .nav-short{display:block;font-size:8.5px;font-weight:700;line-height:1.1;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  html.ui-force-mobile nav.tabs button.active{background:var(--green);color:#fff;border-bottom:none !important;}
   html.ui-force-mobile .app{padding:14px 12px 50px;}
   html.ui-force-mobile .kpi-row{grid-template-columns:repeat(2,1fr);}
   html.ui-force-mobile .kpi-row.cols-6{grid-template-columns:repeat(3,1fr);}
@@ -178,11 +390,29 @@
   html.ui-force-mobile header.top select{flex:1 1 auto;min-width:0;}
   html.ui-force-mobile .sidebar-col{gap:8px;}
   html.ui-force-mobile .sidebar-brand,html.ui-force-mobile .sidebar-scope{padding:10px 12px;}
-  html.ui-force-mobile .kpi-row,html.ui-force-mobile .kpi-row.cols-2,html.ui-force-mobile .kpi-row.cols-6{grid-template-columns:repeat(2,1fr);gap:8px;}
-  html.ui-force-mobile .kpi-card{padding:10px 12px;}
-  html.ui-force-mobile .kpi-card .value{font-size:18px;}
-  html.ui-force-mobile .form-grid-4{grid-template-columns:1fr;}
-  html.ui-force-mobile .form-grid-6{grid-template-columns:repeat(2,1fr);}
+  html.ui-force-mobile .kpi-row,html.ui-force-mobile .kpi-row.cols-2,html.ui-force-mobile .kpi-row.cols-4,html.ui-force-mobile .kpi-row.cols-6{grid-template-columns:repeat(2,1fr) !important;gap:8px !important;}
+  html.ui-force-mobile .kpi-card{padding:9px 11px !important;}
+  html.ui-force-mobile .kpi-card .label{font-size:9px !important;line-height:1.25;}
+  html.ui-force-mobile .kpi-card .value{font-size:19px !important;}
+  html.ui-force-mobile .kpi-card .frac,html.ui-force-mobile .kpi-card .sub{font-size:9px !important;}
+  html.ui-force-mobile .section-desc{font-size:11px;}
+  html.ui-force-mobile .form-grid-4,html.ui-force-mobile .form-grid-6{grid-template-columns:repeat(2,1fr) !important;gap:8px !important;}
+  html.ui-force-mobile .form-card label,html.ui-force-mobile .form-grid-4 label,html.ui-force-mobile .form-grid-6 label{font-size:10px;}
+  html.ui-force-mobile .form-card input,html.ui-force-mobile .form-card select,html.ui-force-mobile .form-card textarea,
+  html.ui-force-mobile .scope-filters select,html.ui-force-mobile .scope-filters input,html.ui-force-mobile select,html.ui-force-mobile input[type="text"],html.ui-force-mobile input[type="number"]{font-size:12px;padding:7px 8px;min-height:34px;border-radius:8px;}
+  html.ui-force-mobile .table-scroll table{font-size:10.5px;}
+  html.ui-force-mobile .table-scroll th{font-size:9.5px;padding:6px 7px;}
+  html.ui-force-mobile .table-scroll td{padding:6px 7px;}
+  html.ui-force-mobile .kpi-card .label,html.ui-force-mobile .kpi-section-title,html.ui-force-mobile .section-title,html.ui-force-mobile .cfg-card,html.ui-force-mobile .region-card,html.ui-force-mobile .home-tcard-name,html.ui-force-mobile .modal-text,html.ui-force-mobile .campaign-context{overflow-wrap:break-word;word-break:break-word;}
+  html.ui-force-mobile .kpi-section-title,html.ui-force-mobile .section-title{font-size:13px;line-height:1.35;}
+  html.ui-force-mobile .subnav{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:5px;}
+  html.ui-force-mobile .subnav button{flex:0 0 auto;font-size:11px;padding:6px 12px;white-space:nowrap;}
+  html.ui-force-mobile .cfg-grid{grid-template-columns:1fr !important;}
+  html.ui-force-mobile .cfg-card{padding:12px !important;font-size:11px;}
+  html.ui-force-mobile .modal-box{width:100% !important;max-width:100% !important;max-height:88vh;overflow-y:auto;padding:16px !important;}
+  html.ui-force-mobile .modal-actions{flex-wrap:wrap;gap:8px;}
+  html.ui-force-mobile .modal-actions button{flex:1 1 auto;}
+  html.ui-force-mobile .form-grid-4>div,html.ui-force-mobile .form-grid-6>div{display:flex;flex-direction:column;}
   html.ui-force-mobile .subnav{gap:4px;}
   html.ui-force-mobile .subnav button{padding:6px 10px;font-size:8pt;}
   html.ui-force-mobile .scope-filters{flex-direction:column;align-items:stretch;}
@@ -197,9 +427,12 @@
   html.ui-force-desktop .app-body{flex-direction:row !important;}
   html.ui-force-desktop .sidebar-col{flex-direction:column !important;width:auto !important;flex-basis:190px !important;position:sticky !important;}
   html.ui-force-desktop .sidebar-inner{flex-direction:column !important;}
-  html.ui-force-desktop nav.tabs{flex-direction:column !important;}
-  html.ui-force-desktop nav.tabs .nav-group{flex-direction:column !important;}
-  html.ui-force-desktop nav.tabs button{text-align:left !important;justify-content:flex-start !important;border-bottom:none !important;}
+  html.ui-force-desktop nav.tabs{flex-direction:column !important;flex-wrap:nowrap !important;}
+  html.ui-force-desktop nav.tabs .nav-group{flex-direction:column !important;display:flex !important;}
+  html.ui-force-desktop nav.tabs button{flex-direction:row !important;text-align:left !important;justify-content:flex-start !important;border-bottom:none !important;}
+  html.ui-force-desktop nav.tabs button .nav-label{display:inline !important;}
+  html.ui-force-desktop nav.tabs button .nav-short{display:none !important;}
+  html.ui-force-desktop nav.tabs button .nav-ic{font-size:12px !important;}
   html.ui-force-desktop,html.ui-force-desktop body{font-size:10pt !important;}
   html.ui-force-desktop .kpi-row,html.ui-force-desktop .kpi-row.cols-2{grid-template-columns:repeat(4,1fr) !important;gap:14px !important;}
   html.ui-force-desktop .kpi-row.cols-6{grid-template-columns:repeat(6,1fr) !important;}
@@ -535,7 +768,10 @@
 
 <div id="loginScreen">
   <div class="login-box">
-    <div class="brand-mark"><span class="dot"></span><strong>OPPO Việt Nam · Training Miền Trung</strong></div>
+    <div class="login-logo">KPI</div>
+    <div class="brand-mark"><span class="brand-kicker">OPPO VIETNAM · TRAINING CENTRAL</span></div>
+    <h2 style="margin-top:2px;">OPPO Training KPI</h2>
+    <p class="sub">Hệ thống Coaching · Target · KPI Trainer</p>
     <div id="authLoadingPane" style="text-align:center;padding:24px 0;color:var(--muted);">
       <div style="font-size:14pt;margin-bottom:4px;">⏳</div>
       Đang tải...
@@ -551,19 +787,19 @@
       <div class="login-error" id="setupError"></div>
     </div>
     <div id="loginPane" class="hidden">
-      <h2>Đăng nhập</h2>
-      <p class="sub">Nhập tài khoản được Admin cấp cho bạn.</p>
-      <div class="form-row"><label>Tên đăng nhập</label><input type="text" id="loginUser"></div>
+      <div class="login-note">Sử dụng tài khoản được cấp để truy cập hệ thống.</div>
+      <div class="form-row"><label>Tên đăng nhập</label><input type="text" id="loginUser" placeholder="Nhập tên đăng nhập"></div>
       <div class="form-row"><label>Mật khẩu</label>
         <div style="position:relative;">
-          <input type="password" id="loginPass" style="padding-right:40px;width:100%;">
-          <button type="button" id="loginPassToggle" aria-label="Hiện/ẩn mật khẩu" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);display:flex;align-items:center;">
+          <input type="password" id="loginPass" placeholder="Nhập mật khẩu" style="padding-right:44px;width:100%;">
+          <button type="button" id="loginPassToggle" aria-label="Hiện/ẩn mật khẩu" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);display:flex;align-items:center;">
             <svg id="loginPassEyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
       <button class="primary" id="loginBtn">Đăng nhập</button>
       <div class="login-error" id="loginError"></div>
+      <div class="login-foot">Quên mật khẩu? Liên hệ quản trị viên để được hỗ trợ.</div>
     </div>
   </div>
 </div>
@@ -608,15 +844,15 @@
     </div>
   <nav class="tabs">
     <div class="nav-group">
-      <button data-tab="home" data-title="Home" class="active"><span class="nav-ic">🏠</span><span class="nav-label">Home</span></button>
-      <button data-tab="overview" data-title="TỔNG QUAN HR"><span class="nav-ic">▦</span><span class="nav-label">Tổng quan HR</span></button>
-      <button data-tab="kpi" data-title="Tiến độ KPI"><span class="nav-ic">▤</span><span class="nav-label">Tiến độ KPI</span></button>
-      <button data-tab="so" data-title="DATA S.O" id="navSoBtn"><span class="nav-ic">📊</span><span class="nav-label">DATA S.O</span></button>
+      <button data-tab="home" data-title="Home" class="active"><span class="nav-ic">🏠</span><span class="nav-label">Home</span><span class="nav-short">Home</span></button>
+      <button data-tab="overview" data-title="TỔNG QUAN HR"><span class="nav-ic">▦</span><span class="nav-label">Tổng quan HR</span><span class="nav-short">HR</span></button>
+      <button data-tab="kpi" data-title="Tiến độ KPI"><span class="nav-ic">▤</span><span class="nav-label">Tiến độ KPI</span><span class="nav-short">KPI</span></button>
+      <button data-tab="so" data-title="DATA S.O" id="navSoBtn"><span class="nav-ic">📊</span><span class="nav-label">DATA S.O</span><span class="nav-short">S.O</span></button>
     </div>
     <div class="nav-group">
-      <button data-tab="settings" data-title="Cài đặt" id="navSettingsBtn"><span class="nav-ic">⚙</span><span class="nav-label">Cài đặt</span></button>
-      <button data-tab="data" data-title="DATA" id="navDataBtn"><span class="nav-ic">🗄</span><span class="nav-label">DATA</span></button>
-      <button data-tab="account" data-title="Tài khoản"><span class="nav-ic">👤</span><span class="nav-label">Tài khoản</span></button>
+      <button data-tab="settings" data-title="Cài đặt" id="navSettingsBtn"><span class="nav-ic">⚙</span><span class="nav-label">Cài đặt</span><span class="nav-short">Cài đặt</span></button>
+      <button data-tab="data" data-title="DATA" id="navDataBtn"><span class="nav-ic">🗄</span><span class="nav-label">DATA</span><span class="nav-short">DATA</span></button>
+      <button data-tab="account" data-title="Tài khoản"><span class="nav-ic">👤</span><span class="nav-label">Tài khoản</span><span class="nav-short">T.Khoản</span></button>
     </div>
   </nav>
     <div class="sidebar-scope">
@@ -1847,7 +2083,7 @@ function googleSheetUpdateModules_(){
       const selected=campaigns.find(c=>c.id===document.getElementById('targetCampaignSelect')?.value);
       const camp=(selected && isPartnerTrainingTargetCampaign_(selected)) ? selected : null;
       if(!camp) return {status:'skip', message:'Hãy chọn chiến dịch Đối tác - Hub hoặc Workshop ở Cài đặt → Target trước khi UPDATE tổng'};
-      return runGoogleSheetWorkbookUpdate_('partnerTrainingTargetSheetLinkBtn',['Sheet1'], async wb=>processPartnerTrainingTargetWorkbook_(wb,camp));
+      return runGoogleSheetWorkbookUpdate_('partnerTrainingTargetSheetLinkBtn',null, async wb=>processPartnerTrainingTargetWorkbook_(wb,camp));
     }},
     {key:'workshopActualSheetLinkBtn', label:'Kết quả Nội bộ - Workshop', prepare:()=>{ try{ kpiSubtype.noibo='workshop'; renderKpiCategory('noibo'); }catch(e){} }, run:async()=>{
       const camp=campaigns.find(c=>c.month===currentMonth && c.group==='noibo' && campaignSubtype(c)==='workshop');
@@ -2030,7 +2266,7 @@ const KPI_CATS=[{key:'noibo',label:'Nội bộ'},{key:'doitac',label:'Đối tá
    có tính năng này), campaignSubtype() sẽ tự map về loại mặc định tương ứng để không phá dữ liệu cũ. */
 const CAMPAIGN_SUBTYPE_OPTIONS = {
   noibo: [ {key:'pgsdev',label:'PGs Dev'}, {key:'workshop',label:'Workshop'}, {key:'testonline',label:'Test Online'}, {key:'tuvanai_checkshop',label:'Tư vấn AI & Check shop'}, {key:'cvtv',label:'CVTV'}, {key:'pgs3sao',label:'PGs 3★'} ],
-  doitac: [ {key:'ftf',label:'FTF'}, {key:'workshop',label:'Workshop'}, {key:'hub',label:'Hub'} ],
+  doitac: [ {key:'ftf',label:'FTF'}, {key:'workshop',label:'Workshop/Hub'} ],
   truyenthong: [ {key:'noibo',label:'Nội bộ'}, {key:'doitac',label:'Đối tác'} ],
 };
 const CAMPAIGN_SUBTYPE_DEFAULT = { noibo:'pgsdev', doitac:'ftf', truyenthong:'noibo' };
@@ -4565,12 +4801,18 @@ function renderFtfImportBox(){
   let html = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import dữ liệu Training F2F Đối tác — ${monthLabel(currentMonth)}</h3>
     <p class="section-desc" style="margin-bottom:10px;">Import file tổng hợp F2F (đúng mẫu — gồm 2 sheet "Tong Hop F2F" và "Chi Tiet Check-in"). <strong>Cần import Target FTF (Cài đặt ▸ Target) trước</strong> — hệ thống xác định mỗi Shop thuộc Trainer/Khu vực nào theo đúng Mã Shop đã gán ở Target FTF, KHÔNG dựa vào cột "Người Train" (cột này có thể là Sale/PG, không phải Trainer). Hệ thống tự tính SL Shop, SL HR, SL Bài Test, Tư vấn AI, SL Khảo sát theo từng Trainer, đồng thời tự tạo danh sách Shop bên dưới. Import lại sẽ <strong>ghi đè toàn bộ</strong> dữ liệu F2F của ${monthLabel(currentMonth)}. Chỉ Admin được import.</p>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <input type="number" id="otrFtfCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:180px;" ${canEdit?'':'disabled'} value="${escapeHtml(String((campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf')||{}).otrId||''))}">
+      <button class="primary" id="otrFtfBtn" type="button" ${canEdit?'':'disabled'}>↻ Cập nhật FTF từ hệ thống</button>
+      <span class="save-msg" id="ftfImportMsg" style="display:none;"></span>
+    </div>
+    <div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. Xem <strong>ID chiến dịch</strong> trong URL báo cáo (<code>doitac_f2f.html?id=<b>&lt;ID&gt;</b></code>). <strong>Cần import Target FTF trước</strong> để khớp Shop với Trainer.</div>
+    <details><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / Google Sheet) — chỉ dùng khi cần</summary>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
       <input type="file" id="ftfImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary" id="downloadFtfTemplateBtn" type="button">⬇ Tải file mẫu</button>
       <button class="secondary admin-only-gsheet" id="ftfSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>
-      <span class="save-msg" id="ftfImportMsg" style="display:none;"></span>
-    </div>
+    </div></details>
   </div>`;
   box.innerHTML = html;
 
@@ -4592,6 +4834,8 @@ function renderFtfImportBox(){
     e.target.value='';
   });
   attachGoogleSheetButton_('ftfSheetLinkBtn','ftfImportMsg', ['Tong Hop F2F','Chi Tiet Check-in'], processFtfWorkbook_);
+  const otrFtfBtn=document.getElementById('otrFtfBtn');
+  if(otrFtfBtn) otrFtfBtn.onclick=()=>updateFtfFromOtraining_();
 
   const templateBtn = document.getElementById('downloadFtfTemplateBtn');
   if(templateBtn) templateBtn.addEventListener('click', ()=>{
@@ -7787,6 +8031,70 @@ async function fetchOtrainingRows_(campaignId, month, type){
   if(!res.ok || out.error){ throw new Error((out.error||('HTTP '+res.status))+(out.detail?(' · '+out.detail):'')); }
   return Array.isArray(out.data)?out.data:[];
 }
+// FTF: trả {data (tổng hợp F2F), detail (chi tiết check-in)}.
+async function fetchFtfRows_(campaignId, month){
+  const {start,end}=otrMonthRange_(month);
+  const res=await fetch(OTRAINING_FN_URL_,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},
+    body:JSON.stringify({campaignId, startDate:start, endDate:end, type:'ftf'})
+  });
+  const out=await res.json();
+  if(!res.ok || out.error){ throw new Error((out.error||('HTTP '+res.status))+(out.sample?(' · '+out.sample):'')); }
+  if(out.diag && !(out.data||[]).length && !(out.detail||[]).length){
+    const d=out.diag;
+    throw new Error(`0 dòng MT [${d.kind}] · tổng ${d.totalSum}, chi tiết ${d.totalDetail} · Cột: ${(d.columns||[]).slice(0,12).join(', ')||'(không)'} · otraining nói: ${String(d.raw||'').slice(0,160)}`);
+  }
+  window.__ftfSrcCols={ sum: out.srcSumCols||[], detail: out.srcDetailCols||[] };
+  return { data:Array.isArray(out.data)?out.data:[], detail:Array.isArray(out.detail)?out.detail:[] };
+}
+async function updateFtfFromOtraining_(){
+  const msg=document.getElementById('ftfImportMsg');
+  const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
+  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
+  const idInput=document.getElementById('otrFtfCampaignId');
+  const campaignId=(idInput&&idInput.value||'').trim();
+  if(!campaignId){ show('Hãy nhập ID chiến dịch (xem trong URL báo cáo otraining).','var(--red)'); if(idInput) idInput.focus(); return; }
+  show('⏳ Đang lấy FTF từ otraining (ID '+campaignId+')...');
+  try{
+    const {data:arr, detail}=await fetchFtfRows_(campaignId, currentMonth);
+    if(!arr.length){
+      // KHÔNG ghi đè data cũ khi tổng hợp rỗng. Hiện tên cột JSON để map.
+      const sc=(window.__ftfSrcCols&&window.__ftfSrcCols.sum)||[];
+      const dc=(window.__ftfSrcCols&&window.__ftfSrcCols.detail)||[];
+      show('otraining trả 0 dòng tổng hợp (không ghi đè data cũ). Cột tổng hợp: '+(sc.join(', ')||'(không)')+' | Cột chi tiết: '+(dc.join(', ')||'(không)'),'var(--red)');
+      return;
+    }
+    // Dựng workbook 2 sheet đúng tên để processFtfWorkbook_ đọc.
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(arr), 'Tong Hop F2F');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detail.length?detail:[{}]), 'Chi Tiet Check-in');
+    // Lưu ID chiến dịch.
+    const camp=campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf');
+    if(camp){ camp.otrId=campaignId; try{ await dbSet('campaigns',campaigns); }catch(e){} }
+    await processFtfWorkbook_(wb);
+  }catch(err){
+    show('Lỗi gọi otraining: '+(err&&err.message?err.message:err),'var(--red)');
+  }
+}
+// Riêng Workshop Đối tác: trả {data (tổng hợp), detail (học viên)}.
+async function fetchWsDoitacRows_(campaignId, month){
+  const {start,end}=otrMonthRange_(month);
+  const res=await fetch(OTRAINING_FN_URL_,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},
+    body:JSON.stringify({campaignId, startDate:start, endDate:end, type:'wsdoitac'})
+  });
+  const out=await res.json();
+  if(!res.ok || out.error){ throw new Error((out.error||('HTTP '+res.status))+(out.sample?(' · '+out.sample):'')); }
+  // Nếu 0 dòng kèm chẩn đoán -> ném lỗi chi tiết để biết nguyên nhân.
+  if(out.diag && !(out.data||[]).length && !(out.detail||[]).length){
+    const d=out.diag;
+    throw new Error(`0 dòng MT [${d.kind}] · tổng ${d.totalSum}, chi tiết ${d.totalDetail} · Cột: ${(d.columns||[]).slice(0,10).join(', ')||'(không)'} · Vùng: ${(d.regionsSeen||[]).join(' | ')||'(không)'} · otraining nói: ${String(d.raw||'').slice(0,160)}`);
+  }
+  window.__wsDoitacSrcCols={ sum: out.srcSumCols||[], detail: out.srcDetailCols||[] };
+  return { data:Array.isArray(out.data)?out.data:[], detail:Array.isArray(out.detail)?out.detail:[] };
+}
 async function updateTestOnlineFromOtraining_(camp){
   const msg=document.getElementById('testOnlineImportMsg');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
@@ -8395,9 +8703,14 @@ function partnerTrainingDone_(v){
 }
 async function processPartnerTrainingActualWorkbook_(wb,camp){
   if(!camp || camp.group!=='doitac' || !['workshop','hub'].includes(campaignSubtype(camp))) throw new Error('Chiến dịch hiện tại không phải Workshop / Hub Đối tác.');
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  if(!ws) throw new Error('Không tìm thấy sheet dữ liệu.');
-  const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+  // Tự tìm sheet có cột status (file gồm nhiều tab: Tong Hop Workshop, Chi Tiet Hoc Vien).
+  const hasStatusCol = r => { const k=Object.keys(r||{}); return k.includes('status')||k.includes('Trạng thái')||k.includes('Trang thai'); };
+  let rows=null;
+  for(const name of wb.SheetNames){
+    const r=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:''});
+    if(r.length && hasStatusCol(r[0])){ rows=r; break; }
+  }
+  if(!rows){ const first=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}); rows=first; }
   if(!rows.length) throw new Error('File không có dữ liệu.');
   const agg={}; let doneRows=0, skippedRows=0, unmatched=0;
   const unmatchedNames=new Set();
@@ -8466,31 +8779,58 @@ async function renderPartnerTrainingRegionProgress_(subtype){
     return {region,targetSessions:Number(t.sessions||0),targetStudents:Number(t.students||0),sessions:Number(a.sessions||0),students:Number(a.students||0),surveyAvg:(a.surveyAvg===null||a.surveyAvg===undefined)?null:Number(a.surveyAvg),updated:a.updatedAt?new Date(a.updatedAt):null,note:nKey?String(notes[nKey]||''):String(notes[region]||'')};
   });
   const pctSafe=(a,t)=>t>0?Math.round((a/t)*1000)/10:0;
+  // Số lượng khảo sát (đã làm) theo khu vực — lấy từ danh sách học viên chi tiết (wsDoitacParticipants).
+  const surveyDoneByRegion={};
+  if(subtype==='workshop'){
+    let parts=wsDoitacCache_[camp.id];
+    if(!parts){ try{ parts=(await dbGet('wsDoitacParticipants:'+camp.id))||[]; wsDoitacCache_[camp.id]=parts; }catch(e){ parts=[]; } }
+    (parts||[]).forEach(p=>{
+      const reg=configuredRegionFromLoose_(p['Khu vực']||p['Khu Vực']||'')||'';
+      if(!reg) return;
+      if(wsDoitacSurveyDone_(p['Khảo sát']||p['Khao sat']||'')){ surveyDoneByRegion[reg]=(surveyDoneByRegion[reg]||0)+1; }
+    });
+  }
+  const surveyDoneOf=(region)=>{ const k=Object.keys(surveyDoneByRegion).find(x=>normalizeRegionLoose_(x)===normalizeRegionLoose_(region)); return k?surveyDoneByRegion[k]:0; };
   let html=`<div class="campaign-context">Chiến dịch: <strong>${camp.name}</strong> — ${monthLabel(currentMonth)} · Hiển thị theo Khu vực</div>`;
-  html+=`<div class="table-scroll"><table><thead><tr><th>Khu vực</th><th>Số buổi / Target</th><th>Số học viên / Target</th><th>TB Khảo sát / Target</th><th>Cập nhật</th><th style="min-width:210px;">Note</th></tr></thead><tbody>`;
-  if(!rows.length) html+=`<tr><td colspan="6" class="empty">Chưa có dữ liệu Khu vực để hiển thị.</td></tr>`;
+  html+=`<div class="table-scroll"><table><thead><tr><th>Khu vực</th><th>Số buổi / Target</th><th>Số học viên / Target</th><th>Số lượng khảo sát / Target</th><th>TB Khảo sát / Target</th><th>Cập nhật</th><th style="min-width:210px;">Note</th></tr></thead><tbody>`;
+  if(!rows.length) html+=`<tr><td colspan="7" class="empty">Chưa có dữ liệu Khu vực để hiển thị.</td></tr>`;
   rows.forEach(r=>{
     const p1=pctSafe(r.sessions,r.targetSessions), p2=pctSafe(r.students,r.targetStudents);
     const surveyText=r.surveyAvg===null?'—':(Math.round(r.surveyAvg*100)/100).toLocaleString('vi-VN');
     const p3=(r.surveyAvg!==null&&surveyTarget>0)?pctSafe(r.surveyAvg,surveyTarget):0;
     const upd=r.updated&&!Number.isNaN(r.updated.getTime())?r.updated.toLocaleDateString('vi-VN'):'—';
+    // Số lượng khảo sát: đã làm / Target(80% HV thực tế).
+    const sDone=surveyDoneOf(r.region);
+    const sTarget=Math.round(r.students*0.8);
+    const p4=pctSafe(sDone,sTarget);
     html+=`<tr><td><strong>${r.region}</strong></td>
       <td style="min-width:190px;">${progressBarHtml_(`${Math.round(r.sessions)} / ${Math.round(r.targetSessions)} · ${p1}%`,p1)}</td>
       <td style="min-width:190px;">${progressBarHtml_(`${Math.round(r.students)} / ${Math.round(r.targetStudents)} · ${p2}%`,p2)}</td>
+      <td style="min-width:190px;">${progressBarHtml_(`${sDone} / ${sTarget} · ${p4}%`,p4)}</td>
       <td style="min-width:180px;">${progressBarHtml_(`${surveyText} / ${surveyTarget||0}${r.surveyAvg!==null&&surveyTarget>0?` · ${p3}%`:''}`,p3)}</td>
       <td>${upd}</td>
       <td><textarea class="partner-training-note" data-region="${r.region.replace(/"/g,'&quot;')}" rows="2" placeholder="Note khi có vấn đề..." style="width:100%;min-width:190px;resize:vertical;">${String(r.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   if(isAdmin()){
-    html+=`<div class="form-card" style="max-width:none;margin-top:14px;"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    html+=`<div class="form-card" style="max-width:none;margin-top:14px;">
+      ${subtype==='workshop'?`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <input type="number" id="otrWsDtCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:180px;" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+        <button class="primary" id="otrWsDtBtn" type="button">↻ Cập nhật Workshop từ hệ thống</button>
+        <span class="save-msg" id="partnerTrainingActualImportMsg-workshop" style="display:none;"></span>
+      </div>
+      <div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. Xem <strong>ID chiến dịch</strong> trong URL báo cáo (<code>doitac_workshop.html?id=<b>&lt;ID&gt;</b></code>), nhập vào ô rồi bấm nút.</div>
+      <details><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / Google Sheet) — chỉ dùng khi cần</summary>`:''}
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;${subtype==='workshop'?'margin-top:10px;':''}">
       <input type="file" id="partnerTrainingActualImportInput-${subtype}" accept=".xlsx,.xls" style="display:none;">
-      <button class="primary" id="partnerTrainingActualImportBtn-${subtype}" type="button">📥 Import data ${subtype==='hub'?'Hub':'Workshop'}</button><button class="secondary admin-only-gsheet" id="partnerTrainingActualSheetLinkBtn-${subtype}" type="button">🔗 Cập nhật từ Google Sheet</button>
+      <button class="${subtype==='workshop'?'secondary':'primary'}" id="partnerTrainingActualImportBtn-${subtype}" type="button">📥 Import file ${subtype==='hub'?'Hub':'Workshop'}</button><button class="secondary admin-only-gsheet" id="partnerTrainingActualSheetLinkBtn-${subtype}" type="button">🔗 Cập nhật từ Google Sheet</button>
       <button class="secondary" id="downloadPartnerTrainingActualTemplateBtn-${subtype}" type="button">⬇ Tải data mẫu</button>
-      <span class="save-msg" id="partnerTrainingActualImportMsg-${subtype}" style="display:none;"></span>
-    </div><div class="section-desc" style="margin-top:9px;">File mẫu dùng cột <strong>oppo_areas</strong> để nhận diện Khu vực; chỉ dòng <strong>status = Done</strong> được tính Số buổi. Số học viên lấy từ <strong>Số lượng thực tế</strong>; khảo sát lấy từ <strong>Điểm Khảo Sát (TB)</strong>.</div></div>`;
+      ${subtype==='workshop'?'':`<span class="save-msg" id="partnerTrainingActualImportMsg-${subtype}" style="display:none;"></span>`}
+    </div><div class="section-desc" style="margin-top:9px;">File mẫu dùng cột <strong>oppo_areas</strong> để nhận diện Khu vực; chỉ dòng <strong>status = Done</strong> được tính Số buổi. Số học viên lấy từ <strong>Số lượng thực tế</strong>; khảo sát lấy từ <strong>Điểm Khảo Sát (TB)</strong>.</div>${subtype==='workshop'?'</details>':''}</div>`;
   }
+  if(subtype==='workshop'){ html+=`<div id="wsDoitacParticipantsBox" style="margin-top:20px;"></div>`; }
   box.innerHTML=html;
+  if(subtype==='workshop' && camp){ renderWsDoitacParticipants_(camp).catch(e=>console.error('WS participants:',e)); }
   box.querySelectorAll('.partner-training-note').forEach(el=>{
     el.addEventListener('change',async()=>{
       notes[el.dataset.region]=el.value.trim();
@@ -8508,6 +8848,149 @@ async function renderPartnerTrainingRegionProgress_(subtype){
   };
   const dl=document.getElementById('downloadPartnerTrainingActualTemplateBtn-'+subtype); if(dl) dl.onclick=downloadPartnerTrainingActualSample_;
   attachGoogleSheetButton_('partnerTrainingActualSheetLinkBtn-'+subtype,'partnerTrainingActualImportMsg-'+subtype,['Sheet1'],async wb=>processPartnerTrainingActualWorkbook_(wb,camp));
+  if(subtype==='workshop'){
+    const otrWsDtBtn=document.getElementById('otrWsDtBtn');
+    if(otrWsDtBtn) otrWsDtBtn.onclick=()=>updateWsDoitacFromOtraining_(camp);
+  }
+}
+async function updateWsDoitacFromOtraining_(camp){
+  const msg=document.getElementById('partnerTrainingActualImportMsg-workshop');
+  const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
+  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
+  const idInput=document.getElementById('otrWsDtCampaignId');
+  const campaignId=(idInput&&idInput.value||'').trim();
+  if(!campaignId){ show('Hãy nhập ID chiến dịch (xem trong URL báo cáo otraining).','var(--red)'); if(idInput) idInput.focus(); return; }
+  show('⏳ Đang lấy Workshop Đối tác từ otraining (ID '+campaignId+')...');
+  try{
+    const {data:arr, detail}=await fetchWsDoitacRows_(campaignId, camp&&camp.month);
+    if(!arr.length){ show('otraining trả về 0 dòng Miền Trung. Kiểm tra lại ID chiến dịch.','var(--red)'); return; }
+    const ws=XLSX.utils.json_to_sheet(arr);
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+    if(camp){ camp.otrId=campaignId; try{ await dbSet('campaigns',campaigns); }catch(e){} }
+    // Lưu danh sách học viên đối tác để hiển thị bảng chi tiết bên dưới.
+    try{ await dbSet('wsDoitacParticipants:'+camp.id, detail||[]); }catch(e){}
+    delete wsDoitacCache_[camp.id];
+    await processPartnerTrainingActualWorkbook_(wb,camp);
+    await renderWsDoitacParticipants_(camp);
+  }catch(err){
+    show('Lỗi gọi otraining: '+(err&&err.message?err.message:err),'var(--red)');
+  }
+}
+/* ===== DANH SÁCH ĐỐI TÁC THAM GIA WORKSHOP/HUB =====
+   Nguồn: wsDoitacParticipants:<campId> (sheet Chi Tiet Hoc Vien, đã lọc MIEN TRUNG).
+   Bảng gộp theo (Khu vực + Kênh): STT · Khu vực · Kênh · Workshop (số buổi khác nhau) ·
+   HR (số học viên — bấm vào mở popup chi tiết) · Khảo sát (% đã làm) · Trainer (theo khu vực).
+   Có hàng lọc (Khu vực/Shop/Kênh/Trainer/Khảo sát) + phân trang 10 dòng. */
+const wsDoitacCache_={};
+function wsDoitacTrainerOfRegion_(region){
+  const t=(config.trainers||[]).find(t=>normalizeRegionLoose_(t.region)===normalizeRegionLoose_(region));
+  return t?t.name:'—';
+}
+function wsDoitacSurveyDone_(v){ const s=String(v||'').trim().toLowerCase(); return s==='đã làm'||s==='da lam'||s==='done'||s==='hoàn thành'; }
+async function renderWsDoitacParticipants_(camp){
+  const box=document.getElementById('wsDoitacParticipantsBox');
+  if(!box || !camp) return;
+  let rows=wsDoitacCache_[camp.id];
+  if(!rows){ rows=(await dbGet('wsDoitacParticipants:'+camp.id))||[]; wsDoitacCache_[camp.id]=rows; }
+  // Chuẩn hoá mỗi dòng học viên.
+  const parts=rows.map(r=>({
+    region: configuredRegionFromLoose_(r['Khu vực']||r['Khu Vực']||'') || String(r['Khu vực']||'').trim(),
+    channel: String(r['Kênh']||r['Kenh']||'').trim(),
+    shop: String(r['Tên Shop']||r['Shop']||'').trim(),
+    code: String(r['Mã NV']||r['MaNV']||'').trim(),
+    name: String(r['Tên Học Viên']||r['Họ Tên']||'').trim(),
+    wsid: String(r['WS ID']||r['WS Id']||'').trim(),
+    survey: String(r['Khảo sát']||r['Khao sat']||'').trim(),
+  })).filter(p=>p.code||p.name);
+  if(isTrainer()) { const my=normalizeRegionLoose_(session.region||''); parts.splice(0,parts.length,...parts.filter(p=>normalizeRegionLoose_(p.region)===my)); }
+
+  let html=`<div style="margin-top:8px;padding-top:16px;border-top:2px solid var(--line);"></div>`;
+  html+=`<h3 class="kpi-section-title">Danh sách đối tác tham gia Workshop/Hub</h3>`;
+  if(!parts.length){ html+=`<div class="empty">Chưa có danh sách đối tác. Bấm <strong>↻ Cập nhật Workshop từ hệ thống</strong> ở trên để lấy dữ liệu.</div>`; box.innerHTML=html; return; }
+  html+=`<div id="wsDoitacListInner"></div>`;
+  box.innerHTML=html;
+
+  const inner=document.getElementById('wsDoitacListInner');
+  const regions=[...new Set(parts.map(p=>p.region).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+  const channels=[...new Set(parts.map(p=>p.channel).filter(Boolean))].sort();
+  const shops=[...new Set(parts.map(p=>p.shop).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+  const trainers=[...new Set(parts.map(p=>wsDoitacTrainerOfRegion_(p.region)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+  let fRegion='',fChannel='',fShop='',fTrainer='',fSurvey='',page=1; const pageSize=10;
+
+  const filtered_=()=>parts.filter(p=>{
+    if(fRegion && p.region!==fRegion) return false;
+    if(fChannel && p.channel!==fChannel) return false;
+    if(fShop && p.shop!==fShop) return false;
+    if(fTrainer && wsDoitacTrainerOfRegion_(p.region)!==fTrainer) return false;
+    if(fSurvey==='done' && !wsDoitacSurveyDone_(p.survey)) return false;
+    if(fSurvey==='notdone' && wsDoitacSurveyDone_(p.survey)) return false;
+    return true;
+  });
+  // Gộp theo Khu vực + Kênh.
+  const grouped_=(list)=>{
+    const m=new Map();
+    list.forEach(p=>{
+      const k=p.region+'|'+p.channel;
+      let g=m.get(k);
+      if(!g){ g={region:p.region,channel:p.channel,wsids:new Set(),hr:0,surveyDone:0,people:[]}; m.set(k,g); }
+      g.wsids.add(p.wsid); g.hr++; if(wsDoitacSurveyDone_(p.survey)) g.surveyDone++; g.people.push(p);
+    });
+    return [...m.values()].sort((a,b)=>a.region.localeCompare(b.region,'vi')||a.channel.localeCompare(b.channel));
+  };
+  const render=()=>{
+    const list=filtered_(); const groups=grouped_(list);
+    const totalPages=Math.max(1,Math.ceil(groups.length/pageSize));
+    page=Math.max(1,Math.min(page,totalPages));
+    const pageGroups=groups.slice((page-1)*pageSize,(page-1)*pageSize+pageSize);
+    let t=`<div class="form-card" style="max-width:none;margin:0 0 12px;"><div class="scope-filters" style="display:flex;flex-wrap:wrap;gap:8px;">`;
+    t+=`<select id="wsdF-region"><option value="">Tất cả khu vực</option>${regions.map(r=>`<option ${fRegion===r?'selected':''}>${escapeHtml(r)}</option>`).join('')}</select>`;
+    t+=`<select id="wsdF-shop"><option value="">Tất cả shop</option>${shops.map(s=>`<option ${fShop===s?'selected':''}>${escapeHtml(s)}</option>`).join('')}</select>`;
+    t+=`<select id="wsdF-channel"><option value="">Tất cả kênh</option>${channels.map(c=>`<option ${fChannel===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>`;
+    t+=`<select id="wsdF-trainer"><option value="">Tất cả Trainer</option>${trainers.map(tr=>`<option ${fTrainer===tr?'selected':''}>${escapeHtml(tr)}</option>`).join('')}</select>`;
+    t+=`<select id="wsdF-survey"><option value="">Khảo sát: tất cả</option><option value="done" ${fSurvey==='done'?'selected':''}>Đã làm</option><option value="notdone" ${fSurvey==='notdone'?'selected':''}>Chưa làm</option></select>`;
+    t+=`</div></div>`;
+    t+=`<div class="table-scroll"><table><thead><tr><th>STT</th><th>Khu vực</th><th>Kênh</th><th>Workshop</th><th>HR</th><th>Khảo sát</th><th>Trainer</th></tr></thead><tbody>`;
+    if(!pageGroups.length) t+=`<tr><td colspan="7" class="empty">Không có dữ liệu phù hợp bộ lọc.</td></tr>`;
+    else pageGroups.forEach((g,i)=>{
+      const pct=g.hr?Math.round(g.surveyDone/g.hr*100):0;
+      const gi=(page-1)*pageSize+i;
+      t+=`<tr><td>${gi+1}</td><td><strong>${escapeHtml(g.region)}</strong></td><td>${escapeHtml(g.channel||'—')}</td><td style="text-align:center;">${g.wsids.size}</td>`;
+      t+=`<td style="text-align:center;"><button type="button" class="wsd-hr-btn" data-gi="${gi}" style="background:var(--green-pale);color:var(--green-dark);border:1px solid var(--green);border-radius:6px;padding:3px 12px;font-weight:700;cursor:pointer;">${g.hr}</button></td>`;
+      t+=`<td style="text-align:center;">${g.surveyDone}/${g.hr} · ${pct}%</td><td>${escapeHtml(wsDoitacTrainerOfRegion_(g.region))}</td></tr>`;
+    });
+    t+=`</tbody></table></div>`;
+    if(groups.length>pageSize){
+      let first=Math.max(1,page-2),last=Math.min(totalPages,first+4); first=Math.max(1,last-4);
+      t+=`<div class="pagination-bar" style="margin-top:12px;"><button class="wsd-page" data-p="${Math.max(1,page-1)}" ${page===1?'disabled':''}>‹</button>`;
+      for(let i=first;i<=last;i++) t+=`<button class="wsd-page ${i===page?'active':''}" data-p="${i}">${i}</button>`;
+      t+=`<button class="wsd-page" data-p="${Math.min(totalPages,page+1)}" ${page===totalPages?'disabled':''}>›</button><span class="pagination-info">${groups.length} nhóm · ${list.length} học viên · Trang ${page}/${totalPages}</span></div>`;
+    } else t+=`<div class="pagination-info" style="margin-top:8px;">${groups.length} nhóm · ${list.length} học viên</div>`;
+    inner.innerHTML=t;
+    // sự kiện lọc
+    const bind=(id,fn)=>{ const el=inner.querySelector('#'+id); if(el) el.onchange=e=>{fn(e.target.value);page=1;render();}; };
+    bind('wsdF-region',v=>fRegion=v); bind('wsdF-shop',v=>fShop=v); bind('wsdF-channel',v=>fChannel=v); bind('wsdF-trainer',v=>fTrainer=v); bind('wsdF-survey',v=>fSurvey=v);
+    inner.querySelectorAll('.wsd-page').forEach(b=>b.onclick=()=>{page=Number(b.dataset.p)||1;render();});
+    // popup HR
+    inner.querySelectorAll('.wsd-hr-btn').forEach(b=>b.onclick=()=>{
+      const g=groups[Number(b.dataset.gi)]; if(g) openWsDoitacDetail_(g);
+    });
+  };
+  render();
+}
+function openWsDoitacDetail_(g){
+  const old=document.getElementById('wsdDetailOverlay'); if(old) old.remove();
+  const ov=document.createElement('div'); ov.id='wsdDetailOverlay'; ov.className='modal-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(8,51,31,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
+  let rowsH=g.people.map((p,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(p.code||'—')}</td><td><strong>${escapeHtml(p.name||'—')}</strong></td><td>${escapeHtml(p.shop||'—')}</td><td style="text-align:center;"><span class="pill ${wsDoitacSurveyDone_(p.survey)?'pill-ok':'pill-warn'}">${escapeHtml(p.survey||'—')}</span></td></tr>`).join('');
+  ov.innerHTML=`<div class="modal-box" style="background:#fff;border-radius:16px;max-width:680px;width:100%;max-height:86vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(8,51,31,.25);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h3 style="margin:0;color:var(--green-dark);">Đối tác tham gia — ${escapeHtml(g.region)} · ${escapeHtml(g.channel||'')}</h3>
+    <button id="wsdDetailClose" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">×</button></div>
+    <p class="section-desc" style="margin:0 0 12px;">Tổng ${g.hr} học viên · ${g.surveyDone} đã làm khảo sát.</p>
+    <div class="table-scroll"><table><thead><tr><th>STT</th><th>Mã NV</th><th>Tên</th><th>Shop</th><th>Khảo sát</th></tr></thead><tbody>${rowsH}</tbody></table></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#wsdDetailClose').onclick=()=>ov.remove();
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
 }
 async function renderPartnerWorkshopRegionProgress_(){ return renderPartnerTrainingRegionProgress_('workshop'); }
 async function renderPartnerHubRegionProgress_(){ return renderPartnerTrainingRegionProgress_('hub'); }
@@ -10643,13 +11126,18 @@ async function loadPartnerTrainingTargets_(camp){
 async function processPartnerTrainingTargetWorkbook_(wb,camp){
   const msg=document.getElementById('partnerTrainingTargetImportMsg');
   if(!camp || !isPartnerTrainingTargetCampaign_(camp)) throw new Error('Chiến dịch hiện tại không phải Hub / Workshop Đối tác.');
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  if(!ws) throw new Error('Không tìm thấy Sheet dữ liệu.');
-  const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
-  if(!rows.length) throw new Error('File không có dữ liệu.');
-  const headers=Object.keys(rows[0]||{});
-  if(!headers.includes('target_students') && !headers.includes('Số học viên') && !headers.includes('HV dự kiến')){
-    throw new Error('Không tìm thấy cột target_students (Số học viên target).');
+  // Tự tìm sheet có cột target_students (file có thể gồm nhiều tab: Tong Hop Workshop, Chi Tiet...).
+  const hasTargetCol = r => { const k=Object.keys(r||{}); return k.includes('target_students')||k.includes('Số học viên')||k.includes('HV dự kiến'); };
+  let rows=null;
+  for(const name of wb.SheetNames){
+    const r=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:''});
+    if(r.length && hasTargetCol(r[0])){ rows=r; break; }
+  }
+  if(!rows){
+    // fallback: sheet đầu tiên có dữ liệu
+    const first=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    if(!first.length) throw new Error('File không có dữ liệu.');
+    throw new Error('Không tìm thấy cột target_students trong các sheet. Cột hiện có: '+Object.keys(first[0]||{}).join(', '));
   }
   const totals={}; let matched=0, unmatched=0, totalSessions=0, totalStudents=0;
   const unmatchedNames=new Set();
@@ -10714,7 +11202,7 @@ function renderPartnerTrainingTargetSection_(camp){
   });
   const dl=document.getElementById('downloadPartnerTrainingTargetTemplateBtn');
   if(dl) dl.addEventListener('click',downloadPartnerTrainingTargetSample_);
-  attachGoogleSheetButton_('partnerTrainingTargetSheetLinkBtn','partnerTrainingTargetImportMsg',['Sheet1'],async wb=>processPartnerTrainingTargetWorkbook_(wb,camp));
+  attachGoogleSheetButton_('partnerTrainingTargetSheetLinkBtn','partnerTrainingTargetImportMsg',null,async wb=>processPartnerTrainingTargetWorkbook_(wb,camp));
 }
 
 let workshopTargetRows=[];
@@ -12847,5 +13335,65 @@ new MutationObserver(muts=>{
     </div>
   </div>
 </div>
+<script>
+/* ===== RÚT GỌN TÊN SHOP trong các bảng danh sách (giữ đầy đủ ở tooltip khi chạm/di chuột) =====
+   VD: "TGDĐ - 379 - TGD_BT H_TPH - 233 Thống Nhất" -> "TGDĐ_233 Thống Nhất".
+   Quy tắc: lấy KÊNH (đoạn đầu) + ĐOẠN CUỐI (số + tên shop), nối bằng "_". Chỉ rút khi tên có >=3 đoạn.
+   Chạy lại sau mỗi lần render nhờ MutationObserver. Chỉ đổi phần HIỂN THỊ, không đổi dữ liệu gốc. */
+(function(){
+  function shortenShop(s){
+    s=String(s==null?'':s).trim(); if(!s) return s;
+    var parts=s.split(/\s*[-–—]\s*/).map(function(x){return x.trim();}).filter(Boolean);
+    if(parts.length<3) return s;                 // tên ngắn -> giữ nguyên
+    return parts[0]+'_'+parts[parts.length-1];   // KÊNH + đoạn cuối (số + tên)
+  }
+  // Viết tắt khu vực — CHỈ hiển thị trên màn (mobile). Xuất Excel vẫn giữ tên đầy đủ (đọc từ data gốc).
+  var AREA_ABBR={'VUNG TAU':'VT','DA NANG':'DN','NHA TRANG':'NT','TAY NGUYEN':'TN','BINH DINH':'BD','HUE':'Huế'};
+  function abbrArea(s){
+    var raw=String(s==null?'':s).trim();
+    var k=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'D').toUpperCase().replace(/\s+/g,' ').trim();
+    return AREA_ABBR[k]!==undefined ? AREA_ABBR[k].replace('BD','BĐ').replace('DN','ĐN') : raw;
+  }
+  function colIndexesByHead(tb,names){
+    var idx=[]; [].forEach.call(tb.querySelectorAll('thead th'),function(th,i){
+      var h=th.textContent.trim().toLowerCase();
+      if(names.indexOf(h)>=0) idx.push(i);
+    }); return idx;
+  }
+  var isMobile=function(){ return window.matchMedia('(max-width:860px)').matches || document.documentElement.classList.contains('ui-force-mobile'); };
+  function processTables(){
+    var mob=isMobile();
+    document.querySelectorAll('table').forEach(function(tb){
+      var heads=[].map.call(tb.querySelectorAll('thead th'),function(th){return th.textContent.trim();});
+      var shopCols=colIndexesByHead(tb,['shop','cửa hàng','cua hang']);
+      var areaCols=colIndexesByHead(tb,['khu vực','khu vuc','kv']);
+      tb.querySelectorAll('tbody tr').forEach(function(tr){
+        // Gán nhãn cột cho từng ô (để hiển thị dạng thẻ gọn trên mobile).
+        [].forEach.call(tr.children,function(td,i){
+          if(heads[i]!==undefined && !td.hasAttribute('data-label')) td.setAttribute('data-label',heads[i]);
+        });
+        shopCols.forEach(function(ci){
+          var td=tr.children[ci]; if(!td || td.dataset.shopShort) return;
+          var full=td.textContent.trim(); var short=shortenShop(full);
+          if(short!==full){ td.dataset.shopShort='1'; td.dataset.shopFull=full; td.title=full; td.textContent=short; }
+          else { td.dataset.shopShort='1'; }
+        });
+        if(mob) areaCols.forEach(function(ci){
+          var td=tr.children[ci]; if(!td || td.dataset.areaAbbr) return;
+          var full=td.textContent.trim(); var ab=abbrArea(full);
+          if(ab!==full){ td.dataset.areaAbbr='1'; td.dataset.areaFull=full; td.title=full; td.textContent=ab; }
+          else { td.dataset.areaAbbr='1'; }
+        });
+      });
+    });
+  }
+  var t=null;
+  var obs=new MutationObserver(function(){ clearTimeout(t); t=setTimeout(processTables,120); });
+  window.addEventListener('load',function(){
+    processTables();
+    obs.observe(document.body,{childList:true,subtree:true});
+  });
+})();
+</script>
 </body>
 </html>
