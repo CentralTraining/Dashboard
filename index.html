@@ -4087,6 +4087,13 @@ async function processFtfWorkbook_(wb){
   const ws2 = wb.Sheets[sheet2Name];
   const rows1 = XLSX.utils.sheet_to_json(ws1, { defval:'' });
   const rows2 = ws2 ? XLSX.utils.sheet_to_json(ws2, { defval:'' }) : [];
+  // AN TOÀN: nếu không có dòng dữ liệu hợp lệ nào (không có Mã Shop/Tên Shop), KHÔNG ghi đè data cũ.
+  const hasRealData_ = rows1.some(r=>{ const v=Object.values(r).map(x=>String(x||'').trim()).filter(Boolean); return v.length>0; });
+  if(!rows1.length || !hasRealData_){
+    const m=document.getElementById('ftfImportMsg');
+    if(m){ m.style.display='block'; m.style.color='var(--red)'; m.textContent='File/nguồn không có dữ liệu — giữ nguyên data cũ, không ghi đè.'; }
+    return;
+  }
   // Chuẩn hoá tên cột để so khớp "mờ" — bỏ dấu, viết thường, gộp khoảng trắng — để dù tên cột thật
   // trên Google Sheet có khác 1 chút so với tên chuẩn (thừa dấu cách, viết hoa/thường khác, thiếu/
   // thừa dấu gạch) vẫn khớp đúng.
@@ -4154,14 +4161,36 @@ async function processFtfWorkbook_(wb){
   let shopArr = Object.values(shopMap);
   let matchedShop=0, unmatchedShop=0;
   const unmatchedCodes = new Set();
+  // Map Khu vực -> Trainer (phương án dự phòng khi Target khớp Shop nhưng trainerId của Target rỗng).
+  const trainerIdByRegion_ = r => { const t=(config.trainers||[]).find(t=>normalizeRegionLoose_(t.region)===normalizeRegionLoose_(r)); return t?t.id:''; };
+  let tgtMatched=0, tgtHadTrainer=0, usedRegionFallback=0;
+  // Lấy mọi mã có thể của 1 shop từ data v2 (store_id_excel, shop_id) để tra Target theo nhiều kiểu mã.
+  const rawByKey_={}; rows1.forEach(r=>{ const k=shopKeyOf_(String(V1(r,'Mã Shop')||'').trim(), String(V1(r,'Tên Shop','Shop')||'').trim()); if(k) rawByKey_[k]=r; });
   shopArr.forEach(s=>{
-    const tgt = lookupTarget_(s.shopCode, s.shopName);
-    s.trainerId = tgt ? tgt.trainerId : '';
-    if(tgt && tgt.region) s.region = tgt.region; // ưu tiên Khu vực đã gán ở Target FTF (đáng tin hơn cột Khu vực gõ tay trong Tong Hop F2F)
+    const raw=rawByKey_[shopKeyOf_(s.shopCode,s.shopName)]||{};
+    const altCodes=[s.shopCode, raw['_shop_id'], raw['_store_id_excel']].map(x=>String(x||'').trim()).filter(Boolean);
+    let tgt=null;
+    for(const code of altCodes){ if(targetByStoreId_.has(code)){ tgt=targetByStoreId_.get(code); break; } }
+    if(!tgt && s.shopName && targetByStoreName_.has(normShopName_(s.shopName))) tgt=targetByStoreName_.get(normShopName_(s.shopName));
+    if(tgt){ tgtMatched++; if(tgt.region) s.region = tgt.region; if(tgt.trainerId) tgtHadTrainer++;
+      if(tgt.channel) s.channel = tgt.channel; // LẤY KÊNH TỪ TARGET FTF (chính xác) thay vì kênh rỗng/suy từ tên
+    }
+    // trainerId: ưu tiên của Target (gán theo Shop); nếu Target khớp Shop nhưng không có trainerId -> suy từ Khu vực.
+    if(tgt && tgt.trainerId){ s.trainerId = tgt.trainerId; }
+    else { s.trainerId = trainerIdByRegion_(s.region); if(s.trainerId) usedRegionFallback++; }
     s.id = uid('ftf');
-    if(tgt && tgt.trainerId) matchedShop++; else { unmatchedShop++; unmatchedCodes.add(s.shopCode||s.shopName||'(không tên)'); }
+    if(s.trainerId) matchedShop++; else { unmatchedShop++; unmatchedCodes.add(s.shopCode||s.shopName||'(không tên)'); }
   });
+  window.__ftfMatchDiag={ shops:shopArr.length, tgtMatched, tgtHadTrainer, usedRegionFallback, targetRows:targetRowsForMonth.length };
 
+  // AN TOÀN: nếu không tạo được Shop nào (data không khớp/sai cột), KHÔNG ghi đè danh sách cũ.
+  if(!shopArr.length){
+    const m=document.getElementById('ftfImportMsg');
+    const cols1=rows1[0]?Object.keys(rows1[0]):[];
+    const sampleShop=rows1[0]?(rows1[0]['Mã Shop']||rows1[0]['Tên Shop']||'(trống)'):'(không có dòng)';
+    if(m){ m.style.display='block'; m.style.color='var(--red)'; m.innerHTML='Không khớp được Shop nào — GIỮ NGUYÊN data cũ.<br><small>Đọc '+rows1.length+' dòng tổng hợp. Cột: '+cols1.join(', ')+'<br>Mã Shop dòng đầu: '+escapeHtml(String(sampleShop))+'</small>'; }
+    return;
+  }
   let skippedOtherRegion = 0;
   if(isTrainer()){
     const totalBefore = shopArr.length;
@@ -4178,7 +4207,7 @@ async function processFtfWorkbook_(wb){
     const rec = trainerRecord(t.id);
     const shopsOfTrainer = ftfShopList.filter(s=>s.trainerId===t.id);
     rec.ftfShopTarget = shopsOfTrainer.length;
-    rec.ftfShopActual = shopsOfTrainer.filter(s=>s.status==='DONE').length;
+    rec.ftfShopActual = shopsOfTrainer.filter(s=>s.status==='DONE'||s.status==='COMPLETED'||(Number(s.hrActual)||0)>0).length;
     rec.ftfHrTarget = shopsOfTrainer.reduce((sum,s)=>sum+s.hrTarget,0);
     rec.ftfHrActual = shopsOfTrainer.reduce((sum,s)=>sum+s.hrActual,0);
     rec.ftfBaiTestTarget = shopsOfTrainer.reduce((sum,s)=>sum+s.testTotal,0);
@@ -4836,6 +4865,34 @@ function renderFtfImportBox(){
   attachGoogleSheetButton_('ftfSheetLinkBtn','ftfImportMsg', ['Tong Hop F2F','Chi Tiet Check-in'], processFtfWorkbook_);
   const otrFtfBtn=document.getElementById('otrFtfBtn');
   if(otrFtfBtn) otrFtfBtn.onclick=()=>updateFtfFromOtraining_();
+  const ftfDiagBtn=document.getElementById('ftfDiagBtn');
+  if(ftfDiagBtn) ftfDiagBtn.onclick=()=>{
+    const n=(ftfShopList||[]).length;
+    const s0=ftfShopList&&ftfShopList[0]?ftfShopList[0]:null;
+    let txt='Tổng shop trong danh sách: '+n+'\n';
+    if(window.__ftfMatchDiag){ const d=window.__ftfMatchDiag; txt+='Target rows: '+d.targetRows+' | Shop khớp Target: '+d.tgtMatched+' | Target có trainer: '+d.tgtHadTrainer+' | Suy từ khu vực: '+d.usedRegionFallback+'\n'; }
+    txt+='\n';
+    if(s0){
+      const withTrainer=(ftfShopList||[]).filter(s=>s.trainerId).length;
+      const withHr=(ftfShopList||[]).filter(s=>Number(s.hrActual)>0).length;
+      const withDone=(ftfShopList||[]).filter(s=>s.status==='DONE').length;
+      const withTest=(ftfShopList||[]).filter(s=>Number(s.testPass)>0).length;
+      txt+='Có trainerId: '+withTrainer+'/'+n+'\nStatus DONE: '+withDone+'\nHR>0: '+withHr+'\nTest pass>0: '+withTest+'\n\n';
+      // Phân nhóm kênh
+      const grp={};
+      (ftfShopList||[]).forEach(s=>{ const g=channelGroup(s.channel); grp[g]=(grp[g]||0)+1; });
+      txt+='Phân nhóm Kênh: '+JSON.stringify(grp)+'\n';
+      // So trainerId shop vs config.trainers
+      const cfgIds=new Set((config.trainers||[]).map(t=>t.id));
+      const shopTrIds=[...new Set((ftfShopList||[]).map(s=>s.trainerId).filter(Boolean))];
+      const matchCfg=shopTrIds.filter(id=>cfgIds.has(id)).length;
+      txt+='TrainerId shop khớp config: '+matchCfg+'/'+shopTrIds.length+'\n';
+      txt+='config trainer ids (3 đầu): '+[...cfgIds].slice(0,3).join(', ')+'\n';
+      txt+='shop trainer ids (3 đầu): '+shopTrIds.slice(0,3).join(', ')+'\n\n';
+      txt+='SHOP MẪU:\n'+JSON.stringify({code:s0.shopCode,trainerId:s0.trainerId,channel:s0.channel,channelGroup:channelGroup(s0.channel),status:s0.status,hrActual:s0.hrActual,testPass:s0.testPass,surveyDone:s0.surveyDone},null,1);
+    } else { txt+='Danh sách rỗng — data chưa vào.'; }
+    alert(txt);
+  };
 
   const templateBtn = document.getElementById('downloadFtfTemplateBtn');
   if(templateBtn) templateBtn.addEventListener('click', ()=>{
@@ -8046,6 +8103,8 @@ async function fetchFtfRows_(campaignId, month){
     throw new Error(`0 dòng MT [${d.kind}] · tổng ${d.totalSum}, chi tiết ${d.totalDetail} · Cột: ${(d.columns||[]).slice(0,12).join(', ')||'(không)'} · otraining nói: ${String(d.raw||'').slice(0,160)}`);
   }
   window.__ftfSrcCols={ sum: out.srcSumCols||[], detail: out.srcDetailCols||[] };
+  window.__ftfSampleDetail=out.sampleDetailRaw||null;
+  window.__ftfSampleSum=out.sampleSumRaw||null;
   return { data:Array.isArray(out.data)?out.data:[], detail:Array.isArray(out.detail)?out.detail:[] };
 }
 async function updateFtfFromOtraining_(){
@@ -8059,16 +8118,34 @@ async function updateFtfFromOtraining_(){
   try{
     const {data:arr, detail}=await fetchFtfRows_(campaignId, currentMonth);
     if(!arr.length){
-      // KHÔNG ghi đè data cũ khi tổng hợp rỗng. Hiện tên cột JSON để map.
-      const sc=(window.__ftfSrcCols&&window.__ftfSrcCols.sum)||[];
-      const dc=(window.__ftfSrcCols&&window.__ftfSrcCols.detail)||[];
-      show('otraining trả 0 dòng tổng hợp (không ghi đè data cũ). Cột tổng hợp: '+(sc.join(', ')||'(không)')+' | Cột chi tiết: '+(dc.join(', ')||'(không)'),'var(--red)');
+      show('otraining trả 0 dòng tổng hợp (không ghi đè data cũ). Kiểm tra lại ID chiến dịch.','var(--red)');
       return;
     }
+    // Dựng sheet "Chi Tiet Check-in" GIẢ từ số đếm sẵn theo shop (checked_in/test_takers/survey),
+    // vì API v2 trả số tổng theo shop chứ không trả từng học viên. Mỗi shop sinh N dòng ảo với
+    // Test online = PASS (đủ số test_takers) và Khảo sát = DONE (đủ số survey) để processFtfWorkbook_ đếm đúng.
+    const fakeDetail=[];
+    arr.forEach(s=>{
+      const code=s['Mã Shop'], shop=s['Tên Shop'], kenh=s['Kênh'], vung=s['Vùng'], kv=s['Khu vực'];
+      const hr=Number(s['_checked_in']||s['Số Đã Train']||0);
+      const nTest=Number(s['_test_takers']||0);
+      const nSurvey=Number(s['_survey']||0);
+      const n=Math.max(hr,nTest,nSurvey);
+      for(let i=0;i<n;i++){
+        fakeDetail.push({
+          'Chiến dịch':campaignId,'Mã Shop':code,'Kênh':kenh,'Vùng':vung,'Khu vực':kv,'Tỉnh':'',
+          'Shop':shop,'Sale Quản lý':'','Người Train':s['Người Train']||'','Tên học viên':'HV '+(i+1),
+          'Trạng thái tư vấn mẫu':'Chưa làm',
+          'Test online': i<nTest ? 'Pass' : 'Chưa làm',
+          'Khảo sát': i<nSurvey ? 'Done' : 'Chưa',
+          'Điểm Hài lòng':''
+        });
+      }
+    });
     // Dựng workbook 2 sheet đúng tên để processFtfWorkbook_ đọc.
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(arr), 'Tong Hop F2F');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detail.length?detail:[{}]), 'Chi Tiet Check-in');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fakeDetail.length?fakeDetail:[{}]), 'Chi Tiet Check-in');
     // Lưu ID chiến dịch.
     const camp=campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf');
     if(camp){ camp.otrId=campaignId; try{ await dbSet('campaigns',campaigns); }catch(e){} }
