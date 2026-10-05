@@ -887,8 +887,11 @@
   </section>
   <!-- ============ 1. TỔNG QUAN ============ -->
   <section id="tab-overview" class="maintab">
-    <h2 class="section-title">TỔNG QUAN HR</h2>
-    <p class="section-desc">Nhân sự, tỉ lệ on/off, so sánh các hãng — phân bổ theo Trainer và khu vực.</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div><h2 class="section-title">TỔNG QUAN HR</h2>
+      <p class="section-desc">Nhân sự, tỉ lệ on/off, so sánh các hãng — phân bổ theo Trainer và khu vực.</p></div>
+      <button class="primary" id="exportMonthlyReportBtn" type="button" style="white-space:nowrap;">⬇ Xuất báo cáo tháng</button>
+    </div>
 
     <div class="subnav">
       <button data-sub="ov-nhansu" class="active">Nhân sự</button>
@@ -1092,8 +1095,11 @@
 
   <!-- ============ 2. TIẾN ĐỘ KPI ============ -->
   <section id="tab-kpi" class="maintab">
-    <h2 class="section-title">Tiến độ KPI</h2>
-    <p class="section-desc">Xem tiến độ theo từng Trainer và khu vực, theo tháng đang chọn ở góc trên.</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div><h2 class="section-title">Tiến độ KPI</h2>
+      <p class="section-desc">Xem tiến độ theo từng Trainer và khu vực, theo tháng đang chọn ở góc trên.</p></div>
+      <button class="secondary" id="exportKpiExcelBtn" type="button" style="white-space:nowrap;">⬇ Xuất Excel tiến độ</button>
+    </div>
     <div id="kpiCampaignContext" class="campaign-context"></div>
     <div class="subnav">
       <button data-kpi="noibo" class="active">Nội bộ</button>
@@ -4758,12 +4764,23 @@ function ftfChannelStats_(shops, trainerIds){
   return out;
 }
 /* Thanh tiến độ ngang với MÀU CỐ ĐỊNH theo Kênh (không theo mức độ hoàn thành) — MWG vàng, K.A đỏ sậm */
+// Màu XANH đậm/nhạt theo % tiến độ (cao = xanh đậm, thấp = xanh nhạt).
+function ftfGreenByPct_(pctVal){
+  const p = Math.min(100, Math.max(0, pctVal));
+  if(p>=100) return '#0B5E36';
+  if(p>=80)  return '#1D9E75';
+  if(p>=60)  return '#43B98A';
+  if(p>=40)  return '#7FC8A3';
+  if(p>=20)  return '#A9DcC1';
+  return '#CDEBDD';
+}
 function progressBarChannelHtml_(valueText, pctVal, color){
   const p = Math.min(100, Math.max(0, pctVal));
   const like = pctVal>=100 ? ' 👍' : '';
-  return `<div style="position:relative;background:var(--bg);border:1px solid var(--line);border-radius:5px;overflow:hidden;height:19px;width:100%;">
-    <div style="position:absolute;left:0;top:0;bottom:0;width:${p}%;background:${color};"></div>
-    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:100%;font-size:9px;font-weight:800;color:${p>=45?'#fff':'var(--text)'};white-space:nowrap;">${valueText}${like}</div>
+  const barColor = ftfGreenByPct_(pctVal); // luôn dùng thang xanh theo %, bỏ màu theo kênh
+  return `<div style="position:relative;background:#EEF3F0;border:1px solid var(--line);border-radius:5px;overflow:hidden;height:20px;width:100%;">
+    <div style="position:absolute;left:0;top:0;bottom:0;width:${p}%;background:${barColor};"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:100%;font-size:9.5px;font-weight:800;color:${p>=45?'#fff':'#08331F'};white-space:nowrap;text-shadow:${p>=45?'0 1px 1px rgba(0,0,0,.25)':'none'};">${valueText}${like}</div>
   </div>`;
 }
 function renderDoitacProgressTable(){
@@ -8969,6 +8986,16 @@ async function renderWsDoitacParticipants_(camp){
   if(!box || !camp) return;
   let rows=wsDoitacCache_[camp.id];
   if(!rows){ rows=(await dbGet('wsDoitacParticipants:'+camp.id))||[]; wsDoitacCache_[camp.id]=rows; }
+  // Trainer gán theo Shop: tra shopTrainerMap theo tên shop (chuẩn hoá). 
+  const normShop_ = x => String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const trainerNameById_ = id => { const t=(config.trainers||[]).find(t=>t.id===id); return t?t.name:''; };
+  const shopTrainerByName_ = {};
+  (shopTrainerMap||[]).forEach(m=>{ if(m.shopName){ const k=normShop_(m.shopName); if(m.trainerId) shopTrainerByName_[k]=m.trainerId; } });
+  const trainerOfShop_ = (shopName, region) => {
+    const tid = shopTrainerByName_[normShop_(shopName)];
+    if(tid){ const n=trainerNameById_(tid); if(n) return n; }
+    return wsDoitacTrainerOfRegion_(region); // dự phòng: theo khu vực
+  };
   // Chuẩn hoá mỗi dòng học viên.
   const parts=rows.map(r=>({
     region: configuredRegionFromLoose_(r['Khu vực']||r['Khu Vực']||'') || String(r['Khu vực']||'').trim(),
@@ -8977,6 +9004,7 @@ async function renderWsDoitacParticipants_(camp){
     code: String(r['Mã NV']||r['MaNV']||'').trim(),
     name: String(r['Tên Học Viên']||r['Họ Tên']||'').trim(),
     wsid: String(r['WS ID']||r['WS Id']||'').trim(),
+    wsName: String(r['Tên Workshop']||r['Ten Workshop']||'').trim(),
     survey: String(r['Khảo sát']||r['Khao sat']||'').trim(),
   })).filter(p=>p.code||p.name);
   if(isTrainer()) { const my=normalizeRegionLoose_(session.region||''); parts.splice(0,parts.length,...parts.filter(p=>normalizeRegionLoose_(p.region)===my)); }
@@ -8991,28 +9019,29 @@ async function renderWsDoitacParticipants_(camp){
   const regions=[...new Set(parts.map(p=>p.region).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
   const channels=[...new Set(parts.map(p=>p.channel).filter(Boolean))].sort();
   const shops=[...new Set(parts.map(p=>p.shop).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
-  const trainers=[...new Set(parts.map(p=>wsDoitacTrainerOfRegion_(p.region)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+  const trainers=[...new Set(parts.map(p=>trainerOfShop_(p.shop,p.region)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
   let fRegion='',fChannel='',fShop='',fTrainer='',fSurvey='',page=1; const pageSize=10;
 
   const filtered_=()=>parts.filter(p=>{
     if(fRegion && p.region!==fRegion) return false;
     if(fChannel && p.channel!==fChannel) return false;
     if(fShop && p.shop!==fShop) return false;
-    if(fTrainer && wsDoitacTrainerOfRegion_(p.region)!==fTrainer) return false;
+    if(fTrainer && trainerOfShop_(p.shop,p.region)!==fTrainer) return false;
     if(fSurvey==='done' && !wsDoitacSurveyDone_(p.survey)) return false;
     if(fSurvey==='notdone' && wsDoitacSurveyDone_(p.survey)) return false;
     return true;
   });
-  // Gộp theo Khu vực + Kênh.
+  // Gộp theo WORKSHOP (WS ID) — mỗi Workshop 1 dòng.
   const grouped_=(list)=>{
     const m=new Map();
     list.forEach(p=>{
-      const k=p.region+'|'+p.channel;
+      const k=p.wsid||p.wsName;
       let g=m.get(k);
-      if(!g){ g={region:p.region,channel:p.channel,wsids:new Set(),hr:0,surveyDone:0,people:[]}; m.set(k,g); }
-      g.wsids.add(p.wsid); g.hr++; if(wsDoitacSurveyDone_(p.survey)) g.surveyDone++; g.people.push(p);
+      if(!g){ g={wsid:p.wsid, wsName:p.wsName||('WS '+p.wsid), region:p.region, channel:p.channel, hr:0, surveyDone:0, people:[]}; m.set(k,g); }
+      g.hr++; if(wsDoitacSurveyDone_(p.survey)) g.surveyDone++; g.people.push(p);
+      if(!g.region) g.region=p.region; if(!g.channel) g.channel=p.channel;
     });
-    return [...m.values()].sort((a,b)=>a.region.localeCompare(b.region,'vi')||a.channel.localeCompare(b.channel));
+    return [...m.values()].sort((a,b)=>a.region.localeCompare(b.region,'vi')||(a.wsName||'').localeCompare(b.wsName||'','vi'));
   };
   const render=()=>{
     const list=filtered_(); const groups=grouped_(list);
@@ -9026,28 +9055,30 @@ async function renderWsDoitacParticipants_(camp){
     t+=`<select id="wsdF-trainer"><option value="">Tất cả Trainer</option>${trainers.map(tr=>`<option ${fTrainer===tr?'selected':''}>${escapeHtml(tr)}</option>`).join('')}</select>`;
     t+=`<select id="wsdF-survey"><option value="">Khảo sát: tất cả</option><option value="done" ${fSurvey==='done'?'selected':''}>Đã làm</option><option value="notdone" ${fSurvey==='notdone'?'selected':''}>Chưa làm</option></select>`;
     t+=`</div></div>`;
-    t+=`<div class="table-scroll"><table><thead><tr><th>STT</th><th>Khu vực</th><th>Kênh</th><th>Workshop</th><th>HR</th><th>Khảo sát</th><th>Trainer</th></tr></thead><tbody>`;
+    // THỨ TỰ CỘT: STT · Khu vực · Tên Workshop · Kênh · HR · Khảo sát · Trainer
+    t+=`<div class="table-scroll"><table><thead><tr><th>STT</th><th>Khu vực</th><th>Tên Workshop</th><th>Kênh</th><th>HR</th><th>Khảo sát</th><th>Trainer</th></tr></thead><tbody>`;
     if(!pageGroups.length) t+=`<tr><td colspan="7" class="empty">Không có dữ liệu phù hợp bộ lọc.</td></tr>`;
     else pageGroups.forEach((g,i)=>{
       const pct=g.hr?Math.round(g.surveyDone/g.hr*100):0;
       const gi=(page-1)*pageSize+i;
-      t+=`<tr><td>${gi+1}</td><td><strong>${escapeHtml(g.region)}</strong></td><td>${escapeHtml(g.channel||'—')}</td><td style="text-align:center;">${g.wsids.size}</td>`;
+      t+=`<tr><td>${gi+1}</td><td><strong>${escapeHtml(g.region)}</strong></td>`;
+      t+=`<td title="${escapeHtml(g.wsName)}">${escapeHtml(g.wsName||'—')}</td>`;
+      t+=`<td>${escapeHtml(g.channel||'—')}</td>`;
       t+=`<td style="text-align:center;"><button type="button" class="wsd-hr-btn" data-gi="${gi}" style="background:var(--green-pale);color:var(--green-dark);border:1px solid var(--green);border-radius:6px;padding:3px 12px;font-weight:700;cursor:pointer;">${g.hr}</button></td>`;
-      t+=`<td style="text-align:center;">${g.surveyDone}/${g.hr} · ${pct}%</td><td>${escapeHtml(wsDoitacTrainerOfRegion_(g.region))}</td></tr>`;
+      t+=`<td style="text-align:center;${pct<80?'color:var(--red);font-weight:700;':''}">${g.surveyDone}/${g.hr} · ${pct}%</td>`;
+      t+=`<td>${escapeHtml(trainerOfShop_(g.people[0]?g.people[0].shop:'', g.region))}</td></tr>`;
     });
     t+=`</tbody></table></div>`;
     if(groups.length>pageSize){
       let first=Math.max(1,page-2),last=Math.min(totalPages,first+4); first=Math.max(1,last-4);
       t+=`<div class="pagination-bar" style="margin-top:12px;"><button class="wsd-page" data-p="${Math.max(1,page-1)}" ${page===1?'disabled':''}>‹</button>`;
       for(let i=first;i<=last;i++) t+=`<button class="wsd-page ${i===page?'active':''}" data-p="${i}">${i}</button>`;
-      t+=`<button class="wsd-page" data-p="${Math.min(totalPages,page+1)}" ${page===totalPages?'disabled':''}>›</button><span class="pagination-info">${groups.length} nhóm · ${list.length} học viên · Trang ${page}/${totalPages}</span></div>`;
-    } else t+=`<div class="pagination-info" style="margin-top:8px;">${groups.length} nhóm · ${list.length} học viên</div>`;
+      t+=`<button class="wsd-page" data-p="${Math.min(totalPages,page+1)}" ${page===totalPages?'disabled':''}>›</button><span class="pagination-info">${groups.length} workshop · ${list.length} học viên · Trang ${page}/${totalPages}</span></div>`;
+    } else t+=`<div class="pagination-info" style="margin-top:8px;">${groups.length} workshop · ${list.length} học viên</div>`;
     inner.innerHTML=t;
-    // sự kiện lọc
     const bind=(id,fn)=>{ const el=inner.querySelector('#'+id); if(el) el.onchange=e=>{fn(e.target.value);page=1;render();}; };
     bind('wsdF-region',v=>fRegion=v); bind('wsdF-shop',v=>fShop=v); bind('wsdF-channel',v=>fChannel=v); bind('wsdF-trainer',v=>fTrainer=v); bind('wsdF-survey',v=>fSurvey=v);
     inner.querySelectorAll('.wsd-page').forEach(b=>b.onclick=()=>{page=Number(b.dataset.p)||1;render();});
-    // popup HR
     inner.querySelectorAll('.wsd-hr-btn').forEach(b=>b.onclick=()=>{
       const g=groups[Number(b.dataset.gi)]; if(g) openWsDoitacDetail_(g);
     });
@@ -9060,7 +9091,7 @@ function openWsDoitacDetail_(g){
   ov.style.cssText='position:fixed;inset:0;background:rgba(8,51,31,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
   let rowsH=g.people.map((p,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(p.code||'—')}</td><td><strong>${escapeHtml(p.name||'—')}</strong></td><td>${escapeHtml(p.shop||'—')}</td><td style="text-align:center;"><span class="pill ${wsDoitacSurveyDone_(p.survey)?'pill-ok':'pill-warn'}">${escapeHtml(p.survey||'—')}</span></td></tr>`).join('');
   ov.innerHTML=`<div class="modal-box" style="background:#fff;border-radius:16px;max-width:680px;width:100%;max-height:86vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(8,51,31,.25);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h3 style="margin:0;color:var(--green-dark);">Đối tác tham gia — ${escapeHtml(g.region)} · ${escapeHtml(g.channel||'')}</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h3 style="margin:0;color:var(--green-dark);">${escapeHtml(g.wsName||('Đối tác tham gia — '+g.region))}</h3>
     <button id="wsdDetailClose" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">×</button></div>
     <p class="section-desc" style="margin:0 0 12px;">Tổng ${g.hr} học viên · ${g.surveyDone} đã làm khảo sát.</p>
     <div class="table-scroll"><table><thead><tr><th>STT</th><th>Mã NV</th><th>Tên</th><th>Shop</th><th>Khảo sát</th></tr></thead><tbody>${rowsH}</tbody></table></div>
@@ -13413,6 +13444,195 @@ new MutationObserver(muts=>{
   </div>
 </div>
 <script>
+/* ================== XUẤT BÁO CÁO THÁNG (Excel nhiều sheet) ==================
+   Tổng hợp: Nhân sự (khu vực/trainer/size/kênh/thâm niên/sao), Nhân sự các hãng (OPPO vs đối thủ),
+   On/Off theo KV, Tỉ lệ sao + so tháng trước, Tiến độ KPI (Nội bộ/Đối tác/Truyền thông) theo Trainer+KV.
+   OPPO lấy theo số thực tế đang hiển thị (pgs). Trainer chỉ xuất data của mình. */
+async function exportMonthlyReport_(){
+  const btn=document.getElementById('exportMonthlyReportBtn');
+  const oldTxt = btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Đang tạo báo cáo...'; }
+  try{
+    const month=currentMonth;
+    const regions=(config.regions||[]).slice();
+    // Phạm vi PG: Trainer chỉ thấy khu vực mình
+    const myRegion = isTrainer()? normalizeAreaVN(session.region||'') : null;
+    const inScope = p => !isTrainer() || normalizeAreaVN(p.area||'')===myRegion;
+    const oppo = pgs.filter(p=>p.brand==='OPPO' && inScope(p));
+    const oppoActive = oppo.filter(p=>p.status==='Đang làm');
+    const trainerName = id => { const t=(config.trainers||[]).find(t=>t.id===id); return t?t.name:'—'; };
+    const regionOfTrainer = id => { const t=(config.trainers||[]).find(t=>t.id===id); return t?t.region:''; };
+
+    const wb = XLSX.utils.book_new();
+    const addSheet=(name,aoa)=>{ const ws=XLSX.utils.aoa_to_sheet(aoa); XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31)); };
+    const countBy=(arr,keyFn)=>{ const m={}; arr.forEach(x=>{const k=keyFn(x)||'(trống)'; m[k]=(m[k]||0)+1;}); return m; };
+
+    // ---- Sheet 1: Tổng quan ----
+    const regionCount = regions.length || new Set(oppoActive.map(p=>p.area)).size;
+    const star2plus = oppoActive.filter(p=>Number(p.star)>=2).length;
+    addSheet('1. Tổng quan',[
+      ['BÁO CÁO NHÂN SỰ & KPI — '+monthLabel(month)],
+      ['Phạm vi', isTrainer()? ('Trainer: '+(session.name||'')+' · '+(session.region||'')) : 'Toàn Miền Trung'],
+      [],
+      ['Chỉ số','Giá trị'],
+      ['Tổng PGs đang làm', oppoActive.length],
+      ['Tổng PGs đã import', oppo.length],
+      ['Số khu vực', regionCount],
+      ['Tỉ lệ PGs ≥ 2 sao', oppoActive.length? (Math.round(star2plus/oppoActive.length*1000)/10)+'%':'0%'],
+      ['— PGs ≥ 2 sao', star2plus+' / '+oppoActive.length],
+    ]);
+
+    // ---- Sheet 2: NS theo Khu vực ----
+    const byRegion=countBy(oppoActive,p=>p.area);
+    addSheet('2. NS theo Khu vuc',[['Khu vực','Số PGs đang làm'],...Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v]),['TỔNG',oppoActive.length]]);
+
+    // ---- Sheet 3: NS theo Trainer ----
+    const byTrainer={};
+    oppoActive.forEach(p=>{ const k=p.trainerId||''; byTrainer[k]=(byTrainer[k]||0)+1; });
+    addSheet('3. NS theo Trainer',[['Trainer','Khu vực','Số PGs đang làm'],
+      ...Object.entries(byTrainer).map(([id,v])=>[trainerName(id),regionOfTrainer(id),v]).sort((a,b)=>b[2]-a[2]),
+      ['TỔNG','',oppoActive.length]]);
+
+    // ---- Sheet 4: NS theo Size shop ----
+    const bySize=countBy(oppoActive,p=>p.shopSize);
+    addSheet('4. NS theo Size shop',[['Size shop','Số PGs đang làm'],...Object.entries(bySize).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v]),['TỔNG',oppoActive.length]]);
+
+    // ---- Sheet 5: NS theo Kênh (loại kênh MWG/K.A/IND) ----
+    const byChan=countBy(oppoActive,p=>channelGroup(p.channel));
+    addSheet('5. NS theo Kenh',[['Loại kênh','Số PGs đang làm'],...['MWG','K.A','IND'].map(k=>[k,byChan[k]||0]),['TỔNG',oppoActive.length]]);
+
+    // ---- Sheet 6: NS theo Thâm niên × Khu vực ----
+    const regionsForMatrix = (myRegion? [session.region] : regions);
+    const sen=[['Khu vực',...SENIORITY_BUCKETS,'Tổng']];
+    regionsForMatrix.forEach(r=>{
+      const rr=normalizeAreaVN(r);
+      const rowPgs=oppoActive.filter(p=>normalizeAreaVN(p.area)===rr);
+      const cells=SENIORITY_BUCKETS.map(b=>rowPgs.filter(p=>seniorityBucket(p.seniority)===b).length);
+      sen.push([r,...cells,rowPgs.length]);
+    });
+    const senTot=SENIORITY_BUCKETS.map(b=>oppoActive.filter(p=>seniorityBucket(p.seniority)===b).length);
+    sen.push(['TỔNG',...senTot,oppoActive.length]);
+    addSheet('6. NS theo Tham nien',sen);
+
+    // ---- Sheet 7: NS theo Sao × Khu vực ----
+    const STARS=[0,1,2,3,4,5];
+    const starM=[['Khu vực',...STARS.map(s=>s+'★'),'Tổng']];
+    regionsForMatrix.forEach(r=>{
+      const rr=normalizeAreaVN(r);
+      const rowPgs=oppoActive.filter(p=>normalizeAreaVN(p.area)===rr);
+      starM.push([r,...STARS.map(s=>rowPgs.filter(p=>Number(p.star)===s).length),rowPgs.length]);
+    });
+    starM.push(['TỔNG',...STARS.map(s=>oppoActive.filter(p=>Number(p.star)===s).length),oppoActive.length]);
+    addSheet('7. NS theo Sao',starM);
+
+    // ---- Sheet 8: Nhân sự các hãng (OPPO thực tế vs đối thủ) ----
+    // OPPO theo số thực tế (oppoActive); đối thủ từ brandShopList.brands
+    const brandSet=new Set();
+    (brandShopList||[]).forEach(s=>{ if(s.brands) Object.keys(s.brands).forEach(b=>brandSet.add(b)); });
+    const competitors=[...brandSet].filter(b=>b && b.toUpperCase()!=='OPPO');
+    const inScopeShop = s => !isTrainer() || normalizeAreaVN(s.region||'')===myRegion;
+    const brandCount=(fnFilter)=>{ // trả {OPPO, <đối thủ>:n...}
+      const out={OPPO:oppoActive.filter(fnFilter.pg).length};
+      competitors.forEach(b=>out[b]=0);
+      (brandShopList||[]).filter(s=>inScopeShop(s)&&fnFilter.shop(s)).forEach(s=>{
+        if(!s.brands) return;
+        competitors.forEach(b=>{ if(s.brands[b]) out[b]+=Number(s.brands[b].count)||0; });
+      });
+      return out;
+    };
+    const buildBrandBlock=(title,keys,pgKeyFn,shopKeyFn)=>{
+      const rows=[[title,'OPPO',...competitors,'Tổng đối thủ','OPPO vs ĐT']];
+      keys.forEach(k=>{
+        const c=brandCount({pg:p=>pgKeyFn(p)===k, shop:s=>shopKeyFn(s)===k});
+        const totOpp=competitors.reduce((s,b)=>s+(c[b]||0),0);
+        rows.push([k,c.OPPO,...competitors.map(b=>c[b]||0),totOpp, c.OPPO-totOpp]);
+      });
+      return rows;
+    };
+    const aoa8=[['NHÂN SỰ CÁC HÃNG — OPPO (số thực tế) vs Đối thủ — '+monthLabel(month)],[]];
+    // theo khu vực
+    aoa8.push(...buildBrandBlock('Theo Khu vực', regionsForMatrix.map(r=>normalizeAreaVN(r)),
+      p=>normalizeAreaVN(p.area), s=>normalizeAreaVN(s.region)));
+    aoa8.push([]);
+    // theo size shop
+    const sizeKeys=[...new Set([...oppoActive.map(p=>p.shopSize||'(trống)'), ...(brandShopList||[]).map(s=>s.shopFocus||s.shopSize||'(trống)')])];
+    aoa8.push(...buildBrandBlock('Theo Size shop', sizeKeys,
+      p=>p.shopSize||'(trống)', s=>s.shopFocus||s.shopSize||'(trống)'));
+    aoa8.push([]);
+    // theo loại kênh
+    aoa8.push(...buildBrandBlock('Theo loại kênh', ['MWG','K.A','IND'],
+      p=>channelGroup(p.channel), s=>channelGroup(s.channel)));
+    addSheet('8. Nhan su cac hang',aoa8);
+
+    // ---- Sheet 9: On/Off + Sao (so tháng trước) ----
+    const scopeOnoff = onoffRoster.filter(r=> !isTrainer() || normalizeAreaVN(r.area||'')===myRegion);
+    const onByRegion={}, offByRegion={};
+    scopeOnoff.forEach(r=>{
+      const reg=r.area||'(trống)';
+      if(r.joinedAt && monthKeyOf(new Date(r.joinedAt))===month) onByRegion[reg]=(onByRegion[reg]||0)+1;
+      if(r.offDate && monthKeyOf(new Date(r.offDate))===month) offByRegion[reg]=(offByRegion[reg]||0)+1;
+    });
+    // tháng trước để so sánh sao ≥2
+    const [py,pm]=month.split('-').map(Number); const prevD=new Date(py,pm-2,1);
+    const prevMonth=`${prevD.getFullYear()}-${String(prevD.getMonth()+1).padStart(2,'0')}`;
+    let prevPgs=[]; try{ prevPgs=(await dbGet('pgs:'+prevMonth))||[]; }catch(e){}
+    const prevActive=prevPgs.filter(p=>p.brand==='OPPO' && (!isTrainer()||normalizeAreaVN(p.area||'')===myRegion) && p.status==='Đang làm');
+    const pct2=(arr)=>{ const a=arr.filter(p=>Number(p.star)>=2).length; return arr.length? Math.round(a/arr.length*1000)/10:0; };
+    const aoa9=[['BIẾN ĐỘNG NHÂN SỰ & TỈ LỆ SAO — '+monthLabel(month)],[],
+      ['Khu vực','ON (tháng này)','OFF (tháng này)','% ≥2★ tháng này','% ≥2★ tháng trước','Tăng/Giảm (điểm %)']];
+    regionsForMatrix.forEach(r=>{
+      const rr=normalizeAreaVN(r);
+      const cur=pct2(oppoActive.filter(p=>normalizeAreaVN(p.area)===rr));
+      const prev=pct2(prevActive.filter(p=>normalizeAreaVN(p.area)===rr));
+      aoa9.push([r, onByRegion[r]||0, offByRegion[r]||0, cur+'%', prev+'%', (Math.round((cur-prev)*10)/10)]);
+    });
+    const curAll=pct2(oppoActive), prevAll=pct2(prevActive);
+    aoa9.push(['TỔNG',
+      Object.values(onByRegion).reduce((a,b)=>a+b,0),
+      Object.values(offByRegion).reduce((a,b)=>a+b,0),
+      curAll+'%', prevAll+'%', (Math.round((curAll-prevAll)*10)/10)]);
+    addSheet('9. OnOff + Sao',aoa9);
+
+    // ---- Sheet 10: Tiến độ KPI (Trainer + Khu vực) ----
+    const aoa10=[['TIẾN ĐỘ KPI — '+monthLabel(month)],[]];
+    aoa10.push(['Trainer','Khu vực','Coaching 0-1★ (A/T)','Coaching PG mới (A/T)','Test Online (A/T)','Tư vấn AI (A/T)']);
+    visibleTrainers().forEach(t=>{
+      const rec=trainerRecord(t.id)||{};
+      const AT=(a,tg)=>`${Number(a||0)}/${Number(tg||0)}`;
+      aoa10.push([t.name, t.region||'',
+        AT(rec.pg01Actual,rec.pg01Target),
+        AT(rec.pgMoiActual,rec.pgMoiTarget),
+        AT(rec.testOnlineActual,rec.testOnlineTarget),
+        AT(rec.tuVanAINbActual,rec.tuVanAINbTarget)]);
+    });
+    aoa10.push([]);
+    aoa10.push(['FTF Đối tác (theo Trainer) — Shop / HR / Bài Test / Khảo sát, mỗi ô A/T']);
+    aoa10.push(['Trainer','Khu vực','Kênh','SL Shop','SL HR','SL Bài Test','SL Khảo sát']);
+    visibleTrainers().forEach(t=>{
+      ['K.A','MWG'].forEach(ch=>{
+        try{
+          const st=ftfChannelStats_(ftfShopList.filter(s=>s.trainerId===t.id),[t.id]);
+          const cell=m=>`${st[m][ch].a}/${st[m][ch].t}`;
+          aoa10.push([t.name,t.region||'',ch,cell('ftfShop'),cell('ftfHr'),cell('ftfBaiTest'),cell('ftfKhaoSat')]);
+        }catch(e){}
+      });
+    });
+    addSheet('10. Tien do KPI',aoa10);
+
+    const fname=`BaoCao_Thang_${month}${isTrainer()?('_'+(session.name||'').replace(/\s+/g,'')):''}.xlsx`;
+    XLSX.writeFile(wb,fname);
+  }catch(err){
+    alert('Lỗi khi tạo báo cáo: '+(err&&err.message?err.message:err));
+    console.error(err);
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent=oldTxt; }
+  }
+}
+document.addEventListener('click',(e)=>{
+  const t=e.target.closest && e.target.closest('#exportMonthlyReportBtn');
+  if(t){ e.preventDefault(); exportMonthlyReport_(); }
+});
+
 /* ===== RÚT GỌN TÊN SHOP trong các bảng danh sách (giữ đầy đủ ở tooltip khi chạm/di chuột) =====
    VD: "TGDĐ - 379 - TGD_BT H_TPH - 233 Thống Nhất" -> "TGDĐ_233 Thống Nhất".
    Quy tắc: lấy KÊNH (đoạn đầu) + ĐOẠN CUỐI (số + tên shop), nối bằng "_". Chỉ rút khi tên có >=3 đoạn.
