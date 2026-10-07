@@ -540,6 +540,19 @@
   tbody td{padding:9px 12px;font-size:var(--cap);border-top:1px solid var(--line);vertical-align:middle;}
   tbody tr:hover{background:#FAFBFA;}
   .coaching-table{table-layout:fixed;}
+  /* Bảng Danh sách Shop FTF: font gọn, cột cân đối, Khu vực/Shop không xuống dòng (cắt gọn + tooltip) */
+  .ftf-shop-table{font-size:12px;}
+  .ftf-shop-table th,.ftf-shop-table td{padding:7px 8px;vertical-align:middle;}
+  .ftf-shop-table th{font-size:11px;white-space:nowrap;}
+  .ftf-shop-table .c-kv{width:13%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
+  .ftf-shop-table .c-shop{width:21%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ftf-shop-table .c-kenh{width:5%;text-align:center;white-space:nowrap;padding-left:2px;padding-right:2px;}
+  .ftf-shop-table .c-size{width:4%;text-align:center;padding-left:2px;padding-right:2px;}
+  .ftf-shop-table .c-train{width:8%;text-align:center;}
+  .ftf-shop-table .c-num{width:7.5%;text-align:center;white-space:nowrap;}
+  .ftf-shop-table .c-chuadu{width:8%;text-align:center;}
+  .ftf-shop-table .c-note{width:10%;}
+  .ftf-shop-table .c-note input{width:100%;box-sizing:border-box;}
   .coaching-table th:nth-child(1),.coaching-table td:nth-child(1){width:38px;text-align:center;}
   .coaching-table th:nth-child(2),.coaching-table td:nth-child(2){width:76px;}
   .coaching-table th:nth-child(3),.coaching-table td:nth-child(3){width:15%;}
@@ -4133,6 +4146,7 @@ async function processFtfWorkbook_(wb){
     shopMap[key] = {
       shopCode: code,
       shopName: name,
+      shopIdOtr: String(V1(row,'_shop_id','shop_id')||'').trim(), // shop_id otraining -> gọi attendees
       channel: String(V1(row,'Kênh','Kenh')||'').trim(),
       region: String(V1(row,'Khu vực','Khu vuc')||'').trim(),
       province: String(V1(row,'Tỉnh/Thành','Tỉnh','Tinh')||'').trim(),
@@ -4159,9 +4173,24 @@ async function processFtfWorkbook_(wb){
       };
     }
     const s = shopMap[key];
-    s.testTotal++; if(String(V2(row,'Test online','Test Online')||'').trim().toUpperCase()==='PASS') s.testPass++;
-    s.aiTotal++; const aiVal=String(V2(row,'Trạng thái tư vấn mẫu','Trang thai tu van mau')||'').trim(); if(aiVal && aiVal.toUpperCase()!=='CHƯA LÀM'.toUpperCase() && normTrName_(aiVal)!=='CHUA LAM') s.aiDone++;
-    s.surveyTotal++; if(String(V2(row,'Khảo sát','Khao sat')||'').trim().toUpperCase()==='DONE') s.surveyDone++;
+    const testVal=String(V2(row,'Test online','Test Online')||'').trim();
+    const aiVal=String(V2(row,'Trạng thái tư vấn mẫu','Trang thai tu van mau')||'').trim();
+    const surveyVal=String(V2(row,'Khảo sát','Khao sat')||'').trim();
+    const testPass = testVal.toUpperCase()==='PASS';
+    const aiDone = !!aiVal && aiVal.toUpperCase()!=='CHƯA LÀM'.toUpperCase() && normTrName_(aiVal)!=='CHUA LAM';
+    const surveyDone = surveyVal.toUpperCase()==='DONE';
+    s.testTotal++; if(testPass) s.testPass++;
+    s.aiTotal++; if(aiDone) s.aiDone++;
+    s.surveyTotal++; if(surveyDone) s.surveyDone++;
+    // Lưu từng người để hiện chi tiết khi bấm ô số.
+    if(!s.people) s.people=[];
+    s.people.push({
+      code: String(V2(row,'Mã NV','Ma NV','MaNV')||'').trim(),
+      name: String(V2(row,'Tên học viên','Ten hoc vien','Tên Học Viên','Họ Tên')||'').trim(),
+      test: testVal||'—', testPass,
+      ai: aiVal||'—', aiDone,
+      survey: surveyVal||'—', surveyDone,
+    });
   });
 
   let shopArr = Object.values(shopMap);
@@ -4268,6 +4297,87 @@ function mediaTargetFor_(trainerId){
     return Number(trainerRecord(trainerId).ttTarget||0);
   }
   return Number(trainerRecord(trainerId).ttTarget||0);
+}
+// Khớp tên chiến dịch ~90%: chuẩn hoá (bỏ dấu, lowercase, bỏ ký tự đặc biệt) rồi tính độ trùng token.
+function mediaNameSim_(a,b){
+  const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+  const na=norm(a), nb=norm(b);
+  if(!na||!nb) return 0;
+  if(na===nb) return 1;
+  if(na.includes(nb)||nb.includes(na)) return 0.95;
+  const ta=new Set(na.split(' ')), tb=new Set(nb.split(' '));
+  let common=0; ta.forEach(t=>{ if(tb.has(t)) common++; });
+  return common/Math.max(ta.size,tb.size);
+}
+async function updateMediaFromOtraining_(){
+  const msg=document.getElementById('mediaImportMsg');
+  const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
+  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
+  const idInput=document.getElementById('otrMediaCampaignId');
+  const campaignId=(idInput&&idInput.value||'').trim();
+  if(!campaignId){ show('Hãy nhập ID chiến dịch.','var(--red)'); if(idInput) idInput.focus(); return; }
+  const progInput=document.getElementById('otrMediaProgramId');
+  const programId=(progInput&&progInput.value||'').trim(); // tùy chọn
+  // Chiến dịch Truyền thông Nội bộ đang xem (để lấy tên khớp + lưu đúng scope)
+  const camp = campaigns.find(c=>c.id===mediaScopeKey) || campaigns.find(c=>c.month===currentMonth&&c.group==='truyenthong'&&campaignSubtype(c)==='noibo');
+  if(!camp){ show('Chưa chọn/không tìm thấy chiến dịch Truyền thông Nội bộ.','var(--red)'); return; }
+  show('⏳ Đang lấy Truyền thông từ otraining...');
+  try{
+    const res=await fetch(OTRAINING_FN_URL_,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},
+      body:JSON.stringify({campaignId, type:'media'})
+    });
+    const out=await res.json();
+    if(!res.ok||out.error){ throw new Error(out.error||('HTTP '+res.status)); }
+    const emps=Array.isArray(out.employees)?out.employees:[];
+    if(!emps.length){ show('otraining trả 0 nhân sự. Kiểm tra lại ID chiến dịch.','var(--red)'); return; }
+    // Với mỗi nhân sự: tìm program khớp tên chiến dịch (~90%), lấy approved; approved≥1 => hoàn thành.
+    const matched=[];
+    let matchedProgName='';
+    emps.forEach(e=>{
+      let progObj=null;
+      if(programId){
+        // Lấy đúng program theo Program ID đã nhập
+        progObj=(e.programs||[]).find(p=>String(p.programId||p.program_id||'')===String(programId)) || null;
+        // (Edge chỉ trả name/approved/target; nếu không có program_id thì fallback theo thứ tự)
+        if(!progObj){ const idx=Number(programId)-1; if(idx>=0 && e.programs && e.programs[idx]) progObj=e.programs[idx]; }
+      } else {
+        // Khớp theo tên ~90%
+        const best=(e.programs||[]).map(p=>({p,sim:mediaNameSim_(p.name,camp.name)}))
+          .filter(x=>x.sim>=0.9).sort((a,b)=>b.sim-a.sim)[0];
+        progObj=best?best.p:null;
+      }
+      if(!progObj) return;
+      if(progObj.name) matchedProgName=progObj.name;
+      const approved=Number(progObj.approved)||0;
+      if(approved>=1){
+        const pg=findPgByCode_(pgs, e.code);
+        if(isTrainer()){ const tr=trainerOf(pg?pg.trainerId:''); if(!tr||tr.region!==session.region) return; }
+        // Push ĐÚNG số bài approved: cột 1 (Độ phủ) dedup theo code = số PG hoàn thành;
+        // cột 2 (Tổng bài thi) = tổng số dòng = tổng bài approved.
+        for(let k=0;k<approved;k++){
+          matched.push({ id: uid('md'), code: (pg?pg.code:e.code), trainerId: (pg?pg.trainerId:'')||'' });
+        }
+      }
+    });
+    const totalApproved=matched.length;
+    const uniquePg=new Set(matched.map(m=>normalizeCode_(m.code))).size;
+    // Lưu (reset = tính lại từ đầu). Giữ bản ghi khu vực khác nếu là Trainer.
+    if(isTrainer()){
+      const otherRegionEntries=mediaResponses.filter(r=>{ const tr=trainerOf(r.trainerId); return !tr||tr.region!==session.region; });
+      mediaResponses=[...otherRegionEntries, ...matched];
+    } else {
+      mediaResponses=matched;
+    }
+    if(camp){ camp.otrId=campaignId; if(programId) camp.programId=programId; try{ await dbSet('campaigns',campaigns); }catch(e){} }
+    await dbSet('mediaResponses:'+(mediaScopeKey||camp.id), mediaResponses);
+    const srcTxt = programId ? ('Program ID '+programId) : ('khớp tên: "'+(matchedProgName||camp.name)+'"');
+    show(`✅ Đã cập nhật: ${uniquePg} PG hoàn thành · ${totalApproved} bài hợp lệ (approved). Nguồn: ${srcTxt}.`,'var(--green-ok)');
+    try{ renderKpiCategory('truyenthong'); }catch(e){}
+  }catch(err){
+    show('Lỗi gọi otraining: '+(err&&err.message?err.message:err),'var(--red)');
+  }
 }
 async function processMediaWorkbook_(wb){
   const msg = document.getElementById('mediaImportMsg');
@@ -4684,15 +4794,25 @@ function renderMediaImportBox(){
   if(!box) return;
   if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
   const canEdit = isAdmin() && !monthLocked;
+  const showSys = (mediaActiveSubtype==='noibo');
   box.innerHTML = `<div class="form-card" style="max-width:none;">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    ${showSys?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <input type="number" id="otrMediaCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:150px;" value="${escapeHtml(String((campaigns.find(c=>c.month===currentMonth&&c.group==='truyenthong'&&campaignSubtype(c)==='noibo')||{}).otrId||''))}">
+      <input type="number" id="otrMediaProgramId" placeholder="Program ID (nếu có)" style="width:150px;" value="${escapeHtml(String((campaigns.find(c=>c.id===mediaScopeKey)||{}).programId||''))}">
+      <button class="primary" id="otrMediaBtn" type="button">↻ Cập nhật Truyền thông từ hệ thống</button>
+      <span class="save-msg" id="mediaImportMsg" style="display:none;"></span>
+    </div>
+    <div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. <strong>Để trống Program ID</strong> → tự khớp theo tên chiến dịch (~90%). <strong>Nhập Program ID</strong> → lấy đúng chương trình đó. Chỉ tính bài <strong>approved ≥ 1</strong>.</div>
+    <details><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / Google Sheet) — chỉ dùng khi cần</summary>`:''}
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;${showSys?'margin-top:10px;':''}">
       <input type="file" id="mediaImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary admin-only-gsheet" id="mediaSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>
       <button class="danger" id="mediaClearBtn" type="button">🗑 Xoá data chiến dịch này</button>
-      <span class="save-msg" id="mediaImportMsg" style="display:none;"></span>
-    </div>
+      ${showSys?'':`<span class="save-msg" id="mediaImportMsg" style="display:none;"></span>`}
+    </div>${showSys?'</details>':''}
   </div>`;
   attachGoogleSheetButton_('mediaSheetLinkBtn','mediaImportMsg', null, processMediaWorkbook_);
+  if(showSys){ const b=document.getElementById('otrMediaBtn'); if(b) b.onclick=()=>updateMediaFromOtraining_(); }
   const clearBtn = document.getElementById('mediaClearBtn');
   if(clearBtn) clearBtn.addEventListener('click', async ()=>{
     if(!isAdmin()) return;
@@ -4931,10 +5051,21 @@ function renderFtfImportBox(){
 }
 let ftfTargetByStoreIdMap_ = null;
 let ftfTargetByStoreIdMapLen_ = -1;
+let ftfSizeByShopNameMap_ = null;
+let ftfSizeByShopNameMapLen_ = -1;
+function ftfNormShopName_(x){ return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,''); }
 function ftfShopSizeOf_(shop){
-  // Size shop không có sẵn trong Danh sách SHOP FTF (Tổng hợp F2F) — tra tạm từ dữ liệu Target FTF
-  // đã import (nếu có, khớp theo Store ID) để hiển thị tham khảo. Dùng Map cache (O(1)/dòng) thay vì
-  // .find() quét lại toàn bộ ftfTargetRows cho MỖI dòng Shop (tránh O(n²) khi bảng Shop FTF dài).
+  // 1) Size có sẵn trên shop (nếu data mang theo)
+  if(shop.shopSize && String(shop.shopSize).trim()) return shop.shopSize;
+  // 2) Tra từ DS GÁN SHOP Trainer/Sale (shopTrainerMap) theo TÊN SHOP (chuẩn hoá) — nguồn chính
+  if(!ftfSizeByShopNameMap_ || ftfSizeByShopNameMapLen_ !== shopTrainerMap.length){
+    ftfSizeByShopNameMap_ = new Map();
+    shopTrainerMap.forEach(m=>{ if(m.shopName && m.shopSize){ ftfSizeByShopNameMap_.set(ftfNormShopName_(m.shopName), m.shopSize); } });
+    ftfSizeByShopNameMapLen_ = shopTrainerMap.length;
+  }
+  const byName = ftfSizeByShopNameMap_.get(ftfNormShopName_(shop.shopName));
+  if(byName) return byName;
+  // 3) Dự phòng: Target FTF theo Store ID
   if(!ftfTargetByStoreIdMap_ || ftfTargetByStoreIdMapLen_ !== ftfTargetRows.length){
     ftfTargetByStoreIdMap_ = new Map(ftfTargetRows.filter(r=>r.storeId).map(r=>[r.storeId, r]));
     ftfTargetByStoreIdMapLen_ = ftfTargetRows.length;
@@ -4946,6 +5077,7 @@ let ftfShopListPage_ = 1;
 const FTF_SHOP_PAGE_SIZE = 10;
 let ftfShopFilterTrainer_ = '';
 let ftfShopFilterStatus_ = '';
+let ftfShopFilterChannel_ = ''; // lọc theo loại kênh (MWG/K.A/IND)
 let ftfShopFilterIncomplete_ = false; // chỉ hiện Shop chưa đủ Test/Khảo sát
 function renderFtfShopListBox(){
   const box=document.getElementById('ftfShopListBox');
@@ -4964,6 +5096,7 @@ function renderFtfShopListBox(){
   if(ftfShopFilterTrainer_) list = list.filter(s=>s.trainerId===ftfShopFilterTrainer_);
   if(ftfShopFilterStatus_==='done') list = list.filter(s=>s.status==='DONE');
   else if(ftfShopFilterStatus_==='chua') list = list.filter(s=>s.status!=='DONE');
+  if(ftfShopFilterChannel_) list = list.filter(s=>channelGroup(s.channel)===ftfShopFilterChannel_);
   if(ftfShopFilterIncomplete_) list = list.filter(s=> s.testPass<s.testTotal || s.surveyDone<s.surveyTotal);
 
   const totalItems = list.length;
@@ -4976,17 +5109,21 @@ function renderFtfShopListBox(){
   const trainerOptions = tList.slice().sort((a,b)=>a.name.localeCompare(b.name,'vi'))
     .map(t=>`<option value="${t.id}" ${ftfShopFilterTrainer_===t.id?'selected':''}>${t.name}</option>`).join('');
 
-  let html = `<div class="scope-filters" style="margin-bottom:12px;flex-wrap:wrap;">
-    <span class="scope-label">Trainer:</span>
-    <select id="ftfShopFilterTrainerSel"><option value="">Tất cả Trainer</option>${trainerOptions}</select>
-    <span class="scope-label" style="margin-left:6px;">Đã Training:</span>
-    <select id="ftfShopFilterStatusSel">
-      <option value="" ${ftfShopFilterStatus_===''?'selected':''}>Tất cả</option>
+  let html = `<div class="scope-filters" style="margin-bottom:12px;display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;">
+    <select id="ftfShopFilterTrainerSel" style="flex:0 0 auto;"><option value="">Tất cả Trainer</option>${trainerOptions}</select>
+    <select id="ftfShopFilterChannelSel" style="flex:0 0 auto;">
+      <option value="" ${ftfShopFilterChannel_===''?'selected':''}>Tất cả kênh</option>
+      <option value="MWG" ${ftfShopFilterChannel_==='MWG'?'selected':''}>MWG</option>
+      <option value="K.A" ${ftfShopFilterChannel_==='K.A'?'selected':''}>K.A</option>
+      <option value="IND" ${ftfShopFilterChannel_==='IND'?'selected':''}>IND</option>
+    </select>
+    <select id="ftfShopFilterStatusSel" style="flex:0 0 auto;">
+      <option value="" ${ftfShopFilterStatus_===''?'selected':''}>Tất cả training</option>
       <option value="done" ${ftfShopFilterStatus_==='done'?'selected':''}>Done</option>
       <option value="chua" ${ftfShopFilterStatus_==='chua'?'selected':''}>Chưa Done</option>
     </select>
-    <label style="display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:var(--cap);cursor:pointer;">
-      <input type="checkbox" id="ftfShopFilterIncompleteChk" ${ftfShopFilterIncomplete_?'checked':''}> Chỉ hiện Shop chưa đủ (Test/Khảo sát)
+    <label style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-size:var(--cap);cursor:pointer;white-space:nowrap;">
+      <input type="checkbox" id="ftfShopFilterIncompleteChk" ${ftfShopFilterIncomplete_?'checked':''}> Chưa đủ (Test/KS)
     </label>
   </div>`;
 
@@ -4994,22 +5131,23 @@ function renderFtfShopListBox(){
     html += `<div class="empty">Không có Shop nào khớp bộ lọc.</div>`;
     box.innerHTML = html;
   } else {
-    html += `<table class="coaching-table" style="table-layout:auto;"><thead><tr><th>Khu vực</th><th>Shop</th><th>Size shop</th><th>Đã Training</th><th>HR</th><th>Bài test</th><th>Tư vấn mẫu AI</th><th>Khảo sát</th><th>Chưa đủ</th><th>Note (Shop đóng cửa...)</th></tr></thead><tbody>`;
+    html += `<table class="coaching-table ftf-shop-table" style="table-layout:fixed;width:100%;"><thead><tr><th class="c-kv">Khu vực</th><th class="c-shop">Shop</th><th class="c-kenh">Kênh</th><th class="c-size">Size</th><th class="c-train">Training</th><th class="c-num">HR</th><th class="c-num">Bài test</th><th class="c-num">Tư vấn AI</th><th class="c-num">Khảo sát</th><th class="c-chuadu">Chưa đủ</th><th class="c-note">Note</th></tr></thead><tbody>`;
     pageList.forEach(s=>{
       const missing = [];
       if(s.testPass<s.testTotal) missing.push('Test');
       if(s.surveyDone<s.surveyTotal) missing.push('Khảo sát');
       html += `<tr${s.closedNote?' style="background:var(--red-bg);"':''}>
-        <td>${s.region||'—'}</td>
-        <td>${s.shopName||s.shopCode}</td>
-        <td>${ftfShopSizeOf_(s)}</td>
-        <td><span class="status-badge ${s.status==='DONE'?'st-dangl':'st-tamoff'}">${s.status==='DONE'?'Done':(s.status==='PLAN'?'Plan':(s.status||'Chưa'))}</span></td>
-        <td>${s.hrActual}/${s.hrTarget}</td>
-        <td>${s.testPass}/${s.testTotal}</td>
-        <td>${s.aiDone}/${s.aiTotal}</td>
-        <td>${s.surveyDone}/${s.surveyTotal}</td>
-        <td>${missing.length?`<span style="color:var(--red);font-weight:700;font-size:var(--tag);">⚠ ${missing.join(', ')}</span>`:'<span style="color:var(--green-ok);">✓ Đủ</span>'}</td>
-        <td><input type="text" class="ftf-shop-note-input" data-shop-id="${s.id}" value="${(s.closedNote||'').replace(/"/g,'&quot;')}" placeholder="VD: Shop đã đóng cửa" style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);" ${canEditNote?'':'disabled'}></td>
+        <td class="c-kv" title="${escapeHtml(s.region||'')}">${s.region||'—'}</td>
+        <td class="c-shop" title="${escapeHtml(s.shopName||s.shopCode||'')}">${s.shopName||s.shopCode}</td>
+        <td class="c-kenh">${channelGroup(s.channel)||'—'}</td>
+        <td class="c-size">${ftfShopSizeOf_(s)}</td>
+        <td class="c-train"><span class="status-badge ${s.status==='DONE'?'st-dangl':'st-tamoff'}">${s.status==='DONE'?'Done':(s.status==='PLAN'?'Plan':(s.status||'Chưa'))}</span></td>
+        <td class="c-num"><span class="ftf-cell-btn" data-shop-id="${s.id}" data-metric="hr" style="cursor:pointer;text-decoration:underline dotted;">${s.hrActual}/${s.hrTarget}</span></td>
+        <td class="c-num"><span class="ftf-cell-btn" data-shop-id="${s.id}" data-metric="test" style="cursor:pointer;text-decoration:underline dotted;">${s.testPass}/${s.testTotal}</span></td>
+        <td class="c-num"><span class="ftf-cell-btn" data-shop-id="${s.id}" data-metric="ai" style="cursor:pointer;text-decoration:underline dotted;">${s.aiDone}/${s.aiTotal}</span></td>
+        <td class="c-num"><span class="ftf-cell-btn" data-shop-id="${s.id}" data-metric="survey" style="cursor:pointer;text-decoration:underline dotted;">${s.surveyDone}/${s.surveyTotal}</span></td>
+        <td class="c-chuadu">${missing.length?`<span style="color:var(--red);font-weight:700;font-size:var(--tag);">⚠ ${missing.join(', ')}</span>`:'<span style="color:var(--green-ok);">✓ Đủ</span>'}</td>
+        <td class="c-note"><input type="text" class="ftf-shop-note-input" data-shop-id="${s.id}" value="${(s.closedNote||'').replace(/"/g,'&quot;')}" placeholder="VD: Shop đã đóng cửa" style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);" ${canEditNote?'':'disabled'}></td>
       </tr>`;
     });
     html += `</tbody></table>`;
@@ -5023,6 +5161,12 @@ function renderFtfShopListBox(){
         await dbSet('ftfShopList:'+currentMonth, ftfShopList);
       });
     });
+    box.querySelectorAll('.ftf-cell-btn').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const shop = ftfShopList.find(s=>s.id===el.getAttribute('data-shop-id'));
+        if(shop) openFtfShopDetail_(shop, el.getAttribute('data-metric'));
+      });
+    });
     renderFtfShopPagination_(totalItems);
   }
 
@@ -5030,8 +5174,38 @@ function renderFtfShopListBox(){
   if(trainerSel) trainerSel.addEventListener('change', ()=>{ ftfShopFilterTrainer_=trainerSel.value; ftfShopListPage_=1; renderFtfShopListBox(); });
   const statusSel = document.getElementById('ftfShopFilterStatusSel');
   if(statusSel) statusSel.addEventListener('change', ()=>{ ftfShopFilterStatus_=statusSel.value; ftfShopListPage_=1; renderFtfShopListBox(); });
+  const channelSel = document.getElementById('ftfShopFilterChannelSel');
+  if(channelSel) channelSel.addEventListener('change', ()=>{ ftfShopFilterChannel_=channelSel.value; ftfShopListPage_=1; renderFtfShopListBox(); });
   const incompleteChk = document.getElementById('ftfShopFilterIncompleteChk');
   if(incompleteChk) incompleteChk.addEventListener('change', ()=>{ ftfShopFilterIncomplete_=incompleteChk.checked; ftfShopListPage_=1; renderFtfShopListBox(); });
+}
+function openFtfShopDetail_(shop, metric){
+  const META={
+    hr:    {title:'HR tham gia',       col:'Có mặt',   done:p=>true,        val:p=>'✓'},
+    test:  {title:'Bài Test',          col:'Kết quả',  done:p=>p.testPass,  val:p=>p.test},
+    ai:    {title:'Tư vấn mẫu AI',     col:'Trạng thái',done:p=>p.aiDone,   val:p=>p.ai},
+    survey:{title:'Khảo sát',          col:'Khảo sát', done:p=>p.surveyDone,val:p=>p.survey},
+  };
+  const m=META[metric]||META.hr;
+  const people=(shop.people||[]);
+  const old=document.getElementById('ftfShopDetailOverlay'); if(old) old.remove();
+  const ov=document.createElement('div'); ov.id='ftfShopDetailOverlay'; ov.className='modal-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(8,51,31,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
+  const doneCount=people.filter(p=>m.done(p)).length;
+  let rowsH = people.length
+    ? people.map((p,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(p.code||'—')}</td><td><strong>${escapeHtml(p.name||'—')}</strong></td><td style="text-align:center;"><span style="font-weight:700;color:${m.done(p)?'var(--green-ok)':'var(--red)'};">${escapeHtml(String(m.val(p)))}</span></td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty">Không có danh sách chi tiết cho shop này.</td></tr>`;
+  ov.innerHTML=`<div class="modal-box" style="background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:86vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(8,51,31,.25);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
+      <div><h3 style="margin:0;color:var(--green-dark);">${m.title} — ${escapeHtml(shop.shopName||shop.shopCode||'')}</h3>
+      <p class="section-desc" style="margin:4px 0 0;">${escapeHtml(shop.region||'')} · ${escapeHtml(channelGroup(shop.channel)||'')} · ${doneCount}/${people.length} ${metric==='hr'?'người':'đạt'}</p></div>
+      <button id="ftfShopDetailClose" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
+    </div>
+    <div class="table-scroll" style="margin-top:10px;"><table><thead><tr><th>STT</th><th>Mã NV</th><th>Tên học viên</th><th>${m.col}</th></tr></thead><tbody>${rowsH}</tbody></table></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#ftfShopDetailClose').onclick=()=>ov.remove();
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
 }
 function renderFtfShopPagination_(totalItems){
   const box = document.getElementById('ftfShopPagination');
@@ -8122,6 +8296,7 @@ async function fetchFtfRows_(campaignId, month){
   window.__ftfSrcCols={ sum: out.srcSumCols||[], detail: out.srcDetailCols||[] };
   window.__ftfSampleDetail=out.sampleDetailRaw||null;
   window.__ftfSampleSum=out.sampleSumRaw||null;
+  window.__ftfPeopleDiag=out.ftfPeopleDiag||null;
   return { data:Array.isArray(out.data)?out.data:[], detail:Array.isArray(out.detail)?out.detail:[] };
 }
 async function updateFtfFromOtraining_(){
@@ -8138,27 +8313,54 @@ async function updateFtfFromOtraining_(){
       show('otraining trả 0 dòng tổng hợp (không ghi đè data cũ). Kiểm tra lại ID chiến dịch.','var(--red)');
       return;
     }
-    // Dựng sheet "Chi Tiet Check-in" GIẢ từ số đếm sẵn theo shop (checked_in/test_takers/survey),
-    // vì API v2 trả số tổng theo shop chứ không trả từng học viên. Mỗi shop sinh N dòng ảo với
-    // Test online = PASS (đủ số test_takers) và Khảo sát = DONE (đủ số survey) để processFtfWorkbook_ đếm đúng.
-    const fakeDetail=[];
+    // Dựng sheet "Chi Tiet Check-in": ƯU TIÊN danh sách người THẬT (_people) từ otraining; nếu shop nào
+    // không có _people thì mới sinh dòng ảo theo số đếm (để processFtfWorkbook_ vẫn đếm đúng số).
+    const detailRows=[];
     arr.forEach(s=>{
       const code=s['Mã Shop'], shop=s['Tên Shop'], kenh=s['Kênh'], vung=s['Vùng'], kv=s['Khu vực'];
-      const hr=Number(s['_checked_in']||s['Số Đã Train']||0);
-      const nTest=Number(s['_test_takers']||0);
-      const nSurvey=Number(s['_survey']||0);
-      const n=Math.max(hr,nTest,nSurvey);
-      for(let i=0;i<n;i++){
-        fakeDetail.push({
-          'Chiến dịch':campaignId,'Mã Shop':code,'Kênh':kenh,'Vùng':vung,'Khu vực':kv,'Tỉnh':'',
-          'Shop':shop,'Sale Quản lý':'','Người Train':s['Người Train']||'','Tên học viên':'HV '+(i+1),
-          'Trạng thái tư vấn mẫu':'Chưa làm',
-          'Test online': i<nTest ? 'Pass' : 'Chưa làm',
-          'Khảo sát': i<nSurvey ? 'Done' : 'Chưa',
-          'Điểm Hài lòng':''
+      const people=Array.isArray(s['_people'])?s['_people']:null;
+      if(people && people.length){
+        people.forEach(p=>{
+          detailRows.push({
+            'Chiến dịch':campaignId,'Mã Shop':code,'Kênh':kenh,'Vùng':vung,'Khu vực':kv,'Tỉnh':'',
+            'Shop':shop,'Sale Quản lý':'','Người Train':s['Người Train']||'',
+            'Mã NV':p.code||'','Tên học viên':p.name||'',
+            'Trạng thái tư vấn mẫu':p.ai||'Chưa làm',
+            'Test online':p.test||'Chưa làm',
+            'Khảo sát':p.survey||'Chưa',
+            'Điểm Hài lòng':''
+          });
         });
+      } else {
+        const hr=Number(s['_checked_in']||s['Số Đã Train']||0);
+        const nTest=Number(s['_test_takers']||0);
+        const nSurvey=Number(s['_survey']||0);
+        const n=Math.max(hr,nTest,nSurvey);
+        for(let i=0;i<n;i++){
+          detailRows.push({
+            'Chiến dịch':campaignId,'Mã Shop':code,'Kênh':kenh,'Vùng':vung,'Khu vực':kv,'Tỉnh':'',
+            'Shop':shop,'Sale Quản lý':'','Người Train':s['Người Train']||'','Mã NV':'','Tên học viên':'HV '+(i+1),
+            'Trạng thái tư vấn mẫu':'Chưa làm',
+            'Test online': i<nTest ? 'Pass' : 'Chưa làm',
+            'Khảo sát': i<nSurvey ? 'Done' : 'Chưa',
+            'Điểm Hài lòng':''
+          });
+        }
       }
     });
+    const fakeDetail=detailRows;
+    // Chẩn đoán: bao nhiêu shop có danh sách người thật từ otraining.
+    const shopsWithPeople=arr.filter(s=>Array.isArray(s['_people'])&&s['_people'].length).length;
+    const samplePerson=(arr.find(s=>Array.isArray(s['_people'])&&s['_people'].length)||{})['_people'];
+    console.log('[FTF] shop có người thật:',shopsWithPeople,'/',arr.length,'| mẫu:',samplePerson?samplePerson[0]:'(không)');
+    if(shopsWithPeople===0){
+      const d=window.__ftfPeopleDiag;
+      let msg='Chưa lấy được danh sách người thật ('+arr.length+' shop, 0 có _people).\\n';
+      if(!d){ msg+='Edge Function CHƯA deploy bản mới (không có chẩn đoán). Hãy deploy lại otraining-testonline.ts.'; }
+      else if(d.error){ msg+='Lỗi lấy chi tiết: '+d.error; }
+      else { msg+='Chi tiết đọc được: '+d.detailRows+' dòng.\\nMã Shop (chi tiết): '+d.detailShopSample+'\\nMã Shop (tổng hợp): '+d.sumShopSample+'\\nKhớp: '+d.shopsMatched+' shop\\nCột chi tiết: '+(d.detailCols||[]).join(', '); }
+      alert(msg);
+    }
     // Dựng workbook 2 sheet đúng tên để processFtfWorkbook_ đọc.
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(arr), 'Tong Hop F2F');
@@ -12497,7 +12699,8 @@ async function computeTrainerCategoryProgress_(trainerId){
 
   /* ===== TRUYỀN THÔNG ===== */
   const truyenthongItems = [];
-  const mediaCamps = (typeof mediaCampaignsThisMonth_==='function' ? mediaCampaignsThisMonth_() : campaigns.filter(c=>c.group==='truyenthong' && c.month===currentMonth));
+  // Ở thẻ Home phải gộp CẢ Truyền thông Nội bộ + Đối tác (không phụ thuộc subtype đang xem).
+  const mediaCamps = campaigns.filter(c=>c.group==='truyenthong' && c.month===currentMonth);
   if(mediaCamps.length>0){
     const allData = await loadAllMediaCampaignsData_(mediaCamps);
     mediaCamps.forEach(c=>{
