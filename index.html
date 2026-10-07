@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <!--
   DASHBOARD TRAINER — OPPO VIỆT NAM (MIỀN TRUNG)
@@ -9125,7 +9124,32 @@ async function renderPartnerTrainingRegionProgress_(subtype){
     });
   }
   const surveyDoneOf=(region)=>{ const k=Object.keys(surveyDoneByRegion).find(x=>normalizeRegionLoose_(x)===normalizeRegionLoose_(region)); return k?surveyDoneByRegion[k]:0; };
+  // ===== TỔNG TOÀN MIỀN (cộng tất cả khu vực) cho các thẻ KPI =====
+  const tot = rows.reduce((o,r)=>{
+    o.sessions+=r.sessions; o.targetSessions+=r.targetSessions;
+    o.students+=r.students; o.targetStudents+=r.targetStudents;
+    o.surveyDone+=surveyDoneOf(r.region);
+    if(r.surveyAvg!==null){ o.svSum+=r.surveyAvg; o.svCnt++; }
+    return o;
+  },{sessions:0,targetSessions:0,students:0,targetStudents:0,surveyDone:0,svSum:0,svCnt:0});
+  const totSurveyTarget=Math.round(tot.students*0.8);        // Target khảo sát = 80% HV thực tế
+  const totSvAvg = tot.svCnt? (tot.svSum/tot.svCnt) : null;  // TB khảo sát = trung bình các khu vực có số
+  const kpiCard=(label,a,t,pct,suffix)=>{
+    const p=pct;
+    return `<div class="kpi-card" style="min-width:0;">
+      <div class="label">${label}</div>
+      <div class="value">${a}${suffix||''}${t!==null?`<span style="font-size:13px;color:var(--muted);font-weight:600;"> / ${t}</span>`:''}</div>
+      ${pct!==null?`<div class="frac">${p}%</div>`:''}
+    </div>`;
+  };
   let html=`<div class="campaign-context">Chiến dịch: <strong>${camp.name}</strong> — ${monthLabel(currentMonth)} · Hiển thị theo Khu vực</div>`;
+  // Thẻ tổng toàn Miền
+  html+=`<div class="kpi-row cols-4" style="margin-bottom:14px;">
+    ${kpiCard('SỐ BUỔI TOÀN MIỀN', Math.round(tot.sessions), Math.round(tot.targetSessions), pctSafe(tot.sessions,tot.targetSessions))}
+    ${kpiCard('SỐ HỌC VIÊN TOÀN MIỀN', Math.round(tot.students), Math.round(tot.targetStudents), pctSafe(tot.students,tot.targetStudents))}
+    ${kpiCard('SỐ LƯỢNG KHẢO SÁT', tot.surveyDone, totSurveyTarget, pctSafe(tot.surveyDone,totSurveyTarget))}
+    ${kpiCard('TB KHẢO SÁT', totSvAvg===null?'—':(Math.round(totSvAvg*100)/100).toLocaleString('vi-VN'), (surveyTarget||0), (totSvAvg!==null&&surveyTarget>0)?pctSafe(totSvAvg,surveyTarget):null)}
+  </div>`;
   html+=`<div class="table-scroll"><table><thead><tr><th>Khu vực</th><th>Số buổi / Target</th><th>Số học viên / Target</th><th>Số lượng khảo sát / Target</th><th>TB Khảo sát / Target</th><th>Cập nhật</th><th style="min-width:210px;">Note</th></tr></thead><tbody>`;
   if(!rows.length) html+=`<tr><td colspan="7" class="empty">Chưa có dữ liệu Khu vực để hiển thị.</td></tr>`;
   rows.forEach(r=>{
