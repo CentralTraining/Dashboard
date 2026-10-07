@@ -1203,6 +1203,7 @@
           <option value="khuvuc">Khu vực</option>
           <option value="trainer">Trainer</option>
           <option value="ganshop">Gán Shop</option>
+          <option value="doitac">Đối tác</option>
         </select>
       </div>
 
@@ -1259,6 +1260,7 @@
           <select id="shopTrainerFilterProvince" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Tỉnh</option></select>
           <select id="shopTrainerFilterChannel" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Kênh</option></select>
           <select id="shopTrainerFilterTrainer" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Trainer</option></select>
+          <select id="shopTrainerFilterSale" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Sale</option><option value="__none__">— Chưa gán Sale —</option></select>
           <select id="shopTrainerFilterSize" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Size shop</option></select>
         </div>
         <table>
@@ -1266,6 +1268,33 @@
           <tbody id="shopTrainerBody"></tbody>
         </table>
         <div class="pagination-bar" id="shopTrainerPagination"></div>
+      </div>
+
+      <div id="dataSub-doitac" style="display:none;">
+        <div class="form-card" style="max-width:none;margin-bottom:18px;">
+          <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Danh sách Đối tác (PG đối tác)</h3>
+          <p class="section-desc" style="margin-bottom:10px;">Lấy danh sách nhân sự đối tác (PG) trực tiếp từ otraining. Dữ liệu lưu cố định, không tách theo tháng.</p>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <input type="file" id="partnerImportInput" accept=".xlsx,.xls" style="display:none;">
+            <button class="primary" id="partnerImportBtn" type="button">📥 Import file đối tác</button>
+            <button class="secondary" id="partnerSysUpdateBtn" type="button">↻ Cập nhật từ hệ thống</button>
+            <button class="secondary" id="partnerExportBtn" type="button">⬇ Export ra Excel</button>
+            <span class="save-msg" id="partnerUpdateMsg" style="display:none;"></span>
+          </div>
+        </div>
+        <div class="scope-filters" style="flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+          <input type="text" id="partnerSearchInput" placeholder="Tìm Code hoặc Tên..." style="min-width:200px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
+          <select id="partnerFilterRegion" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Khu vực</option></select>
+          <select id="partnerFilterProvince" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Tỉnh</option></select>
+          <select id="partnerFilterChannel" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Kênh</option></select>
+          <select id="partnerFilterTrainer" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Trainer</option></select>
+          <select id="partnerFilterSale" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);"><option value="">Tất cả Sale</option><option value="__none__">— Chưa gán Sale —</option></select>
+        </div>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Mã NV</th><th>Tên</th><th>SĐT</th><th>Khu vực</th><th>Tỉnh</th><th>Shop</th><th>Kênh</th><th>Trainer</th><th>Sale</th></tr></thead>
+          <tbody id="partnerBody"></tbody>
+        </table></div>
+        <div class="pagination-bar" id="partnerPagination"></div>
       </div>
     </div>
 
@@ -1303,9 +1332,15 @@
     </div>
 
     <div id="panel-set-target" class="panel">
-      <div class="form-row" style="max-width:460px;">
-        <label>Chọn chiến dịch để set Target</label>
-        <select id="targetCampaignSelect"></select>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:4px;">
+        <div class="form-row" style="max-width:220px;margin:0;">
+          <label>Tháng</label>
+          <select id="targetMonthFilter"></select>
+        </div>
+        <div class="form-row" style="max-width:460px;flex:1;margin:0;">
+          <label>Chọn chiến dịch để set Target</label>
+          <select id="targetCampaignSelect"></select>
+        </div>
       </div>
       <div id="targetCampaignContext" class="campaign-context"></div>
       <div class="scope-filters" id="targetDoitacViewModeBox" style="display:none;margin-bottom:10px;">
@@ -3809,6 +3844,9 @@ document.getElementById('monthPicker').addEventListener('change', async (e)=>{
   await loadMonthlyData(currentMonth);
   updateSidebarBrandTitle();
   populateOvFilters(); populatePgTrainerSelect();
+  // Tra cứu chiến dịch + Target bám theo tháng đang chọn ở góc trên.
+  const cmf=document.getElementById('campaignMonthFilter'); if(cmf) delete cmf.dataset.inited;
+  const tmf=document.getElementById('targetMonthFilter'); if(tmf) delete tmf.dataset.inited;
   renderAll();
 });
 
@@ -10795,6 +10833,192 @@ document.getElementById('dataSubSelect').addEventListener('change', (e)=>{
   document.getElementById('dataSub-khuvuc').style.display = val==='khuvuc' ? '' : 'none';
   document.getElementById('dataSub-trainer').style.display = val==='trainer' ? '' : 'none';
   document.getElementById('dataSub-ganshop').style.display = val==='ganshop' ? '' : 'none';
+  const dt=document.getElementById('dataSub-doitac'); if(dt) dt.style.display = val==='doitac' ? '' : 'none';
+  if(val==='doitac'){ try{ renderPartnerList_(); }catch(e){} }
+});
+/* ===== DANH SÁCH ĐỐI TÁC (PG đối tác) từ otraining ===== */
+let partnerList = [];           // [{code,name,region,province,shop,channel,shopSize,trainerName,saleName}]
+let partnerPage = 1;
+const PARTNER_PAGE_SIZE = 10;
+let partnerFilters_ = {search:'',region:'',province:'',channel:'',trainer:'',size:'',sale:''};
+function partnerPick_(r, names){ for(const n of names){ if(r[n]!==undefined && String(r[n]).trim()!=='') return String(r[n]).trim(); } return ''; }
+// Tra Tỉnh + Sale từ DS gán Shop (shopTrainerMap) theo TÊN SHOP (chuẩn hoá). Dùng Map cache cho nhanh.
+const _ptnNormShop=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+let _shopMapByName=null, _shopMapLen=-1;
+function _ensureShopMapByName_(){
+  if(!_shopMapByName || _shopMapLen!==shopTrainerMap.length){
+    _shopMapByName=new Map();
+    shopTrainerMap.forEach(m=>{ if(m.shopName){ const k=_ptnNormShop(m.shopName); if(!_shopMapByName.has(k)) _shopMapByName.set(k,m); } });
+    _shopMapLen=shopTrainerMap.length;
+  }
+}
+function provinceFromShopMap_(shopName){ if(!shopName) return ''; _ensureShopMapByName_(); const m=_shopMapByName.get(_ptnNormShop(shopName)); return m?(m.province||''):''; }
+function saleFromShopMap_(shopName){ if(!shopName) return ''; _ensureShopMapByName_(); const m=_shopMapByName.get(_ptnNormShop(shopName)); return m?(m.sale||''):''; }
+async function updatePartnerFromSystem_(){
+  const msg=document.getElementById('partnerUpdateMsg');
+  const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
+  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
+  show('⏳ Đang lấy danh sách đối tác từ otraining...');
+  try{
+    const res=await fetch(OTRAINING_FN_URL_,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},
+      body:JSON.stringify({campaignId:'partner', type:'partner'})
+    });
+    const out=await res.json();
+    if(!res.ok||out.error){ throw new Error((out.error||('HTTP '+res.status))+(out.detail?(' · '+out.detail):'')+(out.sample?(' · '+out.sample):'')); }
+    const rows=Array.isArray(out.rows)?out.rows:[];
+    if(!rows.length){ show('otraining trả 0 dòng. Cột: '+(out.cols||[]).join(', '),'var(--red)'); return; }
+    // Map cột linh hoạt (tên cột otraining có thể khác)
+    partnerList=rows.filter(partnerIsDangLam_).map(partnerMapRow_).filter(p=>p.code||p.name);
+    if(isTrainer()){ const my=normalizeRegionLoose_(session.region||''); partnerList=partnerList.filter(p=>normalizeRegionLoose_(p.region)===my); }
+    await dbSet('partnerList', partnerList);
+    partnerPage=1;
+    show('✅ Đã cập nhật '+partnerList.length+' đối tác.','var(--green-ok)');
+    renderPartnerList_();
+  }catch(err){ show('Lỗi: '+(err&&err.message?err.message:err),'var(--red)'); }
+}
+async function renderPartnerList_(){
+  const body=document.getElementById('partnerBody'); if(!body) return;
+  if(!partnerList.length){ try{ partnerList=(await dbGet('partnerList'))||[]; }catch(e){} }
+  const f=partnerFilters_;
+  /* ===== BỘ LỌC LIÊN ĐỘNG (nguyên tắc chung) =====
+     Mỗi dropdown chỉ hiện các giá trị CÒN HỢP LỆ theo những bộ lọc KHÁC đang chọn.
+     VD: chọn Khu vực -> Tỉnh/Trainer/Sale chỉ liệt kê giá trị thuộc khu vực đó. */
+  const passExcept=(p,skip)=>{
+    if(skip!=='region' && f.region && p.region!==f.region) return false;
+    if(skip!=='province' && f.province && p.province!==f.province) return false;
+    if(skip!=='channel' && f.channel && p.channel!==f.channel) return false;
+    if(skip!=='trainer' && f.trainer && p.trainerName!==f.trainer) return false;
+    if(skip!=='sale'){ if(f.sale==='__none__' && (p.saleName||'').trim()) return false; else if(f.sale && f.sale!=='__none__' && (p.saleName||'').trim()!==f.sale) return false; }
+    return true;
+  };
+  const optsFor=(field,getter)=>[...new Set(partnerList.filter(p=>passExcept(p,field)).map(getter).map(x=>(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+  // Luôn dựng lại options theo trạng thái lọc hiện tại (giữ lựa chọn đang chọn).
+  const setOpts=(id,first,vals,cur,extra)=>{ const el=document.getElementById(id); if(!el) return;
+    el.innerHTML=`<option value="">${first}</option>`+(extra||'')+vals.map(v=>`<option value="${escapeHtml(v)}" ${v===cur?'selected':''}>${escapeHtml(v)}</option>`).join('');
+    if(cur && !vals.includes(cur) && !(extra&&cur==='__none__')) el.value=''; else el.value=cur||''; };
+  setOpts('partnerFilterRegion','Tất cả Khu vực', optsFor('region',p=>p.region), f.region);
+  setOpts('partnerFilterProvince','Tất cả Tỉnh', optsFor('province',p=>p.province), f.province);
+  setOpts('partnerFilterChannel','Tất cả Kênh', optsFor('channel',p=>p.channel), f.channel);
+  setOpts('partnerFilterTrainer','Tất cả Trainer', optsFor('trainer',p=>p.trainerName), f.trainer);
+  setOpts('partnerFilterSale','Tất cả Sale', optsFor('sale',p=>p.saleName), f.sale, `<option value="__none__" ${f.sale==='__none__'?'selected':''}>— Chưa gán Sale —</option>`);
+  let list=partnerList.filter(p=>{
+    if(f.search){ const s=f.search.toLowerCase(); if(!(String(p.code).toLowerCase().includes(s)||String(p.name).toLowerCase().includes(s)||String(p.shop).toLowerCase().includes(s))) return false; }
+    return passExcept(p,null); // áp tất cả bộ lọc
+  });
+  const total=list.length, pages=Math.max(1,Math.ceil(total/PARTNER_PAGE_SIZE));
+  partnerPage=Math.max(1,Math.min(partnerPage,pages));
+  const pageRows=list.slice((partnerPage-1)*PARTNER_PAGE_SIZE,(partnerPage-1)*PARTNER_PAGE_SIZE+PARTNER_PAGE_SIZE);
+  const canEdit=isAdmin()||isTrainer();
+  const trainerOpts=(cur)=>`<option value="">— Chưa gán —</option>`+visibleTrainers().map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${escapeHtml(t.name)}</option>`).join('');
+  // Danh sách Sale có sẵn: gộp từ DS gán Shop (shopTrainerMap) + đối tác đã gán -> để chọn nhanh.
+  const allSales=Array.from(new Set([
+    ...(shopTrainerMap||[]).map(s=>(s.sale||'').trim()),
+    ...partnerList.map(p=>(p.saleName||'').trim())
+  ].filter(Boolean))).sort((a,b)=>a.localeCompare(b,'vi'));
+  const saleOpts=(cur)=>{ const c=(cur||'').trim(); const names=c&&!allSales.includes(c)?[...allSales,c]:allSales; return `<option value="">— Chưa gán —</option>`+names.map(n=>`<option value="${escapeHtml(n)}" ${n===c?'selected':''}>${escapeHtml(n)}</option>`).join('')+`<option value="__new__">+ Thêm Sale mới…</option>`; };
+  const selStyle='padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);';
+  body.innerHTML = pageRows.length ? pageRows.map(p=>`<tr>
+    <td>${escapeHtml(p.code||'—')}</td><td>${escapeHtml(p.name||'—')}</td><td>${escapeHtml(p.phone||'—')}</td>
+    <td>${escapeHtml(p.region||'—')}</td><td>${escapeHtml(p.province||'—')}</td>
+    <td title="${escapeHtml(p.shop||'')}">${escapeHtml(p.shop||'—')}</td><td>${escapeHtml(p.channel||'—')}</td>
+    <td><select class="partner-trainer-sel" data-id="${p.id}" ${canEdit?'':'disabled'} style="${selStyle}">${trainerOpts(p.trainerId)}</select></td>
+    <td><select class="partner-sale-sel" data-id="${p.id}" ${canEdit?'':'disabled'} style="${selStyle}">${saleOpts(p.saleName)}</select></td></tr>`).join('')
+    : `<tr><td colspan="9" class="empty">Chưa có dữ liệu. Bấm "↻ Cập nhật từ hệ thống".</td></tr>`;
+  // Gán Trainer
+  body.querySelectorAll('.partner-trainer-sel').forEach(sel=>sel.onchange=async()=>{
+    const p=partnerList.find(x=>x.id===sel.dataset.id); if(!p) return;
+    p.trainerId=sel.value; const t=(config.trainers||[]).find(t=>t.id===sel.value); p.trainerName=t?t.name:'';
+    try{ await dbSet('partnerList',partnerList); }catch(e){}
+  });
+  // Gán Sale (có thêm mới)
+  body.querySelectorAll('.partner-sale-sel').forEach(sel=>sel.onchange=async()=>{
+    const p=partnerList.find(x=>x.id===sel.dataset.id); if(!p) return;
+    let v=sel.value;
+    if(v==='__new__'){ const name=(prompt('Nhập tên Sale mới:')||'').trim(); if(!name){ renderPartnerList_(); return; } v=name; }
+    p.saleName=v; try{ await dbSet('partnerList',partnerList); }catch(e){}
+    if(sel.value==='__new__') renderPartnerList_();
+  });
+  const pag=document.getElementById('partnerPagination');
+  if(pag){
+    if(pages>1){
+      const cur=partnerPage;
+      let h=`<span class="pagination-info">${total} đối tác · Trang ${cur}/${pages}</span> `;
+      const btn=(p,label,disabled,active)=>`<button class="partner-pg${active?' active':''}" data-p="${p}" ${disabled?'disabled':''}>${label||p}</button>`;
+      h+=btn(Math.max(1,cur-1),'‹',cur===1);
+      // cửa sổ 5 trang quanh trang hiện tại, kèm trang 1 và trang cuối + dấu …
+      let first=Math.max(1,cur-2), last=Math.min(pages,first+4); first=Math.max(1,last-4);
+      if(first>1){ h+=btn(1); if(first>2) h+=`<span style="padding:0 4px;color:var(--muted);">…</span>`; }
+      for(let i=first;i<=last;i++) h+=btn(i,null,false,i===cur);
+      if(last<pages){ if(last<pages-1) h+=`<span style="padding:0 4px;color:var(--muted);">…</span>`; h+=btn(pages); }
+      h+=btn(Math.min(pages,cur+1),'›',cur===pages);
+      pag.innerHTML=h;
+      pag.querySelectorAll('.partner-pg').forEach(b=>b.onclick=()=>{ if(b.disabled) return; partnerPage=Number(b.dataset.p);renderPartnerList_(); });
+    } else pag.innerHTML=`<span class="pagination-info">${total} đối tác</span>`;
+  }
+}
+// Map 1 dòng (từ Excel hoặc JSON) -> partner object. Dùng chung cho import file và nút hệ thống.
+function partnerMapRow_(r){
+  // Lưu ý: file otraining ĐẢO cột — "Mã NV" chứa TÊN, "Tên" chứa MÃ SỐ. Nhận diện: trường nào toàn số là mã.
+  let v1=partnerPick_(r,['Mã NV','Code','employee_code','ma_nv']);
+  let v2=partnerPick_(r,['Tên','Tên NV','Staff Name','full_name','name']);
+  let code=v1, name=v2;
+  const isNum=x=>/^[0-9]+$/.test(String(x||'').trim());
+  if(isNum(v2) && !isNum(v1)){ code=v2; name=v1; } // v2 là số -> v2 là mã, v1 là tên
+  const trName=partnerPick_(r,['Trainer QL','Trainer','trainer','Người Train']);
+  const tr=(config.trainers||[]).find(t=>normTrName_(t.name)===normTrName_(trName));
+  const shop=partnerPick_(r,['Shop','Tên Shop','store_name']);
+  return { id: uid('ptn'), code, name,
+    phone: partnerPick_(r,['SĐT','SDT','phone','phone_number']),
+    region: normalizeAreaVN(partnerPick_(r,['Khu vực','Area','khu_vuc'])),
+    province: partnerPick_(r,['Tỉnh','Province','tinh']) || provinceFromShopMap_(shop),
+    shop, channel: partnerPick_(r,['Kênh','Channel','kenh']),
+    trainerId: tr?tr.id:'', trainerName: trName,
+    saleName: partnerPick_(r,['Sale QL','SALE','Sale','sale_name']) || saleFromShopMap_(shop) };
+}
+function partnerIsDangLam_(r){ const st=partnerPick_(r,['Trạng thái','Trang thai','status']); return normTrNameLoose_(st)==='danglam'; }
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#partnerImportBtn'); if(b){e.preventDefault(); const inp=document.getElementById('partnerImportInput'); if(inp) inp.click();} });
+document.addEventListener('change',async e=>{
+  if(e.target&&e.target.id==='partnerImportInput'){
+    const file=e.target.files&&e.target.files[0]; if(!file) return;
+    const msg=document.getElementById('partnerUpdateMsg');
+    const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
+    try{
+      const buf=await file.arrayBuffer();
+      const wb=XLSX.read(buf,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      if(!rows.length){ show('File rỗng.','var(--red)'); e.target.value=''; return; }
+      // Lọc Đang làm; nếu không khớp dòng nào, lấy tất cả (có thể cột trạng thái tên khác).
+      let filtered=rows.filter(partnerIsDangLam_);
+      if(!filtered.length){ filtered=rows; } // không lọc được -> lấy hết
+      let list=filtered.map(partnerMapRow_).filter(p=>p.code||p.name);
+      if(isTrainer()){ const my=normalizeRegionLoose_(session.region||''); list=list.filter(p=>normalizeRegionLoose_(p.region)===my); }
+      if(!list.length){ show('Không map được dòng nào. Cột trong file: '+Object.keys(rows[0]||{}).join(', '),'var(--red)'); e.target.value=''; return; }
+      partnerList=list; await dbSet('partnerList',partnerList); partnerPage=1;
+      show('✅ Đã import '+partnerList.length+' đối tác (Đang làm).','var(--green-ok)');
+      renderPartnerList_();
+    }catch(err){ show('Lỗi đọc file: '+(err&&err.message?err.message:err),'var(--red)'); }
+    e.target.value='';
+  }
+});
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#partnerSysUpdateBtn'); if(b){e.preventDefault();updatePartnerFromSystem_();} });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#partnerExportBtn'); if(b){e.preventDefault();
+  if(!partnerList.length){ alert('Chưa có dữ liệu đối tác.'); return; }
+  const aoa=[['Mã NV','Tên','SĐT','Khu vực','Tỉnh','Shop','Kênh','Trainer','Sale'],
+    ...partnerList.map(p=>[p.code,p.name,p.phone,p.region,p.province,p.shop,p.channel,p.trainerName,p.saleName])];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),'DoiTac');
+  XLSX.writeFile(wb,'DanhSach_DoiTac.xlsx');
+} });
+document.addEventListener('input',e=>{ if(e.target&&e.target.id==='partnerSearchInput'){ partnerFilters_.search=e.target.value;partnerPage=1;renderPartnerList_(); } });
+document.addEventListener('change',e=>{
+  const id=e.target&&e.target.id;
+  if(id==='partnerFilterRegion'){partnerFilters_.region=e.target.value;partnerPage=1;renderPartnerList_();}
+  else if(id==='partnerFilterProvince'){partnerFilters_.province=e.target.value;partnerPage=1;renderPartnerList_();}
+  else if(id==='partnerFilterChannel'){partnerFilters_.channel=e.target.value;partnerPage=1;renderPartnerList_();}
+  else if(id==='partnerFilterTrainer'){partnerFilters_.trainer=e.target.value;partnerPage=1;renderPartnerList_();}
+  else if(id==='partnerFilterSale'){partnerFilters_.sale=e.target.value;partnerPage=1;renderPartnerList_();}
+  else if(id==='partnerFilterSize'){partnerFilters_.size=e.target.value;partnerPage=1;renderPartnerList_();}
 });
 const SHOP_TRAINER_PAGE_SIZE = 10;
 let shopTrainerPage = 1;
@@ -10807,6 +11031,7 @@ function visibleShopTrainerList(){
   const fProvince = document.getElementById('shopTrainerFilterProvince')?.value||'';
   const fChannel = document.getElementById('shopTrainerFilterChannel')?.value||'';
   const fTrainer = document.getElementById('shopTrainerFilterTrainer')?.value||'';
+  const fSale = document.getElementById('shopTrainerFilterSale')?.value||'';
   const fSize = document.getElementById('shopTrainerFilterSize')?.value||'';
 
   if(term) list = list.filter(s=> (s.shopId||'').toLowerCase().includes(term) || (s.shopName||'').toLowerCase().includes(term));
@@ -10814,6 +11039,8 @@ function visibleShopTrainerList(){
   if(fProvince) list = list.filter(s=> (s.province||'')===fProvince);
   if(fChannel) list = list.filter(s=> (s.channel||'')===fChannel);
   if(fTrainer) list = list.filter(s=> s.trainerId===fTrainer);
+  if(fSale==='__none__') list = list.filter(s=> !(s.sale||'').trim());
+  else if(fSale) list = list.filter(s=> (s.sale||'').trim()===fSale);
   if(fSize) list = list.filter(s=> (s.shopSize||'')===fSize);
   return list;
 }
@@ -10847,6 +11074,16 @@ function populateShopTrainerFilters_(){
   const trainerIds = Array.from(new Set(afterChannel.map(s=>s.trainerId).filter(Boolean)));
   fillSelect('shopTrainerFilterTrainer', trainerIds.map(id=>{ const t=trainerOf(id); return { value:id, label: t?t.name:id }; }).sort((a,b)=>a.label.localeCompare(b.label)), fTrainer);
 
+  // Sale: nối tiếp chuỗi (sau Trainer), giữ tùy chọn "Chưa gán Sale".
+  const fSale = document.getElementById('shopTrainerFilterSale')?.value||'';
+  const afterTrainer = document.getElementById('shopTrainerFilterTrainer').value ? afterChannel.filter(s=>s.trainerId===document.getElementById('shopTrainerFilterTrainer').value) : afterChannel;
+  const saleSel=document.getElementById('shopTrainerFilterSale');
+  if(saleSel){
+    const saleVals=Array.from(new Set(afterTrainer.map(s=>(s.sale||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'vi'));
+    saleSel.innerHTML=`<option value="">Tất cả Sale</option><option value="__none__" ${fSale==='__none__'?'selected':''}>— Chưa gán Sale —</option>`+saleVals.map(v=>`<option value="${escapeHtml(v)}" ${v===fSale?'selected':''}>${escapeHtml(v)}</option>`).join('');
+    saleSel.value = (fSale==='__none__'||saleVals.includes(fSale)) ? fSale : '';
+  }
+
   // Size shop lọc ĐỘC LẬP (không phụ thuộc chuỗi Khu vực/Tỉnh/Kênh/Trainer ở trên) — luôn hiện đủ mọi
   // Size shop có trong phạm vi (Trainer chỉ thấy Size shop của khu vực mình).
   const fSize = document.getElementById('shopTrainerFilterSize').value;
@@ -10855,8 +11092,8 @@ function populateShopTrainerFilters_(){
 ['shopTrainerSearchInput'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{ shopTrainerPage=1; renderShopTrainerList(); });
 });
-['shopTrainerFilterRegion','shopTrainerFilterProvince','shopTrainerFilterChannel','shopTrainerFilterTrainer','shopTrainerFilterSize'].forEach(id=>{
-  document.getElementById(id).addEventListener('change', ()=>{ shopTrainerPage=1; renderShopTrainerList(); });
+['shopTrainerFilterRegion','shopTrainerFilterProvince','shopTrainerFilterChannel','shopTrainerFilterTrainer','shopTrainerFilterSale','shopTrainerFilterSize'].forEach(id=>{
+  const el=document.getElementById(id); if(el) el.addEventListener('change', ()=>{ shopTrainerPage=1; renderShopTrainerList(); });
 });
 function renderShopTrainerList(){
   const body = document.getElementById('shopTrainerBody');
@@ -11033,8 +11270,10 @@ function populateCampaignMonthFilter(){
   const sel = document.getElementById('campaignMonthFilter');
   const months = Array.from(new Set(campaigns.map(c=>c.month).concat([currentMonth]))).filter(Boolean).sort().reverse();
   const cur = sel.value;
+  const firstTime = !sel.dataset.inited;   // lần đầu -> mặc định tháng hiện tại
   sel.innerHTML = '<option value="">Tất cả các tháng</option>' + months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
-  if(months.includes(cur)) sel.value = cur;
+  if(firstTime){ sel.value = months.includes(currentMonth) ? currentMonth : ''; sel.dataset.inited='1'; }
+  else if(months.includes(cur)) sel.value = cur;
 }
 document.getElementById('campaignMonthFilter').addEventListener('change', renderCampaignList);
 function renderCampaignList(){
@@ -11200,13 +11439,25 @@ document.getElementById('addCampaignBtn').addEventListener('click', async ()=>{
   renderCampaignList();
 });
 
+function populateTargetMonthFilter_(){
+  const sel=document.getElementById('targetMonthFilter'); if(!sel) return;
+  const months=Array.from(new Set(campaigns.map(c=>c.month).concat([currentMonth]))).filter(Boolean).sort().reverse();
+  const firstTime=!sel.dataset.inited;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Tất cả các tháng</option>'+months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+  if(firstTime){ sel.value=months.includes(currentMonth)?currentMonth:''; sel.dataset.inited='1'; }
+  else if(months.includes(cur)) sel.value=cur;
+}
 function populateTargetCampaignSelect(){
+  populateTargetMonthFilter_();
   const sel = document.getElementById('targetCampaignSelect');
   const cur = sel.value;
-  const sorted = campaigns.slice().sort((a,b)=> b.month.localeCompare(a.month));
+  const monthFilter = document.getElementById('targetMonthFilter')?.value||'';
+  let sorted = campaigns.slice().sort((a,b)=> b.month.localeCompare(a.month));
+  if(monthFilter) sorted = sorted.filter(c=>c.month===monthFilter);
   sel.innerHTML = sorted.length
     ? sorted.map(c=>`<option value="${c.id}">${c.name} — ${monthLabel(c.month)} (${CAMPAIGN_GROUP_LABELS[c.group]} · ${campaignSubtypeLabel(c.group, campaignSubtype(c))})</option>`).join('')
-    : '<option value="">Chưa có chiến dịch</option>';
+    : '<option value="">Không có chiến dịch trong tháng này</option>';
   if(sorted.some(c=>c.id===cur)) sel.value = cur;
 }
 async function onTargetCampaignChange(){
@@ -11223,6 +11474,7 @@ async function onTargetCampaignChange(){
   renderTargetTable();
 }
 document.getElementById('targetCampaignSelect').addEventListener('change', onTargetCampaignChange);
+(function(){ const mf=document.getElementById('targetMonthFilter'); if(mf) mf.addEventListener('change', ()=>{ populateTargetCampaignSelect(); onTargetCampaignChange(); }); })();
 
 function renderTargetPanel(){
   populateTargetCampaignSelect();
