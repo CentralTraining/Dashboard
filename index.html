@@ -9717,7 +9717,8 @@ function surveyCountForCodeNew(code){
   return surveyResponsesNew.filter(s=>String(s.code||'').trim()===c).length;
 }
 function newPgsForTrainer(trainerId){
-  return onoffRoster.filter(r=> r.status==='On' && r.trainerId===trainerId && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===currentMonth);
+  // "PGs mới" tính Target = vào TRƯỚC ngày 25 (1–24) của tháng này. (PG ≥25 tách riêng, không tính Target/Actual ở đây.)
+  return onoffRoster.filter(r=> r.status==='On' && r.trainerId===trainerId && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===currentMonth && new Date(r.joinedAt).getDate()<25);
 }
 function syncPgMoiActualFromSurvey(trainerId){
   const rec = trainerRecord(trainerId);
@@ -10067,7 +10068,14 @@ async function processCoachingHistoryWorkbook_(wb){
       // ở mọi nơi khác trong hệ thống, VD countNewPgsByTrainer) — không tính PG đã bị note OFF/CODE
       // ĐẠI LÝ. Khớp tên không phân biệt hoa/thường, dấu cách thừa, hay dạng Unicode NFC/NFD.
       const pgNameRaw = normTrName_(row[6]);
-      const matched = pgNameRaw ? onoffRoster.find(r=> r.joinedAt && monthKeyOf(new Date(r.joinedAt))===currentMonth && normTrName_(r.name)===pgNameRaw && !r.devStatusNote) : null;
+      // Khớp PG mới của tháng này (vào 1–24 tháng này) HOẶC PG vào từ 25 tháng trước (coaching trong tháng này).
+      const { start:cyc25Start, end:cyc25End } = get25CycleRange_(currentMonth);
+      const inThisMonthNew = d=> monthKeyOf(d)===currentMonth && d.getDate()<25;
+      const inPrev25Cycle  = d=> d>=cyc25Start && d<cyc25End;
+      const matched = pgNameRaw ? onoffRoster.find(r=>{
+        if(!r.joinedAt || normTrName_(r.name)!==pgNameRaw || r.devStatusNote) return false;
+        const d=new Date(r.joinedAt); return inThisMonthNew(d) || inPrev25Cycle(d);
+      }) : null;
       if(matched){ code = matched.code; matchedByName = true; matchedByNameCount++; }
     }
     if(!code || code==='Chưa có'){ skippedNoCode++; return; }
@@ -10347,7 +10355,7 @@ function renderPgMoiPanel(){
   </div>`;
   html += `<h3 class="kpi-section-title">Danh sách PGs mới (nhóm "On" trong ${monthLabel(currentMonth)})</h3>`;
   html += `<div id="newPgListBox"></div>`;
-  html += `<h3 class="kpi-section-title">Kết quả khảo sát PGs mới sau ngày 25 ${prevMonthLabel}</h3>`;
+  html += `<h3 class="kpi-section-title">PGs mới vào từ ngày 25 ${prevMonthLabel} (coaching trong ${monthLabel(currentMonth)} — không tính Target)</h3>`;
   html += `<div id="newPgList25Box"></div>`;
   box.innerHTML = html;
   renderNewPgList();
@@ -10428,8 +10436,11 @@ function wireDevStatusNoteSelects_(box){
 /* Trạng thái hiệu lực của 1 bản ghi PGs mới (onoffRoster): ưu tiên trạng thái thật của PG (pgs[]),
    nếu chưa khớp được PG nào thì fallback theo devStatusNote (hoặc "Đang làm" nếu chưa note gì). */
 function effectivePgMoiStatus_(r){
+  // ƯU TIÊN trạng thái Trainer note ở bảng PGs Dev (devStatusNote) — đây là cập nhật mới nhất, chính xác nhất.
+  if(r.devStatusNote && String(r.devStatusNote).trim()) return r.devStatusNote;
+  // Nếu không có note riêng -> lấy trạng thái từ Danh sách Nhân sự chính (pgs) theo Code.
   const matchedPg = pgs.find(p=>p.code && r.code && p.code===r.code);
-  return matchedPg ? matchedPg.status : (r.devStatusNote || 'Đang làm');
+  return matchedPg ? matchedPg.status : 'Đang làm';
 }
 function renderSurveyFormPagination_(totalItems){
   const box = document.getElementById('surveyFormPagination');
@@ -10465,7 +10476,8 @@ function renderNewPgList(){
   if(!box) return;
   const tList = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
   const trainerIds = noiboFilteredTrainerIds_(new Set(tList.map(t=>t.id)));
-  let newPgs = onoffRoster.filter(r=> r.status==='On' && r.trainerId && trainerIds.has(r.trainerId) && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===currentMonth);
+  // Danh sách chính: PG vào TRƯỚC ngày 25 (1–24) của tháng này -> tính vào Target coaching.
+  let newPgs = onoffRoster.filter(r=> r.status==='On' && r.trainerId && trainerIds.has(r.trainerId) && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===currentMonth && new Date(r.joinedAt).getDate()<25);
   if(pgMoiStatusFilter) newPgs = newPgs.filter(r=>effectivePgMoiStatus_(r)===pgMoiStatusFilter);
   if(pgMoiLuotFilter!=='') newPgs = newPgs.filter(r=> String(surveyCountForCodeNew(r.code))===pgMoiLuotFilter);
   newPgs = newPgs.sort((a,b)=> (b.statusChangedAt?1:0) - (a.statusChangedAt?1:0));
@@ -10571,13 +10583,15 @@ function renderNewPgList25_(){
   if(!box) return;
   const tList = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
   const trainerIds = noiboFilteredTrainerIds_(new Set(tList.map(t=>t.id)));
-  const { start, end } = get25CycleRange_(currentMonth);
+  // PG vào TỪ ngày 25 của THÁNG TRƯỚC -> hiển thị dưới danh sách PGs mới THÁNG NÀY.
+  // VD xem Tháng 9: hiện PG vào 25–cuối Tháng 8. KHÔNG tính vào Target.
+  const { start, end, prevMonthLabel } = get25CycleRange_(currentMonth);
   let newPgs = onoffRoster.filter(r=> r.status==='On' && r.trainerId && trainerIds.has(r.trainerId) && r.joinedAt && new Date(r.joinedAt)>=start && new Date(r.joinedAt)<end);
   if(pgMoiStatusFilter) newPgs = newPgs.filter(r=>effectivePgMoiStatus_(r)===pgMoiStatusFilter);
   newPgs = newPgs.sort((a,b)=> (b.statusChangedAt?1:0) - (a.statusChangedAt?1:0));
 
   if(newPgs.length===0){
-    box.innerHTML = `<div class="empty">Chưa có PG mới nào vào từ ngày 25 tháng trước tới nay khớp bộ lọc.</div>`;
+    box.innerHTML = `<div class="empty">Chưa có PG mới nào vào từ ngày 25 ${prevMonthLabel} khớp bộ lọc.</div>`;
     return;
   }
   const now = new Date();
@@ -12131,7 +12145,12 @@ function countNewPgsByTrainer(trainerId, campaignMonth){
   // Trainer đổi trạng thái PG thành "OFF (chưa cắt Center)"/"CODE ĐẠI LÝ"/"Thai sản" ngay tại Danh
   // sách Nhân sự chính (Tổng quan) thì PG đó phải bị loại khỏi Target ngay, không cần thêm thao tác gì
   // khác. Loại 1 PG tự động trừ đúng 2 lượt Target (vì Target = số PGs mới × 2).
-  return onoffRoster.filter(r=> r.trainerId===trainerId && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===campaignMonth && effectivePgMoiStatus_(r)==='Đang làm').length;
+  // CHỈ tính PG vào TRƯỚC ngày 25 (ngày 1–24). PG vào từ 25 trở đi tách riêng (không tính Target).
+  return onoffRoster.filter(r=> r.trainerId===trainerId && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===campaignMonth && new Date(r.joinedAt).getDate()<25 && effectivePgMoiStatus_(r)==='Đang làm').length;
+}
+// PG mới vào TỪ ngày 25 trở đi (tháng X) — danh sách riêng, không tính Target.
+function newPgsAfter25_(trainerId, campaignMonth){
+  return onoffRoster.filter(r=> r.trainerId===trainerId && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===campaignMonth && new Date(r.joinedAt).getDate()>=25 && effectivePgMoiStatus_(r)==='Đang làm');
 }
 /* ============ YÊU CẦU CHỜ ADMIN DUYỆT: đổi Target Coaching PGs mới do Trainer note trạng thái PG ============
    Không tự áp dụng ngay — gộp theo Trainer + Tháng (nếu đã có yêu cầu đang chờ thì cập nhật, không tạo trùng),
