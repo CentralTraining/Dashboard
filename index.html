@@ -4416,6 +4416,236 @@ async function updateMediaFromOtraining_(){
     show('Lỗi gọi otraining: '+(err&&err.message?err.message:err),'var(--red)');
   }
 }
+/* ============ TRUYỀN THÔNG ĐỐI TÁC ============ */
+let mediaDoitacEmps_ = [];   // [{code,name,area,approved}] NV đối tác + tổng bài approved (của chương trình khớp)
+// Chuẩn hoá tên shop để khớp ~90%
+function _normShopKey(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function mediaShopSim_(a,b){ const na=_normShopKey(a),nb=_normShopKey(b); if(!na||!nb) return 0; if(na===nb) return 1; if(na.includes(nb)||nb.includes(na)) return 0.95; // token
+  const ta=new Set(String(a).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)), tb=new Set(String(b).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)); let c=0; ta.forEach(t=>{if(tb.has(t))c++;}); return c/Math.max(ta.size,tb.size); }
+async function updateMediaDoitacFromOtraining_(){
+  const msg=document.getElementById('mediaImportMsg');
+  const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
+  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
+  const campaignId=(document.getElementById('otrMediaCampaignId')?.value||'').trim();
+  const programId=(document.getElementById('otrMediaProgramId')?.value||'').trim();
+  if(!campaignId){ show('Hãy nhập ID chiến dịch.','var(--red)'); return; }
+  const camp=campaigns.find(c=>c.id===mediaScopeKey)||campaigns.find(c=>c.month===currentMonth&&c.group==='truyenthong'&&campaignSubtype(c)==='doitac');
+  if(!camp){ show('Không tìm thấy chiến dịch Truyền thông Đối tác.','var(--red)'); return; }
+  show('⏳ Đang lấy Truyền thông Đối tác từ otraining...');
+  try{
+    const res=await fetch(OTRAINING_FN_URL_,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},body:JSON.stringify({campaignId, programId, type:'partnertt'})});
+    const out=await res.json();
+    if(!res.ok||out.error) throw new Error(out.error||('HTTP '+res.status));
+    const emps=Array.isArray(out.employees)?out.employees:[];
+    if(!emps.length){ show('otraining trả 0 nhân viên.','var(--red)'); return; }
+    // Với mỗi NV: chọn program theo Program ID (nếu nhập) hoặc khớp tên ~90%; lấy approved.
+    const list=[];
+    emps.forEach(e=>{
+      let pr=null;
+      if(programId){ pr=(e.programs||[]).find(p=>String(p.programId||'')===String(programId)) || (e.programs||[])[Number(programId)-1]; }
+      else { const best=(e.programs||[]).map(p=>({p,sim:mediaNameSim_(p.name,camp.name)})).filter(x=>x.sim>=0.9).sort((a,b)=>b.sim-a.sim)[0]; pr=best?best.p:null; }
+      if(!pr) return;
+      const approved=Number(pr.approved)||0;
+      // Chỉ lấy link bài approved
+      const links=(pr.links||[]).filter(l=>String(l.status||'').toLowerCase()==='approved'||!l.status).map(l=>({url:l.url,platform:l.platform}));
+      list.push({ code:String(e.code||'').trim(), name:e.name||'', area:normalizeAreaVN(e.area||''), approved, links });
+    });
+    mediaDoitacEmps_=list;
+    camp.otrId=campaignId; if(programId) camp.programId=programId;
+    try{ await dbSet('campaigns',campaigns); }catch(e){}
+    await dbSet('mediaDoitacEmps:'+(mediaScopeKey||camp.id), list);
+    const totBai=list.reduce((s,x)=>s+x.approved,0);
+    show(`✅ Đã cập nhật: ${list.filter(x=>x.approved>=1).length} NV có bài · ${totBai} bài hợp lệ.`,'var(--green-ok)');
+    renderMediaDoitacShopList_();
+  }catch(err){ show('Lỗi: '+(err&&err.message?err.message:err),'var(--red)'); }
+}
+let mediaDoitacFilters_={search:'',region:'',province:'',channel:'',trainer:'',noPost:false,shopType:''};
+let mediaDoitacPage_=1; const MEDIA_DT_PAGE=10;
+let mediaDoitacStatMode_='region'; // thống kê xem theo region|trainer
+async function renderMediaDoitacShopList_(){
+  const host=document.getElementById('mediaDoitacShopBox'); if(!host) return;
+  const camp=campaigns.find(c=>c.id===mediaScopeKey)||campaigns.find(c=>c.month===currentMonth&&c.group==='truyenthong'&&campaignSubtype(c)==='doitac');
+  if(!mediaDoitacEmps_.length && camp){ try{ mediaDoitacEmps_=(await dbGet('mediaDoitacEmps:'+(mediaScopeKey||camp.id)))||[]; }catch(e){} }
+  // Index bài TT theo Mã NV
+  const baiByCode={}; mediaDoitacEmps_.forEach(e=>{ if(e.code) baiByCode[e.code]=(baiByCode[e.code]||0)+e.approved; });
+  // NV đối tác -> shop (từ partnerList mục Đối tác), nhóm bài theo shop
+  if(!partnerList.length){ try{ partnerList=(await dbGet('partnerList'))||[]; }catch(e){} }
+  const partnerByCode={}; partnerList.forEach(p=>{ if(p.code) partnerByCode[String(p.code).trim()]=p; });
+  // Gom shop: từ DS gán shop PGs (shopTrainerMap) — mỗi shop có PGs OPPO
+  const shops={};
+  const keyOf=s=>_normShopKey(s.shopName||s.shopId||'');
+  shopTrainerMap.forEach(s=>{
+    const k=keyOf(s); if(!k) return;
+    if(!shops[k]) shops[k]={ shopId:s.shopId||'', shopName:s.shopName||'', region:s.area||'', province:s.province||'', channel:s.channel||'', trainerId:s.trainerId||'', sale:s.sale||'', pgs:[], bai:0, baiPeople:[] };
+    // PGs OPPO gán vào shop này
+  });
+  // PGs OPPO: lấy từ pgs (nhân sự OPPO) gán shop? -> dùng pg.shop khớp tên shop
+  (pgs||[]).filter(p=>p.brand==='OPPO').forEach(p=>{
+    const k=_normShopKey(p.shop||''); if(!k||!shops[k]) {
+      // thử khớp ~90%
+      let best=null,bs=0; Object.keys(shops).forEach(sk=>{ const sim=mediaShopSim_(p.shop, shops[sk].shopName); if(sim>bs){bs=sim;best=sk;} });
+      if(best && bs>=0.9) shops[best].pgs.push(p);
+      return;
+    }
+    shops[k].pgs.push(p);
+  });
+  // Bài TT: NV đối tác -> shop (qua partnerList), cộng bài vào shop
+  let totBaiAll=0, baiGan=0; const baiRot=[];
+  mediaDoitacEmps_.forEach(e=>{
+    if(e.approved<1) return;
+    totBaiAll+=e.approved;
+    const pn=partnerByCode[String(e.code).trim()]; const shopName=pn?pn.shop:'';
+    let k=_normShopKey(shopName);
+    if(!shops[k]){ let best=null,bs=0; Object.keys(shops).forEach(sk=>{ const sim=mediaShopSim_(shopName, shops[sk].shopName); if(sim>bs){bs=sim;best=sk;} }); if(best&&bs>=0.9) k=best; else k=null; }
+    if(k && shops[k]){ shops[k].bai+=e.approved; shops[k].baiPeople.push({code:e.code,name:e.name,approved:e.approved,links:e.links||[]}); baiGan+=e.approved; }
+    else { baiRot.push({code:e.code,name:e.name,approved:e.approved,reason: !pn?'không có trong mục Đối tác':'shop không khớp DS gán shop PGs', shop:shopName}); }
+  });
+  window.__mediaDoitacDiag={ totBaiAll, baiGan, baiRot };
+  if(baiRot.length) console.log('[TT Đối tác] Bài chưa gắn shop:', baiRot);
+  let arr=Object.values(shops);
+  if(isTrainer()){ const my=normalizeRegionLoose_(session.region||''); arr=arr.filter(s=>normalizeRegionLoose_(s.region)===my); }
+  window.__mediaDoitacShops=arr;
+
+  // Bộ lọc liên động
+  const f=mediaDoitacFilters_;
+  const trainerNameOf=id=>{ const t=(config.trainers||[]).find(t=>t.id===id); return t?t.name:''; };
+  const passExcept=(s,skip)=>{
+    if(skip!=='region'&&f.region&&s.region!==f.region) return false;
+    if(skip!=='province'&&f.province&&s.province!==f.province) return false;
+    if(skip!=='channel'&&f.channel&&channelGroup(s.channel)!==f.channel) return false;
+    if(skip!=='trainer'&&f.trainer&&trainerNameOf(s.trainerId)!==f.trainer) return false;
+    if(skip!=='shopType'&&f.shopType==='pg'&&s.pgs.length===0) return false;
+    if(skip!=='shopType'&&f.shopType==='nopg'&&s.pgs.length>0) return false;
+    if(skip!=='noPost'&&f.noPost&&s.bai>0) return false;
+    return true;
+  };
+  const opt=(field,getter)=>[...new Set(arr.filter(s=>passExcept(s,field)).map(getter).map(x=>(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+  const regions=opt('region',s=>s.region), provinces=opt('province',s=>s.province), channels=[...new Set(arr.filter(s=>passExcept(s,'channel')).map(s=>channelGroup(s.channel)).filter(Boolean))].sort(), trainers=opt('trainer',s=>trainerNameOf(s.trainerId));
+
+  let list=arr.filter(s=>{
+    if(f.search){ const q=f.search.toLowerCase(); if(!(String(s.shopName).toLowerCase().includes(q)||String(s.shopId).toLowerCase().includes(q))) return false; }
+    return passExcept(s,null);
+  }).sort((a,b)=>a.region.localeCompare(b.region,'vi')||a.shopName.localeCompare(b.shopName,'vi'));
+
+  const total=list.length, pages=Math.max(1,Math.ceil(total/MEDIA_DT_PAGE));
+  mediaDoitacPage_=Math.max(1,Math.min(mediaDoitacPage_,pages));
+  const page=list.slice((mediaDoitacPage_-1)*MEDIA_DT_PAGE,(mediaDoitacPage_-1)*MEDIA_DT_PAGE+MEDIA_DT_PAGE);
+
+  const sel='padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);';
+  const trainerNameOf2=id=>{ const t=(config.trainers||[]).find(t=>t.id===id); return t?t.name:'—'; };
+
+  // ===== BẢNG THỐNG KÊ 2 CỘT (Xem theo Khu vực / Trainer) =====
+  // Độ phủ = shop có PG OPPO VÀ có ≥1 bài TT / tổng shop có PG OPPO. Bài TT/Target = tổng bài / tổng target.
+  const statGroups={};
+  arr.forEach(s=>{
+    const hasPg=s.pgs.length>0;
+    const key = mediaDoitacStatMode_==='trainer' ? (trainerNameOf2(s.trainerId)||'—') : (s.region||'—');
+    let g=statGroups[key]; if(!g){ g={name:key, region:s.region, shopHasPg:0, shopHasPgDone:0, bai:0, target:0}; statGroups[key]=g; }
+    if(hasPg){ g.shopHasPg++; if(s.bai>0) g.shopHasPgDone++; }
+    const tgt = hasPg ? s.pgs.length*2 : 1;
+    g.target+=tgt; g.bai+=s.bai;
+  });
+  const statRows=Object.values(statGroups).sort((a,b)=>String(a.name).localeCompare(String(b.name),'vi'));
+  const totCov={a:0,t:0,bai:0,target:0}; statRows.forEach(g=>{ totCov.a+=g.shopHasPgDone; totCov.t+=g.shopHasPg; totCov.bai+=g.bai; totCov.target+=g.target; });
+  // 2 THẺ KPI tổng (toàn miền): Độ phủ TT shop có PGs + Tiến độ TT theo Target.
+  const _covA=statRows.reduce((s,g)=>s+g.shopHasPgDone,0), _covT=statRows.reduce((s,g)=>s+g.shopHasPg,0);
+  const _baiA=statRows.reduce((s,g)=>s+g.bai,0), _baiT=statRows.reduce((s,g)=>s+g.target,0);
+  const _p=(a,t)=>t>0?Math.round(a/t*1000)/10:0;
+  let html=`<div class="kpi-row cols-2" style="margin-bottom:16px;">
+    <div class="kpi-card"><div class="label">TIẾN ĐỘ TT ĐỐI TÁC (THEO TARGET)</div><div class="value">${_p(_baiA,_baiT)}%</div><div class="frac">${_baiA} / ${_baiT} bài</div></div>
+  </div>`;
+  html+=`<h3 class="kpi-section-title">Thống kê Truyền thông Đối tác</h3>`;
+  const diag=window.__mediaDoitacDiag;
+  if(diag && diag.baiRot && diag.baiRot.length){
+    html+=`<div class="form-card" style="max-width:none;margin-bottom:12px;border:1px solid var(--red);background:#FBEAE8;">
+      <div style="color:var(--red);font-weight:700;">⚠ ${diag.baiRot.length} nhân viên (${diag.baiRot.reduce((s,x)=>s+x.approved,0)} bài) chưa gắn được vào shop</div>
+      <div class="section-desc" style="margin-top:4px;">Tổng bài: ${diag.totBaiAll} · Đã gắn shop: ${diag.baiGan} · Chưa gắn: ${diag.totBaiAll-diag.baiGan}. Nguyên nhân: NV chưa có trong <strong>Cài đặt ▸ DATA ▸ Đối tác</strong>, hoặc shop của NV không khớp <strong>DS gán shop PGs</strong>. Mở Console (F12) xem danh sách chi tiết.</div>
+      <details style="margin-top:6px;"><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Xem ${Math.min(diag.baiRot.length,20)} NV đầu</summary>
+      <div style="font-size:11px;margin-top:6px;">${diag.baiRot.slice(0,20).map(x=>`${escapeHtml(x.code)} · ${escapeHtml(x.name)} · ${x.approved} bài · ${escapeHtml(x.reason)}${x.shop?(' ('+escapeHtml(x.shop)+')'):''}`).join('<br>')}</div></details>
+    </div>`;
+  }
+  html+=`<div class="scope-filters" style="margin-bottom:10px;"><span class="scope-label">Xem theo:</span>
+    <select id="mdtStatMode" style="${sel}"><option value="region" ${mediaDoitacStatMode_==='region'?'selected':''}>Khu vực</option><option value="trainer" ${mediaDoitacStatMode_==='trainer'?'selected':''}>Trainer</option></select></div>`;
+  html+=`<div class="table-scroll" style="margin-bottom:18px;"><table><thead><tr><th>${mediaDoitacStatMode_==='trainer'?'Trainer':'Khu vực'}</th><th>Độ phủ shop có PGs</th><th>Số Bài TT / Target</th></tr></thead><tbody>`;
+  const pc=(a,t)=>t>0?Math.round(a/t*1000)/10:0;
+  statRows.forEach(g=>{
+    html+=`<tr><td><strong>${escapeHtml(g.name)}</strong></td>
+      <td style="min-width:200px;">${progressBarChannelHtml_(`${g.shopHasPgDone}/${g.shopHasPg} · ${pc(g.shopHasPgDone,g.shopHasPg)}%`, pc(g.shopHasPgDone,g.shopHasPg), '')}</td>
+      <td style="min-width:200px;">${progressBarChannelHtml_(`${g.bai}/${g.target} · ${pc(g.bai,g.target)}%`, pc(g.bai,g.target), '')}</td></tr>`;
+  });
+  html+=`<tr style="background:var(--green-pale);font-weight:700;"><td>TOÀN MIỀN</td>
+      <td style="min-width:200px;">${progressBarChannelHtml_(`${totCov.a}/${totCov.t} · ${pc(totCov.a,totCov.t)}%`, pc(totCov.a,totCov.t), '')}</td>
+      <td style="min-width:200px;">${progressBarChannelHtml_(`${totCov.bai}/${totCov.target} · ${pc(totCov.bai,totCov.target)}%`, pc(totCov.bai,totCov.target), '')}</td></tr>`;
+  html+=`</tbody></table></div>`;
+
+  // Kết thúc phần THỐNG KÊ -> đổ vào statHost; phần còn lại (shop) -> host.
+  const statHostEl=document.getElementById('mediaDoitacStatBox');
+  if(statHostEl) statHostEl.innerHTML=html;
+  html=``;
+  html+=`<h3 class="kpi-section-title">Danh sách Shop có PGs — Truyền thông Đối tác</h3>`;
+  html+=`<div class="scope-filters" style="flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+    <input type="text" id="mdtF-search" placeholder="Tìm Tên/ID shop..." value="${escapeHtml(f.search)}" style="${sel}min-width:180px;">
+    <select id="mdtF-region" style="${sel}"><option value="">Tất cả Khu vực</option>${regions.map(r=>`<option ${f.region===r?'selected':''}>${escapeHtml(r)}</option>`).join('')}</select>
+    <select id="mdtF-province" style="${sel}"><option value="">Tất cả Tỉnh</option>${provinces.map(p=>`<option ${f.province===p?'selected':''}>${escapeHtml(p)}</option>`).join('')}</select>
+    <select id="mdtF-channel" style="${sel}"><option value="">Tất cả Kênh</option>${channels.map(c=>`<option ${f.channel===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
+    <select id="mdtF-trainer" style="${sel}"><option value="">Tất cả Trainer</option>${trainers.map(t=>`<option ${f.trainer===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}</select>
+    <select id="mdtF-shoptype" style="${sel}"><option value="">Loại shop: tất cả</option><option value="pg" ${f.shopType==='pg'?'selected':''}>Có PGs</option><option value="nopg" ${f.shopType==='nopg'?'selected':''}>Không PGs</option></select>
+    <label style="display:inline-flex;align-items:center;gap:6px;font-size:var(--cap);cursor:pointer;white-space:nowrap;"><input type="checkbox" id="mdtF-nopost" ${f.noPost?'checked':''}> Shop chưa có bài TT hợp lệ</label>
+  </div>`;
+  html+=`<div class="table-scroll"><table><thead><tr><th>Khu vực</th><th>Shop</th><th>Tỉnh</th><th>Kênh</th><th>PGs OPPO</th><th>Bài TT</th><th>Trainer</th></tr></thead><tbody>`;
+  if(!page.length) html+=`<tr><td colspan="7" class="empty">Chưa có dữ liệu. Bấm "↻ Cập nhật Truyền thông từ hệ thống".</td></tr>`;
+  else page.forEach((s,i)=>{
+    const gi=(mediaDoitacPage_-1)*MEDIA_DT_PAGE+i;
+    const targetBai = s.pgs.length>0 ? s.pgs.length*2 : 1;
+    const done = s.bai>=targetBai;
+    html+=`<tr>
+      <td><strong>${escapeHtml(s.region||'—')}</strong></td>
+      <td title="${escapeHtml(s.shopName)}">${escapeHtml(s.shopName||s.shopId||'—')}</td>
+      <td>${escapeHtml(s.province||'—')}</td>
+      <td style="text-align:center;">${escapeHtml(channelGroup(s.channel)||'—')}</td>
+      <td style="text-align:center;"><button type="button" class="mdt-pg-btn" data-gi="${gi}" style="background:var(--green-pale);color:var(--green-dark);border:1px solid var(--green);border-radius:6px;padding:3px 12px;font-weight:700;cursor:pointer;">${s.pgs.length}</button></td>
+      <td style="text-align:center;"><button type="button" class="mdt-bai-btn" data-gi="${gi}" style="background:${done?'var(--green-pale)':'#FBEAE8'};color:${done?'var(--green-dark)':'var(--red)'};border:1px solid ${done?'var(--green)':'var(--red)'};border-radius:6px;padding:3px 12px;font-weight:700;cursor:pointer;">${s.bai}/${targetBai}</button></td>
+      <td>${escapeHtml(trainerNameOf(s.trainerId)||'—')}</td></tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  if(pages>1){ let ph=''; let first=Math.max(1,mediaDoitacPage_-2),last=Math.min(pages,first+4);first=Math.max(1,last-4);
+    ph+=`<button class="mdt-pg-nav" data-p="${Math.max(1,mediaDoitacPage_-1)}" ${mediaDoitacPage_===1?'disabled':''}>‹</button>`;
+    for(let i=first;i<=last;i++) ph+=`<button class="mdt-pg-nav ${i===mediaDoitacPage_?'active':''}" data-p="${i}">${i}</button>`;
+    ph+=`<button class="mdt-pg-nav" data-p="${Math.min(pages,mediaDoitacPage_+1)}" ${mediaDoitacPage_===pages?'disabled':''}>›</button>`;
+    html+=`<div class="pagination-bar" style="margin-top:10px;"><span class="pagination-info">${total} shop · Trang ${mediaDoitacPage_}/${pages}</span> ${ph}</div>`;
+  } else html+=`<div class="pagination-info" style="margin-top:8px;">${total} shop</div>`;
+  host.innerHTML=html;
+
+  const bindF=(id,fn)=>{ const el=host.querySelector('#'+id); if(el) el.onchange=e=>{fn(e.target.value);mediaDoitacPage_=1;renderMediaDoitacShopList_();}; };
+  bindF('mdtF-region',v=>f.region=v); bindF('mdtF-province',v=>f.province=v); bindF('mdtF-channel',v=>f.channel=v); bindF('mdtF-trainer',v=>f.trainer=v); bindF('mdtF-shoptype',v=>f.shopType=v);
+  const sm=document.getElementById('mdtStatMode'); if(sm) sm.onchange=e=>{ mediaDoitacStatMode_=e.target.value; renderMediaDoitacShopList_(); };
+  const si=host.querySelector('#mdtF-search'); if(si) si.oninput=e=>{f.search=e.target.value;mediaDoitacPage_=1;renderMediaDoitacShopList_();};
+  const np=host.querySelector('#mdtF-nopost'); if(np) np.onchange=e=>{f.noPost=e.target.checked;mediaDoitacPage_=1;renderMediaDoitacShopList_();};
+  host.querySelectorAll('.mdt-pg-nav').forEach(b=>b.onclick=()=>{ if(!b.disabled){mediaDoitacPage_=Number(b.dataset.p);renderMediaDoitacShopList_();} });
+  host.querySelectorAll('.mdt-pg-btn').forEach(b=>b.onclick=()=>{ const s=list[Number(b.dataset.gi)]; if(s) openMediaDoitacPgs_(s); });
+  host.querySelectorAll('.mdt-bai-btn').forEach(b=>b.onclick=()=>{ const s=list[Number(b.dataset.gi)]; if(s) openMediaDoitacBai_(s); });
+}
+function openMediaDoitacPgs_(s){
+  const ov=document.createElement('div'); ov.className='modal-overlay'; ov.style.cssText='position:fixed;inset:0;background:rgba(8,51,31,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
+  const rows=s.pgs.length? s.pgs.map((p,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(p.code||'—')}</td><td><strong>${escapeHtml(p.name||'—')}</strong></td><td style="text-align:center;">${p.seniority||0}</td><td style="text-align:center;">${p.star||0}★</td></tr>`).join('') : `<tr><td colspan="5" class="empty">Shop chưa có PG OPPO.</td></tr>`;
+  ov.innerHTML=`<div class="modal-box" style="background:#fff;border-radius:16px;max-width:620px;width:100%;max-height:86vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(8,51,31,.25);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><h3 style="margin:0;color:var(--green-dark);">PGs OPPO — ${escapeHtml(s.shopName||'')}</h3><button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">×</button></div>
+    <div class="table-scroll"><table><thead><tr><th>STT</th><th>Mã NV</th><th>Tên</th><th style="text-align:center;">Thâm niên</th><th style="text-align:center;">Sao</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  document.body.appendChild(ov); ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+function openMediaDoitacBai_(s){
+  const ov=document.createElement('div'); ov.className='modal-overlay'; ov.style.cssText='position:fixed;inset:0;background:rgba(8,51,31,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
+  const linkCell=(p)=>{
+    const ls=(p.links||[]).filter(l=>l.url);
+    if(!ls.length) return '—';
+    return ls.map((l,j)=>`<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" style="color:#0B5E36;text-decoration:underline;white-space:nowrap;">${escapeHtml(l.platform||'link')} ${ls.length>1?('#'+(j+1)):''}</a>`).join('<br>');
+  };
+  const rows=s.baiPeople.length? s.baiPeople.map((p,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(p.code||'—')}</td><td><strong>${escapeHtml(p.name||'—')}</strong></td><td style="text-align:center;font-weight:700;color:var(--green-dark);">${p.approved}</td><td style="font-size:11px;">${linkCell(p)}</td></tr>`).join('') : `<tr><td colspan="5" class="empty">Shop chưa có nhân viên hoàn thành bài TT.</td></tr>`;
+  ov.innerHTML=`<div class="modal-box" style="background:#fff;border-radius:16px;max-width:720px;width:100%;max-height:86vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(8,51,31,.25);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><h3 style="margin:0;color:var(--green-dark);">Nhân viên hoàn thành bài TT — ${escapeHtml(s.shopName||'')}</h3><button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">×</button></div>
+    <div class="table-scroll"><table><thead><tr><th>STT</th><th>Mã NV</th><th>Tên nhân viên</th><th style="text-align:center;">Số bài</th><th>Link bài TT</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  document.body.appendChild(ov); ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
 async function processMediaWorkbook_(wb){
   const msg = document.getElementById('mediaImportMsg');
   const ws = wb.Sheets[wb.SheetNames[0]];
@@ -4831,7 +5061,8 @@ function renderMediaImportBox(){
   if(!box) return;
   if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
   const canEdit = isAdmin() && !monthLocked;
-  const showSys = (mediaActiveSubtype==='noibo');
+  const showSys = (mediaActiveSubtype==='noibo' || mediaActiveSubtype==='doitac');
+  const isDoitacTT = (mediaActiveSubtype==='doitac');
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     ${showSys?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
       <input type="number" id="otrMediaCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:150px;" value="${escapeHtml(String((campaigns.find(c=>c.month===currentMonth&&c.group==='truyenthong'&&campaignSubtype(c)==='noibo')||{}).otrId||''))}">
@@ -4849,7 +5080,21 @@ function renderMediaImportBox(){
     </div>${showSys?'</details>':''}
   </div>`;
   attachGoogleSheetButton_('mediaSheetLinkBtn','mediaImportMsg', null, processMediaWorkbook_);
-  if(showSys){ const b=document.getElementById('otrMediaBtn'); if(b) b.onclick=()=>updateMediaFromOtraining_(); }
+  if(showSys){ const b=document.getElementById('otrMediaBtn'); if(b) b.onclick=()=> isDoitacTT ? updateMediaDoitacFromOtraining_() : updateMediaFromOtraining_(); }
+  // Bảng "Shop có PGs" chỉ cho Truyền thông Đối tác.
+  if(isDoitacTT){
+    const wrap=document.getElementById('mediaImportWrap');
+    // 2 host: thống kê (TRƯỚC import) + danh sách shop (SAU import).
+    let statHost=document.getElementById('mediaDoitacStatBox');
+    if(!statHost){ statHost=document.createElement('div'); statHost.id='mediaDoitacStatBox'; statHost.style.marginTop='18px'; }
+    let host=document.getElementById('mediaDoitacShopBox');
+    if(!host){ host=document.createElement('div'); host.id='mediaDoitacShopBox'; host.style.marginTop='18px'; }
+    if(wrap){
+      wrap.parentNode.insertBefore(statHost, wrap);           // thống kê trên import
+      wrap.parentNode.insertBefore(host, wrap.nextSibling);   // shop dưới import
+    } else { box.parentNode.insertBefore(statHost, box.nextSibling); box.parentNode.insertBefore(host, statHost.nextSibling); }
+    renderMediaDoitacShopList_().catch(e=>console.error(e));
+  }
   const clearBtn = document.getElementById('mediaClearBtn');
   if(clearBtn) clearBtn.addEventListener('click', async ()=>{
     if(!isAdmin()) return;
@@ -4924,11 +5169,12 @@ function ftfChannelStats_(shops, trainerIds){
 // Màu XANH đậm/nhạt theo % tiến độ (cao = xanh đậm, thấp = xanh nhạt).
 function ftfGreenByPct_(pctVal){
   const p = Math.min(100, Math.max(0, pctVal));
-  if(p>=100) return '#0B5E36';
-  if(p>=80)  return '#1D9E75';
-  if(p>=60)  return '#43B98A';
-  if(p>=40)  return '#7FC8A3';
-  if(p>=20)  return '#A9DcC1';
+  if(p>=100) return '#064E2B';   // xanh rất đậm
+  if(p>=80)  return '#0B5E36';
+  if(p>=60)  return '#117A47';
+  if(p>=40)  return '#1D9E75';
+  if(p>=20)  return '#2FB383';
+  if(p>0)    return '#49C295';
   return '#CDEBDD';
 }
 function progressBarChannelHtml_(valueText, pctVal, color){
@@ -9536,6 +9782,8 @@ function renderKpiCategoryLegacyBody_(catKey){
     };
     chanRow('K.A', 'K.A', '#8B1E1E');
     chanRow('MWG', 'MWG', '#E8B923');
+  } else if(catKey==='truyenthong' && mediaActiveSubtype==='doitac'){
+    // Đối tác: KHÔNG hiện thẻ top cũ (2 thẻ đối tác được render trong bảng thống kê bên dưới).
   } else if(catKey==='truyenthong' && mediaCampaignsThisMonth_().length>1){
     // Nhiều chiến dịch Truyền thông nhỏ trong tháng (VD: WAVE 1, WAVE 2...) → mỗi chiến dịch 1 thẻ riêng,
     // note rõ tên chiến dịch + % hoàn thành của đúng chiến dịch đó (không gộp chung 1 thẻ tổng nữa).
@@ -9590,14 +9838,15 @@ function renderKpiCategoryLegacyBody_(catKey){
 
   if(catKey==='truyenthong'){
     const mediaCampaignsList = mediaCampaignsThisMonth_();
-    html += `<h3 class="kpi-section-title">Tổng quan toàn Miền Trung — Các chiến dịch Truyền thông (${monthLabel(currentMonth)})</h3>`;
-    if(mediaCampaignsList.length===0){
-      html += `<div class="empty">Chưa có chiến dịch Truyền thông riêng nào trong tháng này.</div>`;
-    } else {
-      html += `<div id="mediaCampaignsOverviewBox"><div class="empty">Đang tải...</div></div>`;
+    if(mediaActiveSubtype!=='doitac'){
+      html += `<h3 class="kpi-section-title">Tổng quan toàn Miền Trung — Các chiến dịch Truyền thông (${monthLabel(currentMonth)})</h3>`;
+      if(mediaCampaignsList.length===0){
+        html += `<div class="empty">Chưa có chiến dịch Truyền thông riêng nào trong tháng này.</div>`;
+      } else {
+        html += `<div id="mediaCampaignsOverviewBox"><div class="empty">Đang tải...</div></div>`;
+      }
+      html += `<h3 class="kpi-section-title">Tiến độ Truyền thông — ${monthLabel(currentMonth)}</h3>`;
     }
-
-    html += `<h3 class="kpi-section-title">Tiến độ Truyền thông — ${monthLabel(currentMonth)}</h3>`;
     if(mediaCampaignsList.length>0){
       html += `<div class="scope-filters" style="margin-bottom:10px;">
         <span class="scope-label">Chiến dịch Truyền thông:</span>
@@ -9606,24 +9855,27 @@ function renderKpiCategoryLegacyBody_(catKey){
         </select>
         <span style="font-size:var(--cap);color:var(--muted);">(tháng này có ${mediaCampaignsList.length} chiến dịch — mỗi chiến dịch có Target, kết quả import và tiến độ riêng)</span>
       </div>`;
-    } else {
+    } else if(mediaActiveSubtype!=='doitac'){
       html += `<p class="section-desc" style="margin-bottom:10px;color:var(--muted);">Tháng này chưa tạo chiến dịch Truyền thông riêng nào — đang dùng chế độ mặc định chung cho cả tháng. Vào <strong>Cài đặt ▸ Chiến dịch</strong> (nhóm "Truyền thông") để tạo nhiều chiến dịch nhỏ nếu cần theo dõi riêng từng nội dung.</p>`;
     }
-    html += `<div class="scope-filters" style="margin-bottom:10px;">
-      <span class="scope-label">Xem theo:</span>
-      <select id="mediaViewModeSelect">
-        <option value="trainer">Trainer</option>
-        <option value="region">Khu vực</option>
-      </select>
-    </div>`;
-    html += `<div id="mediaProgressTableBox"></div>`;
+    if(mediaActiveSubtype!=='doitac'){
+      html += `<div class="scope-filters" style="margin-bottom:10px;">
+        <span class="scope-label">Xem theo:</span>
+        <select id="mediaViewModeSelect">
+          <option value="trainer">Trainer</option>
+          <option value="region">Khu vực</option>
+        </select>
+      </div>`;
+      html += `<div id="mediaProgressTableBox"></div>`;
+      html += `<h3 class="kpi-section-title">PGs Đang làm chưa hoàn thành Truyền thông — ${monthLabel(currentMonth)} <span id="mediaNotDoneHeaderCount" style="font-weight:600;color:var(--red);"></span></h3>`;
+      html += `<div id="mediaNotDoneBox"></div>`;
+    }
 
-    html += `<h3 class="kpi-section-title">PGs Đang làm chưa hoàn thành Truyền thông — ${monthLabel(currentMonth)} <span id="mediaNotDoneHeaderCount" style="font-weight:600;color:var(--red);"></span></h3>`;
-    html += `<div id="mediaNotDoneBox"></div>`;
-
+    html += `<div id="mediaImportWrap">`;
     html += `<h3 class="kpi-section-title">Import kết quả Truyền thông — ${monthLabel(currentMonth)}</h3>`;
     html += `<p class="section-desc" style="margin-bottom:10px;">File kết quả <strong>không cần đúng mẫu cố định</strong> — hệ thống ưu tiên tìm cột tiêu đề "Code"/"Mã nhân viên" để so khớp; nếu không thấy sẽ tự quét toàn bộ ô trong file. Mỗi dòng khớp mã Code = 1 bài tham gia (tính vào Tổng bài thi); các mã Code trùng nhau chỉ tính 1 lần cho Độ phủ PGs. PG thuộc Trainer nào (theo data Nhân sự) thì tính vào đúng Trainer đó. Import lại sẽ tính lại từ đầu cho đúng tháng đang xem (không cộng dồn).</p>`;
     html += `<div id="mediaImportBox"></div>`;
+    html += `</div>`;
   }
 
   if(catKey!=='noibo' && catKey!=='doitac' && catKey!=='truyenthong'){
