@@ -4092,6 +4092,8 @@ function applyPermissionLocks(){
   // Trainer chỉ được SỬA PG có sẵn (không được thêm mới) — ẩn form khi chưa chọn "Sửa"
   const pgFormCard=document.getElementById('pgFormCard');
   if(pgFormCard) pgFormCard.style.display = (trainer && !editingPgId) ? 'none' : '';
+  // ẨN HẲN mọi nút XÓA data khi không phải Admin (Trainer không được xóa bất cứ gì).
+  ['clearAllPgBtn','onoffResetAllBtn','soClearBtn','mediaClearBtn','ftfClearBtn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display = admin ? '' : 'none'; });
 }
 
 /* ============ THÁNG ============ */
@@ -4848,15 +4850,27 @@ async function renderMediaDoitacShopList_(){
   const trainerNameOf2=id=>{ const t=(config.trainers||[]).find(t=>t.id===id); return t?t.name:'—'; };
 
   // ===== BẢNG THỐNG KÊ 2 CỘT (Xem theo Khu vực / Trainer) =====
-  // Độ phủ = shop có PG OPPO VÀ có ≥1 bài TT / tổng shop có PG OPPO. Bài TT/Target = tổng bài / tổng target.
+  // Target = số liệu Admin set ở Cài đặt ▸ Target (mediaTargets theo Trainer). Bài = tổng bài TT đã gắn shop.
+  // (Logic "shop có PG 2 bài / không PG 1 bài" chỉ là GỢI Ý push, không phải target.)
   const statGroups={};
+  // Gom bài TT + độ phủ theo nhóm (từ shop)
   arr.forEach(s=>{
     const hasPg=s.pgs.length>0;
     const key = mediaDoitacStatMode_==='trainer' ? (trainerNameOf2(s.trainerId)||'—') : (s.region||'—');
     let g=statGroups[key]; if(!g){ g={name:key, region:s.region, shopHasPg:0, shopHasPgDone:0, bai:0, target:0}; statGroups[key]=g; }
     if(hasPg){ g.shopHasPg++; if(s.bai>0) g.shopHasPgDone++; }
-    const tgt = hasPg ? s.pgs.length*2 : 1;
-    g.target+=tgt; g.bai+=s.bai;
+    g.bai+=s.bai;
+  });
+  // Target chiến dịch: luôn đọc đúng cấu hình Admin theo ID chiến dịch đang xem.
+  const campaignTargetsForStats = camp ? ((await dbGet('mediaTargets:'+camp.id)) || {}) : {};
+  // Target: cộng target Admin của từng Trainer vào đúng nhóm.
+  (config.trainers||[]).forEach(t=>{
+    if(isTrainer() && session.trainerId && t.id!==session.trainerId) return;
+    const tg = Number(campaignTargetsForStats[t.id]||0);
+    if(!tg) return;
+    const key = mediaDoitacStatMode_==='trainer' ? (t.name||'—') : (t.region||'—');
+    let g=statGroups[key]; if(!g){ g={name:key, region:t.region, shopHasPg:0, shopHasPgDone:0, bai:0, target:0}; statGroups[key]=g; }
+    g.target+=tg;
   });
   const statRows=Object.values(statGroups).sort((a,b)=>String(a.name).localeCompare(String(b.name),'vi'));
   const totCov={a:0,t:0,bai:0,target:0}; statRows.forEach(g=>{ totCov.a+=g.shopHasPgDone; totCov.t+=g.shopHasPg; totCov.bai+=g.bai; totCov.target+=g.target; });
@@ -4905,11 +4919,11 @@ async function renderMediaDoitacShopList_(){
     <select id="mdtF-shoptype" style="${sel}"><option value="">Loại shop: tất cả</option><option value="pg" ${f.shopType==='pg'?'selected':''}>Có PGs</option><option value="nopg" ${f.shopType==='nopg'?'selected':''}>Không PGs</option></select>
     <label style="display:inline-flex;align-items:center;gap:6px;font-size:var(--cap);cursor:pointer;white-space:nowrap;"><input type="checkbox" id="mdtF-nopost" ${f.noPost?'checked':''}> Shop chưa có bài TT hợp lệ</label>
   </div>`;
-  html+=`<div class="table-scroll"><table><thead><tr><th>Khu vực</th><th>Shop</th><th>Tỉnh</th><th>Kênh</th><th>PGs OPPO</th><th>Bài TT</th><th>Trainer</th></tr></thead><tbody>`;
+  html+=`<div class="table-scroll"><table><thead><tr><th>Khu vực</th><th>Shop</th><th>Tỉnh</th><th>Kênh</th><th>PGs OPPO</th><th>Bài TT / Push gợi ý</th><th>Trainer</th></tr></thead><tbody>`;
   if(!page.length) html+=`<tr><td colspan="7" class="empty">Chưa có dữ liệu. Bấm "↻ Cập nhật Truyền thông từ hệ thống".</td></tr>`;
   else page.forEach((s,i)=>{
     const gi=(mediaDoitacPage_-1)*MEDIA_DT_PAGE+i;
-    const targetBai = s.pgs.length>0 ? s.pgs.length*2 : 1;
+    const targetBai = s.pgs.length>0 ? 2 : 1; // chỉ là mức push theo SHOP, không phải target KPI
     const done = s.bai>=targetBai;
     html+=`<tr>
       <td><strong>${escapeHtml(s.region||'—')}</strong></td>
@@ -5389,7 +5403,7 @@ function renderMediaImportBox(){
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;${showSys?'margin-top:10px;':''}">
       <input type="file" id="mediaImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary admin-only-gsheet" id="mediaSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>
-      <button class="danger" id="mediaClearBtn" type="button">🗑 Xoá data chiến dịch này</button>
+      ${isAdmin()?`<button class="danger" id="mediaClearBtn" type="button">🗑 Xoá data chiến dịch này</button>`:''}
       ${showSys?'':`<span class="save-msg" id="mediaImportMsg" style="display:none;"></span>`}
     </div>${showSys?'</details>':''}
   </div>`;
@@ -13688,11 +13702,10 @@ async function computeTrainerCategoryProgress_(trainerId){
       if(target>0) truyenthongItems.push({ name:c.name, pct: pct(actual, target) });
     });
   }
-  // --- Truyền thông ĐỐI TÁC: tính theo shop của trainer (bài TT / target shop) ---
+  // --- Truyền thông ĐỐI TÁC: bài thực tế / target Admin đặt trong Target chiến dịch ---
   for(const c of mediaDoitac){
     try{
       const emps = (await dbGet('mediaDoitacEmps:'+c.id)) || [];
-      if(!emps.length) continue;
       if(!partnerList.length){ try{ partnerList=(await dbGet('partnerList'))||[]; }catch(e){} }
       const partnerByCode={}; partnerList.forEach(p=>{ if(p.code) partnerByCode[String(p.code).trim()]=p; });
       const normShop=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -13702,8 +13715,9 @@ async function computeTrainerCategoryProgress_(trainerId){
       (pgs||[]).filter(p=>p.brand==='OPPO').forEach(p=>{ const k=normShop(p.shop); if(myShops[k]) myShops[k].pgs++; });
       // Bài TT của NV đối tác thuộc shop của trainer
       emps.forEach(e=>{ if(e.approved<1) return; const pn=partnerByCode[String(e.code).trim()]; if(!pn) return; const k=normShop(pn.shop); if(myShops[k]) myShops[k].bai+=e.approved; });
-      let totBai=0, totTarget=0;
-      Object.values(myShops).forEach(s=>{ totBai+=s.bai; totTarget += (s.pgs>0 ? s.pgs*2 : 1); });
+      const campaignTargets = (await dbGet('mediaTargets:'+c.id)) || {};
+      const totTarget = Number(campaignTargets[trainerId]||0);
+      const totBai = Object.values(myShops).reduce((sum,shop)=>sum+shop.bai,0);
       if(totTarget>0) truyenthongItems.push({ name:c.name, pct: pct(totBai, totTarget) });
     }catch(e){ console.error(e); }
   }
