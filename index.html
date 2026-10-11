@@ -4665,15 +4665,13 @@ function mediaNameSim_(a,b){
 async function updateMediaFromOtraining_(){
   const msg=document.getElementById('mediaImportMsg');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
-  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
-  const idInput=document.getElementById('otrMediaCampaignId');
-  const campaignId=(idInput&&idInput.value||'').trim();
-  if(!campaignId){ show('Hãy nhập ID chiến dịch.','var(--red)'); if(idInput) idInput.focus(); return; }
-  const progInput=document.getElementById('otrMediaProgramId');
-  const programId=(progInput&&progInput.value||'').trim(); // tùy chọn
-  // Chiến dịch Truyền thông Nội bộ đang xem (để lấy tên khớp + lưu đúng scope)
   const camp = campaigns.find(c=>c.id===mediaScopeKey) || campaigns.find(c=>c.month===currentMonth&&c.group==='truyenthong'&&campaignSubtype(c)==='noibo');
   if(!camp){ show('Chưa chọn/không tìm thấy chiến dịch Truyền thông Nội bộ.','var(--red)'); return; }
+  const idInput=document.getElementById('otrMediaCampaignId');
+  const campaignId=((idInput&&idInput.value||'').trim()) || String((camp&&camp.otrId)||'').trim();
+  if(!campaignId){ show(isAdmin()?'Hãy nhập ID chiến dịch.':'Admin chưa thiết lập ID chiến dịch cho tháng này.','var(--red)'); if(idInput) idInput.focus(); return; }
+  const progInput=document.getElementById('otrMediaProgramId');
+  const programId=(progInput&&progInput.value||'').trim() || String((camp&&camp.programId)||''); // Trainer dùng programId đã lưu
   show('⏳ Đang lấy Truyền thông từ otraining...');
   try{
     const res=await fetch(OTRAINING_FN_URL_,{
@@ -4741,12 +4739,11 @@ function mediaShopSim_(a,b){ const na=_normShopKey(a),nb=_normShopKey(b); if(!na
 async function updateMediaDoitacFromOtraining_(){
   const msg=document.getElementById('mediaImportMsg');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
-  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
-  const campaignId=(document.getElementById('otrMediaCampaignId')?.value||'').trim();
-  const programId=(document.getElementById('otrMediaProgramId')?.value||'').trim();
-  if(!campaignId){ show('Hãy nhập ID chiến dịch.','var(--red)'); return; }
   const camp=campaigns.find(c=>c.id===mediaScopeKey)||campaigns.find(c=>c.month===currentMonth&&c.group==='truyenthong'&&campaignSubtype(c)==='doitac');
   if(!camp){ show('Không tìm thấy chiến dịch Truyền thông Đối tác.','var(--red)'); return; }
+  const campaignId=((document.getElementById('otrMediaCampaignId')?.value||'').trim()) || String((camp&&camp.otrId)||'').trim();
+  const programId=((document.getElementById('otrMediaProgramId')?.value||'').trim()) || String((camp&&camp.programId)||'');
+  if(!campaignId){ show(isAdmin()?'Hãy nhập ID chiến dịch.':'Admin chưa thiết lập ID chiến dịch cho tháng này.','var(--red)'); return; }
   show('⏳ Đang lấy Truyền thông Đối tác từ otraining...');
   try{
     const res=await fetch(OTRAINING_FN_URL_,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},body:JSON.stringify({campaignId, programId, type:'partnertt'})});
@@ -5375,14 +5372,15 @@ function renderMediaNotDoneRows_(){
 function renderMediaImportBox(){
   const box = document.getElementById('mediaImportBox');
   if(!box) return;
-  if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
+  if(!isAdmin() && !isTrainer()){ box.innerHTML=''; return; } // Viewer: ẩn; Trainer: thấy nút (ô ID ẩn)
   const canEdit = isAdmin() && !monthLocked;
   const showSys = (mediaActiveSubtype==='noibo' || mediaActiveSubtype==='doitac');
   const isDoitacTT = (mediaActiveSubtype==='doitac');
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     ${showSys?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-      <input type="number" id="otrMediaCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:150px;" value="${escapeHtml(String((campaigns.find(c=>c.month===currentMonth&&c.group==='truyenthong'&&campaignSubtype(c)==='noibo')||{}).otrId||''))}">
-      <input type="number" id="otrMediaProgramId" placeholder="Program ID (nếu có)" style="width:150px;" value="${escapeHtml(String((campaigns.find(c=>c.id===mediaScopeKey)||{}).programId||''))}">
+      <input type="number" id="otrMediaCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:150px;${isAdmin()?'':'display:none;'}" value="${escapeHtml(String((campaigns.find(c=>c.id===mediaScopeKey)||{}).otrId||''))}">
+      <input type="number" id="otrMediaProgramId" placeholder="Program ID (nếu có)" style="width:150px;${isAdmin()?'':'display:none;'}" value="${escapeHtml(String((campaigns.find(c=>c.id===mediaScopeKey)||{}).programId||''))}">
+      ${isAdmin()?`<button class="secondary otr-save-btn" data-save="${isDoitacTT?'mediadoitac':'medianoibo'}" type="button" title="Lưu cố định ID cho tháng này">💾 Lưu</button>`:''}
       <button class="primary" id="otrMediaBtn" type="button">↻ Cập nhật Truyền thông từ hệ thống</button>
       <span class="save-msg" id="mediaImportMsg" style="display:none;"></span>
     </div>
@@ -5561,23 +5559,24 @@ function renderDoitacProgressTable(){
 function renderFtfImportBox(){
   const box=document.getElementById('ftfImportBox');
   if(!box) return;
-  if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
+  if(!isAdmin() && !isTrainer()){ box.innerHTML=''; return; } // Viewer: ẩn; Trainer: thấy nút (ô ID ẩn)
   const canEdit = isAdmin() && !monthLocked;
   let html = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import dữ liệu Training F2F Đối tác — ${monthLabel(currentMonth)}</h3>
     <p class="section-desc" style="margin-bottom:10px;">Import file tổng hợp F2F (đúng mẫu — gồm 2 sheet "Tong Hop F2F" và "Chi Tiet Check-in"). <strong>Cần import Target FTF (Cài đặt ▸ Target) trước</strong> — hệ thống xác định mỗi Shop thuộc Trainer/Khu vực nào theo đúng Mã Shop đã gán ở Target FTF, KHÔNG dựa vào cột "Người Train" (cột này có thể là Sale/PG, không phải Trainer). Hệ thống tự tính SL Shop, SL HR, SL Bài Test, Tư vấn AI, SL Khảo sát theo từng Trainer, đồng thời tự tạo danh sách Shop bên dưới. Import lại sẽ <strong>ghi đè toàn bộ</strong> dữ liệu F2F của ${monthLabel(currentMonth)}. Chỉ Admin được import.</p>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-      <input type="number" id="otrFtfCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:180px;" ${canEdit?'':'disabled'} value="${escapeHtml(String((campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf')||{}).otrId||''))}">
-      <button class="primary" id="otrFtfBtn" type="button" ${canEdit?'':'disabled'}>↻ Cập nhật FTF từ hệ thống</button>
+      <input type="number" id="otrFtfCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:180px;${isAdmin()?'':'display:none;'}" ${canEdit?'':'disabled'} value="${escapeHtml(String((campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf')||{}).otrId||''))}">
+      ${isAdmin()?`<button class="secondary otr-save-btn" data-save="ftf" type="button" title="Lưu cố định ID cho tháng này">💾 Lưu</button>`:''}
+      <button class="primary" id="otrFtfBtn" type="button" ${monthLocked?'disabled':''}>↻ Cập nhật FTF từ hệ thống</button>
       <span class="save-msg" id="ftfImportMsg" style="display:none;"></span>
     </div>
-    <div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. Xem <strong>ID chiến dịch</strong> trong URL báo cáo (<code>doitac_f2f.html?id=<b>&lt;ID&gt;</b></code>). <strong>Cần import Target FTF trước</strong> để khớp Shop với Trainer.</div>
+    ${isAdmin()?`<div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. Xem <strong>ID chiến dịch</strong> trong URL báo cáo (<code>doitac_f2f.html?id=<b>&lt;ID&gt;</b></code>). <strong>Cần import Target FTF trước</strong> để khớp Shop với Trainer.</div>
     <details><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / Google Sheet) — chỉ dùng khi cần</summary>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
       <input type="file" id="ftfImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary" id="downloadFtfTemplateBtn" type="button">⬇ Tải file mẫu</button>
       <button class="secondary admin-only-gsheet" id="ftfSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet</button>
-    </div></details>
+    </div></details>`:''}
   </div>`;
   box.innerHTML = html;
 
@@ -8737,6 +8736,62 @@ function renderKpiCampaignContext(){
   const box=document.getElementById('kpiCampaignContext');
   box.textContent = `Đang xem tiến độ: ${monthLabel(currentMonth)}`;
 }
+// Khởi tạo trạng thái nút Lưu/Sửa: nếu ô ID đã có giá trị -> khóa ô + nút "✏️ Sửa".
+function initOtrSaveButtons_(){
+  document.querySelectorAll('.otr-save-btn').forEach(b=>{
+    const map={testonline:'otrCampaignId',aicheck:'otrAiCampaignId',wsnoibo:'otrWsCampaignId',ftf:'otrFtfCampaignId',wsdoitac:'otrWsDtCampaignId',medianoibo:'otrMediaCampaignId',mediadoitac:'otrMediaCampaignId'};
+    const idEl=document.getElementById(map[b.dataset.save]);
+    const progEl=(b.dataset.save==='medianoibo'||b.dataset.save==='mediadoitac')?document.getElementById('otrMediaProgramId'):null;
+    const has = idEl && String(idEl.value||'').trim();
+    // Đồng bộ trạng thái theo ID hiện tại (box có thể vừa render lại khi đổi chiến dịch).
+    [idEl,progEl].forEach(el=>{ if(!el) return; el.disabled=!!has; el.style.opacity=has?'.55':'1'; el.style.background=has?'#F0F2F1':''; });
+    b.textContent = has ? '✏️ Sửa' : '💾 Lưu';
+    b.dataset.mode = has ? 'edit' : '';
+  });
+}
+// Sự kiện chung cho mọi nút 💾 Lưu ID.
+document.addEventListener('click', async (e)=>{
+  const b=e.target.closest && e.target.closest('.otr-save-btn');
+  if(!b) return;
+  e.preventDefault();
+  const kind=b.dataset.save;
+  const cm=currentMonth;
+  const find=(group,subtype)=>campaigns.find(c=>c.month===cm && c.group===group && campaignSubtype(c)===subtype);
+  let camp=null, idInput='', progInput='';
+  switch(kind){
+    case 'testonline': camp=find('noibo','testonline'); idInput='otrCampaignId'; break;
+    case 'aicheck': camp=find('noibo','tuvanai_checkshop'); idInput='otrAiCampaignId'; break;
+    case 'wsnoibo': camp=find('noibo','workshop'); idInput='otrWsCampaignId'; break;
+    case 'ftf': camp=find('doitac','ftf'); idInput='otrFtfCampaignId'; break;
+    case 'wsdoitac': camp=find('doitac','workshop'); idInput='otrWsDtCampaignId'; break;
+    case 'medianoibo': camp=(campaigns.find(c=>c.id===mediaScopeKey))||find('truyenthong','noibo'); idInput='otrMediaCampaignId'; progInput='otrMediaProgramId'; break;
+    case 'mediadoitac': camp=(campaigns.find(c=>c.id===mediaScopeKey))||find('truyenthong','doitac'); idInput='otrMediaCampaignId'; progInput='otrMediaProgramId'; break;
+  }
+  const idEl=document.getElementById(idInput);
+  const progEl=progInput?document.getElementById(progInput):null;
+  const lockFields=(lock)=>{
+    [idEl,progEl].forEach(el=>{ if(!el) return; el.disabled=lock; el.style.opacity=lock?'.55':'1'; el.style.background=lock?'#F0F2F1':''; });
+  };
+  if(b.dataset.mode==='edit'){
+    // Đang ở trạng thái "Sửa" -> mở khóa ô để chỉnh
+    lockFields(false); b.textContent='💾 Lưu'; b.dataset.mode=''; if(idEl) idEl.focus();
+    return;
+  }
+  // Lưu ID -> khóa ô, đổi nút thành Sửa
+  const ok = await saveOtrIdForCampaign_(camp, idInput, progInput, null);
+  if(ok){ lockFields(true); b.textContent='✏️ Sửa'; b.dataset.mode='edit'; }
+});
+// Lưu cố định ID chiến dịch (otrId) + Program ID vào 1 campaign — để Trainer cập nhật dùng đúng ID.
+async function saveOtrIdForCampaign_(camp, idInputId, progInputId, btnEl){
+  if(!isAdmin()){ return false; }
+  if(!camp){ alert('Không tìm thấy chiến dịch của tháng này. Hãy tạo chiến dịch trước.'); return false; }
+  const idVal=(document.getElementById(idInputId)?.value||'').trim();
+  const progVal = progInputId ? (document.getElementById(progInputId)?.value||'').trim() : '';
+  if(!idVal){ alert('Hãy nhập ID chiến dịch trước khi lưu.'); return false; }
+  camp.otrId=idVal; if(progInputId) camp.programId=progVal;
+  try{ await dbSet('campaigns',campaigns); return true; }
+  catch(e){ alert('Lỗi lưu: '+(e&&e.message?e.message:e)); return false; }
+}
 function campaignsForGroupMonth(group){
   return campaigns.filter(c=>c.group===group && c.month===currentMonth);
 }
@@ -8983,10 +9038,10 @@ async function fetchFtfRows_(campaignId, month){
 async function updateFtfFromOtraining_(){
   const msg=document.getElementById('ftfImportMsg');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
-  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
   const idInput=document.getElementById('otrFtfCampaignId');
-  const campaignId=(idInput&&idInput.value||'').trim();
-  if(!campaignId){ show('Hãy nhập ID chiến dịch (xem trong URL báo cáo otraining).','var(--red)'); if(idInput) idInput.focus(); return; }
+  const _ftfCamp=campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf');
+  const campaignId=((idInput&&idInput.value||'').trim()) || String((_ftfCamp&&_ftfCamp.otrId)||'').trim();
+  if(!campaignId){ show(isAdmin()?'Hãy nhập ID chiến dịch (xem trong URL báo cáo otraining).':'Admin chưa thiết lập ID chiến dịch FTF cho tháng này.','var(--red)'); if(idInput) idInput.focus(); return; }
   show('⏳ Đang lấy FTF từ otraining (ID '+campaignId+')...');
   try{
     const {data:arr, detail}=await fetchFtfRows_(campaignId, currentMonth);
@@ -9048,9 +9103,8 @@ async function fetchWsDoitacRows_(campaignId, month){
 async function updateTestOnlineFromOtraining_(camp){
   const msg=document.getElementById('testOnlineImportMsg');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
-  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
   const idInput=document.getElementById('otrCampaignId');
-  const campaignId=(idInput&&idInput.value||'').trim();
+  const campaignId=((idInput&&idInput.value||'').trim()) || String((typeof camp!=='undefined'&&camp&&camp.otrId)||'').trim();
   if(!campaignId){ show('Hãy nhập ID chiến dịch (xem trong URL báo cáo otraining).','var(--red)'); if(idInput) idInput.focus(); return; }
   show('⏳ Đang lấy Test Online từ otraining (ID '+campaignId+')...');
   try{
@@ -9067,9 +9121,8 @@ async function updateTestOnlineFromOtraining_(camp){
 async function updateAiCheckFromOtraining_(camp){
   const msg=document.getElementById('aiCheckImportMsg');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
-  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
   const idInput=document.getElementById('otrAiCampaignId');
-  const campaignId=(idInput&&idInput.value||'').trim();
+  const campaignId=((idInput&&idInput.value||'').trim()) || String((typeof camp!=='undefined'&&camp&&camp.otrId)||'').trim();
   if(!campaignId){ show('Hãy nhập ID chiến dịch (xem trong URL báo cáo otraining).','var(--red)'); if(idInput) idInput.focus(); return; }
   show('⏳ Đang lấy Tư vấn AI từ otraining (ID '+campaignId+')...');
   try{
@@ -9088,9 +9141,8 @@ async function updateAiCheckFromOtraining_(camp){
 async function updateWorkshopFromOtraining_(camp){
   const msg=document.getElementById('workshopActualImportMsg');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
-  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
   const idInput=document.getElementById('otrWsCampaignId');
-  const campaignId=(idInput&&idInput.value||'').trim();
+  const campaignId=((idInput&&idInput.value||'').trim()) || String((typeof camp!=='undefined'&&camp&&camp.otrId)||'').trim();
   if(!campaignId){ show('Hãy nhập ID chiến dịch (xem trong URL báo cáo otraining).','var(--red)'); if(idInput) idInput.focus(); return; }
   show('⏳ Đang lấy Workshop từ otraining (ID '+campaignId+')...');
   try{
@@ -9434,20 +9486,21 @@ async function renderFrequencyNoiboBody_(subtype){
 
     const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||(trainerOf(p.trainerId)&&trainerOf(p.trainerId).region===session.region)));
     html+=`<h3 class="kpi-section-title">Danh sách PGs chưa hoàn thành Test Online</h3><p class="section-desc">Chỉ hiển thị PG có <strong>Lần đạt điểm max &lt; ${x}</strong>. Dữ liệu lấy theo <strong>Mã NV</strong>; khi đạt ≥ ${x} lần, PG tự chuyển trạng thái Đạt.</p>`;
-    if(isAdmin()){
+    if(isAdmin()||isTrainer()){
       html+=`<div class="form-card" style="max-width:none;margin:0 0 14px;">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-          <input type="number" id="otrCampaignId" placeholder="ID chiến dịch (VD 31)" style="width:180px;" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+          <input type="number" id="otrCampaignId" placeholder="ID chiến dịch (VD 31)" style="width:180px;${isAdmin()?'':'display:none;'}" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+          ${isAdmin()?`<button class="secondary otr-save-btn" data-save="testonline" type="button" title="Lưu cố định ID cho tháng này">💾 Lưu</button>`:''}
           <button class="primary" id="otrTestOnlineBtn" type="button">↻ Cập nhật Test Online từ hệ thống</button>
           <span class="save-msg" id="testOnlineImportMsg" style="display:none;"></span>
         </div>
-        <div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. Mỗi tháng có <strong>ID chiến dịch</strong> khác nhau — xem trong URL báo cáo otraining (<code>test-results/<b>&lt;ID&gt;</b>/download</code>), nhập vào ô rồi bấm nút.</div>
+        ${isAdmin()?`<div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. Mỗi tháng có <strong>ID chiến dịch</strong> khác nhau — xem trong URL báo cáo otraining (<code>test-results/<b>&lt;ID&gt;</b>/download</code>), nhập vào ô rồi bấm nút.</div>
         <details><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / Google Sheet) — chỉ dùng khi cần</summary>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
           <input type="file" id="testOnlineImportInput" accept=".xlsx,.xls" style="display:none;">
           <button class="secondary" id="testOnlineImportBtn" type="button">📥 Import file Excel</button><button class="secondary admin-only-gsheet" id="testOnlineSheetLinkBtn" type="button">🔗 Cập nhật Google Sheet</button>
         </div>
-        <div class="section-desc" style="margin-top:8px;">Hệ thống đọc cột <strong>Mã NV</strong> và <strong>Lần đạt điểm max</strong>.</div></details></div>`;
+        <div class="section-desc" style="margin-top:8px;">Hệ thống đọc cột <strong>Mã NV</strong> và <strong>Lần đạt điểm max</strong>.</div></details>`:''}</div>`;
     }
     html+=`<div id="testOnlineIncompleteListBox"></div>`;
     html+=`<div id="saleTestOnlineBox"></div>`;
@@ -9560,7 +9613,8 @@ async function renderFrequencyNoiboBody_(subtype){
   if(isAdmin()){
     html+=`<div class="form-card" style="max-width:none;margin:0 0 14px;">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-        <input type="number" id="otrAiCampaignId" placeholder="ID chiến dịch (VD 18)" style="width:180px;" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+        <input type="number" id="otrAiCampaignId" placeholder="ID chiến dịch (VD 18)" style="width:180px;${isAdmin()?'':'display:none;'}" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+        ${isAdmin()?`<button class="secondary otr-save-btn" data-save="aicheck" type="button" title="Lưu cố định ID cho tháng này">💾 Lưu</button>`:''}
         <button class="primary" id="otrAiCheckBtn" type="button">↻ Cập nhật Tư vấn AI từ hệ thống</button>
         <span class="save-msg" id="aiCheckImportMsg" style="display:none;"></span>
       </div>
@@ -9790,7 +9844,8 @@ async function renderPartnerTrainingRegionProgress_(subtype){
   if(isAdmin()){
     html+=`<div class="form-card" style="max-width:none;margin-top:14px;">
       ${subtype==='workshop'?`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-        <input type="number" id="otrWsDtCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:180px;" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+        <input type="number" id="otrWsDtCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:180px;${isAdmin()?'':'display:none;'}" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+        ${isAdmin()?`<button class="secondary otr-save-btn" data-save="wsdoitac" type="button" title="Lưu cố định ID cho tháng này">💾 Lưu</button>`:''}
         <button class="primary" id="otrWsDtBtn" type="button">↻ Cập nhật Workshop từ hệ thống</button>
         <span class="save-msg" id="partnerTrainingActualImportMsg-workshop" style="display:none;"></span>
       </div>
@@ -9831,9 +9886,8 @@ async function renderPartnerTrainingRegionProgress_(subtype){
 async function updateWsDoitacFromOtraining_(camp){
   const msg=document.getElementById('partnerTrainingActualImportMsg-workshop');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
-  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
   const idInput=document.getElementById('otrWsDtCampaignId');
-  const campaignId=(idInput&&idInput.value||'').trim();
+  const campaignId=((idInput&&idInput.value||'').trim()) || String((typeof camp!=='undefined'&&camp&&camp.otrId)||'').trim();
   if(!campaignId){ show('Hãy nhập ID chiến dịch (xem trong URL báo cáo otraining).','var(--red)'); if(idInput) idInput.focus(); return; }
   show('⏳ Đang lấy Workshop Đối tác từ otraining (ID '+campaignId+')...');
   try{
@@ -10315,6 +10369,7 @@ function renderKpiCategoryLegacyBody_(catKey){
         updateMediaTopSummaryCard_();
         renderMediaCampaignsOverview();
         renderMediaTopCampaignCards_();
+        setTimeout(()=>{ try{ initOtrSaveButtons_(); }catch(e){} }, 50);
       });
     });
   }
@@ -10670,7 +10725,7 @@ async function processCoachingLogSheet_(wb){
 }
 async function updateCoachingFromLogSheet_(){
   const msg=document.getElementById('coachingImportMsg');
-  if(!isAdmin()){ if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Chỉ Admin được cập nhật.';} return; }
+  if(!isAdmin() && !isTrainer()){ if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Bạn không có quyền cập nhật.';} return; }
   if(monthLocked){ if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Tháng đã khoá — không cập nhật được.';} return; }
   if(msg){ msg.style.display='block'; msg.style.color='var(--muted)'; msg.textContent='⏳ Đang tải COACHING_LOG và lọc '+monthLabel(currentMonth)+' · MIEN TRUNG...'; }
   try{
@@ -10776,21 +10831,21 @@ async function processCoachingHistoryWorkbook_(wb){
 function renderCoachingImportBox(){
   const box = document.getElementById('coachingImportBox');
   if(!box) return;
-  if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
+  if(!isAdmin() && !isTrainer()){ box.innerHTML=''; return; } // Viewer: ẩn; Trainer: thấy nút (ô ID ẩn)
   const canEdit = isAdmin() && !monthLocked;
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import kết quả khảo sát Coaching (PGs 0★/1★ &amp; PGs mới) — ${monthLabel(currentMonth)}</h3>
     <p class="section-desc" style="margin-bottom:10px;">Bấm <strong>↻ Cập nhật tiến độ từ COACHING_LOG</strong> để tự lấy dữ liệu khảo sát PGs Dev đúng <strong>${monthLabel(currentMonth)}</strong>, chỉ vùng <strong>MIEN TRUNG</strong> — không cần import tay. (Cũ) Import file "Lịch sử Coaching" (cột: Thời gian, Loại Coaching, Khu vực, Trainer, Trainer Username, Mã NV, PGs, SĐT, Shop FC, Nội dung Coaching, Nội dung khác, Hữu ích/5, Tự tin/5, Trainer dễ hiểu/5, Kỹ năng cần hỗ trợ thêm, Góp ý cho Trainer, Trạng thái). <strong>Chỉ cần import 1 lần</strong> — hệ thống tự phân loại đúng theo cột "Loại Coaching" vào cả 2 mục PGs 0★/1★ và PGs mới cùng lúc. Chỉ tính vào kết quả những dòng có Trạng thái = "Hợp lệ" trong ${monthLabel(currentMonth)}; các dòng khác vẫn đếm số lượng để Trainer kiểm tra lại. Import lại tự bỏ qua dòng trùng. <strong>Riêng dòng "PGs mới" mà cột Mã NV để trống</strong> (PG chưa kịp tạo Code lúc làm khảo sát): hệ thống tự tra theo cột "PGs" (tên) trong Danh sách PGs mới của tháng — khớp được thì vẫn tính bình thường.</p>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-      <button class="primary" id="coachingLogUpdateBtn" type="button" ${canEdit?'':'disabled'}>↻ Cập nhật tiến độ từ COACHING_LOG</button>
+      <button class="primary" id="coachingLogUpdateBtn" type="button" ${monthLocked?'disabled':''}>↻ Cập nhật tiến độ từ COACHING_LOG</button>
       <span class="save-msg" id="coachingImportMsg" style="display:none;"></span>
     </div>
-    <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / link khác) — chỉ dùng khi cần</summary>
+    ${isAdmin()?`<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / link khác) — chỉ dùng khi cần</summary>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
       <input type="file" id="coachingImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
       <button class="secondary" id="downloadCoachingTemplateBtn" type="button">⬇ Tải file mẫu</button>
       <button class="secondary admin-only-gsheet" id="coachingSheetLinkBtn" type="button" ${canEdit?'':'disabled'}>🔗 Cập nhật từ Google Sheet khác</button>
-    </div></details>
+    </div></details>`:''}
   </div>`;
 
   const importInput = document.getElementById('coachingImportInput');
@@ -11435,7 +11490,7 @@ function renderBulletChart(canvasId, labels, values){
     plugins:[targetLinePlugin]
   });
 }
-function renderKpiAll(){ renderKpiCampaignContext(); KPI_CATS.forEach(c=>renderKpiCategory(c.key)); }
+function renderKpiAll(){ renderKpiCampaignContext(); KPI_CATS.forEach(c=>renderKpiCategory(c.key)); [200,600,1200].forEach(ms=>setTimeout(()=>{ try{ initOtrSaveButtons_(); }catch(e){} },ms)); }
 
 /* ============ CÀI ĐẶT ============ */
 let editingRegionOldName = null;
@@ -11518,7 +11573,6 @@ function saleFromShopMap_(shopName){ if(!shopName) return ''; _ensureShopMapByNa
 async function updatePartnerFromSystem_(){
   const msg=document.getElementById('partnerUpdateMsg');
   const show=(t,c)=>{ if(msg){msg.style.display='block';msg.style.color=c||'var(--muted)';msg.textContent=t;} };
-  if(!isAdmin()){ show('Chỉ Admin được cập nhật.','var(--red)'); return; }
   show('⏳ Đang lấy danh sách đối tác từ otraining...');
   try{
     const res=await fetch(OTRAINING_FN_URL_,{
@@ -12635,7 +12689,7 @@ async function processWorkshopActualWorkbook_(wb, camp){
 function renderWorkshopActualImportBox_(){
   const box=document.getElementById('workshopActualImportBox');
   if(!box) return;
-  if(!isAdmin()){ box.innerHTML=''; return; } // Trainer: ẩn hoàn toàn khung Import, không chỉ disable
+  if(!isAdmin() && !isTrainer()){ box.innerHTML=''; return; } // Viewer: ẩn; Trainer: thấy nút (ô ID ẩn)
   const camp=campaigns.find(c=>c.month===currentMonth && c.group==='noibo' && campaignSubtype(c)==='workshop');
   if(!camp){
     box.innerHTML='<div class="empty">Chưa có chiến dịch Nội bộ - Workshop trong tháng đang xem. Hãy tạo chiến dịch trước.</div>';
@@ -12644,7 +12698,8 @@ function renderWorkshopActualImportBox_(){
   box.innerHTML=`<div class="form-card" style="max-width:none;margin-bottom:16px;">
     <p class="section-desc" style="margin-bottom:10px;">File kết quả dùng cùng cấu trúc với file Target Workshop. <strong>Trạng thái = Done</strong> được tính là hoàn thành 1 buổi Workshop; <strong>HV thực tế</strong> của các dòng Done được cộng vào tiến độ Số học viên. Dòng còn <strong>Plan</strong> chưa tính hoàn thành.</p>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-      <input type="number" id="otrWsCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:180px;" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+      <input type="number" id="otrWsCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:180px;${isAdmin()?'':'display:none;'}" value="${escapeHtml(String((camp&&camp.otrId)||''))}">
+      ${isAdmin()?`<button class="secondary otr-save-btn" data-save="wsnoibo" type="button" title="Lưu cố định ID cho tháng này">💾 Lưu</button>`:''}
       <button class="primary" id="otrWorkshopBtn" type="button">↻ Cập nhật Workshop từ hệ thống</button>
       <span class="save-msg" id="workshopActualImportMsg" style="display:none;"></span>
     </div>
