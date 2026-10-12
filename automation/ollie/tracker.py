@@ -171,7 +171,7 @@ class Tracker:
         try:
             from announcements import has_deadline, notice_source_id
             structured_assignment = command.startswith("giao viec") and bool(
-                re.search(r"(?m)^\s*(?:trainer|cho)\s*:", command))
+                re.search(r"(?m)^\s*(?:trainer|nguoi phu trach|nguoi nhan|cho)\s*:", command))
             if "thong bao" in command or (has_deadline(text) and not structured_assignment):
                 if sender != self.owner:
                     return "Chỉ leader được tạo thông báo cần nhắc."
