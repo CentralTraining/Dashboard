@@ -229,13 +229,28 @@ def main():
     parser.add_argument("--send", action="store_true", help="Send the daily digest; default only verifies the data")
     args = parser.parse_args()
     try:
-        config = json.loads(os.environ["OLLIE_KPI_CONFIG_JSON"])
+        raw = os.environ.get("OLLIE_KPI_CONFIG_JSON", "")
+        if not raw.strip():
+            raise StateError("repository_secret_missing")
+        try:
+            config = json.loads(raw)
+        except json.JSONDecodeError:
+            raise StateError("repository_secret_invalid_json") from None
+        if not isinstance(config, dict) or any(k not in config for k in ("source", "settings", "state", "credentials")):
+            raise StateError("repository_secret_incomplete")
         asyncio.run(run(config, args.send))
     except (KpiSourceError, StateError, DeliveryError) as error:
         print("Ollie KPI: " + str(error))
         return 1
-    except Exception:
-        print("Ollie KPI: configuration_or_runtime_error")
+    except Exception as error:
+        # Class and source location diagnose failures without printing secret
+        # values, HTTP response bodies, local variables or exception messages.
+        print("Ollie KPI: runtime_" + type(error).__name__)
+        import traceback
+        frames = traceback.extract_tb(error.__traceback__)
+        if frames:
+            frame = frames[-1]
+            print(f"Failure location: {Path(frame.filename).name}:{frame.lineno} ({frame.name})")
         return 1
     return 0
 
