@@ -33,7 +33,18 @@ jobs:
         run: python -m pip install -r automation/ollie/requirements-github.txt
       - name: Check KPI calculations and delivery protection
         working-directory: automation/ollie
-        run: python -m unittest test_tracker test_announcements test_kpi test_kpi_scheduler test_github_daily test_deadlines test_dashboard_publish
+        run: python -m unittest test_tracker test_announcements test_kpi test_kpi_scheduler test_github_daily test_deadlines test_dashboard_publish test_group_capture
+      - name: Read new group notices before the morning digest
+        id: group_capture
+        continue-on-error: true
+        if: github.event_name == 'schedule' || inputs.send == true
+        working-directory: automation/ollie
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          OLLIE_KPI_CONFIG_JSON: ${{ secrets.OLLIE_KPI_CONFIG_JSON }}
+        run: |
+          python install_dws.py
+          python group_capture.py
       - name: Prepare or send KPI reports
         working-directory: automation/ollie
         env:
@@ -46,3 +57,6 @@ jobs:
           else
             python github_daily.py
           fi
+      - name: Check group capture result
+        if: always() && steps.group_capture.outcome == 'failure'
+        run: exit 1

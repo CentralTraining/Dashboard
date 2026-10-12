@@ -4,8 +4,8 @@ Dashboard vẫn ở https://centraltraining.github.io/Dashboard/. GitHub Actions
 đọc nguồn Supabase đang dùng và gửi báo cáo bằng ứng dụng Ollie_MT đã phát hành.
 Không cần Netlify hoặc đổi dashboard sang nơi khác.
 
-Lịch 08:00 còn gửi danh sách việc có deadline từ thông báo nhóm đã đồng bộ
-và mục **Công việc & deadline** trong chi tiết thẻ Trainer. Việc mới được
+Lịch 08:00 còn gửi danh sách việc có deadline từ thông báo Nghĩa đăng trong
+nhóm AE CÂY KHẾ CHUA. Không nhập công việc trên dashboard. Việc mới được
 nhắc từ sáng hôm sau; các việc sắp theo deadline gần nhất rồi thời điểm tạo.
 Mỗi Trainer có lời chào bằng tên và lời chúc đổi mỗi ngày; link được thu gọn
 thành chữ Link nhưng giữ nguyên URL đích, ID họp và mật mã.
@@ -13,10 +13,14 @@ Việc hoàn thành, bị hủy hoặc qua deadline không được nhắc tiế
 Chỉ dữ liệu có deadline rõ ràng mới vào danh sách việc; không đoán ngày
 kết thúc từ tên chiến dịch KPI.
 
-Điểm nhận thông báo liên tục dùng Worker HTTP; xem `cloudflare/README.md`.
-Sau khi có endpoint đã kiểm tra, cấu hình bot sang HTTP và phát hành bản
-mới. Trước khi hoàn tất kết nối này, Stream trong phiên làm việc vẫn nhận
-tin có @Ollie_MT; không tuyên bố đã nhận mọi thông báo khi phiên đóng.
+Workflow **Ollie group notices** đọc lịch sử nhóm mỗi 15 phút bằng kết nối
+DingTalk của Nghĩa đã được cấp quyền. Chỉ thông báo của đúng Nghĩa trong
+đúng nhóm được tạo thành việc. Không cần @bot để bộ đọc lịch sử nhận tin.
+Trước bản nhắc 08:00, bộ đọc chạy lại để lấy cả thông báo vừa đăng.
+Thông tin đăng nhập được giữ trong sổ trạng thái đã mã hóa, không đưa
+token hoặc bản thông báo gốc vào log hay mã nguồn. Bộ đọc này không cần
+Cloudflare hoặc Mac bật liên tục. Phản hồi trò chuyện ngay khi @bot vẫn
+là chức năng riêng của Stream/HTTP; `cloudflare/README.md` mô tả tùy chọn HTTP.
 
 Báo cáo cá nhân dùng tên gọi và 3 nhóm 🏫 Nội bộ, 🤝 Đối tác, 📣 Truyền
 thông. Chỉ số có target trong tháng mới được hiển thị, theo mẫu
@@ -60,6 +64,6 @@ Lỗi bị từ chối rõ ràng giữ `retry` cho lần chạy tiếp theo. Log
 và mã lỗi, không in nội dung, tài khoản hoặc khóa. Dữ liệu KPI lấy mới ở mỗi
 ngày; nếu mất nguồn hoặc thiếu Trainer, không tạo số 0 giả.
 
-GitHub Actions chạy **lịch gửi KPI**, không giữ kết nối Stream liên tục để bot
+GitHub Actions chạy **đọc thông báo nhóm và lịch gửi**, không giữ kết nối Stream liên tục để bot
 trò chuyện ngay với mọi người. Phần phản hồi hội thoại hiện vẫn do chương
 trình chạy thử xử lý; muốn phần này chạy 24/7 cần một máy chạy liên tục.

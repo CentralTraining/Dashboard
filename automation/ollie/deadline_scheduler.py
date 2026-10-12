@@ -12,7 +12,8 @@ def fetch_deadline_sources(config):
     records = SupabaseKpiSource(config['source']).read(['config'])
     trainers = next((r['value'].get('trainers', []) for r in records if r['key'] == 'config'), [])
     if not trainers: raise KpiSourceError('missing_deadline_trainer_configuration')
-    events = source.events(); tasks, dones = source.dashboard_tasks()
+    events = source.events()
+    tasks, dones = source.dashboard_tasks() if config['settings'].get('deadline_input') == 'dashboard' else ([], {})
     return events, tasks, dones, {t['id']: t['name'] for t in trainers}
 
 

@@ -1,8 +1,22 @@
 """Extract a concise meeting reminder without guessing conflicting dates."""
 
 import re
+import hashlib
+import json
+import unicodedata
 from datetime import datetime, timedelta
 from tracker import VIETNAM, folded
+
+
+def notice_source_id(group, owner, posted, text):
+    text = re.sub(r"@Ollie_MT\b", "", unicodedata.normalize("NFC", text), flags=re.I)
+    text = text.replace("\r\n", "\n").strip()
+    payload = json.dumps([group, owner, int(posted), text], ensure_ascii=False, separators=(",", ":"))
+    return "group:" + hashlib.sha256(payload.encode()).hexdigest()
+
+
+def has_deadline(text):
+    return bool(re.search(r"(?:\bdeadline|\bhan hoan thanh|\bhan chot|\bthoi gian)\s*:", folded(text)))
 
 
 def meeting_access(text):
@@ -49,8 +63,7 @@ def summarize_meeting(text):
 
 
 def meeting_deadline(text, source_time):
-    lines = [line for line in text.splitlines() if any(
-        key in folded(line) for key in ("thoi gian:", "deadline:", "han hoan thanh:", "han chot:"))]
+    lines = [line for line in text.splitlines() if has_deadline(line)]
     if len(lines) != 1:
         raise ValueError("Chưa lưu: cần một dòng Thời gian hoặc Deadline cho mỗi thông báo.")
     line = folded(lines[0])
@@ -98,8 +111,7 @@ def parse_announcement(text, source_time):
     title = next((line for line in text.splitlines() if 'thong bao' in folded(line)), '')
     if re.search(r'\bhop\b|\bmeeting\b', folded(title)):
         return parse_meeting(text, source_time)
-    lines = [line for line in text.splitlines() if any(key in folded(line) for key in
-             ('thoi gian:', 'deadline:', 'han hoan thanh:', 'han chot:'))]
+    lines = [line for line in text.splitlines() if has_deadline(line)]
     if len(lines) != 1:
         raise ValueError('Chưa lưu: mỗi thông báo cần một dòng Deadline hoặc Hạn hoàn thành rõ ràng.')
     deadline_text = text

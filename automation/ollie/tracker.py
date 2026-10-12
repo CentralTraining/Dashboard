@@ -169,9 +169,12 @@ class Tracker:
             return (f"Đã bật lịch nhắc lúc 08:00 Việt Nam, {self.schedule_description()}; gửi nhóm và riêng."
                     if command == "bat nhac viec" else "Đã tạm dừng gửi lời nhắc. Các công việc vẫn được lưu.")
         try:
-            if "thong bao" in command:
+            from announcements import has_deadline, notice_source_id
+            if "thong bao" in command or (has_deadline(text) and not command.startswith("giao viec")):
                 if sender != self.owner:
                     return "Chỉ leader được tạo thông báo cần nhắc."
+                if str(getattr(incoming, "conversation_type", "2")) != "2":
+                    return "Hãy gửi thông báo kèm deadline trong nhóm AE CÂY KHẾ CHUA để giao việc cho Team."
                 from announcements import parse_announcement
                 source_time = getattr(incoming, "create_at", None)
                 source_time = (float(source_time) / 1000 if source_time else now)
@@ -180,7 +183,8 @@ class Tracker:
                 if not audience:
                     return (f"Bản rút gọn: {content}\nThời gian: {display_time(deadline)}\n"
                             "Chưa tạo lịch nhắc: cần xác định nhóm thông báo và danh sách người nhận.")
-                return self.save_task(content, deadline, incoming, event_id, now,
+                source_id = notice_source_id(getattr(incoming, 'conversation_id', self.state.get('conversation_id', '')), sender, source_time, text)
+                return self.save_task(content, deadline, incoming, source_id, source_time,
                                       list(dict.fromkeys([*audience, self.owner])))
             if re.match(r"^giao viec(?:\s|:|$)", command):
                 if sender != self.owner:
