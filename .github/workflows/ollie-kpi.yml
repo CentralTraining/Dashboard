@@ -1,0 +1,48 @@
+name: Ollie KPI daily
+
+on:
+  schedule:
+    # Vietnam UTC+7: 01:00 UTC = 08:00 Vietnam.
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      send:
+        description: 'Send today’s reports (false only checks data without sending)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ollie-kpi-daily
+  cancel-in-progress: false
+
+jobs:
+  kpi:
+    # State commits must not trigger the daily workflow.
+    if: github.ref_name != 'ollie-kpi-state'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install report dependencies
+        run: python -m pip install -r automation/ollie/requirements-github.txt
+      - name: Check KPI calculations and delivery protection
+        working-directory: automation/ollie
+        run: python -m unittest test_tracker test_announcements test_kpi test_kpi_scheduler test_github_daily
+      - name: Prepare or send KPI reports
+        working-directory: automation/ollie
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          OLLIE_KPI_CONFIG_JSON: ${{ secrets.OLLIE_KPI_CONFIG_JSON }}
+          SEND_REPORTS: ${{ github.event_name == 'schedule' || inputs.send == true }}
+        run: |
+          if [ "$SEND_REPORTS" = "true" ]; then
+            python github_daily.py --send
+          else
+            python github_daily.py
+          fi

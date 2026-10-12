@@ -1,0 +1,93 @@
+"""Extract a concise meeting reminder without guessing conflicting dates."""
+
+import re
+from datetime import datetime, timedelta
+from tracker import VIETNAM, folded
+
+
+def meeting_access(text):
+    """Retain usable links and joining credentials outside the summary limit."""
+    # Markdown often repeats a URL as both the label and destination. Keep one
+    # complete copy, including every query parameter, rather than shortening it.
+    urls = list(dict.fromkeys(re.findall(r"https?://[^\s<>\[\]()\\]+", text)))
+    details = [f"🔗 Link: {url}" for url in urls]
+    labels = {"id cuoc hop", "meeting id", "id hop", "id", "mat ma",
+              "mat khau", "passcode", "password", "meeting passcode"}
+    for raw in text.splitlines():
+        line = re.sub(r"^[^\wÀ-ỹ]+", "", raw.strip().rstrip("\\")).strip()
+        if ":" not in line:
+            continue
+        label = re.sub(r"\*\*|__|`", "", line.split(":", 1)[0])
+        if folded(label) in labels and line not in details:
+            details.append(line)
+    return "\n".join(details)
+
+
+def summarize_meeting(text):
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    title = next((line for line in lines if "thong bao" in folded(line)), "Họp Trainer")
+    title = re.sub(r"^[^\wÀ-ỹ]+", "", title)
+    title = re.sub(r"^thông báo\s*", "", title, flags=re.I).strip(" :—–-")
+    if title.isupper():
+        title = title.capitalize().replace("trainer", "Trainer")
+    topics = []
+    for line in lines:
+        if re.match(r"^[+•*-]\s*", line):
+            topic = re.sub(r"^[+•*-]\s*", "", line).strip()
+            topic = re.sub(r"^(truyền thông|kế hoạch content|review hoạt động|cập nhật hoạt động team)\s+",
+                           "", topic, flags=re.I)
+            topics.append(topic[:100])
+    summary = title[:180]
+    if topics:
+        summary += " — " + ", ".join(topics[:6])
+    if "zoom" in folded(text):
+        summary += " (online qua Zoom)"
+    elif "online" in folded(text):
+        summary += " (online)"
+    access = meeting_access(text)
+    return summary[:700] + ("\n" + access if access else "")
+
+
+def meeting_deadline(text, source_time):
+    lines = [line for line in text.splitlines() if any(
+        key in folded(line) for key in ("thoi gian:", "deadline:", "han hoan thanh:"))]
+    if len(lines) != 1:
+        raise ValueError("Chưa lưu: cần một dòng Thời gian hoặc Deadline cho mỗi thông báo.")
+    line = folded(lines[0])
+    times = re.findall(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)", line)
+    if len(times) != 1:
+        raise ValueError("Chưa lưu: thời gian cần một giờ rõ ràng, ví dụ 14:00.")
+    hour, minute = map(int, times[0])
+    original_day = datetime.fromtimestamp(source_time, VIETNAM).date()
+    relative = None
+    if "ngay mai" in line:
+        relative = original_day + timedelta(days=1)
+    elif "hom nay" in line:
+        relative = original_day
+    elif "ngay kia" in line:
+        relative = original_day + timedelta(days=2)
+    full = re.search(r"(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](20\d{2})(?!\d)", line)
+    short = re.search(r"(?<!\d)(\d{1,2})[./](\d{1,2})(?![\d./])", line)
+    if full:
+        day, month, year = map(int, full.groups())
+        try:
+            date = datetime(year, month, day).date()
+        except ValueError:
+            raise ValueError("Chưa lưu: ngày họp không hợp lệ.") from None
+        if relative is not None and date != relative:
+            raise ValueError("Chưa lưu: ngày cụ thể và ‘ngày mai/hôm nay’ không khớp. Gửi ngày, tháng, năm chính xác nhé.")
+    elif relative is not None:
+        date = relative
+        if short and tuple(map(int, short.groups())) != (date.day, date.month):
+            raise ValueError("Chưa lưu: ‘ngày mai’ và ngày/tháng ghi trong thông báo không khớp. Gửi ngày, tháng, năm chính xác nhé.")
+    else:
+        raise ValueError("Chưa lưu: cần ngày, tháng và năm, ví dụ Thời gian: 14:00, 20/10/2026.")
+    weekdays = {"thu hai":0,"thu ba":1,"thu tu":2,"thu nam":3,"thu sau":4,"thu bay":5,"chu nhat":6}
+    for name, value in weekdays.items():
+        if re.search(r"\b" + re.escape(name) + r"\b", line) and date.weekday() != value:
+            raise ValueError("Chưa lưu: thứ trong tuần không khớp với ngày họp. Bạn kiểm tra lại ngày nhé.")
+    return datetime.combine(date, datetime.min.time(), VIETNAM).replace(hour=hour,minute=minute).timestamp()
+
+
+def parse_meeting(text, source_time):
+    return summarize_meeting(text), meeting_deadline(text, source_time)
