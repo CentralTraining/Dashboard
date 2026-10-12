@@ -4,10 +4,14 @@ import base64
 import os
 import tempfile
 from pathlib import Path
+import contextlib
+import io
 from unittest.mock import Mock, patch
 
-from github_daily import deliver_jobs, StateError, GitHubState
+from github_daily import deliver_jobs, StateError, GitHubState, run
 from tracker import Tracker, DeliveryError
+from kpi import KpiSnapshot
+from test_kpi import fixture, rows
 
 
 class DeliveryLedgerChecks(unittest.TestCase):
@@ -58,6 +62,34 @@ class DeliveryLedgerChecks(unittest.TestCase):
             self.assertEqual(deliver_jobs(self.tracker, sender, store, 71)['accepted'], 1)
             self.assertEqual(deliver_jobs(self.tracker, sender, store, 72)['accepted'], 0)
         self.assertEqual(sender.send.call_count, 2)
+
+
+class VerifyModeChecks(unittest.IsolatedAsyncioTestCase):
+    async def test_verify_checks_live_source_and_auth_without_sending_or_creating_state(self):
+        config = {
+            'source': {'url': 'https://example.supabase.co', 'table': 'kv_store',
+                       'anon_key': 'fake', 'dashboard_url': 'https://example.invalid/'},
+            'settings': {'hour': 8, 'minute': 0, 'timezone': 'Asia/Ho_Chi_Minh',
+                         'trainer_recipients': {'a': {'channel': 'dm', 'target': 'staff-a'},
+                                                'b': {'channel': 'dm', 'target': 'staff-b'}}},
+            'state': {'leader_staff_id': 'leader', 'conversation_id': 'group', 'robot_code': 'bot'},
+            'credentials': {'appKey': 'bot', 'appSecret': 'fake'},
+        }
+        async def direct(fn, *args):
+            return fn(*args)
+        with patch('github_daily.asyncio.to_thread', side_effect=direct), \
+             patch('github_daily.SupabaseKpiSource.snapshot', return_value=KpiSnapshot(rows(fixture()), '2026-10')) as source, \
+             patch('github_daily.DingTalkSender') as sender, \
+             patch('github_daily.GitHubState') as state, \
+             contextlib.redirect_stdout(io.StringIO()) as output:
+            sender.return_value.access_token.return_value = 'private-token'
+            await run(config, send=False)
+        source.assert_called_once()
+        sender.return_value.access_token.assert_called_once()
+        sender.return_value.send.assert_not_called()
+        state.assert_not_called()
+        self.assertIn('"messages_sent": 0', output.getvalue())
+        self.assertNotIn('private-token', output.getvalue())
 
 
 class EncryptedStateChecks(unittest.TestCase):

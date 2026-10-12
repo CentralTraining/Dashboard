@@ -184,7 +184,11 @@ async def run(config, send=False):
         reports = snapshot.reports()
         if not reports or any(r["trainer_id"] not in config["settings"]["trainer_recipients"] for r in reports):
             raise KpiSourceError("trainer_mapping_incomplete")
-        print(json.dumps({"mode": "verify_only", "trainer_reports": len(reports), "messages_sent": 0}))
+        # Verify that this runner can authenticate the configured DingTalk bot.
+        # Do not print or persist the returned access token or send any message.
+        await asyncio.to_thread(DingTalkSender(config["credentials"], config["state"]).access_token)
+        print(json.dumps({"mode": "verify_only", "trainer_reports": len(reports),
+                          "dingtalk_auth_verified": True, "messages_sent": 0}))
         return
     if not config["settings"].get("enabled"):
         print(json.dumps({"mode": "disabled", "messages_sent": 0}))
@@ -227,7 +231,7 @@ def main():
     try:
         config = json.loads(os.environ["OLLIE_KPI_CONFIG_JSON"])
         asyncio.run(run(config, args.send))
-    except (KpiSourceError, StateError) as error:
+    except (KpiSourceError, StateError, DeliveryError) as error:
         print("Ollie KPI: " + str(error))
         return 1
     except Exception:
