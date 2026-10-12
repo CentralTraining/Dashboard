@@ -67,6 +67,11 @@ class Tracker:
                 status TEXT NOT NULL DEFAULT 'pending',
                 attempts INTEGER NOT NULL DEFAULT 0,
                 receipt TEXT, error_code TEXT, updated_at REAL);
+            CREATE TABLE IF NOT EXISTS task_events (
+                event_id TEXT PRIMARY KEY, payload TEXT NOT NULL,
+                recorded_at REAL NOT NULL, synced_at REAL);
+            CREATE TABLE IF NOT EXISTS task_imports (event_id TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS task_originals (task_id INTEGER PRIMARY KEY, content TEXT NOT NULL);
         """)
         self.db.execute("INSERT OR IGNORE INTO people VALUES (?, ?)",
                         (self.owner, state["leader_name"]))
@@ -83,6 +88,18 @@ class Tracker:
         return json.loads(self.db.execute(
             "SELECT value FROM settings WHERE key='reminders'").fetchone()[0])
 
+    def record_task_event(self, event_id, task_id, operation, author, now):
+        row = self.db.execute('SELECT source_event,content,deadline,created_at,cancelled FROM tasks WHERE id=?', (task_id,)).fetchone()
+        assignments = self.db.execute('SELECT staff_id,done_at FROM assignments WHERE task_id=?', (task_id,)).fetchall()
+        original = self.db.execute('SELECT content FROM task_originals WHERE task_id=?', (task_id,)).fetchone()
+        payload = {'event_id': event_id, 'task_source_event': row[0], 'content': row[1], 'deadline': row[2],
+                   'created_at': row[3], 'cancelled': bool(row[4]), 'assignees': [sid for sid, _ in assignments],
+                   'done': {sid: done for sid, done in assignments if done is not None},
+                   'operation': operation, 'author': author, 'recorded_at': now,
+                   'original': original[0] if original else row[1]}
+        self.db.execute('INSERT OR IGNORE INTO task_events VALUES (?,?,?,NULL)',
+                        (event_id, json.dumps(payload, ensure_ascii=False), now))
+
     def set_enabled(self, enabled):
         config = self.settings()
         config["enabled"] = enabled
@@ -90,9 +107,13 @@ class Tracker:
                         (json.dumps(config),))
         self.db.commit()
 
+    def schedule_description(self):
+        return ('từ sáng hôm sau khi nhận thông báo' if self.settings().get('start_policy') == 'next_morning'
+                else 'từ 4 ngày trước deadline')
+
     def help(self):
         return ("Ollie_MT đã có lưu công việc và lịch nhắc.\n"
-                "• Lịch: 08:00 giờ Việt Nam mỗi ngày, từ 4 ngày trước deadline.\n"
+                f"• Lịch: 08:00 giờ Việt Nam mỗi ngày, {self.schedule_description()}.\n"
                 "• Nơi nhận: nhóm này và tin nhắn riêng cho người phụ trách.\n\n"
                 "• Nhắc cả leader; dừng khi hoàn thành, bị hủy hoặc đã qua deadline.\n"
                 "Với thông báo họp: gửi @Ollie_MT kèm thông báo, có ngày/tháng/năm và giờ rõ ràng.\n\n"
@@ -128,7 +149,7 @@ class Tracker:
             bad = self.db.execute("SELECT COUNT(*) FROM outbox WHERE status IN ('error','unknown')").fetchone()[0]
             return (f"Lưu công việc: đang bật ({count} công việc).\n"
                     f"Lịch nhắc: {'đang bật' if config['enabled'] else 'đang tạm dừng'}.\n"
-                    "Giờ nhắc: 08:00 Việt Nam; bắt đầu trước deadline 4 ngày theo lịch.\n"
+                    f"Giờ nhắc: 08:00 Việt Nam; {self.schedule_description()}.\n"
                     "Nơi gửi: nhóm này và riêng từng người phụ trách.\n"
                     + (f"Có {bad} lần gửi chưa xác nhận thành công; cần kiểm tra kết nối/quyền gửi.\n" if bad else "")
                     + "Chương trình đang chạy thử trong phiên làm việc này.")
@@ -140,16 +161,21 @@ class Tracker:
             if sender != self.owner:
                 return "Chỉ leader được bật hoặc tạm dừng lịch nhắc."
             self.set_enabled(command == "bat nhac viec")
-            return ("Đã bật lịch nhắc lúc 08:00 Việt Nam, trước deadline 4 ngày; gửi nhóm và riêng."
+            payload = {'event_id': event_id, 'operation': 'settings', 'author': sender,
+                       'recorded_at': now, 'enabled': command == 'bat nhac viec'}
+            self.db.execute('INSERT OR IGNORE INTO task_events VALUES (?,?,?,NULL)',
+                            (event_id, json.dumps(payload), now))
+            self.db.commit()
+            return (f"Đã bật lịch nhắc lúc 08:00 Việt Nam, {self.schedule_description()}; gửi nhóm và riêng."
                     if command == "bat nhac viec" else "Đã tạm dừng gửi lời nhắc. Các công việc vẫn được lưu.")
         try:
-            if "thong bao" in command and any(key in command for key in ("thoi gian:", "deadline:", "han hoan thanh:")):
+            if "thong bao" in command:
                 if sender != self.owner:
                     return "Chỉ leader được tạo thông báo cần nhắc."
-                from announcements import parse_meeting
+                from announcements import parse_announcement
                 source_time = getattr(incoming, "create_at", None)
                 source_time = (float(source_time) / 1000 if source_time else now)
-                content, deadline = parse_meeting(text, source_time)
+                content, deadline = parse_announcement(text, source_time)
                 audience = self.state.get("audience_staff_ids", [])
                 if not audience:
                     return (f"Bản rút gọn: {content}\nThời gian: {display_time(deadline)}\n"
@@ -186,12 +212,14 @@ class Tracker:
             cancel = re.fullmatch(r"huy (cv|nr)-?(\d+)", command)
             change = re.fullmatch(r"doi han cv-?(\d+)\s+(.+)", command)
             if done:
-                return self.complete_task(int(done[1]), sender)
+                return self.complete_task(int(done[1]), sender, event_id, now)
             if cancel:
                 if sender != self.owner:
                     return "Chỉ leader được hủy công việc hoặc lời nhắc."
                 table = "tasks" if cancel[1] == "cv" else "alerts"
                 cursor = self.db.execute(f"UPDATE {table} SET cancelled=1 WHERE id=?", (int(cancel[2]),))
+                if table == 'tasks' and cursor.rowcount:
+                    self.record_task_event(event_id, int(cancel[2]), 'cancel', sender, now)
                 self.db.commit()
                 if not cursor.rowcount:
                     raise ValueError("Không tìm thấy mã công việc/lời nhắc này.")
@@ -202,6 +230,8 @@ class Tracker:
                 deadline = parse_deadline(change[2])
                 cursor = self.db.execute("UPDATE tasks SET deadline=?,first_reminder_at=? WHERE id=? AND cancelled=0",
                                          (deadline, self.first_reminder(deadline, now), int(change[1])))
+                if cursor.rowcount:
+                    self.record_task_event(event_id, int(change[1]), 'change', sender, now)
                 self.db.commit()
                 if not cursor.rowcount:
                     raise ValueError("Không tìm thấy công việc đang hoạt động này.")
@@ -252,6 +282,9 @@ class Tracker:
                 for sid in staff_ids:
                     self.db.execute("INSERT OR IGNORE INTO people VALUES (?,?)", (sid, "Trainer được chọn"))
                     self.db.execute("INSERT INTO assignments (task_id,staff_id) VALUES (?,?)", (task_id, sid))
+                original = getattr(incoming, 'original_text', None) or content
+                self.db.execute('INSERT OR IGNORE INTO task_originals VALUES (?,?)', (task_id, original))
+                self.record_task_event(event_id, task_id, 'create', incoming.sender_staff_id, now)
         names = ", ".join(self.name(sid) for sid in staff_ids)
         config = self.settings()
         first_reminder = self.db.execute("SELECT first_reminder_at FROM tasks WHERE id=?", (task_id,)).fetchone()[0]
@@ -265,6 +298,10 @@ class Tracker:
 
     def first_reminder(self, deadline, now):
         config = self.settings()
+        if config.get('start_policy') == 'next_morning':
+            first = datetime.combine(local_time(now).date() + timedelta(days=1),
+                                     datetime.min.time(), VIETNAM)
+            return first.replace(hour=config['hour'], minute=config['minute']).timestamp()
         first_date = local_time(deadline).date() - timedelta(days=config["days_before"])
         first = datetime.combine(max(first_date, local_time(now).date()),
                                  datetime.min.time(), VIETNAM).replace(hour=config["hour"], minute=config["minute"])
@@ -276,7 +313,8 @@ class Tracker:
         row = self.db.execute("SELECT name FROM people WHERE staff_id=?", (staff_id,)).fetchone()
         return row[0] if row else "Trainer được chọn"
 
-    def complete_task(self, task_id, sender):
+    def complete_task(self, task_id, sender, event_id=None, now=None):
+        now = time.time() if now is None else now
         task = self.db.execute("SELECT cancelled FROM tasks WHERE id=?", (task_id,)).fetchone()
         if not task or task[0]:
             raise ValueError("Không tìm thấy công việc đang hoạt động này.")
@@ -292,6 +330,7 @@ class Tracker:
             self.db.execute("UPDATE assignments SET done_at=? WHERE task_id=? AND staff_id=?",
                             (time.time(), task_id, sender))
             message = f"Đã ghi nhận phần việc CV-{task_id} của {self.name(sender)} hoàn thành; dừng nhắc riêng cho bạn."
+        self.record_task_event(event_id or f'complete:{task_id}:{sender}:{now}', task_id, 'complete', sender, now)
         self.db.commit()
         return message
 
@@ -302,7 +341,7 @@ class Tracker:
         if sender:
             query += " AND a.staff_id=?"
             values = (sender,)
-        return self.db.execute(query + " ORDER BY t.deadline,t.id,a.staff_id", values).fetchall()
+        return self.db.execute(query + " ORDER BY t.deadline,t.created_at,t.id,a.staff_id", values).fetchall()
 
     def task_list(self, sender, now):
         rows = self.pending_tasks(None if sender == self.owner else sender)
@@ -327,13 +366,13 @@ class Tracker:
             grouped[task_id][3].append(staff_id)
         return list(grouped.values())
 
-    def prepare_jobs(self, now):
+    def prepare_jobs(self, now, include_daily=True):
         config = self.settings()
         if not config["enabled"]:
             return
         today = local_time(now)
         scheduled = today.replace(hour=config["hour"], minute=config["minute"], second=0, microsecond=0)
-        if now >= scheduled.timestamp():
+        if include_daily and now >= scheduled.timestamp():
             rows = self.due_tasks(today.date(), now=now)
             day = today.date().isoformat()
             if rows:
@@ -355,7 +394,8 @@ class Tracker:
             "SELECT id FROM tasks WHERE first_reminder_at<=?", (scheduled,))}
         return [row for row in self.pending_tasks(sender)
                 if row[0] in eligible and row[2] > cutoff
-                and local_time(row[2]).date() - timedelta(days=config["days_before"]) <= day]
+                and (config.get('start_policy') == 'next_morning'
+                     or local_time(row[2]).date() - timedelta(days=config["days_before"]) <= day)]
 
     def add_job(self, key, kind, reference, channel, target, due_at):
         self.db.execute("INSERT OR IGNORE INTO outbox (job_key,kind,reference,channel,target,due_at) "
@@ -386,13 +426,8 @@ class Tracker:
         rows = self.due_tasks(local_time(now).date(), personal, now=now)
         if not rows:
             return None
-        lines = ["Ollie_MT — nhắc công việc", "Ưu tiên theo thời hạn gần nhất:"]
-        for number, (task_id, content, deadline, staff_ids) in enumerate(self.group_tasks(rows), 1):
-            names = ", ".join(self.name(sid) for sid in staff_ids)
-            lines.append(f"{number}. CV-{task_id}: {content}\nThời hạn: {display_time(deadline)}\nNgười phụ trách: {names}")
-        lines.append("Hoàn thành việc nào, gửi @Ollie_MT hoàn thành CV-<mã>.")
-        # DingTalk text payload limit; never silently omit tasks beyond it.
-        message = "\n\n".join(lines)
+        from daily_digest import format_deadline_digest
+        message = format_deadline_digest(self.name(target), self.group_tasks(rows), now, group=channel == 'group')
         if len(message.encode("utf-8")) > 18000:
             message = ("Ollie_MT — bạn có nhiều công việc đến hạn hoặc quá hạn. "
                        "Gửi @Ollie_MT danh sách để xem các công việc theo deadline.")
@@ -452,8 +487,11 @@ class DingTalkSender:
     def send(self, channel, target, content):
         if channel == "dm_open":
             return self.send_open_dingtalk_id(target, content)
-        payload = {"robotCode": self.state["robot_code"], "msgKey": "sampleText",
-                   "msgParam": json.dumps({"content": content}, ensure_ascii=False)}
+        from daily_digest import MarkdownMessage
+        markdown = isinstance(content, MarkdownMessage)
+        param = {"title": "Ollie_MT — Nhắc deadline", "text": str(content)} if markdown else {"content": content}
+        payload = {"robotCode": self.state["robot_code"], "msgKey": "sampleMarkdown" if markdown else "sampleText",
+                   "msgParam": json.dumps(param, ensure_ascii=False)}
         if channel == "group":
             if target != self.state["conversation_id"]:
                 raise DeliveryError("group_not_configured")

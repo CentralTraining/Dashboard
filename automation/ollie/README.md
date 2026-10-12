@@ -4,6 +4,20 @@ Dashboard vẫn ở https://centraltraining.github.io/Dashboard/. GitHub Actions
 đọc nguồn Supabase đang dùng và gửi báo cáo bằng ứng dụng Ollie_MT đã phát hành.
 Không cần Netlify hoặc đổi dashboard sang nơi khác.
 
+Lịch 08:00 còn gửi danh sách việc có deadline từ thông báo nhóm đã đồng bộ
+và mục **Công việc & deadline** trong chi tiết thẻ Trainer. Việc mới được
+nhắc từ sáng hôm sau; các việc sắp theo deadline gần nhất rồi thời điểm tạo.
+Mỗi Trainer có lời chào bằng tên và lời chúc đổi mỗi ngày; link được thu gọn
+thành chữ Link nhưng giữ nguyên URL đích, ID họp và mật mã.
+Việc hoàn thành, bị hủy hoặc qua deadline không được nhắc tiếp.
+Chỉ dữ liệu có deadline rõ ràng mới vào danh sách việc; không đoán ngày
+kết thúc từ tên chiến dịch KPI.
+
+Điểm nhận thông báo liên tục dùng Worker HTTP; xem `cloudflare/README.md`.
+Sau khi có endpoint đã kiểm tra, cấu hình bot sang HTTP và phát hành bản
+mới. Trước khi hoàn tất kết nối này, Stream trong phiên làm việc vẫn nhận
+tin có @Ollie_MT; không tuyên bố đã nhận mọi thông báo khi phiên đóng.
+
 Báo cáo cá nhân dùng tên gọi và 3 nhóm 🏫 Nội bộ, 🤝 Đối tác, 📣 Truyền
 thông. Chỉ số có target trong tháng mới được hiển thị, theo mẫu
 `Unbox A7 Pro NB: 50/51 · 98%`. Tên chiến dịch được rút ngắn, cụm số dùng

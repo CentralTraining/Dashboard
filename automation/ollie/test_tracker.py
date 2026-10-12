@@ -93,9 +93,9 @@ class TaskChecks(unittest.TestCase):
         jobs=self.tracker.next_jobs(stamp(16,8))
         leader_job=next(j for j in jobs if j[3]=='dm' and j[4]=='owner')
         content=self.tracker.job_content(leader_job,stamp(16,8))
-        self.assertIn('1. CV-2',content)
-        self.assertIn('2. CV-1',content)
-        self.assertLess(content.index('CV-2'),content.index('CV-1'))
+        self.assertIn('1. Nộp báo cáo',content)
+        self.assertIn('2. Nộp báo cáo',content)
+        self.assertLess(content.index('18/10/2026'), content.index('20/10/2026'))
 
     def test_announcements_assign_everyone_and_leader(self):
         self.state['audience_staff_ids']=['amy','binh']

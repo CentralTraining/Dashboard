@@ -72,13 +72,14 @@ class VerifyModeChecks(unittest.IsolatedAsyncioTestCase):
             'settings': {'hour': 8, 'minute': 0, 'timezone': 'Asia/Ho_Chi_Minh',
                          'trainer_recipients': {'a': {'channel': 'dm', 'target': 'staff-a'},
                                                 'b': {'channel': 'dm', 'target': 'staff-b'}}},
-            'state': {'leader_staff_id': 'leader', 'conversation_id': 'group', 'robot_code': 'bot'},
+            'state': {'leader_staff_id': 'leader', 'leader_name': 'Leader', 'conversation_id': 'group', 'robot_code': 'bot'},
             'credentials': {'appKey': 'bot', 'appSecret': 'fake'},
         }
         async def direct(fn, *args):
             return fn(*args)
         with patch('github_daily.asyncio.to_thread', side_effect=direct), \
              patch('github_daily.SupabaseKpiSource.snapshot', return_value=KpiSnapshot(rows(fixture()), '2026-10')) as source, \
+             patch('github_daily.sync_deadlines', return_value={'group_events': 0, 'dashboard_tasks': 0}), \
              patch('github_daily.DingTalkSender') as sender, \
              patch('github_daily.GitHubState') as state, \
              contextlib.redirect_stdout(io.StringIO()) as output:

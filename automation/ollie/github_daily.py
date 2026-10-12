@@ -21,6 +21,7 @@ import requests
 
 from kpi import SupabaseKpiSource, KpiSourceError
 from kpi_scheduler import KpiBridge
+from deadline_scheduler import configure_deadline_policy, sync_deadlines
 from tracker import Tracker, DingTalkSender, DeliveryError, VIETNAM, local_time
 
 
@@ -147,7 +148,19 @@ def validate_configuration(config):
 
 def deliver_jobs(tracker, sender, store, now):
     accepted = failed = uncertain = 0
-    for job in tracker.next_jobs(now):
+    # A daily cycle includes KPI and deadline digests (up to 30 destinations).
+    # Drain successive bounded batches instead of stopping after the first 20.
+    for _ in range(10):
+        batch = tracker.next_jobs(now)
+        if not batch: break
+        result = deliver_batch(tracker, sender, store, now, batch)
+        accepted += result['accepted']; failed += result['failed']; uncertain += result['uncertain']
+    return {"accepted": accepted, "failed": failed, "uncertain": uncertain}
+
+
+def deliver_batch(tracker, sender, store, now, jobs):
+    accepted = failed = uncertain = 0
+    for job in jobs:
         content = tracker.job_content(job, now)
         if not content:
             tracker.finish_job(job[0], "skipped", now)
@@ -187,8 +200,16 @@ async def run(config, send=False):
         # Verify that this runner can authenticate the configured DingTalk bot.
         # Do not print or persist the returned access token or send any message.
         await asyncio.to_thread(DingTalkSender(config["credentials"], config["state"]).access_token)
+        database = sqlite3.connect(':memory:')
+        try:
+            tracker = Tracker(database, config['state'])
+            configure_deadline_policy(tracker)
+            deadline_counts = await sync_deadlines(tracker, config, now)
+        finally:
+            database.close()
         print(json.dumps({"mode": "verify_only", "trainer_reports": len(reports),
-                          "dingtalk_auth_verified": True, "messages_sent": 0}))
+                          "dingtalk_auth_verified": True, "messages_sent": 0,
+                          'deadline_source_verified': True, **deadline_counts}))
         return
     if not config["settings"].get("enabled"):
         print(json.dumps({"mode": "disabled", "messages_sent": 0}))
@@ -202,10 +223,20 @@ async def run(config, send=False):
         database = sqlite3.connect(database_path)
         try:
             tracker = Tracker(database, config["state"])
+            configure_deadline_policy(tracker)
             (root / "source.json").write_text(json.dumps(config["source"]))
             (root / "settings.json").write_text(json.dumps(config["settings"]))
             bridge = KpiBridge(database, config["state"], root)
-            await bridge.prepare(now)
+            source_errors = []
+            try:
+                await sync_deadlines(tracker, config, now)
+                tracker.prepare_jobs(now)
+            except KpiSourceError as error:
+                source_errors.append(str(error))
+            try:
+                await bridge.prepare(now)
+            except KpiSourceError as error:
+                source_errors.append(str(error))
             database.execute("DELETE FROM kpi_messages WHERE day < date(?, '-7 days')", (local_time(now).date().isoformat(),))
             database.execute("DELETE FROM outbox WHERE kind='kpi' AND reference NOT IN (SELECT reference FROM kpi_messages)")
             database.execute("DELETE FROM kpi_runs WHERE day < date(?, '-7 days')", (local_time(now).date().isoformat(),))
@@ -213,12 +244,15 @@ async def run(config, send=False):
             store.save(database)
             result = deliver_jobs(tracker, DingTalkSender(config["credentials"], config["state"]), store, now)
             outstanding = database.execute("""SELECT COUNT(*) FROM outbox o
-                JOIN kpi_messages m ON m.reference=o.reference
-                WHERE o.kind='kpi' AND m.day=? AND o.status NOT IN ('accepted','skipped')""",
-                (local_time(now).date().isoformat(),)).fetchone()[0]
+                LEFT JOIN kpi_messages m ON m.reference=o.reference
+                WHERE ((o.kind='kpi' AND m.day=?) OR (o.kind='daily' AND o.reference=?))
+                AND o.status NOT IN ('accepted','skipped')""",
+                (local_time(now).date().isoformat(), local_time(now).date().isoformat())).fetchone()[0]
             print(json.dumps({"mode": "send", **result, "outstanding": outstanding}))
             if outstanding or result["failed"] or result["uncertain"]:
                 raise StateError("delivery_needs_review")
+            if source_errors:
+                raise KpiSourceError(source_errors[0])
         finally:
             database.close()
 

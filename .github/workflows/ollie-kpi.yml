@@ -33,7 +33,7 @@ jobs:
         run: python -m pip install -r automation/ollie/requirements-github.txt
       - name: Check KPI calculations and delivery protection
         working-directory: automation/ollie
-        run: python -m unittest test_tracker test_announcements test_kpi test_kpi_scheduler test_github_daily
+        run: python -m unittest test_tracker test_announcements test_kpi test_kpi_scheduler test_github_daily test_deadlines
       - name: Prepare or send KPI reports
         working-directory: automation/ollie
         env:

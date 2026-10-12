@@ -50,7 +50,7 @@ def summarize_meeting(text):
 
 def meeting_deadline(text, source_time):
     lines = [line for line in text.splitlines() if any(
-        key in folded(line) for key in ("thoi gian:", "deadline:", "han hoan thanh:"))]
+        key in folded(line) for key in ("thoi gian:", "deadline:", "han hoan thanh:", "han chot:"))]
     if len(lines) != 1:
         raise ValueError("Chưa lưu: cần một dòng Thời gian hoặc Deadline cho mỗi thông báo.")
     line = folded(lines[0])
@@ -91,3 +91,33 @@ def meeting_deadline(text, source_time):
 
 def parse_meeting(text, source_time):
     return summarize_meeting(text), meeting_deadline(text, source_time)
+
+
+def parse_announcement(text, source_time):
+    """Meetings keep joining details; other notices retain actions and quantities."""
+    title = next((line for line in text.splitlines() if 'thong bao' in folded(line)), '')
+    if re.search(r'\bhop\b|\bmeeting\b', folded(title)):
+        return parse_meeting(text, source_time)
+    lines = [line for line in text.splitlines() if any(key in folded(line) for key in
+             ('thoi gian:', 'deadline:', 'han hoan thanh:', 'han chot:'))]
+    if len(lines) != 1:
+        raise ValueError('Chưa lưu: mỗi thông báo cần một dòng Deadline hoặc Hạn hoàn thành rõ ràng.')
+    deadline_text = text
+    if not re.search(r'(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)', lines[0]):
+        # An explicitly dated all-day deadline ends at 23:59 Vietnam time.
+        deadline_text = text.replace(lines[0], lines[0] + ' 23:59')
+    deadline = meeting_deadline(deadline_text, source_time)
+    access = meeting_access(text)
+    clean = []
+    for line in text.splitlines():
+        value = line.strip().rstrip('\\')
+        label = folded(re.sub(r'^[^\wÀ-ỹ]+', '', value))
+        if not value or line in lines or 'http://' in value or 'https://' in value: continue
+        if label.startswith(('dear ', 'xin chao', 'anh em sap xep', 'hen gap', 'id cuoc hop:', 'mat ma:', 'link:', 'link zoom:')): continue
+        if 'thong bao' in label: value = re.sub(r'(?i)^.*?thông báo\s*', '', value).strip(' :—–-')
+        clean.append(value)
+    summary = '\n'.join(clean).strip()
+    if not summary: raise ValueError('Chưa lưu: thông báo chưa có nội dung công việc.')
+    if len(summary) > 2000:
+        raise ValueError('Chưa lưu: nội dung quá dài; hãy tách thông báo theo từng việc và deadline.')
+    return summary + ('\n' + access if access else ''), deadline
