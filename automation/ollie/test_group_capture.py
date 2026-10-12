@@ -60,3 +60,18 @@ class GroupCaptureTests(unittest.TestCase):
         self.assertEqual(notice_source_id("group", "owner", posted, text),
                          notice_source_id("group", "owner", posted + .7, "@Ollie_MT " + text))
         database.close()
+
+    def test_plain_giao_viec_heading_does_not_require_trainer_form(self):
+        database = sqlite3.connect(":memory:")
+        state = {"leader_staff_id": "owner", "leader_name": "Nghĩa",
+                 "conversation_id": "group", "audience_staff_ids": ["trainer"]}
+        tracker = Tracker(database, state)
+        configure_deadline_policy(tracker)
+        posted = message_time("2026-10-12 10:00:00")
+        incoming = SimpleNamespace(sender_staff_id="owner", create_at=posted * 1000,
+                                  conversation_type="2", conversation_id="group")
+        tracker.handle("Giao việc cho Team\nMọi người nộp báo cáo.\nDeadline: 20/10/2026 17:00",
+                       incoming, "plain", now=posted)
+        self.assertEqual(database.execute("SELECT count(*) FROM tasks").fetchone()[0], 1)
+        self.assertEqual(database.execute("SELECT count(*) FROM assignments").fetchone()[0], 2)
+        database.close()

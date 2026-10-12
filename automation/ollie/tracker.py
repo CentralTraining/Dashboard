@@ -170,7 +170,9 @@ class Tracker:
                     if command == "bat nhac viec" else "Đã tạm dừng gửi lời nhắc. Các công việc vẫn được lưu.")
         try:
             from announcements import has_deadline, notice_source_id
-            if "thong bao" in command or (has_deadline(text) and not command.startswith("giao viec")):
+            structured_assignment = command.startswith("giao viec") and bool(
+                re.search(r"(?m)^\s*(?:trainer|cho)\s*:", command))
+            if "thong bao" in command or (has_deadline(text) and not structured_assignment):
                 if sender != self.owner:
                     return "Chỉ leader được tạo thông báo cần nhắc."
                 if str(getattr(incoming, "conversation_type", "2")) != "2":
