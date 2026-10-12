@@ -2,7 +2,7 @@ from datetime import datetime
 import sqlite3
 import unittest
 from types import SimpleNamespace
-from announcements import notice_source_id
+from announcements import notice_source_id, parse_announcement
 from deadline_scheduler import configure_deadline_policy
 from github_daily import StateError
 from group_capture import message_time, validate_history
@@ -10,6 +10,13 @@ from tracker import Tracker, VIETNAM
 
 
 class GroupCaptureTests(unittest.TestCase):
+    def test_relative_day_in_heading_and_clock_on_separate_line(self):
+        posted = message_time("2026-10-12 00:30:00")
+        _, due = parse_announcement("Mẫu nhắc việc ngày mai!\nNộp báo cáo tuần.\nThời gian : 20:25", posted)
+        self.assertEqual(datetime.fromtimestamp(due, VIETNAM).isoformat(), "2026-10-12T20:25:00+07:00")
+        with self.assertRaisesRegex(ValueError, "nhiều ngày"):
+            parse_announcement("Hôm nay hoặc ngày mai\nNộp báo cáo.\nThời gian: 20:25", posted)
+
     def fixture(self):
         return {"complete": True, "partial": False, "hasMore": False, "failedCount": 0,
                 "senderFilter": {"status": "applied", "applied": True},

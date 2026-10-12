@@ -67,6 +67,16 @@ def meeting_deadline(text, source_time):
     if len(lines) != 1:
         raise ValueError("Chưa lưu: cần một dòng Thời gian hoặc Deadline cho mỗi thông báo.")
     line = folded(lines[0])
+    # A natural notice can put "ngày mai" in its heading while the time
+    # field contains only a clock. Resolve it against the posting day.
+    relatives = ("ngay mai", "hom nay", "ngay kia")
+    if not any(value in line for value in relatives) and not re.search(r"\d[./-]\d", line):
+        heading = folded(next((value for value in text.splitlines() if value.strip()), ""))
+        found = [value for value in relatives if value in heading]
+        if len(found) > 1:
+            raise ValueError("Chưa lưu: tiêu đề có nhiều ngày; cần ghi một deadline rõ ràng.")
+        if found:
+            line += " " + found[0]
     times = re.findall(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)", line)
     if len(times) != 1:
         raise ValueError("Chưa lưu: thời gian cần một giờ rõ ràng, ví dụ 14:00.")
