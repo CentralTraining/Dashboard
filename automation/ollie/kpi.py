@@ -60,7 +60,12 @@ def average(metrics):
 
 
 def campaign_subtype(c):
-    return c.get('subtype') or {'noibo': 'pgsdev', 'doitac': 'ftf', 'truyenthong': 'noibo'}.get(c.get('group'))
+    raw = c.get('subtype') or {'noibo': 'pgsdev', 'doitac': 'ftf', 'truyenthong': 'noibo'}.get(c.get('group'))
+    return 'tuvanai_checkshop' if c.get('group') == 'noibo' and raw in ('tuvanai', 'checkshop') else raw
+
+
+def campaign_fields(c):
+    return {'campaign_id': c['id'], 'campaign_name': c['name'], 'subtype': campaign_subtype(c)}
 
 
 def channel_group(value):
@@ -85,6 +90,10 @@ def required_keys(month, campaigns):
             keys.extend([f'mediaTargets:{cid}', prefix + cid])
         if c.get('group') == 'doitac' and campaign_subtype(c) == 'workshop':
             keys.extend([f'partnerTrainingTargets:{cid}', f'partnerTrainingActuals:{cid}', f'wsDoitacParticipants:{cid}'])
+        if c.get('group') == 'noibo' and campaign_subtype(c) == 'workshop':
+            keys.extend([f'workshopTargetRows:{cid}', f'workshopActualRows:{cid}'])
+        if c.get('group') == 'noibo' and campaign_subtype(c) in ('testonline', 'tuvanai_checkshop'):
+            keys.append(('frequencyProgress:' if campaign_subtype(c) == 'testonline' else 'aiCheckProgress:') + cid)
     return list(dict.fromkeys(keys))
 
 
@@ -150,7 +159,8 @@ class KpiSnapshot:
     def coaching(self, trainer):
         tid = trainer['id']; rec = self.records.get(tid, {})
         month = self.month
-        if not any(c.get('group') == 'noibo' and campaign_subtype(c) == 'pgsdev' for c in self.campaigns):
+        campaigns = [c for c in self.campaigns if c.get('group') == 'noibo' and campaign_subtype(c) == 'pgsdev']
+        if not campaigns:
             return []
         necessary = ['onoffRoster', f'pgs:{month}', f'surveyResponses:{month}', f'surveyResponsesNew:{month}']
         if any(k not in self.data for k in necessary):
@@ -173,11 +183,48 @@ class KpiSnapshot:
             return p.get('status') if p else 'Đang làm'
         target_new = rec.get('pgMoiTarget', 0) if pending else sum(1 for r in roster if in_month(r) and status(r) == 'Đang làm') * 2
         actual_01 = sum(1 for r in self.list_value(f'surveyResponses:{month}') if r.get('trainerId') == tid)
-        return [metric('pgMoi', 'PGs mới', actual_new, target_new, unit='lượt coaching'),
-                metric('pg01', 'PGs 0★/1★', actual_01, rec.get('pg01Target', 0), unit='lượt coaching')]
+        base = campaign_fields(campaigns[0])
+        return [metric('pgMoi', 'PGs mới', actual_new, target_new, unit='lượt', **base),
+                metric('pg01', 'PGs 0★/1★', actual_01, rec.get('pg01Target', 0), unit='lượt', **base)]
+
+    def internal_other(self, trainer):
+        """Include assigned internal campaigns outside Coaching, using their scope."""
+        result = []; tid = trainer['id']; rec = self.records.get(tid, {})
+        for c in self.campaigns:
+            if c.get('group') != 'noibo': continue
+            subtype = campaign_subtype(c); cid = c['id']; base = campaign_fields(c)
+            if subtype == 'workshop':
+                tk, ak = 'workshopTargetRows:' + cid, 'workshopActualRows:' + cid
+                targets = [r for r in self.list_value(tk) if r.get('trainerId') == tid]
+                actuals = [r for r in self.list_value(ak) if r.get('trainerId') == tid
+                           and (r.get('done') is True or normalize(r.get('status')) in ('DONE', 'HOAN THANH', 'COMPLETED', 'COMPLETE'))]
+                scoped = tk in self.data
+                target_sessions = len(targets) if scoped else rec.get('wsNbBuoiTarget', 0)
+                target_students = sum(number(r.get('expectedStudents')) for r in targets) if scoped else rec.get('wsNbHocVienTarget', 0)
+                actual_sessions = len(actuals) if ak in self.data else rec.get('wsNbBuoiActual', 0)
+                actual_students = sum(number(r.get('actualStudents')) for r in actuals) if ak in self.data else rec.get('wsNbHocVienActual', 0)
+                result.extend([metric('wsnb:buoi:' + cid, 'WS nội bộ — Số buổi', actual_sessions, target_sessions, unit='buổi', **base),
+                               metric('wsnb:hv:' + cid, 'WS nội bộ — Học viên', actual_students, target_students, unit='HV', **base)])
+            elif subtype in ('testonline', 'tuvanai_checkshop'):
+                active = [p for p in self.list_value('pgs:' + self.month)
+                          if p.get('trainerId') == tid and p.get('brand') == 'OPPO' and p.get('status') == 'Đang làm']
+                x = max(1, jsround(number(c.get('frequencyX')) or 1))
+                pg_key = lambda p: str(p.get('code') or p.get('id') or '').strip().upper()
+                if subtype == 'testonline':
+                    values = self.dict_value('frequencyProgress:' + cid)
+                    actual = sum(number(values.get(pg_key(p))) >= x for p in active)
+                    result.append(metric('test:' + cid, 'Test Online', actual, len(active), unit='PG', **base))
+                else:
+                    values = self.dict_value('aiCheckProgress:' + cid)
+                    ai = sum(number((values.get(pg_key(p)) or {}).get('aiCount')) >= x for p in active)
+                    check = sum(bool((values.get(pg_key(p)) or {}).get('checkPass')) for p in active)
+                    result.extend([metric('ai:' + cid, 'Tư vấn AI', ai, len(active), unit='PG', **base),
+                                   metric('check:' + cid, 'Check shop', check, len(active), unit='PG', **base)])
+        return result
 
     def ftf(self, trainer):
-        if not any(c.get('group') == 'doitac' and campaign_subtype(c) == 'ftf' for c in self.campaigns): return []
+        campaigns = [c for c in self.campaigns if c.get('group') == 'doitac' and campaign_subtype(c) == 'ftf']
+        if not campaigns: return []
         tid = trainer['id']; rec = self.records.get(tid, {})
         key = f'ftfShopList:{self.month}'
         if key not in self.data: raise KpiSourceError('missing_ftf_source')
@@ -197,7 +244,8 @@ class KpiSnapshot:
                 elif mk == 'ftfHr': t = sum(number(s.get('hrTarget')) for s in subset)
                 elif mk == 'ftfBaiTest': t = sum(number(s.get('testTotal')) for s in subset)
                 else: t = 0
-                result.append(metric(mk + ':' + channel, f'FTF {channel} — {label}', a, t, channel=channel))
+                result.append(metric(mk + ':' + channel, f'FTF {channel} — {label}', a, t, channel=channel,
+                                     unit='shop' if mk == 'ftfShop' else 'HV' if mk == 'ftfHr' else 'lượt', **campaign_fields(campaigns[0])))
         return result
 
     def workshop(self, trainer):
@@ -209,15 +257,15 @@ class KpiSnapshot:
             cid = c['id']; tk = 'partnerTrainingTargets:' + cid; ak = 'partnerTrainingActuals:' + cid
             if tk not in self.data or ak not in self.data: raise KpiSourceError('missing_workshop_source')
             t = find_region(self.dict_value(tk)); a = find_region(self.dict_value(ak))
-            base = {'shared_region': trainer.get('region'), 'campaign_id': cid, 'campaign_name': c['name']}
-            result.extend([metric('ws:buoi:' + cid, 'WS đối tác — Số buổi', a.get('sessions'), t.get('sessions'), **base),
-                           metric('ws:hv:' + cid, 'WS đối tác — Học viên', a.get('students'), t.get('students'), **base)])
+            base = {'shared_region': trainer.get('region'), **campaign_fields(c)}
+            result.extend([metric('ws:buoi:' + cid, 'WS đối tác — Số buổi', a.get('sessions'), t.get('sessions'), unit='buổi', **base),
+                           metric('ws:hv:' + cid, 'WS đối tác — Học viên', a.get('students'), t.get('students'), unit='HV', **base)])
             pk = 'wsDoitacParticipants:' + cid
             if pk in self.data:
                 done = sum(1 for p in self.list_value(pk)
                     if normalize(p.get('Khu vực') or p.get('Khu Vực')) == normalize(trainer.get('region'))
                     and str(p.get('Khảo sát') or p.get('Khao sat') or '').strip().lower() in ('đã làm', 'da lam', 'done', 'hoàn thành'))
-                result.append(metric('ws:ks:' + cid, 'WS đối tác — Khảo sát', done, jsround(number(a.get('students')) * .8), **base))
+                result.append(metric('ws:ks:' + cid, 'WS đối tác — Khảo sát', done, jsround(number(a.get('students')) * .8), unit='lượt', **base))
         return result
 
     def media(self, trainer):
@@ -243,16 +291,17 @@ class KpiSnapshot:
                 actual = sum(1 for r in self.list_value('mediaResponses:' + cid) if r.get('trainerId') == tid)
                 target = targets[tid] if tid in targets else rec.get('ttTarget', 0)
                 label = 'Nội bộ'
-            result.append(metric('tt:' + cid, f'{label} — {c["name"]}', actual, target, subtype=subtype, campaign_id=cid))
+            result.append(metric('tt:' + cid, f'{label} — {c["name"]}', actual, target, unit='bài', **campaign_fields(c)))
         return result
 
     def trainer_report(self, trainer):
         ftf = self.ftf(trainer)
         workshop = self.workshop(trainer)
-        groups = {'noibo': self.coaching(trainer), 'doitac': ftf + workshop, 'truyenthong': self.media(trainer)}
+        groups = {'noibo': self.coaching(trainer) + self.internal_other(trainer), 'doitac': ftf + workshop, 'truyenthong': self.media(trainer)}
         return {'trainer_id': trainer['id'], 'name': trainer['name'], 'region': trainer.get('region'),
                 'month': self.month, 'groups': groups,
-                'percentages': {'noibo': average(groups['noibo']), 'doitac': average(ftf), 'truyenthong': average(groups['truyenthong'])},
+                'percentages': {key: average(metrics) for key, metrics in groups.items()},
+                'ftf_percentage': average(ftf),
                 'workshop_percentage': average(workshop)}
 
     def reports(self):
@@ -260,46 +309,141 @@ class KpiSnapshot:
 
 
 def shown(value):
-    return f'{value:g}' if isinstance(value, (float, int)) else str(value)
+    if isinstance(value, (float, int)):
+        return str(int(value)) if float(value).is_integer() else f'{value:.1f}'
+    return str(value)
+
+
+def short_name(name):
+    words = unicodedata.normalize('NFC', str(name)).strip().split()
+    return words[-1].title() if words else 'Trainer'
+
+
+def fit_label(value, limit=18):
+    text = re.sub(r'\s+', ' ', str(value)).strip()
+    if len(text) <= limit: return text
+    prefix = text[:limit - 1]
+    if ' ' in prefix: prefix = prefix.rsplit(' ', 1)[0]
+    return prefix.rstrip() + '…'
+
+
+def campaign_label(m):
+    name = m.get('campaign_name') or m['label']
+    simple = normalize(name)
+    model = re.search(r'(?i)(?:Find\s*)?X\s*\d+|A\s*\d+\s*(?:Pro|s)?', name)
+    model = re.sub(r'\s+', '', model.group(0)) if model else ''
+    model = re.sub(r'(?i)^Find', '', model)
+    model = re.sub(r'(?i)(A\d+)pro', r'\1 Pro', model)
+    model = model[:1].upper() + model[1:] if model else ''
+    if 'UNBOX' in simple: return ('Unbox ' + model).strip()
+    if 'TIKTOK' in simple: return ('TikTok ' + model).strip()
+    if m.get('subtype') == 'workshop': return ('WS ' + model).strip()
+    if m.get('subtype') == 'ftf': return ('FTF ' + model).strip()
+    if m.get('subtype') == 'testonline': return ('Test ' + model).strip()
+    name = re.sub(r'\([^)]*\)', '', name)
+    name = re.sub(r'(?i)\b(?:video|challenge|truyền thông)\b', '', name)
+    return fit_label(name)
+
+
+def metric_label(m):
+    key = m['key']
+    if key == 'pgMoi': return 'PG mới'
+    if key == 'pg01': return 'PG 0★/1★'
+    if key.startswith('ftf'):
+        labels = {'ftfShop': 'shop', 'ftfHr': 'HV', 'ftfBaiTest': 'test', 'ftfTuVanAI': 'AI', 'ftfKhaoSat': 'KS'}
+        return fit_label(f"{campaign_label(m)} {m['channel']} {labels[key.split(':')[0]]}")
+    if key.startswith(('ws:', 'wsnb:')):
+        kind = key.split(':')[1]; unit = {'buoi': 'buổi', 'hv': 'HV', 'ks': 'KS'}[kind]
+        return fit_label(f'{campaign_label(m)} {unit}') + ('*' if m.get('shared_region') else '')
+    if key.startswith('tt:'):
+        suffix = 'ĐT' if m.get('subtype') == 'doitac' else 'NB'
+        base = re.sub(r'(?i)\s+(NB|ĐT)$', '', campaign_label(m))
+        return fit_label(base, 15) + ' ' + suffix
+    if key.startswith('ai:'): return 'Tư vấn AI'
+    if key.startswith('check:'): return 'Check shop'
+    return fit_label(campaign_label(m))
+
+
+def numeric_cluster(m):
+    # Nonbreaking spaces bind the count and percentage together. Word joiners
+    # protect slash/percent boundaries in mobile clients without manual wraps.
+    return f"{shown(m['actual'])}\u2060/\u2060{shown(m['target'])}\u00a0·\u00a0{shown(m['pct'])}\u2060%"
+
+
+def percent_cluster(value):
+    return '—' if value is None else shown(value) + '\u2060%'
+
+
+def assigned_metrics(report, group):
+    return [m for m in report['groups'][group] if m['target'] > 0 and m['pct'] is not None]
+
+
+def focus_metrics(report):
+    # Select one unfinished metric in each category. Lowest progress first;
+    # remaining work breaks ties without changing the KPI percentage itself.
+    result = []
+    for group in ('noibo', 'doitac', 'truyenthong'):
+        pending = [m for m in assigned_metrics(report, group) if m['pct'] < 100]
+        if pending: result.append(min(pending, key=lambda m: (m['pct'], -m['remaining'])))
+    return result
+
+
+def focus_label(m):
+    if m['key'].startswith('ftf'):
+        unit = {'ftfShop': 'shop', 'ftfHr': 'HV', 'ftfBaiTest': 'test', 'ftfTuVanAI': 'AI', 'ftfKhaoSat': 'KS'}[m['key'].split(':')[0]]
+        return f'{campaign_label(m)} {unit}'
+    if m['key'].startswith(('ws:', 'wsnb:')):
+        unit = {'buoi': 'buổi', 'hv': 'HV', 'ks': 'KS'}[m['key'].split(':')[1]]
+        scope = 'ĐT vùng' if m.get('shared_region') else 'NB'
+        return f'WS {scope} {unit}'
+    return metric_label(m)
 
 
 def format_trainer_report(report, dashboard_url):
     month = report['month'].split('-')
-    lines = [f"📊 KPI tháng {int(month[1])}/{month[0]} — {report['name']}"]
-    labels = [('noibo', 'Nội bộ — Coaching PGs Dev'), ('doitac', 'Đối tác'), ('truyenthong', 'Truyền thông')]
-    for i, (key, label) in enumerate(labels, 1):
-        p = report['percentages'][key]
-        lines.append(f"\n{i}. {label}" + (f' ({p}%)' if p is not None and key != 'doitac' else ''))
-        if key == 'doitac' and p is not None:
-            lines.append(f'FTF: {p}%')
-        metrics = report['groups'][key]
-        if not metrics: lines.append('Chưa có chiến dịch trong tháng.'); continue
-        region_noted = False
-        for m in metrics:
-            if m.get('shared_region') and not region_noted:
-                ws = report.get('workshop_percentage')
-                lines.append(f"WS dùng chung theo khu vực {m['shared_region']}" + (f' ({ws}%)' if ws is not None else '') + ':'); region_noted = True
-            text = f"• {m['label']}: {shown(m['actual'])}/{shown(m['target'])}"
-            if m['pct'] is None: text += ' — chưa có target'
-            else:
-                text += f" ({shown(m['pct'])}%)"
-                text += f" — còn {shown(m['remaining'])}" if m['remaining'] > 0 else ' — đã đạt'
-            lines.append(text)
-    lines.extend(['', 'Xem chi tiết: ' + dashboard_url])
+    lines = [f"📊 KPI {int(month[1])}/{month[0]} · {short_name(report['name'])}"]
+    labels = [('noibo', '🏫 Nội bộ'), ('doitac', '🤝 Đối tác'), ('truyenthong', '📣 Truyền thông')]
+    for key, label in labels:
+        lines.extend(['', label])
+        metrics = assigned_metrics(report, key)
+        lines.extend(f'• {metric_label(m)}: {numeric_cluster(m)}' for m in metrics)
+        if not metrics: lines.append('• Chưa có target')
+    focus = focus_metrics(report)
+    lines.extend(['', '🎯 Cần tập trung'])
+    if focus:
+        for m in focus:
+            remaining = shown(m['remaining']) + '\u00a0' + m.get('unit', 'lượt')
+            lines.append(f'• {focus_label(m)}: còn {remaining}')
+    else: lines.append('Đã đạt các target được giao.' if any(assigned_metrics(report, k) for k, _ in labels) else 'Chưa có target được giao.')
+    if any(m.get('shared_region') for k, _ in labels for m in assigned_metrics(report, k)):
+        lines.append('* WS đối tác dùng số liệu khu vực.')
+    lines.extend(['', '🔗 Chi tiết dashboard', dashboard_url])
     return '\n'.join(lines)
 
 
 def format_team_report(reports, dashboard_url):
-    month = reports[0]['month'] if reports else ''
-    lines = [f'📊 Tiến độ KPI Team — {month}', 'Coaching | FTF / WS khu vực | Truyền thông']
+    month = reports[0]['month'].split('-') if reports else ['', '']
+    lines = [f'📊 KPI Team · {int(month[1])}/{month[0]}' if reports else '📊 KPI Team',
+             '🏫 NB: Nội bộ · 🤝 ĐT: Đối tác', '📣 TT: Truyền thông', '']
     def priority(r):
         values = [p for p in r['percentages'].values() if p is not None]
         return sum(values) / len(values) if values else 101
     for i, r in enumerate(sorted(reports, key=priority), 1):
-        values = [str(r['percentages'][k]) + '%' if r['percentages'][k] is not None else 'chưa có target'
-                  for k in ('noibo', 'doitac', 'truyenthong')]
-        ws = r.get('workshop_percentage')
-        values[1] += ' / ' + (str(ws) + '%' if ws is not None else 'chưa có target')
-        lines.append(f"{i}. {r['name']}: {' | '.join(values)}")
-    lines.extend(['WS đối tác tính theo khu vực, dùng chung cho Trainer cùng khu vực.', 'Xem chi tiết: ' + dashboard_url])
+        values = [alias + '\u00a0' + percent_cluster(r['percentages'][key])
+                  for alias, key in [('NB', 'noibo'), ('ĐT', 'doitac'), ('TT', 'truyenthong')]]
+        lines.append(f"{short_name(r['name'])}: {' | '.join(values)}")
+    focus_groups = {}
+    for r in reports:
+        labels = tuple(focus_label(m) for m in focus_metrics(r))
+        if labels: focus_groups.setdefault(labels, []).append(short_name(r['name']))
+    lines.extend(['', '🎯 Cần tập trung'])
+    if not focus_groups:
+        has_targets = any(assigned_metrics(r, k) for r in reports for k in ('noibo', 'doitac', 'truyenthong'))
+        lines.append('Các target được giao đã đạt.' if has_targets else 'Chưa có target được giao.')
+    for labels, names in focus_groups.items():
+        audience = f'Cả {len(reports)} Trainer' if len(names) == len(reports) else ', '.join(names)
+        lines.append(f"• {audience}: {'; '.join(labels)}")
+    if any(m.get('shared_region') for r in reports for m in assigned_metrics(r, 'doitac')):
+        lines.append('ĐT gồm FTF cá nhân và WS khu vực.')
+    lines.extend(['', '🔗 Chi tiết dashboard', dashboard_url])
     return '\n'.join(lines)

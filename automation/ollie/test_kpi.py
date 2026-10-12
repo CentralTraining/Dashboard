@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from kpi import KpiSnapshot, KpiSourceError, average, metric, format_trainer_report
+from kpi import KpiSnapshot, KpiSourceError, average, metric, format_trainer_report, format_team_report, numeric_cluster, short_name
 
 
 def rows(data):
@@ -87,11 +87,54 @@ class KpiChecks(unittest.TestCase):
 
     def test_format_has_three_groups_remaining_shared_scope_and_dashboard_link(self):
         text = format_trainer_report(self.s.trainer_report(self.a), 'https://example.invalid/dashboard/')
-        for expected in ('1. Nội bộ', '2. Đối tác', '3. Truyền thông', 'còn 8',
-                         'WS dùng chung theo khu vực HUẾ', 'chưa có target', 'https://example.invalid/dashboard/'):
+        for expected in ('🏫 Nội bộ', '🤝 Đối tác', '📣 Truyền thông', 'còn 8',
+                         'WS đối tác dùng số liệu khu vực', 'https://example.invalid/dashboard/'):
             self.assertIn(expected, text)
         self.assertNotIn('NR-', text)
         self.assertNotIn('Người nhận:', text)
+        self.assertNotIn('Trainer A', text)
+        self.assertNotIn('FTF MWG AI', text)
+
+    def test_only_assigned_targets_and_nonbreaking_count_percent_are_displayed(self):
+        report = self.s.trainer_report(self.a)
+        text = format_trainer_report(report, 'https://example.invalid/')
+        for group in report['groups'].values():
+            for m in group:
+                if m['target'] > 0:
+                    cluster = numeric_cluster(m)
+                    self.assertIn(cluster, text)
+                    self.assertNotIn('\n', cluster)
+                    self.assertIn('\u00a0', cluster)
+        self.assertNotIn('chưa có target', text.lower())
+        self.assertNotIn('0\u2060/\u20600', text)
+
+    def test_internal_workshop_is_scoped_to_campaign_and_counts_done_only(self):
+        self.data['campaigns'].append({'id': 'nws', 'group': 'noibo', 'subtype': 'workshop', 'month': '2026-10', 'name': 'WS X10 NB'})
+        self.data['workshopTargetRows:nws'] = [{'trainerId': 'a', 'expectedStudents': 20}, {'trainerId': 'b', 'expectedStudents': 99}]
+        self.data['workshopActualRows:nws'] = [{'trainerId': 'a', 'done': True, 'actualStudents': 10},
+                                              {'trainerId': 'a', 'done': False, 'status': 'Plan', 'actualStudents': 80}]
+        report = KpiSnapshot(rows(self.data), '2026-10').trainer_report(self.a)
+        workshop = [m for m in report['groups']['noibo'] if m.get('subtype') == 'workshop']
+        self.assertEqual([(m['actual'], m['target']) for m in workshop], [(1, 1), (10, 20)])
+        self.assertEqual(report['percentages']['noibo'], 68)  # 100,20,100,50; capped leaf average
+
+    def test_leader_report_has_short_names_three_scores_and_specific_focus(self):
+        self.data['config']['trainers'][0]['name'] = 'ĐẶNG ANH ĐÔ'
+        reports = KpiSnapshot(rows(self.data), '2026-10').reports()
+        text = format_team_report(reports, 'https://example.invalid/')
+        self.assertIn('Đô: NB\u00a0', text)
+        self.assertIn(' | ĐT\u00a0', text)
+        self.assertIn(' | TT\u00a0', text)
+        self.assertNotIn('ĐẶNG ANH ĐÔ', text)
+        self.assertIn('PG 0★/1★', text)
+        self.assertEqual(short_name('TRẦN PHONG ĐỘ'), 'Độ')
+        self.assertEqual(short_name('HUỲNH TẤN QUỐC HUY'), 'Huy')
+
+    def test_no_targets_are_not_reported_as_completed(self):
+        self.data['campaigns'] = []
+        text = format_team_report(KpiSnapshot(rows(self.data), '2026-10').reports(), 'https://example.invalid/')
+        self.assertIn('Chưa có target được giao', text)
+        self.assertNotIn('đã đạt', text)
 
 
 if __name__ == '__main__':
