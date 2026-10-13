@@ -416,7 +416,8 @@ class Tracker:
         if not self.settings()["enabled"]:
             return None
         if kind == "kpi":
-            if not self.state.get("kpi_enabled"):
+            # Retire queued group reports created by an older configuration.
+            if channel not in ("dm", "dm_open") or not self.state.get("kpi_enabled"):
                 return None
             row = self.db.execute("SELECT day,content FROM kpi_messages WHERE reference=?", (reference,)).fetchone()
             return row[1] if row and row[0] == local_time(now).date().isoformat() else None

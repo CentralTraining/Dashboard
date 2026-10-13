@@ -26,7 +26,7 @@ Báo cáo cá nhân dùng tên gọi và 3 nhóm 🏫 Nội bộ, 🤝 Đối t�
 thông. Chỉ số có target trong tháng mới được hiển thị, theo mẫu
 `Unbox A7 Pro NB: 50/51 · 98%`. Tên chiến dịch được rút ngắn, cụm số dùng
 khoảng trắng không ngắt dòng. Các đơn vị khác nhau giữ thành chỉ số riêng.
-Bản tổng hợp cho nhóm và Nghĩa có 13 Trainer, mỗi người 3 phần trăm tiến
+Bản tổng hợp gửi riêng cho Nghĩa có 13 Trainer, mỗi người 3 phần trăm tiến
 độ, cùng lưu ý cần tập trung theo từng nhóm. WS đối tác được ghi rõ là số
 liệu chung khu vực. Phần trăm mỗi nhóm lấy trung bình chỉ số có target,
 giới hạn mỗi chỉ số ở 100% trước khi tính trung bình.
@@ -44,8 +44,8 @@ giới hạn mỗi chỉ số ở 100% trước khi tính trung bình.
 4. Sau khi bước kiểm tra thành công, tắt **riêng lịch KPI** của chương trình
    đang chạy thử để tránh hai nơi cùng gửi. Lịch GitHub tự chạy từ lần 08:00
    tiếp theo sau ngày bắt đầu trong cấu hình; mỗi ngày chỉ tạo một bản nhắc.
-5. Kiểm tra lần chạy đầu và tin nhắn DingTalk: nhóm nhận tổng hợp, 13 Trainer
-   nhận báo cáo cá nhân, Nghĩa nhận tổng hợp riêng.
+5. Kiểm tra lần chạy đầu và tin nhắn DingTalk: 13 Trainer nhận báo cáo cá nhân,
+   Nghĩa nhận tổng hợp riêng. KPI không gửi lên nhóm chung.
 
 `0 1 * * *` là 08:00 giờ Việt Nam. GitHub có thể chạy trễ khi hàng đợi bận;
 lịch Actions không cam kết gửi đúng từng giây. Các lượt dự phòng lúc 08:17,

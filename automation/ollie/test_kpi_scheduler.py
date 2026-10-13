@@ -40,13 +40,13 @@ class BridgeChecks(unittest.IsolatedAsyncioTestCase):
         self.thread_patch.stop()
         self.db.close(); self.temp.cleanup()
 
-    async def test_daily_eight_vietnam_once_and_each_trainer_plus_leader_group(self):
+    async def test_daily_eight_vietnam_once_and_each_trainer_plus_leader_privately(self):
         snapshot = KpiSnapshot(rows(fixture()), '2026-10')
         with patch('kpi_scheduler.SupabaseKpiSource.snapshot', return_value=snapshot) as source:
             await self.bridge.prepare(stamp(hour=7, minute=59)); source.assert_not_called()
             await self.bridge.prepare(stamp())
             jobs = self.tracker.next_jobs(stamp())
-            self.assertEqual({(j[3], j[4]) for j in jobs}, {('group', 'group'), ('dm', 'leader'), ('dm', 'staff-a'), ('dm_open', 'open-b')})
+            self.assertEqual({(j[3], j[4]) for j in jobs}, {('dm', 'leader'), ('dm', 'staff-a'), ('dm_open', 'open-b')})
             a = next(j for j in jobs if j[4] == 'staff-a')
             self.assertIn('KPI 10/2026 · A', self.tracker.job_content(a, stamp()))
             self.assertNotIn('KPI 10/2026 · B', self.tracker.job_content(a, stamp()))
@@ -75,6 +75,19 @@ class BridgeChecks(unittest.IsolatedAsyncioTestCase):
         (self.root / 'settings.json').write_text(json.dumps(self.settings))
         await self.bridge.prepare(stamp(hour=9))
         self.assertTrue(all(self.tracker.job_content(j, stamp(hour=9)) is None for j in jobs))
+
+    async def test_old_queued_group_report_is_not_delivered_after_private_only_change(self):
+        with patch('kpi_scheduler.SupabaseKpiSource.snapshot', return_value=KpiSnapshot(rows(fixture()), '2026-10')):
+            await self.bridge.prepare(stamp())
+        reference = 'legacy-group-kpi'
+        self.db.execute('INSERT INTO kpi_messages VALUES (?,?,?)',
+                        (reference, '2026-10-12', 'Old group report'))
+        self.tracker.add_job(reference, 'kpi', reference, 'group', 'group', stamp())
+        self.db.commit()
+        jobs = self.tracker.next_jobs(stamp())
+        group_job = next(job for job in jobs if job[3] == 'group')
+        self.assertIsNone(self.tracker.job_content(group_job, stamp()))
+        self.assertTrue(all(self.tracker.job_content(job, stamp()) for job in jobs if job[3] != 'group'))
 
 
 class RecipientChecks(unittest.TestCase):

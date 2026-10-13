@@ -62,8 +62,8 @@ class KpiBridge:
                 raise KpiSourceError('invalid_trainer_account')
             dashboard_url = config['dashboard_url']
             team_text = format_team_report(reports, dashboard_url)
-            # One group summary and one private team summary for the leader.
-            deliveries = [('group', self.state['conversation_id'], team_text)]
+            # KPI details go privately to Trainers and the leader.
+            deliveries = []
             leader = ('dm', self.state['leader_staff_id'])
             if leader not in targets:
                 deliveries.append((*leader, team_text))
