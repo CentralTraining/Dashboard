@@ -48,7 +48,11 @@ giới hạn mỗi chỉ số ở 100% trước khi tính trung bình.
    nhận báo cáo cá nhân, Nghĩa nhận tổng hợp riêng.
 
 `0 1 * * *` là 08:00 giờ Việt Nam. GitHub có thể chạy trễ khi hàng đợi bận;
-lịch Actions không cam kết gửi đúng từng giây. Repo công khai phải có hoạt
+lịch Actions không cam kết gửi đúng từng giây. Các lượt dự phòng lúc 08:17,
+08:37, 08:57, 09:17, 09:37 và 09:57 kiểm tra và gửi bù phần chưa gửi trong
+ngày. Sổ gửi đã mã hóa giữ nguyên kết quả: Trainer đã được DingTalk tiếp
+nhận tin nhắn sẽ không nhận lại ở lượt dự phòng. Kết quả gửi chưa rõ ràng
+vẫn cần kiểm tra, không tự gửi lại. Repo công khai phải có hoạt
 động trong 60 ngày để lịch không tự bị GitHub ngừng do không hoạt động.
 
 ## Dữ liệu và kiểm soát gửi lặp

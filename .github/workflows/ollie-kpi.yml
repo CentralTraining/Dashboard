@@ -4,6 +4,9 @@ on:
   schedule:
     # Vietnam UTC+7: 01:00 UTC = 08:00 Vietnam.
     - cron: '0 1 * * *'
+    # Catch up if GitHub delays/drops the main trigger or a send is rejected.
+    # The encrypted daily ledger prevents sending accepted reports twice.
+    - cron: '17,37,57 1,2 * * *'
   workflow_dispatch:
     inputs:
       send:
