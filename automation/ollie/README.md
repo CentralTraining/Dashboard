@@ -37,6 +37,12 @@ lại. Lỗi đăng nhập hoặc tải CLI của bộ đọc nhóm không ngăn
 Ngoài khoảng giờ này, workflow chỉ đọc thông báo. Chạy thủ công mặc định
 không gửi tin; chọn `catchup=true` khi cần kiểm tra lượt gửi bù buổi sáng.
 
+Sau mỗi lượt gửi, log ghi ngày Việt Nam và số người đã có mã tiếp nhận:
+`kpi_trainer_accepted`, `kpi_leader_accepted`, `kpi_private_accepted` và
+`kpi_expected_private`. Chỉ xác nhận đủ KPI khi cả 13 Trainer và Nghĩa có mã
+tiếp nhận; số `accepted` của riêng lượt chạy có thể bằng 0 nếu đã gửi đủ ở
+lượt trước. Thiếu một Trainer trong nguồn cũng không được coi là báo cáo đủ.
+
 Báo cáo cá nhân dùng tên gọi và 3 nhóm 🏫 Nội bộ, 🤝 Đối tác, 📣 Truyền
 thông. Chỉ số có target trong tháng mới được hiển thị, theo mẫu
 `Unbox A7 Pro NB: 50/51 · 98%`. Tên chiến dịch được rút ngắn, cụm số dùng

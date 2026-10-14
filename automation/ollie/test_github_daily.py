@@ -9,7 +9,7 @@ import io
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-from github_daily import deliver_jobs, StateError, GitHubState, run
+from github_daily import deliver_jobs, StateError, GitHubState, run, kpi_completion, morning_wait_seconds
 from tracker import Tracker, DeliveryError, VIETNAM
 from kpi import KpiSnapshot
 from test_kpi import fixture, rows
@@ -132,6 +132,42 @@ class MorningCatchupChecks(unittest.IsolatedAsyncioTestCase):
     async def test_catchup_flag_requires_explicit_send_mode(self):
         with self.assertRaisesRegex(StateError, 'morning_catchup_requires_send'):
             await run(self.config(), send=False, morning_catchup=True)
+
+
+class CompletionChecks(unittest.TestCase):
+    def test_early_worker_waits_for_eight_without_waiting_all_night(self):
+        for hour, minute, second, expected in [(7, 49, 59, 0), (7, 50, 0, 600),
+                                               (7, 59, 50, 10), (8, 0, 0, 0), (23, 59, 0, 0)]:
+            with self.subTest(hour=hour, minute=minute, second=second):
+                stamp = datetime(2026, 10, 15, hour, minute, second, tzinfo=VIETNAM).timestamp()
+                self.assertEqual(morning_wait_seconds(stamp), expected)
+
+    def test_success_requires_receipts_for_each_configured_person(self):
+        db = sqlite3.connect(':memory:')
+        db.executescript('''CREATE TABLE outbox(reference TEXT,channel TEXT,target TEXT,status TEXT,receipt TEXT);
+                           CREATE TABLE kpi_messages(reference TEXT,day TEXT);''')
+        config = {'settings': {'trainer_recipients': {'a': {'channel': 'dm', 'target': 'a'},
+                                                     'b': {'channel': 'dm', 'target': 'b'}}},
+                  'state': {'leader_staff_id': 'leader'}}
+        for reference, channel, target, status, receipt in [
+                ('a', 'dm', 'a', 'accepted', 'receipt-a'),
+                ('b', 'dm', 'b', 'accepted', ''),
+                ('leader', 'dm', 'leader', 'unknown', ''),
+                ('outside', 'dm', 'outside', 'accepted', 'receipt-outside'),
+                ('group', 'group', 'group', 'accepted', 'receipt-group')]:
+            db.execute('INSERT INTO kpi_messages VALUES (?,?)', (reference, '2026-10-14'))
+            db.execute('INSERT INTO outbox VALUES (?,?,?,?,?)', (reference, channel, target, status, receipt))
+        completion = kpi_completion(db, config, '2026-10-14')
+        self.assertEqual(completion['kpi_expected_private'], 3)
+        self.assertEqual(completion['kpi_private_accepted'], 1)
+        self.assertEqual(completion['kpi_trainer_accepted'], 1)
+        self.assertEqual(completion['kpi_leader_accepted'], 0)
+        db.execute("UPDATE outbox SET status='accepted',receipt='verified' WHERE target IN ('b','leader')")
+        completion = kpi_completion(db, config, '2026-10-14')
+        self.assertEqual(completion['kpi_private_accepted'], 3)
+        self.assertEqual(completion['kpi_group_accepted'], 1)
+        self.assertEqual(kpi_completion(db, config, '2026-10-15')['kpi_private_accepted'], 0)
+        db.close()
 
 
 class EncryptedStateChecks(unittest.TestCase):

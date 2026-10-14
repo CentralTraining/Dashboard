@@ -188,6 +188,31 @@ def deliver_batch(tracker, sender, store, now, jobs):
     return {"accepted": accepted, "failed": failed, "uncertain": uncertain}
 
 
+def kpi_completion(database, config, day):
+    """Count receipt-backed delivery for the configured people, not all jobs."""
+    rows = database.execute('''SELECT o.channel,o.target,o.status,o.receipt
+        FROM outbox o JOIN kpi_messages m ON m.reference=o.reference
+        WHERE m.day=?''', (day,)).fetchall()
+    accepted = {(channel, target) for channel, target, status, receipt in rows
+                if status == 'accepted' and receipt}
+    trainers = {(v['channel'], v['target']) for v in config['settings']['trainer_recipients'].values()}
+    leader = ('dm', config['state']['leader_staff_id'])
+    expected = trainers | {leader}
+    return {'day': day, 'kpi_trainer_accepted': len(trainers & accepted),
+            'kpi_leader_accepted': int(leader in accepted),
+            'kpi_expected_private': len(expected),
+            'kpi_private_accepted': len(expected & accepted),
+            'kpi_group_accepted': sum(channel == 'group' for channel, _ in accepted)}
+
+
+def morning_wait_seconds(now):
+    local = local_time(now)
+    # Warm up an early worker, then read fresh KPI at 08:00.
+    if local.hour == 7 and local.minute >= 50:
+        return max(0, local.replace(hour=8, minute=0, second=0, microsecond=0).timestamp() - now)
+    return 0
+
+
 async def run(config, send=False, morning_catchup=False):
     validate_configuration(config)
     now = time.time()
@@ -199,6 +224,11 @@ async def run(config, send=False, morning_catchup=False):
         if not 8 <= local_time(now).hour < 12:
             print(json.dumps({'mode': 'morning_catchup_not_due', 'messages_sent': 0}))
             return
+    elif (send and config['settings'].get('enabled')
+          and local_time(now).date().isoformat() >= config['settings']['start_date']):
+        while morning_wait_seconds(now) > 0:
+            await asyncio.sleep(min(30, morning_wait_seconds(now)))
+            now = time.time()
     if not send:
         snapshot = await asyncio.to_thread(SupabaseKpiSource(config["source"]).snapshot,
                                           local_time(now).strftime("%Y-%m"))
@@ -256,11 +286,16 @@ async def run(config, send=False, morning_catchup=False):
                 WHERE ((o.kind='kpi' AND m.day=?) OR (o.kind='daily' AND o.reference=?))
                 AND o.status NOT IN ('accepted','skipped')""",
                 (local_time(now).date().isoformat(), local_time(now).date().isoformat())).fetchone()[0]
-            print(json.dumps({"mode": "send", **result, "outstanding": outstanding}))
+            day = local_time(now).date().isoformat()
+            completion = kpi_completion(database, config, day)
+            print(json.dumps({"mode": "send", **result, "outstanding": outstanding, **completion}))
             if outstanding or result["failed"] or result["uncertain"]:
                 raise StateError("delivery_needs_review")
             if source_errors:
                 raise KpiSourceError(source_errors[0])
+            due = (day >= config['settings']['start_date'] and local_time(now).hour >= 8)
+            if due and completion['kpi_private_accepted'] != completion['kpi_expected_private']:
+                raise StateError('kpi_daily_recipients_incomplete')
         finally:
             database.close()
 

@@ -67,6 +67,13 @@ class BridgeChecks(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(KpiSourceError): await self.bridge.prepare(stamp())
         self.assertEqual(self.tracker.next_jobs(stamp()), [])
 
+    async def test_source_missing_a_configured_trainer_blocks_all_reports(self):
+        data = fixture(); data['config']['trainers'] = data['config']['trainers'][:1]
+        with patch('kpi_scheduler.SupabaseKpiSource.snapshot', return_value=KpiSnapshot(rows(data), '2026-10')):
+            with self.assertRaisesRegex(KpiSourceError, 'trainer_mapping_incomplete'):
+                await self.bridge.prepare(stamp())
+        self.assertEqual(self.tracker.next_jobs(stamp()), [])
+
     async def test_disabling_kpi_stops_queued_reports(self):
         with patch('kpi_scheduler.SupabaseKpiSource.snapshot', return_value=KpiSnapshot(rows(fixture()), '2026-10')):
             await self.bridge.prepare(stamp())

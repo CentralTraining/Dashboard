@@ -54,7 +54,8 @@ class KpiBridge:
             reports = await asyncio.to_thread(snapshot.reports)
             mapping = settings.get('trainer_recipients', {})
             if not reports: raise KpiSourceError('no_trainers')
-            if any(r['trainer_id'] not in mapping for r in reports):
+            if (len(reports) != len(mapping)
+                    or {r['trainer_id'] for r in reports} != set(mapping)):
                 raise KpiSourceError('trainer_mapping_incomplete')
             targets = [(mapping[r['trainer_id']]['channel'], mapping[r['trainer_id']]['target']) for r in reports]
             if len(set(targets)) != len(targets): raise KpiSourceError('duplicate_trainer_account')
