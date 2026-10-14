@@ -87,6 +87,8 @@ class ConversationAssistant:
             conversation_id TEXT NOT NULL, created_at REAL NOT NULL,
             question TEXT NOT NULL, answer TEXT NOT NULL)""")
         self.db.commit()
+        if self.configured():
+            self.status = "local_configured"
 
     def config(self):
         path = self.root / "runtime/ai-settings.json"
@@ -140,7 +142,9 @@ class ConversationAssistant:
         if any(word in command for word in ("nhac", "deadline", "cong viec", "hoan thanh", "giao viec")):
             active.append("ollie-reminders")
         for name in active:
-            text = (self.root / "skills" / name / "SKILL.md").read_text()
+            folder = self.root / "skills" / name
+            runtime = folder / "RUNTIME.md"
+            text = (runtime if runtime.exists() else folder / "SKILL.md").read_text()
             text = text.split("\nVí dụ:", 1)[0]
             parts.append(re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S).strip())
         return "\n\n".join(parts) + ("\nAnswer the user's latest message directly in Vietnamese. "
@@ -148,6 +152,32 @@ class ConversationAssistant:
             "using the supplied facts. Do not claim an action has been performed. "
             "Use a neutral, helpful tone. Do not assume anyone is tired unless the user says so. "
             "Avoid gendered or romantic forms of address. Usually answer in 1 to 3 sentences.")
+
+    def smalltalk(self, text, incoming, now):
+        command = folded(text)
+        name_pattern = r"(?:mình|tôi|em|anh)\s+tên(?:\s+là)?\s+([^\n,.!?]{2,40})"
+        name_question = "ten gi" in command or "ten cua toi" in command or "ten cua minh" in command
+        found = None if name_question else re.search(name_pattern, text, re.I)
+        name = found[1].strip().split()[-1].title() if found else None
+        if name is None:
+            for item in reversed(self.history(incoming, now)):
+                if item["role"] != "user":
+                    continue
+                if "ten gi" in folded(item["content"]):
+                    continue
+                match = re.search(name_pattern, item["content"], re.I)
+                if match:
+                    name = match[1].strip().split()[-1].title()
+                    break
+        if name_question:
+            return f"Bạn đã nói mình tên {name} nhé!" if name else "Bạn chưa cho mình biết tên. Bạn muốn mình gọi bằng tên nào?"
+        if re.match(r"^(?:xin chao|chao(?:\s|$)|hello\b|hi\b)", command):
+            return f"Chào {name or 'bạn'}! Mình sẵn sàng đây. Hôm nay bạn cần mình hỗ trợ việc gì?"
+        if command in ("cam on", "cam on ban", "cam on ollie", "thanks", "thank you"):
+            return f"Rất vui được hỗ trợ {name or 'bạn'}! Cần thêm gì cứ nhắn mình nhé."
+        if command in ("ban la ai", "huong dan", "help", "/start"):
+            return self.fallback(text)
+        return None
 
     async def answer(self, text, incoming, now=None):
         now = time.time() if now is None else now
@@ -159,6 +189,9 @@ class ConversationAssistant:
             return draft
         if is_kpi_question(text):
             return await self.kpi_answer(incoming, now)
+        smalltalk = self.smalltalk(text, incoming, now)
+        if smalltalk is not None:
+            return smalltalk
         if not self.configured():
             self.status = "not_configured"
             return self.fallback(text)
@@ -220,6 +253,8 @@ class ConversationAssistant:
             answer = re.sub(r"<think>.*?</think>", "", answer, flags=re.S).strip()
             if not answer or "<think>" in answer:
                 raise ValueError("Incomplete local answer")
+            if re.search(r"[\u0400-\u04ff\u0600-\u06ff\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]", answer):
+                raise ValueError("Expected Vietnamese answer")
             return answer[:2000]
         finally:
             session.close()

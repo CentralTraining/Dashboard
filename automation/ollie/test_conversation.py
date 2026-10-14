@@ -79,9 +79,19 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_model_failure_keeps_bot_answering_without_claiming_action(self):
         with patch.object(self.bot, "generate", side_effect=ValueError("offline")):
-            answer = await self.bot.answer("Xin chào", message())
-        self.assertIn("Chào bạn", answer)
+            answer = await self.bot.answer("Mình có nhiều việc và hơi mệt", message())
+        self.assertIn("nhiều việc", answer.lower())
         self.assertEqual(self.bot.status, "temporarily_unavailable")
+
+    async def test_name_lookup_uses_only_the_same_user_conversation(self):
+        a = message()
+        self.bot.remember(a, "intro", "Chào Ollie, mình tên Minh.", "Chào Minh", now=100)
+        self.bot.remember(message("trainer-b"), "intro-b", "Mình tên Dũng.", "Chào Dũng", now=101)
+        with patch.object(self.bot, "generate") as model:
+            answer = await self.bot.answer("Mình vừa nói mình tên gì?", a, now=102)
+        self.assertIn("Minh", answer)
+        self.assertNotIn("Dũng", answer)
+        model.assert_not_called()
 
     async def test_model_cannot_confirm_a_mutation(self):
         with patch.object(self.bot, "generate", return_value="Đã lưu lịch cho bạn"):
