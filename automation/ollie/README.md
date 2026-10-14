@@ -92,3 +92,9 @@ ngày; nếu mất nguồn hoặc thiếu Trainer, không tạo số 0 giả.
 GitHub Actions chạy **đọc thông báo nhóm và lịch gửi**, không giữ kết nối Stream liên tục để bot
 trò chuyện ngay với mọi người. Phần phản hồi hội thoại hiện vẫn do chương
 trình chạy thử xử lý; muốn phần này chạy 24/7 cần một máy chạy liên tục.
+
+
+## Trò chuyện AI tại chỗ
+
+Ollie_MT có bộ xử lý hội thoại riêng với skill giao tiếp tiếng Việt và hỗ trợ team. Xem [CHAT_SKILLS.md](CHAT_SKILLS.md) để cấu hình mô hình tại chỗ, quyền tra KPI theo khu vực và các ví dụ thử. Phần này chạy cùng bộ nhận DingTalk Stream; lịch KPI trên GitHub Actions vẫn dùng bộ gửi hiện có. Dữ liệu dashboard không được đưa vào dịch vụ AI bên ngoài. Các kiểm tra mới: `test_conversation.py`, `test_response_handler.py`.
+

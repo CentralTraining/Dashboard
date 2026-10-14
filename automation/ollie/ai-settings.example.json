@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "provider": "local",
+  "endpoint": "http://127.0.0.1:18081/v1/chat/completions",
+  "model": "ollie-local",
+  "external_inference": false,
+  "max_output_tokens": 128
+}

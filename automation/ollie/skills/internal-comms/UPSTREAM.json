@@ -1,0 +1,11 @@
+{
+  "repository": "anthropics/skills",
+  "license": "Apache-2.0",
+  "files": {
+    "SKILL.md": "56ea935b74f371bfeb4c7d3c19d5139df866e73b",
+    "examples/faq-answers.md": "395262a860636434593cd3c3da258000231ea4f6",
+    "examples/general-comms.md": "0ea977018ca8167d39bfc9adb253f80336819578",
+    "LICENSE.txt": "4f881c52d1f72f4cfb720e339e2d35c3058d01a9"
+  }
+}
+
