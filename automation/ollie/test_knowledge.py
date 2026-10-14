@@ -96,6 +96,22 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
         for url in ('http://files.dingtalk.com/a','https://dingtalk.com.evil.test/a','https://127.0.0.1/a','https://evil.test/a','https://user:pass@files.dingtalk.com/a'):
             with self.assertRaises(ValueError):safe_download_url(url)
 
+    def test_legacy_oss_links_from_authenticated_api_are_upgraded_to_https(self):
+        url='http://lippi-space-sg.oss-ap-southeast-1.aliyuncs.com/a.pdf?Expires=123&Signature=test%2Bvalue'
+        self.assertEqual(safe_download_url(url,from_dingtalk_api=True),'https'+url[4:])
+        with self.assertRaises(ValueError):safe_download_url(url)
+        for url in ('http://evil.test/a','http://127.0.0.1/a','http://user:password@files.dingtalk.com/a','http://files.dingtalk.com:8080/a'):
+            with self.assertRaises(ValueError):safe_download_url(url,from_dingtalk_api=True)
+
+    async def test_explicit_owner_retry_recovers_a_failed_attachment_without_promising_success(self):
+        items=[{'name':'guide.pdf','code':'private-ticket'}]
+        self.library.queue(items,person('leader'),'retry-event')
+        with self.library.db:self.library.db.execute("UPDATE jobs SET status='failed',notice_status='accepted'")
+        self.assertIn('Chỉ Nghĩa',await self.library.answer('thử lại tài liệu',person()))
+        answer=await self.library.answer('thử lại tài liệu',person('leader'))
+        self.assertIn('xếp hàng',answer)
+        self.assertEqual(self.library.db.execute('SELECT status FROM jobs').fetchone()[0],'queued')
+
     def test_docx_keeps_paragraphs_and_tables_and_rejects_unsupported_input(self):
         from docx import Document
         doc=Document();doc.add_paragraph('Thiết bị mẫu có pin 6200 mAh.')

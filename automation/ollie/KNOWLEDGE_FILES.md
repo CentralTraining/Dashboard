@@ -14,6 +14,10 @@ không phải huấn luyện lại trọng số của mô hình.
 5. Nhắn `tài liệu` để xem danh sách; Nghĩa dùng `gỡ tài liệu TL-1` để ngừng dùng
    nguồn. Gỡ chỉ ngừng tra cứu, vẫn giữ bản gốc riêng để đối chiếu.
 
+Tải lại tệp lỗi: Nghĩa nhắn `thử lại tài liệu`. Bot chỉ xếp hàng lại tệp lỗi
+còn mã tải hoặc bản gốc, không xác nhận học xong trước khi đọc thành công.
+Mã tải giữ riêng để phục hồi khi tải lỗi; mã được xóa sau khi đã tải được tệp.
+
 Chỉ leader đã đối chiếu được nạp/gỡ. Tài liệu đào tạo được dùng chung cho 13
 Trainer đã đối chiếu và Nghĩa theo lựa chọn của Nghĩa. Tài khoản khác bị từ chối;
 trả lời chỉ qua tin nhắn riêng. Tệp nhận trong nhóm không tự nhập làm kiến thức.

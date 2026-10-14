@@ -48,11 +48,16 @@ def attachments(data):
     return result[:5]
 
 
-def safe_download_url(url):
+def safe_download_url(url,*,from_dingtalk_api=False):
     p=urlparse(url);host=(p.hostname or '').lower()
     approved=('dingtalk.com','alicdn.com','aliyuncs.com','alibabausercontent.com','alibaba.com')
-    if p.scheme!='https' or p.username or p.password or p.port not in (None,443) or not any(host==d or host.endswith('.'+d) for d in approved):
-        raise ValueError('Unexpected file download host')
+    trusted=any(host==d or host.endswith('.'+d) for d in approved)
+    # The authenticated download API can return legacy HTTP OSS links. Upgrade
+    # their transport before making a request; never fetch the file over HTTP.
+    if from_dingtalk_api and trusted and p.scheme=='http' and p.port in (None,80) and not (p.username or p.password):
+        p=p._replace(scheme='https',netloc=host);url=p.geturl()
+    if p.scheme!='https' or p.username or p.password or p.port not in (None,443) or not trusted:
+        raise ValueError('Chưa xác minh được địa chỉ lưu tệp do DingTalk trả về. Tài liệu chưa được học; Nghĩa có thể nhắn “thử lại tài liệu” sau khi kiểm tra kết nối.')
     try:
         if not ipaddress.ip_address(host).is_global:raise ValueError('Private host excluded')
     except ValueError:
@@ -143,6 +148,12 @@ class Knowledge:
             return 'Bạn nhắn riêng cho Ollie_MT để hỏi tài liệu nhé.' if explicit(text) else None
         if not self.authorized(incoming):
             return 'Mình chưa đối chiếu được tài khoản này với danh sách người được xem tài liệu.' if explicit(text) else None
+        if q in ('thu lai tai lieu','doc lai tai lieu'):
+            if not self.leader(incoming.sender_staff_id):return 'Chỉ Nghĩa được yêu cầu xử lý lại tài liệu.'
+            row=self.db.execute("SELECT id,path FROM jobs WHERE status='failed' AND (code IS NOT NULL OR path IS NOT NULL) AND sender=? ORDER BY created DESC LIMIT 1",(str(incoming.sender_staff_id),)).fetchone()
+            if not row:return 'Không còn mã tải hoặc bản gốc để thử lại. Nghĩa gửi lại tệp trực tiếp cho bot nhé.'
+            with self.db:self.db.execute("UPDATE jobs SET status=?,notice=NULL,notice_status='pending' WHERE id=?",('downloaded' if row['path'] else 'queued',row['id']))
+            return 'Đã xếp hàng xử lý lại tài liệu. Mình sẽ xác nhận riêng khi đọc và lưu thành công.'
         if q in ('hoc tai lieu','huong dan hoc tai lieu','cach nap tai lieu'):
             return ('1. Nghĩa gửi riêng Word/PDF/ảnh/video trực tiếp cho Ollie_MT.\n'
                     '2. Bot xếp hàng và đọc nội dung tại chỗ.\n'
@@ -208,7 +219,10 @@ class Knowledge:
         if not r.ok:
             data=r.json();code=re.sub(r'[^A-Za-z0-9_.-]','',str(data.get('code','http_'+str(r.status_code))))[:80]
             raise ValueError('DingTalk chưa cho tải tệp ('+code+'). Nghĩa kiểm tra quyền tải tệp robot hoặc gửi lại tệp nhé.')
-        url=safe_download_url(r.json().get('downloadUrl',''))
+        candidate=r.json().get('downloadUrl','');parsed=urlparse(candidate)
+        diagnostic={'scheme_returned':parsed.scheme,'hostname':parsed.hostname,'source':'authenticated_DingTalk_download_API'}
+        p=self.folder/'last-download-endpoint.json';p.write_text(json.dumps(diagnostic));p.chmod(0o600)
+        url=safe_download_url(candidate,from_dingtalk_api=True)
         folder=self.folder/'files'/hashlib.sha256(job['id'].encode()).hexdigest()[:24];folder.mkdir(exist_ok=True);folder.chmod(0o700)
         path=folder/('source'+Path(job['name']).suffix.lower())
         total=0
@@ -261,7 +275,9 @@ class Knowledge:
             except asyncio.CancelledError:raise
             except Exception as error:
                 message=str(error)[:450] if isinstance(error,ValueError) else 'Chưa xử lý được tệp. Nghĩa thử bản nhỏ/rõ hơn hoặc gửi lại; không có nội dung mới được xác nhận.'
-                with self.db:self.db.execute("UPDATE jobs SET status='failed',code=NULL,notice=? WHERE id=?",('📚 '+message,job['id']))
+                # Keep the private ticket on a failed download so an authorized
+                # retry can recover the same attachment without re-uploading.
+                with self.db:self.db.execute("UPDATE jobs SET status='failed',notice=? WHERE id=?",('📚 '+message,job['id']))
         row=self.db.execute("SELECT * FROM jobs WHERE status IN ('ready','failed') AND notice_status='pending' AND notice IS NOT NULL ORDER BY created LIMIT 1").fetchone()
         if row and self.leader(row['sender']):
             with self.db:self.db.execute("UPDATE jobs SET notice_status='sending' WHERE id=?",(row['id'],))
