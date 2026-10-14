@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+    inputs:
+      catchup:
+        description: 'Recover missing morning reports (default only captures notices)'
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -18,17 +23,34 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install dependencies and verified DingTalk CLI
+      - name: Install report dependencies
         working-directory: automation/ollie
         run: |
           python -m pip install -r requirements-github.txt
-          python install_dws.py
       - name: Check group identity and deadline rules
         working-directory: automation/ollie
-        run: python -m unittest test_group_capture test_deadlines
+        run: python -m unittest test_group_capture test_deadlines test_github_daily test_kpi_scheduler
+      - name: Install verified DingTalk CLI
+        id: install_dws
+        continue-on-error: true
+        working-directory: automation/ollie
+        run: python install_dws.py
       - name: Capture leader notices without sending reminders
+        id: group_capture
+        continue-on-error: true
+        if: steps.install_dws.outcome == 'success'
         working-directory: automation/ollie
         env:
           GITHUB_TOKEN: ${{ github.token }}
           OLLIE_KPI_CONFIG_JSON: ${{ secrets.OLLIE_KPI_CONFIG_JSON }}
         run: python group_capture.py
+      - name: Recover a missed morning digest without duplicating accepted messages
+        if: github.event_name == 'schedule' || inputs.catchup == true
+        working-directory: automation/ollie
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          OLLIE_KPI_CONFIG_JSON: ${{ secrets.OLLIE_KPI_CONFIG_JSON }}
+        run: python github_daily.py --send --morning-catchup
+      - name: Check group capture result
+        if: always() && (steps.install_dws.outcome == 'failure' || steps.group_capture.outcome == 'failure')
+        run: exit 1

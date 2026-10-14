@@ -6,10 +6,11 @@ import tempfile
 from pathlib import Path
 import contextlib
 import io
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 from github_daily import deliver_jobs, StateError, GitHubState, run
-from tracker import Tracker, DeliveryError
+from tracker import Tracker, DeliveryError, VIETNAM
 from kpi import KpiSnapshot
 from test_kpi import fixture, rows
 
@@ -91,6 +92,46 @@ class VerifyModeChecks(unittest.IsolatedAsyncioTestCase):
         state.assert_not_called()
         self.assertIn('"messages_sent": 0', output.getvalue())
         self.assertNotIn('private-token', output.getvalue())
+
+
+class MorningCatchupChecks(unittest.IsolatedAsyncioTestCase):
+    def config(self):
+        return {
+            'source': {'url': 'https://example.supabase.co', 'table': 'kv_store',
+                       'anon_key': 'fake', 'dashboard_url': 'https://example.invalid/'},
+            'settings': {'enabled': True, 'hour': 8, 'minute': 0, 'timezone': 'Asia/Ho_Chi_Minh',
+                         'trainer_recipients': {'a': {'channel': 'dm', 'target': 'staff-a'}}},
+            'state': {'leader_staff_id': 'leader', 'leader_name': 'Leader',
+                      'conversation_id': 'group', 'robot_code': 'bot'},
+            'credentials': {'appKey': 'bot', 'appSecret': 'fake'},
+        }
+
+    async def test_periodic_reader_never_sends_before_eight_or_after_morning(self):
+        for hour, minute in [(0, 0), (7, 59), (12, 0), (23, 59)]:
+            with self.subTest(hour=hour, minute=minute):
+                stamp = datetime(2026, 10, 14, hour, minute, tzinfo=VIETNAM).timestamp()
+                with patch('github_daily.time.time', return_value=stamp), \
+                     patch('github_daily.GitHubState') as state, \
+                     patch('github_daily.SupabaseKpiSource.snapshot') as source, \
+                     contextlib.redirect_stdout(io.StringIO()) as output:
+                    await run(self.config(), send=True, morning_catchup=True)
+                state.assert_not_called(); source.assert_not_called()
+                self.assertIn('morning_catchup_not_due', output.getvalue())
+
+    async def test_delayed_morning_worker_uses_the_existing_delivery_ledger(self):
+        for hour, minute in [(8, 0), (8, 10), (11, 59)]:
+            with self.subTest(hour=hour, minute=minute):
+                stamp = datetime(2026, 10, 14, hour, minute, tzinfo=VIETNAM).timestamp()
+                with patch('github_daily.time.time', return_value=stamp), \
+                     patch('github_daily.GitHubState') as state:
+                    state.return_value.restore.side_effect = StateError('ledger_checked')
+                    with self.assertRaisesRegex(StateError, 'ledger_checked'):
+                        await run(self.config(), send=True, morning_catchup=True)
+                state.return_value.restore.assert_called_once()
+
+    async def test_catchup_flag_requires_explicit_send_mode(self):
+        with self.assertRaisesRegex(StateError, 'morning_catchup_requires_send'):
+            await run(self.config(), send=False, morning_catchup=True)
 
 
 class EncryptedStateChecks(unittest.TestCase):

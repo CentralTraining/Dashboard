@@ -188,9 +188,17 @@ def deliver_batch(tracker, sender, store, now, jobs):
     return {"accepted": accepted, "failed": failed, "uncertain": uncertain}
 
 
-async def run(config, send=False):
+async def run(config, send=False, morning_catchup=False):
     validate_configuration(config)
     now = time.time()
+    if morning_catchup:
+        if not send:
+            raise StateError('morning_catchup_requires_send')
+        # The group-history workflow also runs at night. It may recover a
+        # missed morning digest, but must not send next day's KPI before 08:00.
+        if not 8 <= local_time(now).hour < 12:
+            print(json.dumps({'mode': 'morning_catchup_not_due', 'messages_sent': 0}))
+            return
     if not send:
         snapshot = await asyncio.to_thread(SupabaseKpiSource(config["source"]).snapshot,
                                           local_time(now).strftime("%Y-%m"))
@@ -261,6 +269,8 @@ def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser()
     parser.add_argument("--send", action="store_true", help="Send the daily digest; default only verifies the data")
+    parser.add_argument('--morning-catchup', action='store_true',
+                        help='With --send, recover missing reports only between 08:00 and 12:00 Vietnam')
     args = parser.parse_args()
     try:
         raw = os.environ.get("OLLIE_KPI_CONFIG_JSON", "")
@@ -272,7 +282,7 @@ def main():
             raise StateError("repository_secret_invalid_json") from None
         if not isinstance(config, dict) or any(k not in config for k in ("source", "settings", "state", "credentials")):
             raise StateError("repository_secret_incomplete")
-        asyncio.run(run(config, args.send))
+        asyncio.run(run(config, args.send, args.morning_catchup))
     except (KpiSourceError, StateError, DeliveryError) as error:
         print("Ollie KPI: " + str(error))
         return 1

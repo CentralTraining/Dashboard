@@ -22,6 +22,13 @@ token hoặc bản thông báo gốc vào log hay mã nguồn. Bộ đọc này 
 Cloudflare hoặc Mac bật liên tục. Phản hồi trò chuyện ngay khi @bot vẫn
 là chức năng riêng của Stream/HTTP; `cloudflare/README.md` mô tả tùy chọn HTTP.
 
+Trong khoảng 08:00 đến trước 12:00 giờ Việt Nam, workflow đọc nhóm còn kiểm
+tra và gửi bù bản nhắc buổi sáng nếu workflow KPI chưa gửi được. Hai workflow
+dùng cùng sổ gửi và cùng khóa chạy: tin đã được DingTalk tiếp nhận không gửi
+lại. Lỗi đăng nhập hoặc tải CLI của bộ đọc nhóm không ngăn bước gửi KPI bù.
+Ngoài khoảng giờ này, workflow chỉ đọc thông báo. Chạy thủ công mặc định
+không gửi tin; chọn `catchup=true` khi cần kiểm tra lượt gửi bù buổi sáng.
+
 Báo cáo cá nhân dùng tên gọi và 3 nhóm 🏫 Nội bộ, 🤝 Đối tác, 📣 Truyền
 thông. Chỉ số có target trong tháng mới được hiển thị, theo mẫu
 `Unbox A7 Pro NB: 50/51 · 98%`. Tên chiến dịch được rút ngắn, cụm số dùng
