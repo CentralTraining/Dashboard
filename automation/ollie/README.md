@@ -4,6 +4,14 @@ Dashboard vẫn ở https://centraltraining.github.io/Dashboard/. GitHub Actions
 đọc nguồn Supabase đang dùng và gửi báo cáo bằng ứng dụng Ollie_MT đã phát hành.
 Không cần Netlify hoặc đổi dashboard sang nơi khác.
 
+Lịch ngoài GitHub có thể kích hoạt bản nhắc bằng cách cập nhật đúng file
+`automation/ollie/kpi-trigger.json` trên nhánh `main`. File chỉ chứa ngày và
+thời điểm yêu cầu, không chứa dữ liệu KPI, danh tính hay thông tin đăng nhập.
+GitHub chạy workflow ngay theo sự kiện `push` của file này, dùng cùng sổ gửi
+với cron và lượt gửi bù. Vì vậy cùng một ngày không gửi lại tin đã tiếp nhận.
+Ứng dụng GitHub được kết nối phải tạo commit này; commit bằng token nội bộ
+`GITHUB_TOKEN` của Actions sẽ không tự kích hoạt workflow khác.
+
 Lịch 08:00 còn gửi danh sách việc có deadline từ thông báo Nghĩa đăng trong
 nhóm AE CÂY KHẾ CHUA. Không nhập công việc trên dashboard. Việc mới được
 nhắc từ sáng hôm sau; các việc sắp theo deadline gần nhất rồi thời điểm tạo.

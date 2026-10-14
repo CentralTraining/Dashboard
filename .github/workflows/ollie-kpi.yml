@@ -1,6 +1,9 @@
 name: Ollie KPI daily
 
 on:
+  push:
+    branches: [main]
+    paths: ['automation/ollie/kpi-trigger.json']
   schedule:
     # Vietnam UTC+7: 01:00 UTC = 08:00 Vietnam.
     - cron: '0 1 * * *'
@@ -40,7 +43,7 @@ jobs:
       - name: Read new group notices before the morning digest
         id: group_capture
         continue-on-error: true
-        if: github.event_name == 'schedule' || inputs.send == true
+        if: github.event_name == 'schedule' || github.event_name == 'push' || inputs.send == true
         working-directory: automation/ollie
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -53,7 +56,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           OLLIE_KPI_CONFIG_JSON: ${{ secrets.OLLIE_KPI_CONFIG_JSON }}
-          SEND_REPORTS: ${{ github.event_name == 'schedule' || inputs.send == true }}
+          SEND_REPORTS: ${{ github.event_name == 'schedule' || github.event_name == 'push' || inputs.send == true }}
         run: |
           if [ "$SEND_REPORTS" = "true" ]; then
             python github_daily.py --send
