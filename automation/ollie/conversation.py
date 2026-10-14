@@ -16,6 +16,7 @@ from announcements import has_deadline
 from kpi import KpiSourceError, SupabaseKpiSource, format_team_report, format_trainer_report
 from tracker import VIETNAM, folded
 from dashboard_qa import DashboardQA, is_dashboard_question
+from knowledge import Knowledge,explicit as is_knowledge_request
 
 LOCAL_ENDPOINT = "http://127.0.0.1:18081/v1/chat/completions"
 DASHBOARD = "https://centraltraining.github.io/Dashboard/"
@@ -42,6 +43,8 @@ def conversation_route(text):
         return False
     if re.match(r"^[\W_]*thong bao\b", command) and not re.search(r"\b(?:soan|viet|ban nhap)\b",command):
         return False
+    if is_knowledge_request(text):
+        return True
     if is_dashboard_question(text):
         return True
     draft = bool(re.search(r"\b(?:soan|viet|ban nhap)\b", command))
@@ -98,6 +101,7 @@ class ConversationAssistant:
             source_factory=lambda config: SupabaseKpiSource(config),
             team_formatter=lambda rows,url: format_team_report(rows,url),
             trainer_formatter=lambda row,url: format_trainer_report(row,url))
+        self.knowledge = Knowledge(root,state)
 
     def config(self):
         path = self.root / "runtime/ai-settings.json"
@@ -131,7 +135,7 @@ class ConversationAssistant:
         return result
 
     def remember(self, incoming, event_id, question, answer, now=None):
-        if self.dashboard.handles(question, incoming, now) or not conversation_route(question):
+        if getattr(incoming,'knowledge_answer',False) or is_knowledge_request(question) or self.dashboard.handles(question, incoming, now) or not conversation_route(question):
             return
         now = time.time() if now is None else now
         sender, conversation = self.scope(incoming)
@@ -196,11 +200,19 @@ class ConversationAssistant:
         draft = meeting_draft(text)
         if draft is not None:
             return draft
+        if is_knowledge_request(text):
+            incoming.knowledge_answer=True
+            answer=await self.knowledge.answer(text,incoming,self.generate if self.configured() else None,self.lock)
+            return answer or 'Kho tài liệu chưa được bật.'
         if self.dashboard.handles(text, incoming, now):
             return await self.dashboard.answer(text, incoming, now)
         smalltalk = self.smalltalk(text, incoming, now)
         if smalltalk is not None:
             return smalltalk
+        answer=await self.knowledge.answer(text,incoming,self.generate if self.configured() else None,self.lock)
+        if answer is not None:
+            incoming.knowledge_answer=True
+            return answer
         if not self.configured():
             self.status = "not_configured"
             return self.fallback(text)
@@ -279,7 +291,8 @@ class ConversationAssistant:
             return "Nhiều việc cùng lúc dễ khiến mình bị rối. Bạn gửi những việc đang cần xử lý nhé; mình giúp bạn xếp việc gần deadline trước."
         if command in ("huong dan", "help", "/start", "ban la ai"):
             return ("Mình là Ollie_MT, trợ lý của team Trainer. Bạn có thể hỏi về KPI khu vực, "
-                    "nhắn ‘việc của tôi’ để xem việc hoặc nhờ mình soạn nội dung. Trong nhóm, nhớ chọn @Ollie_MT nhé.")
+                    "nhắn ‘việc của tôi’ để xem việc hoặc nhờ mình soạn nội dung. Nhắn riêng ‘tài liệu’ để xem kiến thức đã học; "
+                    "Nghĩa có thể gửi Word/PDF/ảnh/video qua tin nhắn riêng để nạp tài liệu. Trong nhóm, nhớ chọn @Ollie_MT nhé.")
         return ("Mình đã nhận câu hỏi. Phần trò chuyện AI tại chỗ hiện chưa sẵn sàng. "
                 "Bạn vẫn có thể nhắn ‘việc của tôi’, ‘hướng dẫn’ hoặc hỏi KPI trong tin nhắn riêng.")
 

@@ -110,6 +110,8 @@ Kiểm tra: `.venv/bin/python -m unittest -v test_tracker test_announcements tes
 SDK chính thức: https://github.com/open-dingtalk/dingtalk-stream-sdk-python
 
 Tra cứu dữ liệu dashboard qua tin nhắn riêng: xem [hướng dẫn](DASHBOARD_CHAT.md).
+
+Nạp tài liệu Word/PDF/ảnh/video và hỏi theo nguồn: xem [hướng dẫn kho kiến thức](KNOWLEDGE_FILES.md).
 Quyền được kiểm tra từ tài khoản DingTalk cho từng câu hỏi; Trainer chỉ xem khu vực
 đã đối chiếu, leader xem toàn bộ dữ liệu nghiệp vụ. Không gửi dữ liệu tra cứu đến
 mô hình AI hay nhà cung cấp ngoài. Kiểm tra phân quyền và hội thoại:

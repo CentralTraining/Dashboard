@@ -23,6 +23,7 @@ from deadline_scheduler import configure_deadline_policy, sync_deadlines
 from deadline_source import DeadlineSource
 from conversation import ConversationAssistant, conversation_route
 from local_chat_service import supervise as supervise_local_chat
+from knowledge import attachments
 
 ROOT = Path(__file__).resolve().parent
 RUNTIME = ROOT / "runtime"
@@ -79,8 +80,12 @@ class ResponseHandler(dingtalk_stream.ChatbotHandler):
             text = "".join(item.get("text", "") for item in
                            (incoming.rich_text_content.rich_text_list or []) if isinstance(item, dict))
         incoming.original_text = text
+        files=attachments(callback.data)
         if existing:
             answer = existing[0]
+        elif files and (not text.strip() or conversation_route(text)):
+            incoming.knowledge_answer=True
+            answer=self.conversation.knowledge.queue(files,incoming,event_id)
         elif conversation_route(text):
             answer = await self.conversation.answer(text, incoming)
         else:
@@ -133,8 +138,8 @@ class ResponseClient(dingtalk_stream.DingTalkStreamClient):
                                               ping_interval=20, ping_timeout=20) as websocket:
                     self.websocket = websocket
                     self.stream_connected = True
-                    write_health(True, response_service="running", task_scheduler="running", version="dashboard-kpi-format-v10", external_inference=False,
-                                 dashboard_qa="read_only", dashboard_delivery="private", dashboard_scope="verified_account_region")
+                    write_health(True, response_service="running", task_scheduler="running", version="knowledge-files-v11", external_inference=False,
+                                 dashboard_qa="read_only", dashboard_delivery="private", dashboard_scope="verified_account_region",knowledge_files="offline_curated")
                     logging.getLogger("ollie").info("Ollie_MT Stream connected")
                     async for raw in websocket:
                         result = await self.route_message(json.loads(raw))
@@ -277,8 +282,8 @@ async def main():
     kpi_bridge = KpiBridge(database, state, RUNTIME / "kpi") if (RUNTIME / "kpi/source.json").exists() else None
     client = ResponseClient(dingtalk_stream.Credential(
         credentials["appKey"], credentials["appSecret"]), logger=sdk_logger)
-    client.register_callback_handler(dingtalk_stream.ChatbotMessage.TOPIC,
-                                     ResponseHandler(state, database, tracker))
+    handler=ResponseHandler(state, database, tracker)
+    client.register_callback_handler(dingtalk_stream.ChatbotMessage.TOPIC,handler)
     client.system_handler.logger = sdk_logger
     client.event_handler.logger = sdk_logger
     stop = asyncio.Event()
@@ -288,6 +293,7 @@ async def main():
     tasks = [asyncio.create_task(client.start_service()),
              asyncio.create_task(scheduled_reminders(tracker, DingTalkSender(credentials, state), kpi_bridge)),
              asyncio.create_task(refresh_configuration(state)),
+             asyncio.create_task(handler.conversation.knowledge.run(DingTalkSender(credentials,state))),
              asyncio.create_task(supervise_local_chat(ROOT))]
     config_path = Path(os.environ.get('OLLIE_CONFIG_FILE', str(ROOT / 'runtime/github/OLLIE_KPI_CONFIG_JSON.txt')))
     if config_path.exists():

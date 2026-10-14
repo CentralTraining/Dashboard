@@ -1,4 +1,6 @@
 import sqlite3
+import tempfile
+from pathlib import Path
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
@@ -9,6 +11,8 @@ from tracker import Tracker
 
 class ResponseHandlerTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
+        self.temp=tempfile.TemporaryDirectory()
+        self.root_patch=patch('app.ROOT',Path(self.temp.name));self.root_patch.start()
         self.db = sqlite3.connect(":memory:")
         self.db.execute("CREATE TABLE replies (event_id TEXT PRIMARY KEY, received_at REAL, sender_id TEXT, conversation_id TEXT, response TEXT, delivered_at REAL)")
         self.state = {"leader_staff_id": "owner", "leader_name": "Leader", "robot_code": "bot", "profile": "corp:user", "conversation_id": "group"}
@@ -18,8 +22,10 @@ class ResponseHandlerTests(unittest.IsolatedAsyncioTestCase):
         self.send = patch.object(self.handler, "send_response").start()
 
     def tearDown(self):
+        self.handler.conversation.knowledge.db.close()
         patch.stopall()
         self.db.close()
+        self.temp.cleanup()
 
     def callback(self, text, event="event-1", sender="owner"):
         return SimpleNamespace(headers=SimpleNamespace(message_id=event), data={
@@ -58,6 +64,17 @@ class ResponseHandlerTests(unittest.IsolatedAsyncioTestCase):
         self.handler.conversation.answer.assert_awaited_once()
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0], 0)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM outbox").fetchone()[0], 0)
+
+    async def test_file_upload_is_queued_once_and_is_not_a_chat_prompt_or_task(self):
+        (self.handler.conversation.knowledge.folder/'settings.json').write_text('{"enabled":true}')
+        callback=self.callback('')
+        callback.data.update(msgtype='file',content={'downloadCode':'synthetic-ticket','fileName':'manual.docx'})
+        self.handler.conversation.answer=AsyncMock()
+        await self.handler.process(callback);await self.handler.process(callback)
+        self.handler.conversation.answer.assert_not_awaited()
+        self.assertEqual(self.handler.conversation.knowledge.db.execute('SELECT count(*) FROM jobs').fetchone()[0],1)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM tasks').fetchone()[0],0)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM conversation_turns').fetchone()[0],0)
 
 
 if __name__ == "__main__": unittest.main()
