@@ -4815,6 +4815,36 @@ async function renderMediaDoitacShopList_(){
     if(k && shops[k]){ shops[k].bai+=e.approved; shops[k].baiPeople.push({code:e.code,name:e.name,approved:e.approved,links:e.links||[]}); baiGan+=e.approved; }
     else { baiRot.push({code:e.code,name:e.name,approved:e.approved,reason: !pn?'không có trong mục Đối tác':'shop không khớp DS gán shop PGs', shop:shopName}); }
   });
+  // Cảnh báo trùng mã: so sánh mã NV Đối tác với mã PGs OPPO nội bộ.
+  // Dùng mã chuẩn hóa, loại bỏ khoảng trắng và không phân biệt chữ hoa/thường.
+  const normDuplicateCode_=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,'');
+  const oppoByCode=new Map();
+  (pgs||[]).filter(p=>String(p.brand||'').trim().toUpperCase()==='OPPO').forEach(p=>{
+    const code=normDuplicateCode_(p.code);
+    if(code){if(!oppoByCode.has(code))oppoByCode.set(code,[]);oppoByCode.get(code).push(p);}
+  });
+  const postsByDuplicateCode=new Map();
+  mediaDoitacEmps_.forEach(e=>{
+    const code=normDuplicateCode_(e.code);
+    if(code)postsByDuplicateCode.set(code,(postsByDuplicateCode.get(code)||0)+(Number(e.approved)||0));
+  });
+  const duplicateByCode=new Map();
+  (partnerList||[]).forEach(p=>{
+    const code=normDuplicateCode_(p.code);
+    if(!code||!oppoByCode.has(code))return;
+    const oppo=oppoByCode.get(code);
+    const region=String(p.region||p.area||'').trim();
+    // Phân quyền: Trainer chỉ được xem/xuất đối tác thuộc khu vực của mình.
+    if(isTrainer()&&normalizeRegionLoose_(region)!==normalizeRegionLoose_(session.region||''))return;
+    if(!isAdmin()&&!isTrainer())return;
+    if(!duplicateByCode.has(code))duplicateByCode.set(code,{
+      code,partnerName:p.name||'',partnerRegion:region,partnerShop:p.shop||'',
+      approvedPosts:postsByDuplicateCode.get(code)||0,
+      oppoNames:oppo.map(x=>x.name||'').join('; '),
+      oppoShops:oppo.map(x=>x.shop||'').filter(Boolean).join('; ')
+    });
+  });
+  window.__mediaDoitacDuplicateCodes=Array.from(duplicateByCode.values());
   window.__mediaDoitacDiag={ totBaiAll, baiGan, baiRot };
   if(baiRot.length) console.log('[TT Đối tác] Bài chưa gắn shop:', baiRot);
   let arr=Object.values(shops);
@@ -4892,6 +4922,15 @@ async function renderMediaDoitacShopList_(){
       <div style="font-size:11px;margin-top:6px;">${diag.baiRot.slice(0,20).map(x=>`${escapeHtml(x.code)} · ${escapeHtml(x.name)} · ${x.approved} bài · ${escapeHtml(x.reason)}${x.shop?(' ('+escapeHtml(x.shop)+')'):''}`).join('<br>')}</div></details>
     </div>`;
   }
+  const duplicates=window.__mediaDoitacDuplicateCodes||[];
+  const duplicatePosts=duplicates.reduce((sum,p)=>sum+(Number(p.approvedPosts)||0),0);
+  html+=`<div class="form-card" style="max-width:none;margin-bottom:12px;border:1px solid ${duplicates.length?'var(--red)':'var(--line)'};background:${duplicates.length?'#FBEAE8':'#F2F7F4'};">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="font-weight:700;color:${duplicates.length?'var(--red)':'var(--green-dark)'};">${duplicates.length?'⚠':'✓'} ${duplicates.length} mã nhân viên Đối tác trùng với mã PGs OPPO nội bộ · ${duplicatePosts} bài truyền thông đã gửi (được duyệt)</div>
+      <button type="button" class="secondary" onclick="exportMediaDoitacDuplicateCodes_()" ${duplicates.length?'':'disabled'}>⬇ Xuất Excel mã trùng</button>
+    </div>
+    <div class="section-desc" style="margin-top:5px;">Đối chiếu mã nhân viên tại DATA ▸ Đối tác với danh sách PGs thương hiệu OPPO. Trainer chỉ xem và xuất dữ liệu thuộc khu vực được phân quyền.</div>
+  </div>`;
   html+=`<div class="scope-filters" style="margin-bottom:10px;"><span class="scope-label">Xem theo:</span>
     <select id="mdtStatMode" style="${sel}"><option value="region" ${mediaDoitacStatMode_==='region'?'selected':''}>Khu vực</option><option value="trainer" ${mediaDoitacStatMode_==='trainer'?'selected':''}>Trainer</option></select></div>`;
   html+=`<div class="table-scroll" style="margin-bottom:18px;"><table><thead><tr><th>${mediaDoitacStatMode_==='trainer'?'Trainer':'Khu vực'}</th><th>Độ phủ shop có PGs</th><th>Số Bài TT / Target</th></tr></thead><tbody>`;
@@ -15155,6 +15194,22 @@ function exportMediaDoitacShopExcel_(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Shop chua du bai');
   XLSX.writeFile(wb,'TruyenThong_DoiTac_Shop_ChuaDuBai_'+currentMonth+'.xlsx');
+}
+
+function exportMediaDoitacDuplicateCodes_(){
+  if(typeof XLSX==='undefined'){alert('Chưa tải được thư viện Excel.');return;}
+  // Kiểm tra quyền thêm lần nữa tại thời điểm tải file.
+  const rows=(window.__mediaDoitacDuplicateCodes||[]).filter(x=>
+    isAdmin()||(isTrainer()&&normalizeRegionLoose_(x.partnerRegion)===normalizeRegionLoose_(session.region||''))
+  ).map((x,i)=>({
+    'STT':i+1,'Mã nhân viên trùng':x.code,
+    'Tên nhân viên Đối tác':x.partnerName,'Khu vực Đối tác':x.partnerRegion,
+    'Shop Đối tác':x.partnerShop,'Số bài truyền thông đã gửi (được duyệt)':x.approvedPosts||0,'Tên PGs OPPO':x.oppoNames,'Shop PGs OPPO':x.oppoShops
+  }));
+  if(!rows.length){alert('Không có mã trùng trong khu vực được phân quyền.');return;}
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Ma doi tac trung PGs OPPO');
+  XLSX.writeFile(wb,'TruyenThong_DoiTac_MaTrung_PGsOPPO_'+currentMonth+'.xlsx');
 }
 </script>
 </body>
