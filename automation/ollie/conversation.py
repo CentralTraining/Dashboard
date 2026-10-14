@@ -45,6 +45,8 @@ def conversation_route(text):
         return False
     if is_knowledge_request(text):
         return True
+    if has_deadline(text) and not re.search(r"\b(?:soan|viet|ban nhap)\b",command) and '?' not in text:
+        return False
     if is_dashboard_question(text):
         return True
     draft = bool(re.search(r"\b(?:soan|viet|ban nhap)\b", command))

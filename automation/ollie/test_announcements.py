@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from announcements import parse_meeting, meeting_deadline, summarize_meeting
+from announcements import parse_meeting, meeting_deadline, summarize_meeting,parse_announcement,has_deadline
 from tracker import VIETNAM
 
 
@@ -19,6 +19,18 @@ Mật mã: 001901
 
 
 class AnnouncementChecks(unittest.TestCase):
+    def test_natural_inline_deadline_retains_the_work_and_vietnam_hour(self):
+        source=datetime(2026,10,14,9,tzinfo=VIETNAM).timestamp()
+        for suffix in ('trước 17h ngày 20/10/2026','chậm nhất 17 giờ 30 ngày 20/10/2026','Deadline 20/10/2026 17:00'):
+            text='THÔNG BÁO\nMỗi Trainer nộp 2 video '+suffix
+            summary,due=parse_announcement(text,source)
+            self.assertIn('Mỗi Trainer nộp 2 video',summary)
+            self.assertEqual(datetime.fromtimestamp(due,VIETNAM).hour,17)
+        self.assertEqual(datetime.fromtimestamp(parse_announcement('Nộp báo cáo\nHạn cuối: 2026-10-20',source)[1],VIETNAM).isoformat(),'2026-10-20T23:59:00+07:00')
+        self.assertFalse(has_deadline('Tôi đã hoàn thành việc trước đó'))
+        self.assertFalse(has_deadline('Deadline là gì'))
+        self.assertFalse(has_deadline('Thời gian sử dụng pin của sản phẩm là bao lâu'))
+
     def test_sample_is_one_meeting_not_four_assignments(self):
         source=datetime(2026,9,11,9,tzinfo=VIETNAM).timestamp()
         summary,deadline=parse_meeting(SAMPLE,source)

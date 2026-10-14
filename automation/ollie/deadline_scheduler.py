@@ -25,6 +25,6 @@ async def sync_deadlines(tracker, config, now):
 
 def configure_deadline_policy(tracker):
     settings = tracker.settings()
-    settings.update({'start_policy': 'next_morning', 'hour': 8, 'minute': 0})
+    settings.update({'start_policy': 'next_morning', 'hour': 8, 'minute': 0, 'daily_channels':['dm']})
     tracker.db.execute("UPDATE settings SET value=? WHERE key='reminders'", (json.dumps(settings),))
     tracker.db.commit()

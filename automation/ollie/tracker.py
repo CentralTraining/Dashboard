@@ -111,10 +111,14 @@ class Tracker:
         return ('từ sáng hôm sau khi nhận thông báo' if self.settings().get('start_policy') == 'next_morning'
                 else 'từ 4 ngày trước deadline')
 
+    def delivery_description(self):
+        return ('tin nhắn riêng cho người phụ trách và Nghĩa' if self.settings().get('daily_channels')==['dm']
+                else 'nhóm và tin nhắn riêng cho người phụ trách')
+
     def help(self):
         return ("Ollie_MT đã có lưu công việc và lịch nhắc.\n"
                 f"• Lịch: 08:00 giờ Việt Nam mỗi ngày, {self.schedule_description()}.\n"
-                "• Nơi nhận: nhóm này và tin nhắn riêng cho người phụ trách.\n\n"
+                f"• Nơi nhận: {self.delivery_description()}.\n\n"
                 "• Nhắc cả leader; dừng khi hoàn thành, bị hủy hoặc đã qua deadline.\n"
                 "Với thông báo họp: gửi @Ollie_MT kèm thông báo, có ngày/tháng/năm và giờ rõ ràng.\n\n"
                 "Leader gửi mẫu sau; chọn @Trainer từ danh sách nếu giao cho người khác:\n"
@@ -150,7 +154,7 @@ class Tracker:
             return (f"Lưu công việc: đang bật ({count} công việc).\n"
                     f"Lịch nhắc: {'đang bật' if config['enabled'] else 'đang tạm dừng'}.\n"
                     f"Giờ nhắc: 08:00 Việt Nam; {self.schedule_description()}.\n"
-                    "Nơi gửi: nhóm này và riêng từng người phụ trách.\n"
+                    f"Nơi gửi: {self.delivery_description()}.\n"
                     + (f"Có {bad} lần gửi chưa xác nhận thành công; cần kiểm tra kết nối/quyền gửi.\n" if bad else "")
                     + "Chương trình đang chạy thử trong phiên làm việc này.")
         if command in ("danh sach", "viec cua toi"):
@@ -166,7 +170,7 @@ class Tracker:
             self.db.execute('INSERT OR IGNORE INTO task_events VALUES (?,?,?,NULL)',
                             (event_id, json.dumps(payload), now))
             self.db.commit()
-            return (f"Đã bật lịch nhắc lúc 08:00 Việt Nam, {self.schedule_description()}; gửi nhóm và riêng."
+            return (f"Đã bật lịch nhắc lúc 08:00 Việt Nam, {self.schedule_description()}; gửi {self.delivery_description()}."
                     if command == "bat nhac viec" else "Đã tạm dừng gửi lời nhắc. Các công việc vẫn được lưu.")
         try:
             from announcements import has_deadline, notice_source_id
@@ -177,6 +181,8 @@ class Tracker:
                     return "Chỉ leader được tạo thông báo cần nhắc."
                 if str(getattr(incoming, "conversation_type", "2")) != "2":
                     return "Hãy gửi thông báo kèm deadline trong nhóm AE CÂY KHẾ CHUA để giao việc cho Team."
+                if getattr(incoming,'conversation_id',self.state['conversation_id'])!=self.state['conversation_id']:
+                    return "Hãy gửi thông báo cần nhắc trong nhóm AE CÂY KHẾ CHUA đã được cấu hình."
                 from announcements import parse_announcement
                 source_time = getattr(incoming, "create_at", None)
                 source_time = (float(source_time) / 1000 if source_time else now)
@@ -295,7 +301,7 @@ class Tracker:
         config = self.settings()
         first_reminder = self.db.execute("SELECT first_reminder_at FROM tasks WHERE id=?", (task_id,)).fetchone()[0]
         extra = "\nLịch gửi đang tạm dừng." if not config["enabled"] else ""
-        first_text = (f"Lần nhắc đầu theo lịch: {display_time(first_reminder)}; nhóm và riêng, gồm cả leader."
+        first_text = (f"Lần nhắc đầu theo lịch: {display_time(first_reminder)}; {self.delivery_description()}."
                       if first_reminder < deadline else
                       "Không còn lượt 08:00 nào trước deadline; cần chọn lịch nhắc sớm hơn nếu muốn nhận lời nhắc.")
         return (f"Đã lưu CV-{task_id}: {content}\nNgười phụ trách: {names}\n"
@@ -382,9 +388,11 @@ class Tracker:
             rows = self.due_tasks(today.date(), now=now)
             day = today.date().isoformat()
             if rows:
-                self.add_job(f"daily:{day}:group", "daily", day, "group", self.state["conversation_id"], now)
-                for staff_id in sorted({row[3] for row in rows} | {self.owner}):
-                    self.add_job(f"daily:{day}:dm:{staff_id}", "daily", day, "dm", staff_id, now)
+                channels=config.get('daily_channels',config.get('channels',['group','dm']))
+                if 'group' in channels:self.add_job(f"daily:{day}:group", "daily", day, "group", self.state["conversation_id"], now)
+                if 'dm' in channels:
+                    for staff_id in sorted({row[3] for row in rows} | {self.owner}):
+                        self.add_job(f"daily:{day}:dm:{staff_id}", "daily", day, "dm", staff_id, now)
         alerts = self.db.execute("SELECT id,staff_id,due_at FROM alerts WHERE cancelled=0 AND due_at<=?", (now,)).fetchall()
         for alert_id, staff_id, due_at in alerts:
             self.add_job(f"alert:{alert_id}:group", "alert", str(alert_id), "group", self.state["conversation_id"], due_at)
@@ -426,6 +434,8 @@ class Tracker:
             if not row:
                 return None
             return row[0]
+        if channel not in self.settings().get('daily_channels',self.settings().get('channels',['group','dm'])):
+            return None
         # Skip an old unsent digest; today's digest is rebuilt from current tasks.
         if reference != local_time(now).date().isoformat():
             return None

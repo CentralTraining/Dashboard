@@ -4,9 +4,9 @@
 Trong nhóm, người dùng cần chọn đúng bot trong danh sách @ rồi gửi tin nhắn.
 Tin nhắn riêng gửi trực tiếp cho bot cũng được xử lý.
 
-Lịch đã chốt: 08:00 mỗi ngày theo giờ Việt Nam, từ 4 ngày theo lịch trước
-deadline, gửi trong nhóm đã cấu hình và riêng từng người phụ trách, gồm cả leader. Việc mới
-được tạo sau 08:00 bắt đầu ở lần nhắc 08:00 kế tiếp. Dừng nhắc khi đã qua
+Lịch đã chốt: 08:00 mỗi ngày theo giờ Việt Nam, từ sáng hôm sau khi nhận
+thông báo, gửi riêng từng người phụ trách và Nghĩa. Việc mới bắt đầu ở
+lượt 08:00 ngày hôm sau theo thời điểm thông báo gốc. Dừng nhắc khi đã qua
 deadline, hoàn thành hoặc bị hủy. Danh sách vẫn giữ việc quá hạn để tra cứu.
 Dữ liệu lưu trong SQLite ở `runtime/`.
 
@@ -112,6 +112,8 @@ SDK chính thức: https://github.com/open-dingtalk/dingtalk-stream-sdk-python
 Tra cứu dữ liệu dashboard qua tin nhắn riêng: xem [hướng dẫn](DASHBOARD_CHAT.md).
 
 Nạp tài liệu Word/PDF/ảnh/video và hỏi theo nguồn: xem [hướng dẫn kho kiến thức](KNOWLEDGE_FILES.md).
+
+Thông báo nhóm và lịch nhắc deadline 08:00: xem [hướng dẫn](DEADLINE_NOTICES.md).
 Quyền được kiểm tra từ tài khoản DingTalk cho từng câu hỏi; Trainer chỉ xem khu vực
 đã đối chiếu, leader xem toàn bộ dữ liệu nghiệp vụ. Không gửi dữ liệu tra cứu đến
 mô hình AI hay nhà cung cấp ngoài. Kiểm tra phân quyền và hội thoại:

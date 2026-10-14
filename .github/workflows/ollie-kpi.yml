@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths: ['automation/ollie/kpi-trigger.json']
   schedule:
+    # Start early; the Python runner waits until 08:00 Vietnam before sending.
+    - cron: '55 0 * * *'
     # Vietnam UTC+7: 01:00 UTC = 08:00 Vietnam.
     - cron: '0 1 * * *'
     # Catch up if GitHub delays/drops the main trigger or a send is rejected.
@@ -66,3 +68,4 @@ jobs:
       - name: Check group capture result
         if: always() && steps.group_capture.outcome == 'failure'
         run: exit 1
+

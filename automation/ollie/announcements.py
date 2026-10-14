@@ -15,8 +15,18 @@ def notice_source_id(group, owner, posted, text):
     return "group:" + hashlib.sha256(payload.encode()).hexdigest()
 
 
+DUE_CUE = re.compile(r"\b(?:deadline|han (?:hoan thanh|chot|cuoi)|thoi gian(?: hoan thanh)?|hoan thanh truoc|cham nhat)\b\s*(?:[:：]|(?=\d{1,2}(?:[:h./-]|\s*gio)|20\d{2}-|ngay\s+(?:mai|kia|\d)|hom nay))|\btruoc\s+(?=\d{1,2}(?:[:h./-]|\s*gio)|ngay\s+(?:mai|kia|\d))",re.I)
+
+
 def has_deadline(text):
-    return bool(re.search(r"(?:\bdeadline|\bhan hoan thanh|\bhan chot|\bthoi gian)\s*:", folded(text)))
+    return bool(DUE_CUE.search(folded(text)))
+
+
+def deadline_line(text):
+    line=folded(text).replace('：',':')
+    line=re.sub(r"(?<!\d)([01]?\d|2[0-3])\s*(?:h|gio)\s*([0-5]\d)?(?!\d)",lambda m:f"{int(m[1]):02}:{m[2] or '00'}",line)
+    line=re.sub(r"\b(20\d{2})-(\d{1,2})-(\d{1,2})\b",lambda m:f'{m[3]}/{m[2]}/{m[1]}',line)
+    return line
 
 
 def meeting_access(text):
@@ -66,7 +76,7 @@ def meeting_deadline(text, source_time):
     lines = [line for line in text.splitlines() if has_deadline(line)]
     if len(lines) != 1:
         raise ValueError("Chưa lưu: cần một dòng Thời gian hoặc Deadline cho mỗi thông báo.")
-    line = folded(lines[0])
+    line = deadline_line(lines[0])
     # A natural notice can put "ngày mai" in its heading while the time
     # field contains only a clock. Resolve it against the posting day.
     relatives = ("ngay mai", "hom nay", "ngay kia")
@@ -125,7 +135,7 @@ def parse_announcement(text, source_time):
     if len(lines) != 1:
         raise ValueError('Chưa lưu: mỗi thông báo cần một dòng Deadline hoặc Hạn hoàn thành rõ ràng.')
     deadline_text = text
-    if not re.search(r'(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)', lines[0]):
+    if not re.search(r'(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)', deadline_line(lines[0])):
         # An explicitly dated all-day deadline ends at 23:59 Vietnam time.
         deadline_text = text.replace(lines[0], lines[0] + ' 23:59')
     deadline = meeting_deadline(deadline_text, source_time)
@@ -134,7 +144,11 @@ def parse_announcement(text, source_time):
     for line in text.splitlines():
         value = line.strip().rstrip('\\')
         label = folded(re.sub(r'^[^\wÀ-ỹ]+', '', value))
-        if not value or line in lines or 'http://' in value or 'https://' in value: continue
+        if line in lines:
+            cue=DUE_CUE.search(folded(value))
+            value=value[:cue.start()].strip(' :—–-') if cue else ''
+            value=re.sub(r'^[^\wÀ-ỹ]+','',value).strip()
+        if not value or 'http://' in value or 'https://' in value: continue
         if label.startswith(('dear ', 'xin chao', 'anh em sap xep', 'hen gap', 'id cuoc hop:', 'mat ma:', 'link:', 'link zoom:')): continue
         if 'thong bao' in label: value = re.sub(r'(?i)^.*?thông báo\s*', '', value).strip(' :—–-')
         clean.append(value)

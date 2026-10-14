@@ -34,6 +34,17 @@ class DeadlineChecks(unittest.TestCase):
         for hour in (7, 12):
             self.assertEqual(self.tracker.first_reminder(stamp(30), stamp(12, hour)), stamp(13, 8))
 
+    def test_morning_digest_is_private_and_retires_older_group_jobs(self):
+        incoming=SimpleNamespace(sender_staff_id='leader',create_at=None,conversation_type='2',conversation_id='group')
+        self.tracker.handle('Thông báo\nMỗi Trainer nộp báo cáo trước 17h ngày 20/10/2026',incoming,'notice',now=stamp(12))
+        self.tracker.add_job('old-group','daily','2026-10-13','group','group',stamp(13,8))
+        self.tracker.prepare_jobs(stamp(13,8))
+        jobs=self.tracker.next_jobs(stamp(13,8))
+        private=[j for j in jobs if j[3]=='dm']
+        self.assertEqual({j[4] for j in private},{'do','cam','leader'})
+        self.assertTrue(all(self.tracker.job_content(j,stamp(13,8)) is None for j in jobs if j[3]=='group'))
+        self.assertNotIn('gửi nhóm',self.tracker.handle('bật nhắc việc',incoming,'enable',now=stamp(12)))
+
     def test_rotating_wish_is_stable_today_and_different_tomorrow(self):
         tasks = [(1, 'Nộp báo cáo', stamp(20), ['do'])]
         first = format_deadline_digest('ĐẶNG ANH ĐÔ', tasks, stamp(12))
