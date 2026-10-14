@@ -1145,6 +1145,14 @@
   .pgsm-dashboard-target-card{min-height:auto}
 }
 
+
+/* PGs Master: sao và trạng thái hoàn thành từ OTraining tách biệt. */
+.pgsm-fm-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:90px}
+.pgsm-fm-stars{font-weight:850;color:#bf821b;font-size:15px;white-space:nowrap}
+.pgsm-fm-status{font-size:11px;font-weight:800;white-space:nowrap;padding:3px 7px;border-radius:999px;background:#edf1ee;color:#65756b}
+.pgsm-fm-pass{background:#e0f3e7;color:#087843}
+.pgsm-fm-fail{background:#f2f4f2;color:#64776c}
+.pgsm-fm-unknown{background:#fff3dc;color:#866020}
 </style>
 <style id="olie-theme">
 :root{--bg:#f4f8f6;--green:#07864a;--green-dark:#075d37;--line:#e3ece6;--radius:16px}
@@ -16171,7 +16179,7 @@ async function renderPgsMasterTarget_(camp,editLocked=false){
     </div>
     <div class="pgsm-dashboard-target-grid">
       ${PGSM_STAGES_.map((s,idx)=>{
-        const v=Number(d.target?.[s.id]||0);
+        const v=Number(d.thresholds?.[s.id]??0);
         const helper=(s.id==='m4'||s.id==='m5')
           ? 'Nhập số bài tối thiểu để PGs được công nhận hoàn thành mốc này.'
           : 'Nhập số lần pass tối thiểu để PGs được công nhận hoàn thành mốc này.';
@@ -16187,7 +16195,7 @@ async function renderPgsMasterTarget_(camp,editLocked=false){
           <div class="pgsm-dashboard-target-input">
             <label>Chỉ tiêu tối thiểu</label>
             <div class="pgsm-dashboard-target-inputbox">
-              <input type="number" min="0" step="1" id="pgsm_target_${s.id}" value="${v}" placeholder="0" ${canManageTargets?'':'disabled'}>
+              <input type="number" min="1" step="1" id="pgsm_target_${s.id}" data-pgsm-target="${s.id}" value="${v}" placeholder="0" ${canManageTargets?'':'disabled'}>
               <span class="pgsm-dashboard-target-unit">${s.unit}</span>
             </div>
           </div>
@@ -16390,7 +16398,7 @@ async function renderPgsMasterTarget_(camp,editLocked=false){
    const current=await pgsmData_(camp,true);
    if(current.locked&&!(editLocked&&isAdmin()))return alert('Bấm Sửa trước khi đổi Target đã chốt.');
    if(isAdmin()){
-     const th={};for(const m of PGSM_STAGES_){const raw=box.querySelector(`[data-pgsm-target="${m.id}"]`).value;if(raw===''||!Number.isInteger(Number(raw))||Number(raw)<1)return alert('Target phải là số nguyên dương tại '+m.label);th[m.id]=Number(raw);}
+     const th={};for(const m of PGSM_STAGES_){const field=box.querySelector(`[data-pgsm-target="${m.id}"]`);if(!field)throw Error("Thiếu ô nhập chỉ tiêu "+m.label);const raw=field.value;if(raw===''||!Number.isInteger(Number(raw))||Number(raw)<1)return alert('Target phải là số nguyên dương tại '+m.label);th[m.id]=Number(raw);}
      current.thresholds=th;current.milestones=PGSM_STAGES_.map(x=>({...x,min:th[x.id]}));
    }
    if(isTrainer()){
@@ -16407,8 +16415,21 @@ async function renderPgsMasterTarget_(camp,editLocked=false){
    if(finalize){if(!isAdmin())return false;if(!current.registered.length)return alert('Chưa có PGs Master để chốt.');if(!confirm('Chốt đăng ký PGs Master để chuyển sang theo dõi tiến độ?'))return false;current.locked=true;current.finalizedAt=new Date().toISOString();}
    if(await pgsmPersist_(camp,current)){alert(finalize?'Đã chốt đăng ký.':d.locked?'Đã lưu chỉnh sửa Target.':'Đã lưu Target PGs Master.');await renderPgsMasterTarget_(camp);return true;}return false;
  };
- box.querySelector('#pgsmSaveTarget')?.addEventListener('click',()=>save(false));
- box.querySelector('#pgsmFinalize')?.addEventListener('click',()=>save(true));
+ const runTargetSave_=async(button,finalize)=>{
+   if(!button||button.disabled)return;
+   button.disabled=true;
+   const originalText=button.textContent;
+   button.textContent=finalize?'Đang chốt đăng ký…':'Đang lưu Target…';
+   try{await save(finalize);}
+   catch(err){
+     console.error('Lỗi lưu PGs Master Target:',err);
+     alert('Không thể lưu Target PGs Master: '+(err?.message||String(err))+'\nHãy tải lại trang để kiểm tra trạng thái lưu trước khi thử lại.');
+   }finally{
+     if(button.isConnected){button.disabled=false;button.textContent=originalText;}
+   }
+ };
+ box.querySelector('#pgsmSaveTarget')?.addEventListener('click',e=>runTargetSave_(e.currentTarget,false));
+ box.querySelector('#pgsmFinalize')?.addEventListener('click',e=>runTargetSave_(e.currentTarget,true));
  box.querySelector('#pgsmEditFinalized')?.addEventListener('click',()=>renderPgsMasterTarget_(camp,true));
  box.querySelector('#pgsmCancelEdit')?.addEventListener('click',()=>renderPgsMasterTarget_(camp));
  drawShops();drawRegs();
@@ -16438,6 +16459,25 @@ function pgsmMetricFromFm_(source,stage){
    if(Number.isInteger(number)&&number>=0)return {value:number,key};
  }
  return null;
+}
+// Kết quả FM: *_done quyết định đạt/chưa đạt, *_stars chỉ là điểm sao.
+// Không quy đổi sao, rank hoặc số lượt sang trạng thái hoàn thành.
+function pgsmBooleanDone_(value){
+ if(value===true||value===false)return value;
+ if(value===1||value==='1'||value==='true'||value==='TRUE')return true;
+ if(value===0||value==='0'||value==='false'||value==='FALSE')return false;
+ return null; // API không cung cấp trạng thái, không suy đoán là Đạt
+}
+function pgsmStageStatus_(code,stage,sourceMeta,actuals,thresholds){
+ const meta=sourceMeta?.[String(code||'').trim().toUpperCase()];
+ if(meta?.source==='OTRAINING FM'){
+   const done=pgsmBooleanDone_(meta.done?.[stage]);
+   return {done:done===true,known:done!==null,fromSystem:true,
+     stars:meta.stars?.[stage]??null, rank:meta.rank??null};
+ }
+ // Không sử dụng kết quả nhập tay hay Target để suy đoán trạng thái đạt.
+ // PGs chưa có OTraining được đánh dấu Chưa có dữ liệu thay vì Chưa đạt.
+ return {done:false,known:false,fromSystem:false,stars:null,rank:null};
 }
 // API bên thứ ba có thể không cho gọi CORS từ GitHub Pages.
 // Ưu tiên Edge Function thuộc cùng Supabase của Dashboard, sau đó thử gọi trực tiếp.
@@ -16487,24 +16527,32 @@ async function pgsmImportFmReport_(camp,confirmedId,onMessage){
    aggregated.set(code,line);
  }
  if(!aggregated.size)throw Error('Không có mã PGs Master nào khớp an toàn với báo cáo. Dữ liệu cũ được giữ nguyên.');
- let updates=0;const updatedFields=new Set(),missingFields=new Set();
+ let flagUpdates=0;const updatedFields=new Set(),missingFields=new Set(),metricFields=new Set();
  const nextActuals={...d.actuals};
  const sourceMeta={...(d.systemMeta||{})};
  for(const [code,line] of aggregated){
    const actual={...(nextActuals[code]||{})};
+   const done={},stars={};
    for(const st of PGSM_STAGES_){
-     const val=pgsmMetricFromFm_(line,st.id);
-     if(val){actual[st.id]=val.value;updatedFields.add(st.id);updates++;}
-     else missingFields.add(st.id);
+     const flag=pgsmBooleanDone_(line[st.id+'_done']);
+     done[st.id]=flag;
+     if(flag===null)missingFields.add(st.id);
+     else{flagUpdates++;updatedFields.add(st.id);}
+     const rawStars=line[st.id+'_stars'];
+     const score=rawStars===null||rawStars===undefined||String(rawStars).trim()===''?null:Number(rawStars);
+     stars[st.id]=score!==null&&Number.isFinite(score)&&score>=0?score:null;
+     // Giữ bộ đếm đúng đơn vị (nếu API có) cho tham khảo, KHÔNG quyết định Đạt.
+     const metric=pgsmMetricFromFm_(line,st.id);
+     if(metric){actual[st.id]=metric.value;metricFields.add(st.id);}
    }
    nextActuals[code]=actual;
-   sourceMeta[code]={stars:Object.fromEntries(PGSM_STAGES_.map(m=>[m.id,line[m.id+'_stars']??null])),done:Object.fromEntries(PGSM_STAGES_.map(m=>[m.id,line[m.id+'_done']??null])),rank:line.rank??null,source:'OTRAINING FM',updatedAt:new Date().toISOString()};
+   sourceMeta[code]={stars,done,rank:line.rank??null,source:'OTRAINING FM',updatedAt:new Date().toISOString()};
  }
- // Tránh ghi lại dữ liệu cũ khi không mốc nào có số đếm thực tế.
- if(updates===0)throw Error('Có PGs khớp, nhưng API không trả về bộ đếm số lần pass/số bài đúng các mốc. Chỉ có sao và cờ done; không thể cập nhật Target theo lần/bài.');
+ if(flagUpdates===0)throw Error('API không có trạng thái M1–M5_done hợp lệ cho PGs Master. Dữ liệu cũ được giữ nguyên.');
  d.actuals=nextActuals;d.systemMeta=sourceMeta;
  d.systemUpdatedAt=new Date().toISOString();
- d.systemReportSummary={total:source.length,matched:aggregated.size,unmatched:skipped,wrongRegion:mismatched,duplicateCodes:duplicates,updatedFields:[...updatedFields],missingFields:[...missingFields]};
+ d.systemReportSummary={total:source.length,matched:aggregated.size,unmatched:skipped,wrongRegion:mismatched,
+   duplicateCodes:duplicates,updatedFields:[...updatedFields],missingFields:[...missingFields],metricFields:[...metricFields]};
  if(!await pgsmPersist_(camp,d))throw Error('Chưa lưu được báo cáo vào Supabase.');
  return d.systemReportSummary;
 }
@@ -16520,10 +16568,9 @@ async function pgsmDrawProgress_(camp){
  const d=await pgsmData_(camp,true);
  if(!d.locked){el.innerHTML='<div class="form-card">⏳ Chưa chốt đăng ký. Sau khi chốt Target, danh sách sẽ xuất hiện tại đây.</div><div id="pgsmTrainerChanges"></div>';await pgsmRenderTrainerChangePanel_(camp,d);return;}
  const rows=(d.registered||[]).filter(r=>pgsmCanSeeRegion_(r.region)).map(r=>({...r,channel:pgsmRecordChannel_(r)}));
- const draftActuals=Object.fromEntries(Object.entries(d.actuals||{}).map(([k,v])=>[k,{...v}]));
- const pendingActuals=new Map();
- const actual=r=>draftActuals[r.code]||{};
- const achieved=r=>PGSM_STAGES_.filter(m=>Number(actual(r)[m.id]||0)>=Number(d.thresholds[m.id]||1)).length;
+ // Tiến độ chỉ đọc các cờ m*_done từ OTraining, không có bộ nhớ nháp nhập tay.
+ const stageStatus=(r,m)=>pgsmStageStatus_(r.code,m.id,d.systemMeta,null,d.thresholds);
+ const achieved=r=>PGSM_STAGES_.filter(m=>stageStatus(r,m).done).length;
  const regionOf=r=>String(r.region||'').trim();
  const regions=[...new Set(rows.map(regionOf).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
  const trainerIds=[...new Set(rows.map(r=>String(r.trainerId||'')).filter(Boolean))];
@@ -16533,7 +16580,7 @@ async function pgsmDrawProgress_(camp){
   <span class="scope-label">Xem theo:</span><select id="pgsmProgressGroupBy"><option value="region">Khu vực</option><option value="trainer">Trainer</option></select>
  </div>
  <div class="pgsm-summary-scroll"><table aria-label="Thống kê tiến độ PGs Master theo Trainer hoặc khu vực"><colgroup><col style="width:3%"><col style="width:14%"><col style="width:7%">${PGSM_STAGES_.map(()=>'<col style="width:12.6%">').join('')}<col style="width:13%"></colgroup><thead><tr><th>STT</th><th id="pgsmProgressGroupHeading">Khu vực</th><th>Tổng PGs</th>${PGSM_STAGES_.map(m=>`<th>${escapeHtml(m.label)}</th>`).join('')}<th>Đủ 5 mốc</th></tr></thead><tbody id="pgsmProgressSummaryRows"></tbody></table></div>
- <p class="pgsm-summary-footer">Tổng MIỀN TRUNG = tổng PGs đăng ký thuộc phạm vi Admin; Trainer chỉ xem tổng khu vực được phép quản lý. Mỗi thanh: PGs đạt / Tổng PGs · Tỷ lệ hoàn thành.</p>
+ <p class="pgsm-summary-footer">Tổng MIỀN TRUNG = tổng PGs đăng ký thuộc phạm vi Admin; Trainer chỉ xem tổng khu vực được phép quản lý. Mỗi thanh: PGs đạt / Tổng PGs · Tỷ lệ hoàn thành. Kết quả Đạt chỉ lấy từ cờ M1–M5_done của OTraining.</p>
  <section class="pgsm-system-card" id="pgsmSystemSection">
    <div class="pgsm-system-top"><div><b style="color:var(--green-dark);font-size:17px">↻ Import tiến độ PGs Master</b><div class="section-desc">Cập nhật kết quả từ OTraining theo Campaign ID. Chỉ đối chiếu PGs có trong danh sách Master đã chốt.</div></div></div>
    <div class="pgsm-system-tools">
@@ -16542,6 +16589,7 @@ async function pgsmDrawProgress_(camp){
      <button type="button" class="primary" id="pgsmUpdateSystemBtn" ${isAdmin()?'':'disabled title="Chỉ Admin được cập nhật"'}>↻ Cập nhật từ hệ thống</button>
    </div>
    <div class="pgsm-system-message" id="pgsmSystemMsg" aria-live="polite">${d.systemUpdatedAt?'Lần cập nhật gần nhất: '+escapeHtml(new Date(d.systemUpdatedAt).toLocaleString('vi-VN')):'Chưa cập nhật từ hệ thống.'}</div>
+   <div class="section-desc" style="margin-top:6px">Kết quả M1–M5 được cập nhật duy nhất từ OTraining. Không hỗ trợ nhập hoặc lưu tiến độ thủ công.</div>
  </section>
  <h3 class="pgsm-section-title" style="margin-top:22px">Danh sách PGs Master đạt mốc</h3>
  <div class="pgsm-filter-grid">
@@ -16554,7 +16602,6 @@ async function pgsmDrawProgress_(camp){
  </div>
  <div class="table-scroll" id="pgsmProgressTableWrap"><table id="pgsmProgressTable"><thead><tr><th>STT</th><th>Code PGs</th><th class="pgsm-col-person">Họ tên</th><th>ID shop</th><th>Shop</th><th>Khu vực</th><th>Trainer</th><th>Kênh</th>${PGSM_STAGES_.map(m=>`<th>${escapeHtml(m.label)}<small style="display:block">Target: ${Number(d.thresholds[m.id]||0)}</small></th>`).join('')}<th>Kết quả</th>${isTrainer()?'<th>Thao tác</th>':''}</tr></thead><tbody id="pgsmProgressRows"></tbody></table></div>
  <div id="pgsmProgressPagination"></div>
- ${isAdmin()?'<button class="primary" id="pgsmSaveActual" style="margin-top:12px">💾 Lưu kết quả tiến độ</button>':''}
  </div><div id="pgsmTrainerChanges"></div>`;
  const $=id=>el.querySelector('#'+id);
  const regionSel=$('pgsmProgressRegion'),trainerSel=$('pgsmProgressTrainer'),channelSel=$('pgsmProgressChannel');
@@ -16570,7 +16617,7 @@ async function pgsmDrawProgress_(camp){
      const key=id||'__none__';
      if(!grouped.has(key))grouped.set(key,{label,total:0,stages:[0,0,0,0,0],done:0});
      const g=grouped.get(key);g.total++;
-     PGSM_STAGES_.forEach((m,i)=>{if(Number(actual(r)[m.id]||0)>=Number(d.thresholds[m.id]||1))g.stages[i]++;});
+     PGSM_STAGES_.forEach((m,i)=>{if(stageStatus(r,m).done)g.stages[i]++;});
      if(achieved(r)===5)g.done++;
    }
    const summaryRows=[...grouped.values()].sort((a,b)=>a.label.localeCompare(b.label,'vi'));
@@ -16610,8 +16657,15 @@ async function pgsmDrawProgress_(camp){
    const subset=filtered();page=Math.min(page,Math.max(1,Math.ceil(subset.length/pageSize)));
    const start=(page-1)*pageSize;
    $('pgsmProgressRows').innerHTML=subset.slice(start,start+pageSize).map((r,i)=>{
-     const a=actual(r),n=achieved(r);
-     return `<tr><td>${start+i+1}</td><td>${escapeHtml(r.code)}</td><td class="pgsm-person-name pgsm-col-person">${escapeHtml(r.name)}</td><td>${escapeHtml(r.shopId||'—')}</td><td class="pgsm-col-shop" title="${escapeHtml(r.shop)}">${escapeHtml(r.shop)}</td><td>${escapeHtml(r.region)}</td><td class="pgsm-col-trainer">${escapeHtml(r.trainerName)}</td><td>${escapeHtml(r.channel||'—')}</td>${PGSM_STAGES_.map(m=>`<td class="pgsm-score-cell">${isAdmin()?`<input class="pgsm-actual-input" type="number" min="0" step="1" data-pgsm-actual="${m.id}" data-pgsm-code="${escapeHtml(r.code)}" value="${Number(a[m.id]||0)}">`:`${Number(a[m.id]||0)}`} ${Number(a[m.id]||0)>=Number(d.thresholds[m.id]||1)?'<span class="pgsm-done-icon" title="Đã đạt Target">✓</span>':''}</td>`).join('')}<td><span class="pgsm-result-badge ${n===5?'pgsm-result-done':''}">${n===5?'🏆 Đạt Master':`${n}/5 mốc`}</span></td>${isTrainer()?`<td>${String(r.trainerId||'')===String(session?.trainerId||'')?`<button type="button" class="secondary" data-pgsm-progress-remove="${escapeHtml(r.code)}">Loại PGs</button>`:'—'}</td>`:''}</tr>`;
+     const n=achieved(r);
+     return `<tr><td>${start+i+1}</td><td>${escapeHtml(r.code)}</td><td class="pgsm-person-name pgsm-col-person">${escapeHtml(r.name)}</td><td>${escapeHtml(r.shopId||'—')}</td><td class="pgsm-col-shop" title="${escapeHtml(r.shop)}">${escapeHtml(r.shop)}</td><td>${escapeHtml(r.region)}</td><td class="pgsm-col-trainer">${escapeHtml(r.trainerName)}</td><td>${escapeHtml(r.channel||'—')}</td>${PGSM_STAGES_.map(m=>{
+       const st=stageStatus(r,m);
+       if(!st.fromSystem){
+         return '<td class="pgsm-score-cell"><span class="pgsm-fm-status pgsm-fm-unknown">Chưa có dữ liệu</span></td>';
+       }
+       const stars=st.stars===null?'—':String(st.stars);
+       return `<td class="pgsm-score-cell"><div class="pgsm-fm-stage"><span class="pgsm-fm-stars" title="Số sao từ OTraining">★ ${escapeHtml(stars)}</span><span class="pgsm-fm-status ${st.done?'pgsm-fm-pass':st.known?'pgsm-fm-fail':'pgsm-fm-unknown'}">${st.done?'✓ Đạt':st.known?'Chưa đạt':'Chưa có kết quả'}</span></div></td>`;
+     }).join('')}<td><span class="pgsm-result-badge ${n===5?'pgsm-result-done':''}">${n===5?'🏆 Đạt Master':`${n}/5 mốc`}</span></td>${isTrainer()?`<td>${String(r.trainerId||'')===String(session?.trainerId||'')?`<button type="button" class="secondary" data-pgsm-progress-remove="${escapeHtml(r.code)}">Loại PGs</button>`:'—'}</td>`:''}</tr>`;
    }).join('')||`<tr><td colspan="${isTrainer()?15:14}">Không có PGs phù hợp bộ lọc</td></tr>`;
    pager.innerHTML=pgsmPager_(subset.length,page,pageSize,'data-pgsm-progress-page','PGs');
    summary();
@@ -16622,15 +16676,6 @@ async function pgsmDrawProgress_(camp){
  trainerSel.addEventListener('change',()=>{fillChannel();page=1;draw();});
  channelSel.addEventListener('change',()=>{page=1;draw();});
  pgInput.addEventListener('input',()=>{page=1;draw();});shopInput.addEventListener('input',()=>{page=1;draw();});
- $('pgsmProgressRows').addEventListener('input',e=>{
-   const input=e.target.closest('[data-pgsm-actual]');if(!input||!isAdmin())return;
-   if(!/^\d+$/.test(input.value))return;
-   draftActuals[input.dataset.pgsmCode]=draftActuals[input.dataset.pgsmCode]||{};
-   draftActuals[input.dataset.pgsmCode][input.dataset.pgsmActual]=Number(input.value);
-   pendingActuals.set(input.dataset.pgsmCode+':'+input.dataset.pgsmActual,Number(input.value));
-   // Không dựng lại bảng ngay khi đang gõ để tránh mất focus.
-   summary();
- });
  $('pgsmProgressRows').addEventListener('click',async e=>{
    const btn=e.target.closest('[data-pgsm-progress-remove]');if(!btn||!isTrainer())return;
    const pg=rows.find(r=>r.code===btn.dataset.pgsmProgressRemove);
@@ -16639,8 +16684,14 @@ async function pgsmDrawProgress_(camp){
  $('pgsmExportAchieved').addEventListener('click',()=>{
    if(typeof XLSX==='undefined')return alert('Không tải được thư viện Excel.');
    const exportRows=filtered().filter(r=>pgsmCanSeeRegion_(r.region)&&achieved(r)>0).map((r,i)=>{
-     const a=actual(r),record={'STT':i+1,'Mã PGs':r.code,'Họ tên':r.name,'ID Shop':r.shopId||'','Tên shop':r.shop,'Khu vực':r.region,'Trainer':r.trainerName,'Kênh':r.channel||''};
-     PGSM_STAGES_.forEach(m=>{record[m.label+' - Thực tế']=Number(a[m.id]||0);record[m.label+' - Target']=Number(d.thresholds[m.id]||0);record[m.label+' - Kết quả']=Number(a[m.id]||0)>=Number(d.thresholds[m.id]||1)?'Đạt':'Chưa đạt';});
+     const record={'STT':i+1,'Mã PGs':r.code,'Họ tên':r.name,'ID Shop':r.shopId||'','Tên shop':r.shop,'Khu vực':r.region,'Trainer':r.trainerName,'Kênh':r.channel||''};
+     PGSM_STAGES_.forEach(m=>{
+       const st=stageStatus(r,m);
+       record[m.label+' - Sao FM']=st.fromSystem?(st.stars??''):'';
+       record[m.label+' - Target tham khảo']=Number(d.thresholds[m.id]||0);
+       record[m.label+' - Kết quả']=st.done?'Đạt':st.known?'Chưa đạt':'Chưa có dữ liệu OTraining';
+       record[m.label+' - Nguồn']=st.fromSystem?'OTRAINING FM':'Chưa có dữ liệu';
+     });
      record['Số mốc đạt']=achieved(r);record['Danh hiệu']=achieved(r)===5?'Đạt PGs Master':'Chưa đạt PGs Master';return record;
    });
    if(!exportRows.length)return alert('Không có PGs đạt mốc nào trong bộ lọc.');
@@ -16672,20 +16723,13 @@ async function pgsmDrawProgress_(camp){
    sysUpdate.disabled=true;
    try{
      const result=await pgsmImportFmReport_(camp,id,(msg)=>sysStatus(msg));
-     const incomplete=result.missingFields.filter(x=>!result.updatedFields.includes(x));
+     const incomplete=result.missingFields||[];
      // Giữ cấu hình Campaign ID và trạng thái khoá qua render lại bảng.
-     const msg=`✓ Đã khớp ${result.matched}/${result.total} dòng; cập nhật ${result.updatedFields.join(', ').toUpperCase()}. ${result.unmatched} mã ngoài Target, ${result.wrongRegion} khác khu vực. ${incomplete.length?'Các mốc chưa có bộ đếm đúng trong API: '+incomplete.join(', ').toUpperCase()+'.':''}`;
+     const msg=`✓ Đã khớp ${result.matched}/${result.total} dòng; cập nhật trạng thái done ${result.updatedFields.join(', ').toUpperCase()}. ${result.unmatched} mã ngoài Target, ${result.wrongRegion} khác khu vực. ${incomplete.length?'Một số mốc thiếu cờ done: '+incomplete.join(', ').toUpperCase()+'.':''} Số sao được hiển thị riêng, không dùng để tính Đạt.`;
      await pgsmDrawProgress_(camp);
      const newMsg=document.getElementById('pgsmSystemMsg');if(newMsg)newMsg.textContent=msg;
    }catch(e){sysStatus('⚠ '+(e.message||e),true);}
    finally{sysUpdate.disabled=false;}
- });
- $('pgsmSaveActual')?.addEventListener('click',async()=>{
-   if(!isAdmin())return;
-   // Lưu mọi thay đổi trên các trang đã duyệt qua, không chỉ trang đang nhìn thấy.
-   const current=await pgsmData_(camp,true);
-   for(const [key,value] of pendingActuals){const sep=key.lastIndexOf(':'),code=key.slice(0,sep),milestone=key.slice(sep+1);if(!Number.isInteger(value)||value<0)return alert('Kết quả phải là số nguyên không âm.');current.actuals[code]=current.actuals[code]||{};current.actuals[code][milestone]=value;}
-   if(await pgsmPersist_(camp,current))pgsmDrawProgress_(camp);
  });
  fillChannel();draw();
  await pgsmRenderTrainerChangePanel_(camp,d);
