@@ -15,6 +15,7 @@ import requests
 from announcements import has_deadline
 from kpi import KpiSourceError, SupabaseKpiSource, format_team_report, format_trainer_report
 from tracker import VIETNAM, folded
+from dashboard_qa import DashboardQA, is_dashboard_question
 
 LOCAL_ENDPOINT = "http://127.0.0.1:18081/v1/chat/completions"
 DASHBOARD = "https://centraltraining.github.io/Dashboard/"
@@ -39,6 +40,10 @@ def conversation_route(text):
     if command in ("dang ky trainer", "dang ky", "trang thai", "cai dat",
                    "danh sach", "viec cua toi", "bat nhac viec", "tat nhac viec"):
         return False
+    if re.match(r"^[\W_]*thong bao\b", command) and not re.search(r"\b(?:soan|viet|ban nhap)\b",command):
+        return False
+    if is_dashboard_question(text):
+        return True
     draft = bool(re.search(r"\b(?:soan|viet|ban nhap)\b", command))
     question = draft or "?" in text or bool(re.match(
         r"^(?:giup|hay giup|lam sao|tai sao|sao |toi muon|minh muon|ban co|co the|cho toi|cho minh)", command))
@@ -89,6 +94,10 @@ class ConversationAssistant:
         self.db.commit()
         if self.configured():
             self.status = "local_configured"
+        self.dashboard = DashboardQA(root, state, database,
+            source_factory=lambda config: SupabaseKpiSource(config),
+            team_formatter=lambda rows,url: format_team_report(rows,url),
+            trainer_formatter=lambda row,url: format_trainer_report(row,url))
 
     def config(self):
         path = self.root / "runtime/ai-settings.json"
@@ -122,7 +131,7 @@ class ConversationAssistant:
         return result
 
     def remember(self, incoming, event_id, question, answer, now=None):
-        if is_kpi_question(question) or not conversation_route(question):
+        if self.dashboard.handles(question, incoming, now) or not conversation_route(question):
             return
         now = time.time() if now is None else now
         sender, conversation = self.scope(incoming)
@@ -187,8 +196,8 @@ class ConversationAssistant:
         draft = meeting_draft(text)
         if draft is not None:
             return draft
-        if is_kpi_question(text):
-            return await self.kpi_answer(incoming, now)
+        if self.dashboard.handles(text, incoming, now):
+            return await self.dashboard.answer(text, incoming, now)
         smalltalk = self.smalltalk(text, incoming, now)
         if smalltalk is not None:
             return smalltalk
@@ -286,27 +295,4 @@ class ConversationAssistant:
         return matches[0]
 
     async def kpi_answer(self, incoming, now):
-        if str(getattr(incoming, "conversation_type", "1")) != "1":
-            return "KPI được trả qua tin nhắn riêng. Bạn mở cuộc trò chuyện riêng với Ollie_MT và hỏi lại nhé."
-        leader = str(incoming.sender_staff_id) == str(self.state["leader_staff_id"])
-        try:
-            directory = self.root / "runtime/kpi"
-            settings = json.loads((directory / "settings.json").read_text())
-            tid = None if leader else self.authorized_trainer(incoming, settings.get("trainer_recipients", {}))
-            if not leader and tid is None:
-                return "Mình chưa đối chiếu được tài khoản với khu vực của bạn. Nghĩa cần xác nhận đối chiếu trước khi mình trả dữ liệu KPI."
-            config = json.loads((directory / "source.json").read_text())
-            month = datetime.fromtimestamp(now, VIETNAM).strftime("%Y-%m")
-            snapshot = await asyncio.to_thread(SupabaseKpiSource(config).snapshot, month)
-            if leader:
-                reports = await asyncio.to_thread(snapshot.reports)
-                return format_team_report(reports, config["dashboard_url"])
-            trainer = next((t for t in snapshot.trainers if str(t["id"]) == str(tid)), None)
-            if not trainer or not trainer.get("region"):
-                raise KpiSourceError("account_region_missing")
-            region = str(trainer["region"]).strip()
-            scoped = [t for t in snapshot.trainers if str(t.get("region", "")).strip() == region]
-            reports = await asyncio.to_thread(lambda: [snapshot.trainer_report(t) for t in scoped])
-            return "\n\n".join(format_trainer_report(r, config["dashboard_url"]) for r in reports)
-        except (OSError, ValueError, KeyError, KpiSourceError):
-            return "Mình chưa đọc được KPI khu vực từ nguồn dữ liệu. Mình sẽ không suy đoán số liệu; bạn có thể kiểm tra trực tiếp trên dashboard."
+        return await self.dashboard.answer("KPI", incoming, now)

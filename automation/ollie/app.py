@@ -133,7 +133,8 @@ class ResponseClient(dingtalk_stream.DingTalkStreamClient):
                                               ping_interval=20, ping_timeout=20) as websocket:
                     self.websocket = websocket
                     self.stream_connected = True
-                    write_health(True, response_service="running", task_scheduler="running", version="local-chat-v8", external_inference=False)
+                    write_health(True, response_service="running", task_scheduler="running", version="dashboard-chat-v9", external_inference=False,
+                                 dashboard_qa="read_only", dashboard_delivery="private", dashboard_scope="verified_account_region")
                     logging.getLogger("ollie").info("Ollie_MT Stream connected")
                     async for raw in websocket:
                         result = await self.route_message(json.loads(raw))

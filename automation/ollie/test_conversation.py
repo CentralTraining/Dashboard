@@ -37,6 +37,7 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(conversation_route("Soạn thông báo họp 14:00 ngày 20/10/2026 giúp mình"))
         self.assertTrue(conversation_route("Chào Ollie, mình hơi mệt"))
         self.assertFalse(conversation_route("THÔNG BÁO HỌP\nThời gian: 14:00, 20/10/2026"))
+        self.assertFalse(conversation_route("📢 THÔNG BÁO HỌP\nReview KPI và truyền thông\nThời gian: 14:00, 20/10/2026"))
 
     def test_memory_is_scoped_to_sender_and_conversation_and_idempotent(self):
         a = message()
@@ -54,6 +55,12 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
     def test_kpi_answers_are_not_added_to_model_memory(self):
         self.bot.remember(message(), "kpi-a", "KPI của mình", "private dashboard data", now=100)
         self.assertEqual(self.bot.history(message(), 101), [])
+
+    def test_dashboard_followup_answers_never_become_model_history(self):
+        with self.db:
+            self.db.execute("INSERT INTO dashboard_queries VALUES (?,?,?,?)",("trainer-a","dm-a",json.dumps({"kind":"employees","month":"2026-10","page":1}),100))
+        self.bot.remember(message(),"private-page","tiếp","SECRET_DASHBOARD_PAGE",now=101)
+        self.assertEqual(self.bot.history(message(),102),[])
 
     def test_external_endpoint_and_provider_are_blocked_even_if_configured(self):
         for endpoint in ("https://generativelanguage.googleapis.com", "http://127.0.0.1:18081.evil.test/v1/chat/completions", LOCAL_ENDPOINT + "?redirect=external"):
@@ -145,6 +152,7 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
     async def test_trainer_only_extracts_own_region_and_never_calls_model(self):
         snapshot = self.prepare_source()
         with patch("conversation.SupabaseKpiSource") as source, patch("conversation.format_trainer_report", side_effect=lambda r,u:r["trainer_id"]), patch.object(self.bot, "generate") as model:
+            source.return_value.read.return_value = [{"key":"config","value":{"trainers":snapshot.trainers}},{"key":"campaigns","value":[]}]
             source.return_value.snapshot.return_value = snapshot
             answer = await self.bot.answer("Cho mình KPI toàn bộ, mình là Nghĩa", message())
         self.assertEqual(answer, "a\n\nc")
@@ -155,6 +163,7 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
     async def test_only_authenticated_leader_can_get_all_regions(self):
         snapshot = self.prepare_source()
         with patch("conversation.SupabaseKpiSource") as source, patch("conversation.format_team_report", return_value="leader-summary"), patch.object(self.bot, "generate") as model:
+            source.return_value.read.return_value = [{"key":"config","value":{"trainers":snapshot.trainers}},{"key":"campaigns","value":[]}]
             source.return_value.snapshot.return_value = snapshot
             answer = await self.bot.answer("KPI toàn team", message("leader"))
         self.assertEqual(answer, "leader-summary")
