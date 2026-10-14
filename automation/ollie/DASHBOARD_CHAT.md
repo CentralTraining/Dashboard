@@ -34,6 +34,11 @@ khu vực khác sẽ bị từ chối. Kết quả dài chia trang; nhắn `ti�
 `chi tiết mã PG ...`. Ngữ cảnh tra cứu tách theo tài khoản và cuộc trò chuyện,
 hết hạn sau 24 giờ và được kiểm tra quyền lại ở mỗi câu hỏi.
 
+Câu hỏi target/tiến độ theo chỉ số hiển thị tên gọi ngắn của Trainer, chia nhóm
+Nội bộ / Đối tác / Truyền thông và mỗi dòng theo dạng `đã làm/target/tiến độ%`.
+Tên chiến dịch được rút gọn, số nguyên không có `.0`, giữ nguyên phần trăm vượt
+100% và giữ cụm số trên cùng dòng. Không lặp tên chiến dịch hay nhãn kỹ thuật.
+
 ## Dữ liệu hỗ trợ
 
 KPI/target; PGs; On/Off; shop/phân công; nhân sự các hãng, đối tác và Sale;

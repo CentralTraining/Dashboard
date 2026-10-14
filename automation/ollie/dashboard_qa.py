@@ -15,7 +15,7 @@ from calendar import monthrange
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from kpi import KpiSourceError, SupabaseKpiSource, normalize, format_team_report, format_trainer_report, date_vietnam
+from kpi import KpiSourceError, SupabaseKpiSource, normalize, format_team_report, format_trainer_report, date_vietnam, short_name, metric_label, shown
 from tracker import VIETNAM, folded
 
 
@@ -266,16 +266,17 @@ class DashboardQA:
             if any(x in q for x in ("target", "con thieu", "chi tiet", "da lam")) or campaign_ids:
                 metric_rows=[]
                 for report in reports:
-                    for metrics in report["groups"].values():
+                    for group_key,metrics in report["groups"].items():
                         for m in metrics:
                             if not m.get("target",0):continue
                             if campaign_ids and str(m.get("campaign_id","")) not in campaign_ids:continue
                             if plan.get("subtype") and m.get("subtype")!=plan["subtype"]:continue
                             if "pg moi" in q and m.get("key")!="pgMoi":continue
                             if re.search(r"0\s*[*★]?\s*[/–-]?\s*1",q) and m.get("key")!="pg01":continue
-                            metric_rows.append({"name":report["name"],"metric":m["label"],"campaign":m.get("campaign_name",""),"actual":m["actual"],"target":m["target"],"pct":m["pct"],"remaining":m["remaining"],"unit":m.get("unit","")})
-                metric_plan=dict(plan,operation="detail")
-                return render(metric_rows,metric_plan,"KPI theo chỉ số",access.label())
+                            metric_rows.append({"trainer_id":report["trainer_id"],"name":report["name"],"group":group_key,
+                                                "label":metric_label(m),"subtype":m.get("subtype"),"shared_region":m.get("shared_region",False),
+                                                "actual":m["actual"],"target":m["target"],"pct":m["pct"],"remaining":m["remaining"],"unit":m.get("unit","")})
+                return render_kpi_metrics(metric_rows,plan,access.label())
             if plan.get("operation")=="rank":
                 ranking=[]
                 for r in reports:
@@ -550,6 +551,32 @@ def display(value):
     if isinstance(value,bool):return "Có" if value else "Không"
     if isinstance(value,(dict,list)):return json.dumps(value,ensure_ascii=False,separators=(",",":"))
     return str(value)
+
+
+def render_kpi_metrics(rows,plan,scope):
+    year,month=plan["month"].split("-")
+    lines=[f"📊 KPI {int(month)}/{year} · {scope}","Đã làm/Target/Tiến độ"]
+    if not rows:return "\n".join(lines+["Chưa có chỉ số phù hợp có target trong phạm vi được phép."])
+    people={}
+    for row in rows:people.setdefault(row["trainer_id"],[]).append(row)
+    for metrics in people.values():
+        lines.extend(["",f"👤 {short_name(metrics[0]['name'])}"])
+        for group,label in (("noibo","🏫 Nội bộ"),("doitac","🤝 Đối tác"),("truyenthong","📣 Truyền thông")):
+            selected=[m for m in metrics if m["group"]==group]
+            if not selected:continue
+            subtypes={m["subtype"] for m in selected}
+            specific=group=="truyenthong" and len(subtypes)==1 and next(iter(subtypes)) in ("noibo","doitac")
+            if specific:label+=" nội bộ" if "noibo" in subtypes else " đối tác"
+            lines.append(label)
+            for m in selected:
+                name=re.sub(r"\s+(NB|ĐT)$","",m["label"]) if specific else m["label"]
+                # Keep the three figures together on mobile clients.
+                figures="\u2060/\u2060".join(shown(m[k]) for k in ("actual","target","pct"))+"\u2060%"
+                line=f"• {name}: {figures}"
+                if "con thieu" in folded(plan["question"]):line+=f" · còn {shown(m['remaining'])}\u00a0{m['unit']}"
+                lines.append(line)
+    if any(m["shared_region"] for m in rows):lines.append("* WS đối tác dùng số liệu khu vực.")
+    return paginate_text("\n".join(lines),plan["page"])
 
 
 def render(rows,plan,title,scope):

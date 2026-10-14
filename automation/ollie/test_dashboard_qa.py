@@ -76,6 +76,23 @@ class DashboardQuestions(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("SECRET",answer)
         self.assertIn("Đà Nẵng",answer)
 
+    async def test_target_progress_uses_compact_figures_for_allowed_trainers_only(self):
+        from kpi import metric
+        def report(t):
+            return {"trainer_id":t["id"],"name":t["name"],"groups":{"noibo":[],"doitac":[],"truyenthong":[
+                metric("tt:cm","Nội bộ — Video Unbox A7pro (5 - 10.10)",12,7,
+                       campaign_id="cm",campaign_name="Video Unbox A7pro (5 - 10.10)",subtype="noibo",unit="bài")]},
+                "percentages":{"noibo":None,"doitac":None,"truyenthong":100}}
+        self.source.snapshot=Mock(return_value=SimpleNamespace(trainers=self.cfg["trainers"],trainer_report=report))
+        answer=await self.ask("Target và tiến độ truyền thông nội bộ tháng 10/2026")
+        visible=answer.replace("\u2060","")
+        self.assertIn("👤 An",visible);self.assertIn("👤 Chi",visible);self.assertNotIn("Bình",visible)
+        self.assertIn("📣 Truyền thông nội bộ",visible)
+        self.assertIn("• Unbox A7 Pro: 12/7/171.4%",visible)
+        self.assertIn("\u2060/\u2060",answer)
+        for text in ("metric:","campaign:","actual:","pct:","remaining:","unit:","mã PG","Nguyễn An","12.0"):
+            self.assertNotIn(text,visible)
+
     async def test_leader_can_query_all_or_select_another_region(self):
         all_data=await self.ask("Danh sách PGs tháng 10/2026",message("leader"))
         self.assertIn("SECRET_OTHER_REGION",all_data)
