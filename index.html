@@ -1387,24 +1387,68 @@ const dailyOlieMessages_ = ["Chúc bạn một ngày làm việc tràn đầy n�
 @media(max-width:1150px){#panel-set-campaign .form-grid-4 {grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:650px){#panel-set-campaign .form-grid-4 {grid-template-columns:minmax(0,1fr);}#tab-settings > .olie-all-pages-banner{min-height:120px!important;padding:16px!important;}#tab-settings > .olie-all-pages-banner .olie-all-pages-banner-copy{max-width:78%;}}
 /* PGs MASTER ONLY - isolated styles for the detailed progress table */
-#pgsmProgressTableWrap{border:1px solid #dae7df;border-radius:18px;background:#fff;max-height:520px;overflow:auto;box-shadow:0 5px 18px rgba(11,95,50,.035);}
-#pgsmProgressTable{width:100%;border-collapse:separate;border-spacing:0;min-width:1220px;font-size:13px;}
-#pgsmProgressTable thead th{position:sticky;top:0;z-index:2;background:#eaf5ee;color:#075d37;font-weight:800;font-size:12px;line-height:1.35;padding:12px 9px;border-bottom:1px solid #dceae1;vertical-align:middle;text-align:left;}
-#pgsmProgressTable tbody td{padding:10px 9px;vertical-align:middle;border-bottom:1px solid #ecf2ee;line-height:1.4;}
+#pgsmProgressContent .pgsm-progress-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.15fr) minmax(0,1fr) minmax(0,1.1fr) auto;gap:8px;align-items:end;padding:12px;}
+#pgsmProgressContent .pgsm-progress-filters label{display:flex;min-width:0;gap:6px;margin:0;font-size:11px;line-height:1.3;}
+#pgsmProgressContent .pgsm-progress-filters select,#pgsmProgressContent .pgsm-progress-filters input{display:block;min-width:0;width:100%;max-width:100%;height:38px;min-height:38px;padding:7px 8px;font:inherit;font-size:12px;color:var(--text);text-overflow:ellipsis;}
+#pgsmProgressContent .pgsm-progress-filters button{height:38px;min-height:38px;padding:7px 11px;font-size:12px;white-space:nowrap;}
+#pgsmProgressContent .pgsm-progress-filters select:focus-visible,#pgsmProgressContent .pgsm-progress-filters input:focus-visible{outline:2px solid #119557;outline-offset:2px;}
+#pgsmProgressTableWrap{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid #dae7df;border-radius:14px;background:#fff;max-height:560px;overflow-x:hidden;overflow-y:auto;box-shadow:0 5px 18px rgba(11,95,50,.035);}
+#pgsmProgressTable{width:100%;max-width:100%;min-width:0!important;table-layout:fixed!important;border-collapse:separate;border-spacing:0;font-size:12px;}
+#pgsmProgressTable thead th{position:sticky;top:0;z-index:2;background:#eaf5ee;color:#075d37;font-weight:800;font-size:11px;line-height:1.3;padding:10px 5px;border-bottom:1px solid #dceae1;vertical-align:middle;text-align:left;letter-spacing:0;overflow-wrap:break-word;}
+#pgsmProgressTable tbody td{min-width:0;padding:10px 5px;font-size:clamp(11px,.8vw,12px);vertical-align:middle;border-bottom:1px solid #ecf2ee;line-height:1.4;white-space:normal;overflow-wrap:anywhere;}
 #pgsmProgressTable tbody tr:nth-child(even){background:#fafdfb;}
 #pgsmProgressTable tbody tr:hover{background:#f1f9f4;}
 #pgsmProgressTable td.pgsm-person-name{font-weight:750;color:#193d2a;}
-#pgsmProgressTable td.pgsm-score-cell{text-align:center;min-width:96px;}
+#pgsmProgressTable td.pgsm-score-cell{text-align:center;min-width:0;}
 #pgsmProgressTable .pgsm-actual-input{width:76px!important;max-width:100%;min-width:0;min-height:36px;box-sizing:border-box;padding:7px 8px;border:1px solid #cddfd2;border-radius:9px;background:#fff;font-family:inherit;font-size:14px;font-weight:700;text-align:center;}
 #pgsmProgressTable .pgsm-actual-input:focus{outline:2px solid rgba(17,149,87,.35);outline-offset:1px;border-color:#119557;}
 #pgsmProgressTable .pgsm-done-icon{display:inline-flex;margin-left:5px;align-items:center;justify-content:center;color:#08794b;font-weight:800;vertical-align:middle;}
 #pgsmProgressTable .pgsm-score-value{font-weight:700;}
-#pgsmProgressTable .pgsm-result-badge{display:inline-flex;gap:4px;align-items:center;white-space:nowrap;padding:5px 9px;border-radius:999px;background:#eef5f1;border:1px solid #dce8df;color:#285f45;font-size:12px;font-weight:750;}
+#pgsmProgressTable .pgsm-result-badge{display:inline-flex;max-width:100%;gap:3px;align-items:center;white-space:normal;padding:4px 6px;border-radius:10px;background:#eef5f1;border:1px solid #dce8df;color:#285f45;font-size:10px;font-weight:750;}
 #pgsmProgressTable .pgsm-result-badge.pgsm-result-done{background:#e0f3e7;color:#086c3b;border-color:#b5ddc6;}
-#pgsmProgressTable .pgsm-col-shop{max-width:190px;overflow-wrap:anywhere;}
-#pgsmProgressTable .pgsm-col-person{min-width:145px;}
-#pgsmProgressTable .pgsm-col-trainer{min-width:120px;}
-#pgsmProgressTable .pgsm-col-step{min-width:105px;}
+#pgsmProgressTable .pgsm-col-shop,#pgsmProgressTable .pgsm-col-person,#pgsmProgressTable .pgsm-col-trainer,#pgsmProgressTable .pgsm-col-change{min-width:0;white-space:normal;overflow-wrap:break-word;}
+#pgsmProgressTable .pgsm-shop-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:normal;word-break:normal;text-overflow:ellipsis;}
+#pgsmProgressTable .pgsm-col-code{font-variant-numeric:tabular-nums;}
+#pgsmProgressTable .pgsm-stage-name{display:block;margin:3px 0;font-size:10px;font-weight:650;text-transform:none;}
+#pgsmProgressTable .pgsm-stage-target{display:block;font-size:9px;font-weight:600;text-transform:none;}
+#pgsmProgressTable .pgsm-fm-stage{min-width:0;max-width:100%;gap:4px;}
+#pgsmProgressTable .pgsm-fm-stars{font-size:13px;}
+#pgsmProgressTable .pgsm-fm-status{display:inline-block;max-width:100%;font-size:10px;line-height:1.3;white-space:normal;padding:3px 5px;}
+#pgsmProgressTable [data-pgsm-progress-remove]{max-width:100%;padding:5px 6px;font-size:10px;white-space:normal;}
+.pgsm-change-label{display:block;font-weight:800;}
+.pgsm-change-reason{display:block;margin-top:4px;font-size:11px;white-space:pre-wrap;}
+#pgsmProgressTable tbody tr.pgsm-change-add>td{background:#e8f5e9;}
+#pgsmProgressTable tbody tr.pgsm-change-remove>td{background:#ffebee;}
+#pgsmProgressTable tbody tr.pgsm-change-add .pgsm-person-name,#pgsmProgressTable tbody tr.pgsm-change-add .pgsm-change-label{color:#166534;}
+#pgsmProgressTable tbody tr.pgsm-change-remove .pgsm-person-name,#pgsmProgressTable tbody tr.pgsm-change-remove .pgsm-change-label{color:#b91c1c;}
+#pgsmProgressTable .pgsm-col-step{min-width:0;text-align:center;}
+@media(max-width:1000px){
+ #pgsmProgressContent .pgsm-progress-filters{grid-template-columns:repeat(3,minmax(0,1fr));}
+ #pgsmProgressContent .pgsm-progress-filters button{grid-column:1/-1;justify-self:end;}
+}
+/* Màn hình hẹp: từng PGs thành một thẻ, vẫn đủ 5 mốc và không cần kéo ngang. */
+@media(max-width:900px){
+ #pgsmProgressTableWrap{max-height:none;overflow:visible;border:0;border-radius:0;box-shadow:none;background:transparent;}
+ #pgsmProgressTable,#pgsmProgressTable tbody{display:block;width:100%;border:0;background:transparent;}
+ #pgsmProgressTable colgroup,#pgsmProgressTable thead{display:none;}
+ #pgsmProgressTable tbody{display:grid;gap:12px;}
+ #pgsmProgressTable tbody tr{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:10px 8px;padding:12px;border:1px solid #dae7df;border-radius:12px;background:#fff;}
+ #pgsmProgressTable tbody td{display:block;grid-column:span 2;min-width:0;border:0;padding:0!important;font-size:12px!important;background:transparent!important;}
+ #pgsmProgressTable tbody td:before{content:attr(data-label);display:block;margin-bottom:4px;font-size:10px;font-weight:750;color:#61786b;}
+ #pgsmProgressTable .pgsm-col-number{display:none;}
+ #pgsmProgressTable .pgsm-col-code{grid-column:span 4;}
+ #pgsmProgressTable .pgsm-col-person,#pgsmProgressTable .pgsm-col-shop,#pgsmProgressTable .pgsm-col-trainer{grid-column:span 6;}
+ #pgsmProgressTable .pgsm-col-region,#pgsmProgressTable .pgsm-col-channel{grid-column:span 4;}
+ #pgsmProgressTable .pgsm-col-change,#pgsmProgressTable .pgsm-col-result,#pgsmProgressTable .pgsm-col-action,#pgsmProgressTable .pgsm-empty{grid-column:1/-1;}
+ #pgsmProgressTable .pgsm-empty:before{display:none;}
+ #pgsmProgressTable .pgsm-fm-stage{align-items:center;}
+ #pgsmProgressTable tbody tr.pgsm-change-add{background:#e8f5e9;}
+ #pgsmProgressTable tbody tr.pgsm-change-remove{background:#ffebee;}
+}
+@media(max-width:550px){
+ #pgsmProgressContent .pgsm-progress-filters{grid-template-columns:repeat(2,minmax(0,1fr));}
+ #pgsmProgressContent .pgsm-progress-filters button{justify-self:stretch;}
+}
 </style>
 </head>
 <body>
@@ -10949,10 +10993,10 @@ function surveyCountForCode(code){
   if(!c) return 0;
   return surveyResponses.filter(s=>String(s.code||'').trim()===c).length;
 }
-function syncPg01ActualFromCoaching(trainerId){
-  const rec = trainerRecord(trainerId);
+function syncPg01ActualFromCoaching(trainerId, source=surveyResponses, targetRecords=records){
+  const rec = targetRecords[trainerId] || (targetRecords[trainerId]=emptyRecord());
   // X = tổng số lượt khảo sát (đã import) của Trainer trong tháng — so với Y = target lượt coaching Admin giao
-  rec.pg01Actual = surveyResponses.filter(s=>s.trainerId===trainerId).length;
+  rec.pg01Actual = source.filter(s=>s.trainerId===trainerId).length;
   rec.updatedAt = new Date().toISOString();
 }
 function syncAllPg01Actuals(){
@@ -10969,8 +11013,8 @@ function newPgsForTrainer(trainerId){
   // "PGs mới" tính Target = vào TRƯỚC ngày 25 (1–24) của tháng này. (PG ≥25 tách riêng, không tính Target/Actual ở đây.)
   return onoffRoster.filter(r=> r.status==='On' && r.trainerId===trainerId && r.joinedAt && monthKeyOf(new Date(r.joinedAt))===currentMonth && new Date(r.joinedAt).getDate()<25);
 }
-function syncPgMoiActualFromSurvey(trainerId){
-  const rec = trainerRecord(trainerId);
+function syncPgMoiActualFromSurvey(trainerId, source=surveyResponsesNew, targetRecords=records){
+  const rec = targetRecords[trainerId] || (targetRecords[trainerId]=emptyRecord());
   // QUAN TRỌNG: KHÔNG đếm mọi lượt khảo sát "PGs mới" của Trainer — chỉ đếm lượt khảo sát của ĐÚNG
   // những PG thực sự nằm trong "Danh sách PGs mới" hợp lệ của THÁNG ĐANG XEM (onoffRoster, status=On,
   // Joined at đúng tháng này). Nếu không lọc, số liệu dễ bị đếm dư (VD PG của tháng khác, hoặc dữ liệu
@@ -10978,7 +11022,7 @@ function syncPgMoiActualFromSurvey(trainerId){
   const validPgs = newPgsForTrainer(trainerId);
   const validCodes = new Set(validPgs.filter(p=>p.code).map(p=>String(p.code).trim()));
   const validNames = new Set(validPgs.map(p=>normTrName_(p.name)).filter(Boolean));
-  rec.pgMoiActual = surveyResponsesNew.filter(s=>{
+  rec.pgMoiActual = source.filter(s=>{
     if(s.trainerId!==trainerId) return false;
     const code = String(s.code||'').trim();
     if(code) return validCodes.has(code);
@@ -11202,8 +11246,38 @@ function clParseDate_(v){
 }
 function clFmtDateTime_(d){ if(!(d instanceof Date)||isNaN(d)) return ''; const p=n=>String(n).padStart(2,'0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
 function clMonthKey_(d){ return d instanceof Date && !isNaN(d) ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : ''; }
+function clIsCentralRegion_(value){
+  // TrainerRegion có thể là đường dẫn, VD "MIEN TRUNG / MIEN TRUNG / IND".
+  // So từng thành phần chính xác để không nhận nhầm một vùng chỉ chứa chuỗi tương tự.
+  return String(value??'').split(/[\/|,;>\n]+/).some(part=>clNorm_(part)==='mientrung');
+}
+function clPeriodMonth_(value){
+  const m=String(value??'').trim().match(/^(\d{4})[-\/](\d{1,2})$/);
+  if(m)return Number(m[2])>=1&&Number(m[2])<=12?m[1]+'-'+String(Number(m[2])).padStart(2,'0'):'';
+  return clMonthKey_(clParseDate_(value));
+}
+function clImportContext_(){
+  return JSON.stringify([currentMonth,session?.role,session?.trainerId,session?.region]);
+}
+async function clPersistCoachingMonth_(month, responses, responsesNew, nextRecords){
+  const updated_at=new Date().toISOString();
+  const entries=[{key:'surveyResponses:'+month,value:responses,updated_at},
+    {key:'surveyResponsesNew:'+month,value:responsesNew,updated_at},{key:'records:'+month,value:nextRecords,updated_at}];
+  if(!SUPABASE_URL){
+    const backup=entries.map(e=>localStorage.getItem(e.key));
+    try{entries.forEach(e=>localStorage.setItem(e.key,JSON.stringify(e.value)));}
+    catch(error){entries.forEach((e,i)=>{try{if(backup[i]===null)localStorage.removeItem(e.key);else localStorage.setItem(e.key,backup[i]);}catch{}});throw Error('Không lưu được dữ liệu khảo sát. Hãy thử lại.');}
+  }else{
+    // Cả hai log và số liệu KPI được upsert trong cùng một giao dịch PostgREST.
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,{method:'POST',
+      headers:{...SUPA_HEADERS_,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(entries)});
+    if(!res.ok)throw Error('Chưa lưu được dữ liệu khảo sát (HTTP '+res.status+'). Dữ liệu đang hiển thị được giữ nguyên.');
+  }
+  if(typeof invalidateHomeSnapshot_==='function')invalidateHomeSnapshot_();
+}
 function clTypeLabel_(v){ const k=clNorm_(v); return (k.includes('newpg')||k.includes('pgmoi')||k.includes('new')) ? 'PGs mới' : 'PGs 0-1 sao'; }
 async function processCoachingLogSheet_(wb){
+  const context=clImportContext_();
   const ws=wb.Sheets[wb.SheetNames[0]];
   if(!ws) throw new Error('Không đọc được tab COACHING_LOG. Kiểm tra tên tab và quyền chia sẻ Sheet.');
   const arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
@@ -11219,12 +11293,12 @@ async function processCoachingLogSheet_(wb){
     const P=(...n)=>clPick_(row,idx,n);
     const ts=clParseDate_(P('Timestamp')); if(!ts) continue;
     total++;
-    if(clNorm_(P('TrainerRegion'))!=='mientrung'){ skipRegion++; continue; }
-    const periodD=clParseDate_(P('Period')); const mk=clMonthKey_(periodD||ts);
+    if(!clIsCentralRegion_(P('TrainerRegion'))){ skipRegion++; continue; }
+    const mk=clPeriodMonth_(P('Period'))||clMonthKey_(ts);
     if(mk!==currentMonth){ skipMonth++; continue; }
     const st=clNorm_(P('Status'));
     if(st && st!=='valid' && st!=='hople'){ skipStatus++; continue; }
-    const area=String(P('TrainerArea','Khu vực','SelectedArea')||'').trim();
+    const area=normalizeAreaVN(P('TrainerArea','Khu vực','SelectedArea'));
     if(isTrainer() && !isRegionImportAllowed(area)) continue;
     const code=String(P('PGCode','Mã NV','StaffCode')||'').trim().replace(/\.0$/,'');
     const type=clTypeLabel_(P('CoachingType'));
@@ -11260,37 +11334,58 @@ async function processCoachingLogSheet_(wb){
   const newWs=XLSX.utils.aoa_to_sheet(out); const newWb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(newWb,newWs,'Lich_su_Coaching');
 
   window.__coachingLogMergeInfo_={merged:mergedCount, kept:kept.length};
-  // COACHING_LOG luôn là DANH SÁCH ĐẦY ĐỦ của tháng -> XÓA SẠCH data khảo sát Coaching của tháng đang
-  // xem trước khi nạp lại, tránh cộng dồn (bấm cập nhật nhiều lần sẽ nhân đôi số liệu). Chỉ áp dụng cho
-  // MIEN TRUNG vì nguồn này chỉ chứa MIEN TRUNG; Admin là người duy nhất bấm nút này.
-  surveyResponses = [];
-  surveyResponsesNew = [];
-  await processCoachingHistoryWorkbook_(newWb);
+  // Chỉ thay phần log thuộc phạm vi người cập nhật sau khi đọc/lưu thành công.
+  // Trainer không được xoá khảo sát của các khu vực khác khi đồng bộ lại.
+  await processCoachingHistoryWorkbook_(newWb,{replaceFromLog:true});
+  if(context!==clImportContext_())return;
   // Bổ sung dòng thông tin gộp trùng vào cuối thông báo.
   const msg=document.getElementById('coachingImportMsg');
   if(msg && mergedCount){ msg.textContent += ` · Đã gộp ${mergedCount} khảo sát trùng (cùng PG, cùng ngày, cách ≤60 phút).`; }
 }
+let coachingLogUpdating_=false;
 async function updateCoachingFromLogSheet_(){
+  if(coachingLogUpdating_)return;
+  const context=clImportContext_();
   const msg=document.getElementById('coachingImportMsg');
   if(!isAdmin() && !isTrainer()){ if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Bạn không có quyền cập nhật.';} return; }
   if(monthLocked){ if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Tháng đã khoá — không cập nhật được.';} return; }
+  coachingLogUpdating_=true;
+  const button=document.getElementById('coachingLogUpdateBtn');if(button)button.disabled=true;
   if(msg){ msg.style.display='block'; msg.style.color='var(--muted)'; msg.textContent='⏳ Đang tải COACHING_LOG và lọc '+monthLabel(currentMonth)+' · MIEN TRUNG...'; }
   try{
-    const wb=await fetchGoogleSheetAsWorkbook_(COACHING_LOG_SHEET_URL_,[COACHING_LOG_SHEET_TAB_]);
+    const sheetId=parseGoogleSheetId_(COACHING_LOG_SHEET_URL_);
+    const rows=await fetchGoogleSheetRows_(sheetId,COACHING_LOG_SHEET_TAB_,{allowFallback:false});
+    const wb={SheetNames:[COACHING_LOG_SHEET_TAB_],Sheets:{[COACHING_LOG_SHEET_TAB_]:XLSX.utils.aoa_to_sheet(rows)}};
+    if(context!==clImportContext_())throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy cập nhật lại ở tháng cần xem.');
     await processCoachingLogSheet_(wb);
   }catch(err){
-    if(msg){ msg.style.display='block'; msg.style.color='var(--red)'; msg.textContent='Lỗi cập nhật: '+(err&&err.message?err.message:err); }
+    const currentMsg=context===clImportContext_()?document.getElementById('coachingImportMsg'):null;
+    if(currentMsg){ currentMsg.style.display='block'; currentMsg.style.color='var(--red)'; currentMsg.textContent='Lỗi cập nhật: '+(err&&err.message?err.message:err); }
+  }finally{
+    coachingLogUpdating_=false;
+    const currentButton=document.getElementById('coachingLogUpdateBtn');if(currentButton)currentButton.disabled=monthLocked;
   }
 }
-async function processCoachingHistoryWorkbook_(wb){
-  const msg = document.getElementById('coachingImportMsg');
+async function processCoachingHistoryWorkbook_(wb, options={}){
+  if((!isAdmin()&&!isTrainer())||monthLocked)throw Error('Bạn không có quyền cập nhật hoặc tháng đã khoá.');
+  const month=currentMonth,context=clImportContext_();
+  const keys=['surveyResponses:'+month,'surveyResponsesNew:'+month,'records:'+month];
+  const latest=await dbGetMulti(keys);
+  if(context!==clImportContext_()||monthLocked)throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy cập nhật lại.');
+  if(!keys.every(key=>Object.prototype.hasOwnProperty.call(latest,key)))throw Error('Không đọc được dữ liệu đã lưu. Chưa cập nhật khảo sát để tránh mất dữ liệu.');
+  if(keys.slice(0,2).some(key=>latest[key]!==null&&!Array.isArray(latest[key])))throw Error('Dữ liệu khảo sát đã lưu không đúng định dạng.');
+  const outsideScope=s=>isTrainer()&&!isRegionImportAllowed(normalizeAreaVN(s.area||trainerOf(s.trainerId)?.region));
+  const next01=(latest[keys[0]]||[]).filter(s=>!options.replaceFromLog||outsideScope(s));
+  const nextMoi=(latest[keys[1]]||[]).filter(s=>!options.replaceFromLog||outsideScope(s));
+  const nextRecords=JSON.parse(JSON.stringify(latest[keys[2]]||{}));
   const ws = wb.Sheets[wb.SheetNames[0]];
+  if(!ws)throw Error('Không đọc được dữ liệu khảo sát Coaching.');
   const allRows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
   const dataRows = allRows.slice(1);
 
-  let added01=0, addedMoi=0, skippedOtherMonth=0, skippedDup=0, skippedNoCode=0, skippedOtherRegion=0, invalidStatus=0, matchedByNameCount=0;
-  const existingKeys01 = new Set(surveyResponses.map(s=> s.timestamp+'|'+s.code));
-  const existingKeysMoi = new Set(surveyResponsesNew.map(s=> s.timestamp+'|'+s.code));
+  let added01=0, addedMoi=0, skippedOtherMonth=0, skippedDup=0, skippedNoCode=0, skippedOtherRegion=0, skippedTrainer=0, invalidStatus=0, matchedByNameCount=0;
+  const existingKeys01 = new Set(next01.map(s=> s.timestamp+'|'+s.code));
+  const existingKeysMoi = new Set(nextMoi.map(s=> s.timestamp+'|'+s.code));
 
   dataRows.forEach(row=>{
     if(!row || row.length===0) return;
@@ -11299,7 +11394,7 @@ async function processCoachingHistoryWorkbook_(wb){
     const monthKey = `${ts.getFullYear()}-${String(ts.getMonth()+1).padStart(2,'0')}`;
     if(monthKey !== currentMonth){ skippedOtherMonth++; return; }
 
-    const area = String(row[2]||'').trim();
+    const area = normalizeAreaVN(row[2]);
     if(isTrainer() && !isRegionImportAllowed(area)){ skippedOtherRegion++; return; }
 
     const trangThai = String(row[16]||'').trim();
@@ -11332,16 +11427,18 @@ async function processCoachingHistoryWorkbook_(wb){
     const key = ts.toISOString()+'|'+code;
     const existingKeys = isNew ? existingKeysMoi : existingKeys01;
     if(existingKeys.has(key)){ skippedDup++; return; }
-    existingKeys.add(key);
 
     const trainerUsername = String(row[4]||'').trim().toLowerCase();
     const trainerNameRaw = normTrName_(row[3]);
     let trainerObj = config.trainers.find(t=>(t.username||'').trim().toLowerCase()===trainerUsername && trainerUsername);
     if(!trainerObj) trainerObj = config.trainers.find(t=>normTrName_(t.name)===trainerNameRaw);
     if(!trainerObj){ const _lr=normTrNameLoose_(trainerNameRaw); if(_lr) trainerObj = config.trainers.find(t=> normTrNameLoose_(t.name)===_lr || (t.username||'').trim().toLowerCase()===_lr); } // bắt tên viết liền không dấu
+    if(!trainerObj){skippedTrainer++;return;}
+    if(isTrainer()&&!isRegionImportAllowed(normalizeAreaVN(trainerObj.region))){skippedOtherRegion++;return;}
+    existingKeys.add(key);
 
     if(isNew){
-      surveyResponsesNew.push({
+      nextMoi.push({
         id: uid('svn'), timestamp: ts.toISOString(), email:'', area,
         pgName: String(row[6]||'').trim(), phone: String(row[7]||'').trim(), code,
         trainerId: trainerObj?trainerObj.id:'', trainerName: trainerObj?trainerObj.name:String(row[3]||'').trim(),
@@ -11351,7 +11448,7 @@ async function processCoachingHistoryWorkbook_(wb){
       });
       addedMoi++;
     } else {
-      surveyResponses.push({
+      next01.push({
         id: uid('sv'), timestamp: ts.toISOString(), area,
         pgName: String(row[6]||'').trim(), phone: String(row[7]||'').trim(), code,
         trainerId: trainerObj?trainerObj.id:'', trainerName: trainerObj?trainerObj.name:String(row[3]||'').trim(),
@@ -11363,16 +11460,22 @@ async function processCoachingHistoryWorkbook_(wb){
     }
   });
 
-  await dbSet('surveyResponses:'+currentMonth, surveyResponses);
-  await dbSet('surveyResponsesNew:'+currentMonth, surveyResponsesNew);
-  syncAllPg01Actuals();
-  syncAllPgMoiActuals();
-  await dbSet('records:'+currentMonth, records);
+  if(options.replaceFromLog&&!added01&&!addedMoi)throw Error('Chưa có khảo sát khớp Trainer và mã PGs trong phạm vi cập nhật. Dữ liệu cũ được giữ nguyên.');
+  config.trainers.filter(t=>isAdmin()||isRegionImportAllowed(normalizeAreaVN(t.region))).forEach(t=>{
+    syncPg01ActualFromCoaching(t.id,next01,nextRecords);
+    syncPgMoiActualFromSurvey(t.id,nextMoi,nextRecords);
+  });
+  if(context!==clImportContext_()||monthLocked)throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy cập nhật lại.');
+  await clPersistCoachingMonth_(month,next01,nextMoi,nextRecords);
+  if(context!==clImportContext_())return;
+  surveyResponses=next01;surveyResponsesNew=nextMoi;records=nextRecords;
   renderKpiCategory('noibo');
 
+  // renderKpiCategory tạo lại ô thông báo: lấy phần tử mới, không ghi vào ô đã bị thay thế.
+  const msg = document.getElementById('coachingImportMsg');
   if(msg){
     msg.style.display='block'; msg.style.color='var(--green-ok)';
-    msg.textContent = `Đã import ${added01} lượt PGs 0★/1★ + ${addedMoi} lượt PGs mới (hợp lệ)${matchedByNameCount?`, trong đó ${matchedByNameCount} lượt tự tra theo Tên (Mã NV để trống, khớp Danh sách PGs mới tháng ${monthLabel(currentMonth)})`:''}. Bỏ qua: ${skippedOtherMonth} khác tháng, ${invalidStatus} Trạng thái không hợp lệ (Trùng/khác), ${skippedDup} trùng lặp, ${skippedNoCode} thiếu Mã NV (không tra được theo Tên)${skippedOtherRegion?`, ${skippedOtherRegion} ngoài khu vực bạn phụ trách`:''}.`;
+    msg.textContent = `Đã import ${added01} lượt PGs 0★/1★ + ${addedMoi} lượt PGs mới (hợp lệ)${matchedByNameCount?`, trong đó ${matchedByNameCount} lượt tự tra theo Tên (Mã NV để trống, khớp Danh sách PGs mới tháng ${monthLabel(currentMonth)})`:''}. Bỏ qua: ${skippedOtherMonth} khác tháng, ${invalidStatus} Trạng thái không hợp lệ (Trùng/khác), ${skippedDup} trùng lặp, ${skippedNoCode} thiếu Mã NV (không tra được theo Tên)${skippedTrainer?`, ${skippedTrainer} chưa khớp Trainer`:''}${skippedOtherRegion?`, ${skippedOtherRegion} ngoài khu vực bạn phụ trách`:''}.`;
   }
 }
 function renderCoachingImportBox(){
@@ -11958,16 +12061,19 @@ function renderSurveyFormNew(){
   const box=document.getElementById('surveyFormNewBox');
   if(!box) return;
 
+  const tList=isTrainer()?config.trainers.filter(t=>t.id===session.trainerId):visibleTrainers();
+  const trainerIds=noiboFilteredTrainerIds_(new Set(tList.map(t=>t.id)));
+  const scopedResponses=surveyResponsesNew.filter(s=>trainerIds.has(s.trainerId));
   let html = '';
-  const monthEntries = surveyResponsesNew.length;
+  const monthEntries = scopedResponses.length;
   html += `<div class="scope-filters" style="justify-content:space-between;margin-bottom:8px;">
     <span class="scope-label">Đã nhập <strong>${monthEntries}</strong> lượt khảo sát PGs mới trong ${monthLabel(currentMonth)}</span>
   </div>`;
 
-  if(surveyResponsesNew.length===0){
+  if(scopedResponses.length===0){
     box.innerHTML = html + `<div class="empty">Chưa có khảo sát PGs mới nào được import trong tháng này.</div>`;
   } else {
-    const sorted = [...surveyResponsesNew].sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
+    const sorted = [...scopedResponses].sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
     html += `<table><thead><tr><th>Thời gian</th><th>Mã NV</th><th>Họ & Tên PGs</th><th>Trainer</th><th>Buổi thứ</th><th>Lượt/2</th>${isAdmin()?'<th></th>':''}</tr></thead><tbody>`;
     sorted.forEach(s=>{
       const cnt = surveyCountForCodeNew(s.code);
@@ -15935,7 +16041,7 @@ async function pgsmSubmitChange_(camp,action,pg,reason=''){
  if(!code||!pgsmCanSeeRegion_(region))return alert('PGs không thuộc khu vực được phân quyền.'),false;
  if(action==='add'&&(!String(pg.name||'').trim()||!String(pg.shop||pg.shopName||'').trim()||!String(pg.channel||'').trim()||!String(pg.trainerId||'').trim()))return alert('Cần nhập đầy đủ mã, tên PGs, shop, kênh và Trainer.'),false;
  if(action==='remove'&&String(pg.trainerId||'')!==String(session?.trainerId||''))return alert('Bạn chỉ được yêu cầu loại PGs do chính mình phụ trách.'),false;
- if(action==='remove'&&!String(reason||'').trim())return alert('Hãy nhập lý do loại bỏ PGs.'),false;
+ if(!String(reason||'').trim())return alert(action==='remove'?'Hãy nhập lý do loại bỏ PGs.':'Hãy nhập lý do thêm PGs.'),false;
  if(action==='remove'){const snap=await pgsmData_(camp,true);const inTarget=(snap.registered||[]).find(x=>pgsmCode_(x)===code);if(!inTarget||String(inTarget.trainerId||'')!==String(session?.trainerId||''))return alert('PGs hiện không thuộc danh sách Master do bạn phụ trách.'),false;}
  const selectedTrainer=(config.trainers||[]).find(t=>String(t.id)===String(pg.trainerId));
  if(action==='add'&&(!selectedTrainer||!pgsmCanSeeRegion_(selectedTrainer.region)))return alert('Trainer phụ trách không thuộc khu vực được quản lý.'),false;
@@ -16563,11 +16669,101 @@ async function renderPgsMasterProgress_(){
  el.innerHTML=`<div class="scope-filters"><b>Chiến dịch PGs Master:</b> <select id="pgsmProgressCampaign">${camps.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')}</select></div><div id="pgsmProgressContent"></div>`;
  const sel=el.querySelector('#pgsmProgressCampaign');sel.addEventListener('change',()=>pgsmDrawProgress_(camps.find(c=>c.id===sel.value)));await pgsmDrawProgress_(camps[0]);
 }
+async function pgsmProgressChanges_(camp){
+ if(!isAdmin()&&!isTrainer())return [];
+ const ids=[...new Set((config.trainers||[]).filter(t=>isAdmin()||pgsmCanSeeRegion_(t.region)).map(t=>String(t.id||'')).filter(Boolean))];
+ if(isTrainer()&&session?.trainerId&&!ids.includes(String(session.trainerId)))ids.push(String(session.trainerId));
+ const keys=[...(isAdmin()?[pgsmRequestKey_(camp)]:[]),...ids.map(id=>pgsmRequestKey_(camp,id))];
+ if(!keys.length)return [];
+ const bundle=await dbGetMulti(keys);
+ if(!keys.every(key=>Object.prototype.hasOwnProperty.call(bundle||{},key)))throw Error('request_history_unavailable');
+ return keys.flatMap(key=>Array.isArray(bundle[key])?bundle[key]:[]).filter(r=>r&&pgsmCanSeeRegion_(r.pg?.region||r.requester?.region||''));
+}
+function pgsmProgressRows_(d,requests){
+ const key=r=>pgsmCode_(r)+'|'+pgsmNorm_(r.region);
+ const rows=new Map();
+ const record=(r,inTarget,change=null)=>({...r,code:pgsmCode_(r),channel:pgsmRecordChannel_(r),_pgsmInTarget:inTarget,_pgsmChange:change});
+ (d.registered||[]).filter(r=>pgsmCanSeeRegion_(r.region)).forEach(r=>rows.set(key(r),record(r,true)));
+ const approved=new Set(d.approvedRequestIds||[]),removed=new Set((d.manualRemove||[]).map(code=>pgsmCode_({code})));
+ const history=(requests||[]).filter(r=>{
+   const code=pgsmCode_({code:r.code||r.pg?.code}),region=String(r.pg?.region||r.requester?.region||'').trim();
+   return code&&region&&r.pg&&(!r.pg.code||pgsmCode_(r.pg)===code)&&['add','remove'].includes(r.action)
+     &&(!r.requester?.role||r.requester.role==='trainer')
+     &&(!r.requester?.region||pgsmNorm_(r.requester.region)===pgsmNorm_(region))
+     &&pgsmCanSeeRegion_(region)&&(r.status==='approved'||r.status==='pending'||approved.has(r.id));
+ }).sort((a,b)=>(Date.parse(a.reviewedAt||a.requestedAt)||0)-(Date.parse(b.reviewedAt||b.requestedAt)||0));
+ for(const request of history){
+   const pg={...request.pg,code:pgsmCode_({code:request.code||request.pg.code}),region:request.pg.region||request.requester.region};
+   const id=key(pg),existing=rows.get(id),inTarget=existing?existing._pgsmInTarget:false;
+   const pending=request.status!=='approved'&&!approved.has(request.id);
+   if(request.action==='add'&&((pending&&inTarget)||(!pending&&!inTarget)))continue;
+   if(request.action==='remove'&&((pending&&!inTarget)||(!pending&&(inTarget||!removed.has(pg.code)))))continue;
+   const change={action:request.action,pending,reason:String(request.reason||request.note||'').trim()||'Trainer chưa ghi lý do'};
+   rows.set(id,record(existing||pg,inTarget,change));
+ }
+ // Giữ PGs đã loại trong báo cáo, ngay cả khi lịch sử cũ không còn thông tin đầy đủ.
+ for(const code of removed){
+   const raw=d.manualPgRecords?.[code]||(pgs||[]).find(p=>pgsmCode_(p)===code&&String(p.brand||'').toUpperCase()==='OPPO');
+   if(!raw)continue;
+   const pg=pgsmPgRecord_(raw);
+   if(pg.region&&pgsmCanSeeRegion_(pg.region)&&!rows.has(key(pg)))rows.set(key(pg),record(pg,false,{action:'remove',pending:false,reason:'Chưa có lý do của Trainer trong lịch sử'}));
+ }
+ return [...rows.values()];
+}
+function pgsmChangeLabel_(row){
+ const change=row._pgsmChange;
+ return change?(change.action==='remove'?'Loại':'Thêm')+(change.pending?' · Chờ duyệt':''):'Trong danh sách';
+}
+let pgsmExcelJsPromise_;
+function pgsmLoadExcelJs_(){
+ if(window.ExcelJS?.Workbook)return Promise.resolve(window.ExcelJS);
+ if(!pgsmExcelJsPromise_)pgsmExcelJsPromise_=new Promise((resolve,reject)=>{
+   // ExcelJS 4.4.0 (MIT): chỉ tải khi xuất file có màu, không thay thư viện XLSX của các mục khác.
+   const script=document.createElement('script');
+   const fail=()=>{clearTimeout(timer);script.remove();reject(Error('Không tải được thư viện Excel có màu. Hãy kiểm tra kết nối và thử lại.'));};
+   const timer=setTimeout(fail,20000);
+   script.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';script.referrerPolicy='no-referrer';
+   script.onerror=fail;script.onload=()=>{clearTimeout(timer);if(window.ExcelJS?.Workbook)resolve(window.ExcelJS);else fail();};
+   document.head.appendChild(script);
+ }).catch(error=>{pgsmExcelJsPromise_=null;throw error;});
+ return pgsmExcelJsPromise_;
+}
+async function pgsmWriteProgressExcel_(records,sourceRows,filename){
+ const excel=await pgsmLoadExcelJs_();
+ const canExport=()=>sourceRows.every(r=>pgsmCanSeeRegion_(r.region));
+ if(!canExport())throw Error('Quyền truy cập đã thay đổi. Hãy tải lại danh sách và xuất lại.');
+ const workbook=new excel.Workbook(),sheet=workbook.addWorksheet('Tiến độ PGs Master');
+ sheet.columns=Object.keys(records[0]).map(header=>({header,key:header,width:header==='Trạng thái'?48:header==='Họ tên'||header==='Tên shop'?26:header.includes('Kết quả')?28:header==='STT'?7:18}));
+ records.forEach((data,index)=>{
+   const row=sheet.addRow(data),change=sourceRows[index]._pgsmChange;
+   row.alignment={vertical:'middle',wrapText:true};
+   if(change){
+     const color=change.action==='remove'?{fill:'FFFFEBEE',font:'FFB91C1C'}:{fill:'FFE8F5E9',font:'FF166534'};
+     row.eachCell({includeEmpty:true},cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:color.fill}};});
+     ['Mã PGs','Họ tên','Trạng thái'].forEach(key=>{row.getCell(key).font={bold:true,color:{argb:color.font}};});
+     row.height=60;
+   }
+ });
+ sheet.getRow(1).height=40;
+ sheet.getRow(1).eachCell(cell=>{cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF166534'}};cell.alignment={vertical:'middle',wrapText:true};});
+ sheet.views=[{state:'frozen',ySplit:1}];
+ sheet.autoFilter={from:{row:1,column:1},to:{row:sheet.rowCount,column:sheet.columnCount}};
+ const bytes=await workbook.xlsx.writeBuffer();
+ if(!canExport())throw Error('Quyền truy cập đã thay đổi. Hãy tải lại danh sách và xuất lại.');
+ const url=URL.createObjectURL(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+ const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
 async function pgsmDrawProgress_(camp){
  const el=document.getElementById('pgsmProgressContent');if(!el||!camp)return;
  const d=await pgsmData_(camp,true);
  if(!d.locked){el.innerHTML='<div class="form-card">⏳ Chưa chốt đăng ký. Sau khi chốt Target, danh sách sẽ xuất hiện tại đây.</div><div id="pgsmTrainerChanges"></div>';await pgsmRenderTrainerChangePanel_(camp,d);return;}
- const rows=(d.registered||[]).filter(r=>pgsmCanSeeRegion_(r.region)).map(r=>({...r,channel:pgsmRecordChannel_(r)}));
+ let changes;
+ try{changes=await pgsmProgressChanges_(camp);}catch{
+   el.innerHTML='<div class="form-card" role="alert">Không tải được lịch sử Thêm/Loại PGs. Hãy thử lại trước khi xuất Excel để tránh thiếu trạng thái hoặc lý do. <button type="button" id="pgsmRetryHistory">Thử lại</button></div>';
+   el.querySelector('#pgsmRetryHistory').addEventListener('click',()=>pgsmDrawProgress_(camp));return;
+ }
+ const rows=pgsmProgressRows_(d,changes);
  // Tiến độ chỉ đọc các cờ m*_done từ OTraining, không có bộ nhớ nháp nhập tay.
  const stageStatus=(r,m)=>pgsmStageStatus_(r.code,m.id,d.systemMeta,null,d.thresholds);
  const achieved=r=>PGSM_STAGES_.filter(m=>stageStatus(r,m).done).length;
@@ -16591,27 +16787,29 @@ async function pgsmDrawProgress_(camp){
    <div class="pgsm-system-message" id="pgsmSystemMsg" aria-live="polite">${d.systemUpdatedAt?'Lần cập nhật gần nhất: '+escapeHtml(new Date(d.systemUpdatedAt).toLocaleString('vi-VN')):'Chưa cập nhật từ hệ thống.'}</div>
    <div class="section-desc" style="margin-top:6px">Kết quả M1–M5 được cập nhật duy nhất từ OTraining. Không hỗ trợ nhập hoặc lưu tiến độ thủ công.</div>
  </section>
- <h3 class="pgsm-section-title" style="margin-top:22px">Danh sách PGs Master đạt mốc</h3>
- <div class="pgsm-filter-grid">
+ <h3 class="pgsm-section-title" style="margin-top:22px">Danh sách PGs Master và tiến độ từng mốc</h3>
+ <div class="pgsm-filter-grid pgsm-progress-filters">
   <label>Khu vực<select id="pgsmProgressRegion"><option value="">Tất cả khu vực</option>${regions.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}</select></label>
   <label>Trainer<select id="pgsmProgressTrainer"><option value="">Tất cả Trainer</option>${trainerIds.map(id=>`<option value="${escapeHtml(id)}">${escapeHtml(trainerOf(id)?.name||rows.find(r=>String(r.trainerId)===id)?.trainerName||id)}</option>`).join('')}</select></label>
   <label>Kênh<select id="pgsmProgressChannel"><option value="">Tất cả kênh</option></select></label>
+  <label>Trạng thái<select id="pgsmProgressStatus"><option value="">Tất cả trạng thái</option><option value="current">Trong danh sách</option><option value="add">Thêm</option><option value="remove">Loại</option><option value="pending">Chờ duyệt</option></select></label>
   <label>Tên / Code PGs<input id="pgsmProgressPgSearch" placeholder="Tìm mã hoặc tên PGs"></label>
-  <label>ID / tên shop<input id="pgsmProgressShop" placeholder="Tìm shop"></label>
-  <button type="button" class="secondary" id="pgsmExportAchieved">⬇ Xuất Excel PGs đạt mốc</button>
+  <label>Tên shop<input id="pgsmProgressShop" placeholder="Tìm shop"></label>
+  <button type="button" class="secondary" id="pgsmExportProgress" title="Xuất Excel tiến độ PGs theo bộ lọc">⬇ Xuất Excel</button>
  </div>
- <div class="table-scroll" id="pgsmProgressTableWrap"><table id="pgsmProgressTable"><thead><tr><th>STT</th><th>Code PGs</th><th class="pgsm-col-person">Họ tên</th><th>ID shop</th><th>Shop</th><th>Khu vực</th><th>Trainer</th><th>Kênh</th>${PGSM_STAGES_.map(m=>`<th>${escapeHtml(m.label)}<small style="display:block">Target: ${Number(d.thresholds[m.id]||0)}</small></th>`).join('')}<th>Kết quả</th>${isTrainer()?'<th>Thao tác</th>':''}</tr></thead><tbody id="pgsmProgressRows"></tbody></table></div>
+ <p class="section-desc">Thêm: màu xanh · Loại: màu đỏ, kèm lý do Trainer. Yêu cầu chờ duyệt được ghi rõ; tổng tiến độ chỉ tính danh sách chính thức.</p>
+ <div class="table-scroll" id="pgsmProgressTableWrap"><table id="pgsmProgressTable" aria-label="Danh sách PGs Master và tiến độ từng mốc"><colgroup>${[3,6,isTrainer()?11:12,isTrainer()?10:11,6,isTrainer()?9:10,4,isTrainer()?11:12,...PGSM_STAGES_.map(()=>isTrainer()?5.6:6),6,...(isTrainer()?[6]:[])].map(width=>`<col style="width:${width}%">`).join('')}</colgroup><thead><tr><th scope="col">STT</th><th scope="col">Mã PGs</th><th scope="col">Họ tên</th><th scope="col">Shop</th><th scope="col">Khu vực</th><th scope="col">Trainer</th><th scope="col">Kênh</th><th scope="col">Trạng thái</th>${PGSM_STAGES_.map(m=>`<th scope="col" class="pgsm-col-step" title="${escapeHtml(m.label)}">${escapeHtml(m.id.toUpperCase())}<span class="pgsm-stage-name">${escapeHtml(m.label.replace(/^M\d\s*·\s*/,''))}</span><small class="pgsm-stage-target">Target: ${Number(d.thresholds[m.id]||0)}</small></th>`).join('')}<th scope="col">Kết quả</th>${isTrainer()?'<th scope="col">Thao tác</th>':''}</tr></thead><tbody id="pgsmProgressRows"></tbody></table></div>
  <div id="pgsmProgressPagination"></div>
  </div><div id="pgsmTrainerChanges"></div>`;
  const $=id=>el.querySelector('#'+id);
  const regionSel=$('pgsmProgressRegion'),trainerSel=$('pgsmProgressTrainer'),channelSel=$('pgsmProgressChannel');
- const pgInput=$('pgsmProgressPgSearch'),shopInput=$('pgsmProgressShop');
+ const pgInput=$('pgsmProgressPgSearch'),shopInput=$('pgsmProgressShop'),statusSel=$('pgsmProgressStatus');
  const pager=$('pgsmProgressPagination');
  const groupBy=$('pgsmProgressGroupBy');
  const pageSize=6;let page=1;
  function summary(){
    const grouped=new Map();
-   for(const r of rows){
+   for(const r of rows.filter(r=>r._pgsmInTarget)){
      const id=groupBy.value==='region'?regionOf(r):String(r.trainerId||'');
      const label=groupBy.value==='region'?regionOf(r):(r.trainerName||trainerOf(r.trainerId)?.name||'Chưa gán Trainer');
      const key=id||'__none__';
@@ -16651,6 +16849,7 @@ async function pgsmDrawProgress_(camp){
  const filtered=()=>rows.filter(r=>(!regionSel.value||pgsmNorm_(regionOf(r))===pgsmNorm_(regionSel.value))
    &&(!trainerSel.value||String(r.trainerId)===trainerSel.value)
    &&(!channelSel.value||pgsmNorm_(r.channel)===pgsmNorm_(channelSel.value))
+   &&(!statusSel.value||(statusSel.value==='pending'?!!r._pgsmChange?.pending:statusSel.value==='current'?!r._pgsmChange:r._pgsmChange?.action===statusSel.value))
    &&(!pgInput.value||pgsmNorm_(r.name).includes(pgsmNorm_(pgInput.value))||pgsmNorm_(r.code).includes(pgsmNorm_(pgInput.value)))
    &&(!shopInput.value||pgsmNorm_(r.shop).includes(pgsmNorm_(shopInput.value))||pgsmNorm_(r.shopId).includes(pgsmNorm_(shopInput.value))));
  function draw(){
@@ -16658,15 +16857,15 @@ async function pgsmDrawProgress_(camp){
    const start=(page-1)*pageSize;
    $('pgsmProgressRows').innerHTML=subset.slice(start,start+pageSize).map((r,i)=>{
      const n=achieved(r);
-     return `<tr><td>${start+i+1}</td><td>${escapeHtml(r.code)}</td><td class="pgsm-person-name pgsm-col-person">${escapeHtml(r.name)}</td><td>${escapeHtml(r.shopId||'—')}</td><td class="pgsm-col-shop" title="${escapeHtml(r.shop)}">${escapeHtml(r.shop)}</td><td>${escapeHtml(r.region)}</td><td class="pgsm-col-trainer">${escapeHtml(r.trainerName)}</td><td>${escapeHtml(r.channel||'—')}</td>${PGSM_STAGES_.map(m=>{
+     return `<tr class="${r._pgsmChange?'pgsm-change-'+r._pgsmChange.action:''}"><td class="pgsm-col-number" data-label="STT">${start+i+1}</td><td class="pgsm-col-code" data-label="Mã PGs">${escapeHtml(r.code)}</td><td class="pgsm-person-name pgsm-col-person" data-label="Họ tên">${escapeHtml(r.name)}</td><td class="pgsm-col-shop" data-label="Shop"><span class="pgsm-shop-name" title="${escapeHtml(r.shop)}">${escapeHtml(r.shop)}</span></td><td class="pgsm-col-region" data-label="Khu vực">${escapeHtml(r.region)}</td><td class="pgsm-col-trainer" data-label="Trainer">${escapeHtml(r.trainerName)}</td><td class="pgsm-col-channel" data-label="Kênh">${escapeHtml(r.channel||'—')}</td><td class="pgsm-col-change" data-label="Trạng thái"><span class="pgsm-change-label">${escapeHtml(pgsmChangeLabel_(r))}</span>${r._pgsmChange?`<span class="pgsm-change-reason">Lý do: ${escapeHtml(r._pgsmChange.reason)}</span>`:''}</td>${PGSM_STAGES_.map(m=>{
        const st=stageStatus(r,m);
        if(!st.fromSystem){
-         return '<td class="pgsm-score-cell"><span class="pgsm-fm-status pgsm-fm-unknown">Chưa có dữ liệu</span></td>';
+         return `<td class="pgsm-score-cell" data-label="${escapeHtml(m.label)}"><span class="pgsm-fm-status pgsm-fm-unknown">Chưa có dữ liệu</span></td>`;
        }
        const stars=st.stars===null?'—':String(st.stars);
-       return `<td class="pgsm-score-cell"><div class="pgsm-fm-stage"><span class="pgsm-fm-stars" title="Số sao từ OTraining">★ ${escapeHtml(stars)}</span><span class="pgsm-fm-status ${st.done?'pgsm-fm-pass':st.known?'pgsm-fm-fail':'pgsm-fm-unknown'}">${st.done?'✓ Đạt':st.known?'Chưa đạt':'Chưa có kết quả'}</span></div></td>`;
-     }).join('')}<td><span class="pgsm-result-badge ${n===5?'pgsm-result-done':''}">${n===5?'🏆 Đạt Master':`${n}/5 mốc`}</span></td>${isTrainer()?`<td>${String(r.trainerId||'')===String(session?.trainerId||'')?`<button type="button" class="secondary" data-pgsm-progress-remove="${escapeHtml(r.code)}">Loại PGs</button>`:'—'}</td>`:''}</tr>`;
-   }).join('')||`<tr><td colspan="${isTrainer()?15:14}">Không có PGs phù hợp bộ lọc</td></tr>`;
+       return `<td class="pgsm-score-cell" data-label="${escapeHtml(m.label)}"><div class="pgsm-fm-stage"><span class="pgsm-fm-stars" title="Số sao từ OTraining">★ ${escapeHtml(stars)}</span><span class="pgsm-fm-status ${st.done?'pgsm-fm-pass':st.known?'pgsm-fm-fail':'pgsm-fm-unknown'}">${st.done?'✓ Đạt':st.known?'Chưa đạt':'Chưa có kết quả'}</span></div></td>`;
+     }).join('')}<td class="pgsm-col-result" data-label="Kết quả"><span class="pgsm-result-badge ${n===5?'pgsm-result-done':''}">${n===5?'🏆 Đạt Master':`${n}/5 mốc`}</span></td>${isTrainer()?`<td class="pgsm-col-action" data-label="Thao tác">${r._pgsmInTarget&&String(r.trainerId||'')===String(session?.trainerId||'')?`<button type="button" class="secondary" data-pgsm-progress-remove="${escapeHtml(r.code)}">Loại PGs</button>`:'—'}</td>`:''}</tr>`;
+   }).join('')||`<tr><td class="pgsm-empty" colspan="${isTrainer()?15:14}">Không có PGs phù hợp bộ lọc</td></tr>`;
    pager.innerHTML=pgsmPager_(subset.length,page,pageSize,'data-pgsm-progress-page','PGs');
    summary();
  }
@@ -16675,16 +16874,19 @@ async function pgsmDrawProgress_(camp){
  regionSel.addEventListener('change',()=>{fillTrainer();fillChannel();page=1;draw();});
  trainerSel.addEventListener('change',()=>{fillChannel();page=1;draw();});
  channelSel.addEventListener('change',()=>{page=1;draw();});
+ statusSel.addEventListener('change',()=>{page=1;draw();});
  pgInput.addEventListener('input',()=>{page=1;draw();});shopInput.addEventListener('input',()=>{page=1;draw();});
  $('pgsmProgressRows').addEventListener('click',async e=>{
    const btn=e.target.closest('[data-pgsm-progress-remove]');if(!btn||!isTrainer())return;
    const pg=rows.find(r=>r.code===btn.dataset.pgsmProgressRemove);
    if(pg)pgsmOpenRemoveRequest_(camp,pg);
  });
- $('pgsmExportAchieved').addEventListener('click',()=>{
-   if(typeof XLSX==='undefined')return alert('Không tải được thư viện Excel.');
-   const exportRows=filtered().filter(r=>pgsmCanSeeRegion_(r.region)&&achieved(r)>0).map((r,i)=>{
-     const record={'STT':i+1,'Mã PGs':r.code,'Họ tên':r.name,'ID Shop':r.shopId||'','Tên shop':r.shop,'Khu vực':r.region,'Trainer':r.trainerName,'Kênh':r.channel||''};
+ $('pgsmExportProgress').addEventListener('click',async()=>{
+   // Xuất toàn bộ PGs trong bộ lọc, kể cả 0 mốc; kiểm tra lại quyền tại lúc tải file.
+   const sourceRows=filtered().filter(r=>pgsmCanSeeRegion_(r.region));
+   const exportRows=sourceRows.map((r,i)=>{
+     const record={'STT':i+1,'Mã PGs':r.code,'Họ tên':r.name,'ID Shop':r.shopId||'','Tên shop':r.shop,'Khu vực':r.region,'Trainer':r.trainerName,'Kênh':r.channel||'',
+       'Trạng thái':pgsmChangeLabel_(r)+(r._pgsmChange?'\nLý do: '+r._pgsmChange.reason:'')};
      PGSM_STAGES_.forEach(m=>{
        const st=stageStatus(r,m);
        record[m.label+' - Sao FM']=st.fromSystem?(st.stars??''):'';
@@ -16694,8 +16896,11 @@ async function pgsmDrawProgress_(camp){
      });
      record['Số mốc đạt']=achieved(r);record['Danh hiệu']=achieved(r)===5?'Đạt PGs Master':'Chưa đạt PGs Master';return record;
    });
-   if(!exportRows.length)return alert('Không có PGs đạt mốc nào trong bộ lọc.');
-   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(exportRows),'PGs dat moc');XLSX.writeFile(wb,'PGs_Master_Dat_Moc_'+String(camp.month||currentMonth)+'.xlsx');
+   if(!exportRows.length)return alert('Không có PGs nào trong bộ lọc được phân quyền.');
+   const button=$('pgsmExportProgress');button.disabled=true;
+   try{await pgsmWriteProgressExcel_(exportRows,sourceRows,'PGs_Master_Tien_Do_'+String(camp.month||currentMonth)+'.xlsx');}
+   catch(error){alert(error.message||'Không thể xuất Excel. Vui lòng thử lại.');}
+   finally{button.disabled=false;}
  });
 
  // Campaign ID lưu một lần: ẩn Lưu, hiện Sửa; cập nhật báo cáo không can thiệp trạng thái nhập.
@@ -16822,8 +17027,8 @@ async function pgsmRenderTrainerChangePanel_(camp,d){
       </div>
 
       <div class="pgsm-field pgsm-field--12">
-        <label class="pgsm-label">Ghi chú thêm (không bắt buộc)</label>
-        <div class="pgsm-input-wrap"><textarea id="pgsmAddNote" rows="4" placeholder="Bổ sung thông tin để Admin nắm rõ hơn, ví dụ: lý do đăng ký, tình trạng nhân sự, lưu ý về shop..."></textarea></div>
+        <label class="pgsm-label">Lý do thêm PGs <span class="req">*</span></label>
+        <div class="pgsm-input-wrap"><textarea id="pgsmAddNote" rows="4" placeholder="Nhập lý do thêm PGs để hiển thị trong danh sách và file Excel..." required></textarea></div>
       </div>
     </div>
 
@@ -16890,6 +17095,7 @@ async function pgsmRenderTrainerChangePanel_(camp,d){
    if(existing&&pgsmNorm_(name)!==pgsmNorm_(existing.name))return alert('Tên PGs nhập vào khác với DATA. Bấm Kiểm tra mã PGs để đối chiếu trước khi gửi.');
    const record={code,name,region,area:region,province,shop,shopId,channel,trainerId,trainerName:trainer.name};
    const reason=String($('pgsmAddNote').value||'').trim();
+   if(!reason)return alert('Hãy nhập lý do thêm PGs.');
    if(!confirm('Gửi đăng ký THÊM PGs '+code+' – '+name+' đến Admin duyệt?'))return;
    const btn=$('pgsmSubmitAdd');btn.disabled=true;
    try{if(await pgsmSubmitChange_(camp,'add',record,reason))await pgsmRenderTrainerChangePanel_(camp,d);}finally{btn.disabled=false;}
