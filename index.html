@@ -1153,6 +1153,16 @@
 .pgsm-fm-pass{background:#e0f3e7;color:#087843}
 .pgsm-fm-fail{background:#f2f4f2;color:#64776c}
 .pgsm-fm-unknown{background:#fff3dc;color:#866020}
+
+  /* OFF tenure filter stays usable with the compact mobile scope-filter layout. */
+  #panel-ov-onoff .onoff-tenure-filters{flex-wrap:wrap!important;overflow:visible;}
+  #onoffTenureControls[hidden]{display:none!important;}
+  #panel-ov-onoff .onoff-tenure-filters select{flex:0 1 220px!important;width:220px!important;min-width:180px!important;max-width:100%;}
+  #panel-ov-onoff .onoff-tenure-filters>span{flex:1 1 260px;}
+  @media(max-width:600px){
+    #panel-ov-onoff .onoff-tenure-filters select{flex:1 1 100%!important;width:100%!important;min-width:0!important;}
+    #panel-ov-onoff .onoff-tenure-filters>span{flex:1 1 100%;}
+  }
 </style>
 <style id="olie-theme">
 :root{--bg:#f4f8f6;--green:#07864a;--green-dark:#075d37;--line:#e3ece6;--radius:16px}
@@ -1723,13 +1733,28 @@ const dailyOlieMessages_ = ["Chúc bạn một ngày làm việc tràn đầy n�
     <div id="panel-ov-onoff" class="panel">
       <div class="kpi-row cols-2" style="margin-bottom:16px;">
         <div class="kpi-card"><div class="label">On (tuyển mới) — <span id="onoffSummaryMonthLabel1"></span></div><div class="value" style="color:#016C38;" id="onoffSummaryOnCount">0</div><div class="frac" id="onoffSummaryOnFrac"></div></div>
-        <div class="kpi-card"><div class="label">Off (nghỉ việc) — <span id="onoffSummaryMonthLabel2"></span></div><div class="value" style="color:#B23A32;" id="onoffSummaryOffCount">0</div><div class="frac" id="onoffSummaryOffFrac"></div></div>
+        <div class="kpi-card"><div class="label">Off (nghỉ việc) — <span id="onoffSummaryMonthLabel2"></span><span id="onoffSummaryOffTenureLabel"></span></div><div class="value" style="color:#B23A32;" id="onoffSummaryOffCount">0</div><div class="frac" id="onoffSummaryOffFrac"></div></div>
       </div>
 
       <div class="region-card">
-        <div class="region-head"><h3>Biến động nhân sự ON/OFF</h3><span class="count" id="onoffTrendRange"></span></div>
+        <div class="region-head" style="flex-wrap:wrap;gap:12px;"><h3 id="onoffChartTitle">Biến động nhân sự ON/OFF</h3><span class="count" id="onoffTrendRange"></span></div>
+        <div class="subnav onoff-chart-tabs" style="margin-bottom:12px;" aria-label="Kiểu biểu đồ On/Off">
+          <button type="button" data-onoffchartview="trend" class="active" aria-pressed="true">Tỷ lệ ON/OFF</button>
+          <button type="button" data-onoffchartview="tenure" aria-pressed="false">OFF theo thâm niên</button>
+        </div>
+        <div id="onoffTenureControls" class="scope-filters onoff-tenure-filters" style="margin-bottom:12px;" hidden>
+          <label class="scope-label" for="onoffOffTenureFilter">Thâm niên tại ngày nghỉ:</label>
+          <select id="onoffOffTenureFilter" aria-label="Lọc OFF theo thâm niên" title="Số tháng tròn tại ngày nghỉ: dưới 3; từ 3 đến dưới 6; từ 6 đến dưới 12; từ 12 đến dưới 36; từ đủ 36 tháng.">
+            <option value="">Tất cả thâm niên</option>
+            <option value="lt3">&lt;3T</option><option value="3to6">3T–6T</option>
+            <option value="6to12">6T–1N</option><option value="12to36">1N–3N</option>
+            <option value="gte36">&gt;3N</option><option value="unknown">Chưa xác định thâm niên</option>
+          </select>
+          <span style="font-size:var(--cap);color:var(--muted);">Áp dụng cho OFF: thẻ số liệu, biểu đồ, danh sách và Excel.</span>
+        </div>
         <div class="chart-wrap" style="height:340px;"><canvas id="chartRecruitAttrition"></canvas></div>
         <div id="onoffAttritionNote" style="font-size:var(--cap);color:var(--muted);margin-top:8px;"></div>
+        <div id="onoffRateStatus" aria-live="polite" style="font-size:var(--cap);color:var(--muted);margin-top:6px;" hidden></div>
       </div>
 
       <div class="banner-note" style="margin-bottom:18px;">Import danh sách On/Off đã được dời về tag <strong>DATA ▸ Nhân sự ▸ Nội bộ</strong> để gom import về 1 mối.</div>
@@ -2978,42 +3003,138 @@ let editingPgId=null;
 const BRANDS=['OPPO','Samsung','Xiaomi','Vivo','Realme','Honor'];
 const STATUS_LIST=['Đang làm','THAI SẢN','CODE ĐẠI LÝ','OFF (chưa cắt Center)'];
 const STATUS_CLASS={ 'Đang làm':'st-dangl','THAI SẢN':'st-thaisan','CODE ĐẠI LÝ':'st-ctv','OFF (chưa cắt Center)':'st-danghi' };
-/* ============ ĐỔI TRẠNG THÁI PG NGAY TRONG BẢNG COACHING (0★/1★ và PGs mới) ============
-   Bước 2 xác nhận trước khi áp dụng; PG vừa đổi được đánh dấu statusChangedAt để tô đỏ + đưa lên đầu danh sách. */
-function statusSelectHtml_(p, canEdit){
-  const statuses = ['Đang làm','THAI SẢN','CODE ĐẠI LÝ','OFF (chưa cắt Center)'];
-  return `<select class="pg-status-select" data-pg="${p.id}" style="width:100%;padding:5px 6px;font-size:7.5pt;border:1px solid var(--line);border-radius:6px;font-family:inherit;" ${canEdit?'':'disabled'}>
-    ${statuses.map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}
-  </select>`;
+/* PGs Dev và Tổng quan dùng cùng trạng thái chính thức + yêu cầu chờ Admin duyệt. */
+function pgStatusCode_(value){return String(value??'').trim().replace(/\.0$/,'');}
+function pgStatusPgForRoster_(r, source=pgs){
+  const code=pgStatusCode_(r?.code);if(!code)return null;
+  const matches=source.filter(p=>p.brand==='OPPO'&&pgStatusCode_(p.code)===code&&String(p.trainerId)===String(r.trainerId));
+  return matches.length===1?matches[0]:null;
 }
-async function confirmAndUpdatePgStatus_(pg, newStatus, selectEl, onDone){
-  if(!pg) return;
-  const oldStatus = pg.status;
-  if(oldStatus===newStatus) return;
-  const ok = await showConfirm(`Xác nhận đổi trạng thái của "${pg.name}" (${pg.code||'—'}) từ "${oldStatus}" sang "${newStatus}"?`);
-  if(!ok){ if(selectEl) selectEl.value = oldStatus; return; }
-  if(isTrainer()){
-    // Trainer không được áp dụng trạng thái trực tiếp: chỉ gửi yêu cầu cho Admin duyệt.
-    await requestPgStatusChange_(pg, newStatus);
-    if(selectEl) selectEl.value = oldStatus;
-    renderPendingPgStatusBell_();
-    if(onDone) onDone();
-    return;
+function pgStatusTarget_(pg, roster, sourcePgs=pgs, sourceRoster=onoffRoster){
+  if(roster){
+    const r=sourceRoster.find(x=>String(x.id)===String(roster.id)&&String(x.trainerId)===String(roster.trainerId));
+    return r?{pg:pgStatusPgForRoster_(r,sourcePgs),roster:r}:null;
   }
-  if(!isAdmin()){ if(selectEl) selectEl.value=oldStatus; return; }
-  pg.status = newStatus;
-  pg.statusChangedAt = new Date().toISOString();
-  pg.statusApprovedAt = new Date().toISOString();
-  await dbSet('pgs:'+currentMonth, pgs);
-  if(syncApprovedPgStatusToOnOff_(pg,newStatus)) await dbSet('onoffRoster', onoffRoster);
-  if(onDone) onDone();
+  const p=pg&&sourcePgs.find(x=>String(x.id)===String(pg.id)&&String(x.trainerId)===String(pg.trainerId));
+  return p?{pg:p,roster:null}:null;
+}
+function pgStatusCanEdit_(pg,roster){
+  const owner=(roster||pg)?.trainerId;
+  return !monthLocked&&!!(pg||roster)&&(isAdmin()||(isTrainer()&&!!owner&&String(owner)===String(session.trainerId)));
+}
+function pgStatusCurrent_(pg,roster){return pg?.status||roster?.devStatusNote||'Đang làm';}
+function pgStatusMatches_(req,pg,roster,month=currentMonth){
+  if(req.month!==month||String(req.trainerId)!==String((roster||pg)?.trainerId))return false;
+  return !!((pg&&req.pgId!=null&&String(req.pgId)===String(pg.id))
+    ||(roster&&req.onoffId!=null&&String(req.onoffId)===String(roster.id))
+    ||(pgStatusCode_(req.pgCode)&&pgStatusCode_(req.pgCode)===pgStatusCode_((roster||pg)?.code)));
+}
+function pgStatusKey_(pg,roster){return currentMonth+'|'+String((roster||pg)?.trainerId)+'|'+(pg?'pg:'+pg.id:'onoff:'+roster?.id);}
+function pgStatusContext_(){return JSON.stringify([currentMonth,session?.role,session?.trainerId,session?.region]);}
+async function pgStatusReadState_(month){
+  const keys=['pgs:'+month,'onoffRoster','pendingPgStatusRequests'];
+  const data=await dbGetMulti(keys);
+  if(!keys.every(key=>Object.prototype.hasOwnProperty.call(data,key)))throw Error('Không đọc được dữ liệu trạng thái. Hãy thử lại.');
+  if(keys.some(key=>data[key]!==null&&!Array.isArray(data[key])))throw Error('Dữ liệu trạng thái không đúng định dạng.');
+  return {pgs:JSON.parse(JSON.stringify(data[keys[0]]||[])),roster:JSON.parse(JSON.stringify(data[keys[1]]||[])),requests:JSON.parse(JSON.stringify(data[keys[2]]||[]))};
+}
+async function pgStatusPersist_(entries){
+  if(!SUPABASE_URL){
+    const backup=entries.map(e=>localStorage.getItem(e.key));
+    try{entries.forEach(e=>localStorage.setItem(e.key,JSON.stringify(e.value)));}
+    catch{entries.forEach((e,i)=>{try{if(backup[i]===null)localStorage.removeItem(e.key);else localStorage.setItem(e.key,backup[i]);}catch{}});throw Error('Không lưu được trạng thái. Hãy thử lại.');}
+  }else{
+    const updated_at=new Date().toISOString();
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,{method:'POST',
+      headers:{...SUPA_HEADERS_,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(entries.map(e=>({...e,updated_at})))});
+    if(!res.ok)throw Error('Không lưu được trạng thái (HTTP '+res.status+'). Hãy thử lại.');
+  }
+  if(typeof invalidateHomeSnapshot_==='function')invalidateHomeSnapshot_();
+}
+function pgStatusFeedback_(key,text,error=false){
+  document.querySelectorAll('[data-pg-status-key]').forEach(box=>{
+    if(box.dataset.pgStatusKey!==key)return;
+    const msg=box.querySelector('.pg-status-feedback');
+    if(msg){msg.textContent=text;msg.style.color=error?'var(--red)':'var(--green-dark)';}
+  });
+}
+function pgStatusModalFeedback_(text){
+  const box=document.getElementById('pendingPgStatusModalBody');if(!box)return;
+  let msg=box.querySelector('.pg-status-modal-feedback');
+  if(!msg){msg=document.createElement('div');msg.className='pg-status-modal-feedback';msg.setAttribute('role','alert');box.prepend(msg);}
+  msg.textContent=text;msg.style.cssText='color:var(--red);font-size:12px;margin-bottom:10px;';
+}
+function statusSelectHtml_(p,canEdit,roster=null){
+  const cur=pgStatusCurrent_(p,roster),editable=canEdit&&pgStatusCanEdit_(p,roster);
+  const pending=pendingPgStatusRequests.find(r=>pgStatusMatches_(r,p,roster));
+  return `<div class="pg-status-editor" data-pg-status-key="${escapeHtml(pgStatusKey_(p,roster))}">
+    <select class="pg-status-select${roster?' dev-status-note-select':''}" data-pg="${escapeHtml(p?.id??'')}" data-oo-id="${escapeHtml(roster?.id??'')}" aria-label="Trạng thái của ${escapeHtml((roster||p)?.name||'PGs')}" style="width:100%;padding:5px 6px;font-size:7.5pt;border:1px solid var(--line);border-radius:6px;font-family:inherit;" ${editable?'':'disabled'}>
+    ${(!STATUS_LIST.includes(cur)?[cur,...STATUS_LIST]:STATUS_LIST).map(s=>`<option value="${escapeHtml(s)}" ${cur===s?'selected':''}>${escapeHtml(s)}</option>`).join('')}</select>
+    ${pending?`<div class="pg-status-pending" style="margin-top:5px;font-size:11px;color:var(--amber);font-weight:700;">Chờ duyệt → ${escapeHtml(pending.newStatus)}</div>${editable&&isTrainer()?'<button type="button" class="secondary" data-pg-status-cancel style="margin-top:5px;padding:3px 6px;font-size:11px;">Hủy yêu cầu</button>':''}`:''}
+    <div class="pg-status-feedback" role="status" aria-live="polite" style="margin-top:4px;font-size:11px;line-height:1.4;"></div></div>`;
+}
+async function pgStatusApplyChange_(pg,roster,newStatus,expectedStatus,requestId=null){
+  const context=pgStatusContext_(),month=currentMonth;
+  if(!isAdmin()||monthLocked)throw Error('Chỉ Admin được áp dụng trạng thái trong tháng chưa khoá.');
+  const state=await pgStatusReadState_(month);
+  if(context!==pgStatusContext_()||monthLocked)throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy thực hiện lại.');
+  const request=requestId?state.requests.find(r=>String(r.id)===String(requestId)&&r.month===month):null;
+  if(requestId&&!request)throw Error('Yêu cầu này không còn chờ duyệt trong tháng đang xem.');
+  if(request){
+    roster=request.onoffId!=null?state.roster.find(r=>String(r.id)===String(request.onoffId)&&String(r.trainerId)===String(request.trainerId)):null;
+    if(request.onoffId!=null&&!roster)throw Error('Không tìm thấy PGs trong danh sách On/Off của yêu cầu.');
+    pg=state.pgs.find(p=>String(p.id)===String(request.pgId)&&String(p.trainerId)===String(request.trainerId));
+    if(!pg&&!roster){
+      const matches=state.pgs.filter(p=>p.brand==='OPPO'&&pgStatusCode_(p.code)===pgStatusCode_(request.pgCode)&&String(p.trainerId)===String(request.trainerId));
+      if(matches.length===1)pg=matches[0];
+    }
+    newStatus=request.newStatus;expectedStatus=request.oldStatus;
+  }
+  const target=pgStatusTarget_(pg,roster,state.pgs,state.roster);
+  if(!target||!STATUS_LIST.includes(newStatus))throw Error('Không tìm thấy đúng PGs hoặc trạng thái không hợp lệ.');
+  if(pgStatusCurrent_(target.pg,target.roster)!==expectedStatus)throw Error('Trạng thái PGs đã thay đổi. Hãy tải lại và kiểm tra trước khi duyệt.');
+  const at=new Date().toISOString(),owner=(target.roster||target.pg).trainerId,code=pgStatusCode_((target.roster||target.pg).code);
+  if(target.pg)Object.assign(target.pg,{status:newStatus,statusChangedAt:at,statusApprovedAt:at,statusChangedBy:request?.trainerName||session.displayName||'Admin'});
+  state.roster.forEach(r=>{
+    if((target.roster&&String(r.id)===String(target.roster.id))||(target.pg&&code&&pgStatusCode_(r.code)===code&&String(r.trainerId)===String(owner))){
+      r.devStatusNote=newStatus==='Đang làm'?'':newStatus;r.statusChangedAt=at;r.statusApprovedAt=at;
+    }
+  });
+  state.requests=state.requests.filter(r=>!pgStatusMatches_(r,target.pg,target.roster,month));
+  await pgStatusPersist_([{key:'pgs:'+month,value:state.pgs},{key:'onoffRoster',value:state.roster},{key:'pendingPgStatusRequests',value:state.requests}]);
+  if(context===pgStatusContext_()){pgs=state.pgs;onoffRoster=state.roster;pendingPgStatusRequests=state.requests;}
+}
+async function confirmAndUpdatePgStatus_(pg,newStatus,selectEl,onDone,roster=null){
+  const oldStatus=pgStatusCurrent_(pg,roster),key=pgStatusKey_(pg,roster),context=pgStatusContext_();
+  const pending=pendingPgStatusRequests.some(r=>pgStatusMatches_(r,pg,roster));
+  if(!pgStatusCanEdit_(pg,roster)||!STATUS_LIST.includes(newStatus)){if(selectEl)selectEl.value=oldStatus;return;}
+  if(oldStatus===newStatus&&!pending)return;
+  if(selectEl)selectEl.disabled=true;
+  try{
+    const cancel=oldStatus===newStatus;
+    const message=cancel?'Hủy yêu cầu đổi trạng thái đang chờ duyệt?':`${isTrainer()?'Gửi yêu cầu cho Admin duyệt đổi':'Xác nhận đổi'} trạng thái của "${(roster||pg).name||'PGs'}" (${(roster||pg).code||'—'}) từ "${oldStatus}" sang "${newStatus}"?`;
+    if(!await showConfirm(message)){if(selectEl)selectEl.value=oldStatus;return;}
+    if(context!==pgStatusContext_()||!pgStatusCanEdit_(pg,roster))throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy thực hiện lại.');
+    const trainer=isTrainer();
+    if(trainer){if(!await requestPgStatusChange_(pg,newStatus,roster))throw Error('Không gửi được yêu cầu. Kiểm tra quyền phụ trách PGs.');}
+    else await pgStatusApplyChange_(pg,roster,newStatus,oldStatus);
+    if(selectEl)selectEl.value=trainer?oldStatus:newStatus;
+    if(context!==pgStatusContext_())return;
+    renderPendingPgStatusBell_();if(onDone)onDone();
+    pgStatusFeedback_(key,cancel?'Đã hủy yêu cầu.':trainer?'Đã gửi yêu cầu, chờ Admin duyệt.':'Đã cập nhật trạng thái.');
+  }catch(error){if(selectEl)selectEl.value=oldStatus;pgStatusFeedback_(key,error.message||'Không cập nhật được trạng thái.',true);}
+  finally{if(selectEl)selectEl.disabled=!pgStatusCanEdit_(pg,roster);}
 }
 function wirePgStatusSelects_(box){
   box.querySelectorAll('.pg-status-select').forEach(sel=>{
-    sel.addEventListener('change', async ()=>{
-      const p = pgs.find(x=>x.id===sel.getAttribute('data-pg'));
-      await confirmAndUpdatePgStatus_(p, sel.value, sel, ()=>{ renderKpiCategory('noibo'); renderOverviewAll(); });
-    });
+    const resolve=()=>{
+      const r=sel.dataset.ooId?onoffRoster.find(x=>String(x.id)===sel.dataset.ooId):null;
+      const p=r?pgStatusPgForRoster_(r):pgs.find(x=>String(x.id)===sel.dataset.pg);
+      return {pg:p,roster:r};
+    };
+    const done=()=>{renderKpiCategory('noibo');renderOverviewAll();};
+    sel.addEventListener('change',async()=>{const t=resolve();await confirmAndUpdatePgStatus_(t.pg,sel.value,sel,done,t.roster);});
+    sel.closest('.pg-status-editor')?.querySelector('[data-pg-status-cancel]')?.addEventListener('click',async()=>{const t=resolve();await confirmAndUpdatePgStatus_(t.pg,pgStatusCurrent_(t.pg,t.roster),sel,done,t.roster);});
   });
 }
 const SENIORITY_BUCKETS=['<3T','3T - 6T','6T-1N','1N-3N','>3N'];
@@ -7475,24 +7596,8 @@ function renderNhanSuBreakdown(){
   `;
   const over2 = list.filter(p=>Number(p.star)>=2).length;
   const over2Pct = list.length ? Math.round((over2/list.length)*1000)/10 : 0;
-  const regionMap={}; list.forEach(p=>{ const tr=trainerOf(p.trainerId); const k=tr?tr.region:'Chưa xác định'; regionMap[k]=(regionMap[k]||0)+1; });
-  renderRegionBarChart(regionMap);
   document.getElementById('totalPgsMienTrung').textContent = pgs.filter(p=>p.brand==='OPPO' && p.status==='Đang làm').length;
 
-  const trainerMap={}; list.forEach(p=>{ const tr=trainerOf(p.trainerId); const k=tr?tr.name:'Chưa gán Trainer'; trainerMap[k]=(trainerMap[k]||0)+1; });
-  renderTrainerBarChart(trainerMap);
-
-  const channelMap={ 'MWG':0, 'K.A':0, 'IND':0 };
-  list.forEach(p=>{ channelMap[channelGroup(p.channel)]++; });
-  renderChannelByRegionChart();
-
-  const shopSizeMap={};
-  list.forEach(p=>{ const resolved = resolvedShopSize_(p); const k = resolved || 'Chưa xác định'; shopSizeMap[k]=(shopSizeMap[k]||0)+1; });
-  renderShopSizeBarChart(shopSizeMap);
-
-  renderSeniorityByRegionChart();
-
-  renderStarByRegionChart();
   document.getElementById('starOver2Ratio').textContent = `Tỉ lệ PGs từ 2 sao trở lên: ${over2Pct}% (${over2}/${list.length})`;
 
   applyPgChartView(document.getElementById('pgChartSelect').value);
@@ -7505,15 +7610,30 @@ const PG_CHART_META = {
   star:      { title:'Phân bổ PGs theo Sao',                showTotal:false, showStarRatio:true  },
   shopsize:  { title:'Phân bổ theo Size shop',              showTotal:false, showStarRatio:false },
 };
+function renderSelectedPgChart_(view){
+  const list=scopedActivePgs('OPPO');
+  if(view==='region'){
+    const map={};list.forEach(p=>{const k=trainerOf(p.trainerId)?.region||'Chưa xác định';map[k]=(map[k]||0)+1;});
+    renderRegionBarChart(map);
+  } else if(view==='trainer'){
+    const map={};list.forEach(p=>{const k=trainerOf(p.trainerId)?.name||'Chưa gán Trainer';map[k]=(map[k]||0)+1;});
+    renderTrainerBarChart(map);
+  } else if(view==='channel') renderChannelByRegionChart();
+  else if(view==='seniority') renderSeniorityByRegionChart();
+  else if(view==='star') renderStarByRegionChart();
+  else if(view==='shopsize'){
+    const map={};list.forEach(p=>{const k=resolvedShopSize_(p)||'Chưa xác định';map[k]=(map[k]||0)+1;});
+    renderShopSizeBarChart(map);
+  }
+}
 function applyPgChartView(view){
-  const meta = PG_CHART_META[view] || PG_CHART_META.region;
-  document.getElementById('pgChartTitle').textContent = meta.title;
-  document.getElementById('pgChartTotalInfo').style.display = meta.showTotal ? '' : 'none';
-  document.getElementById('starOver2RatioWrap').style.display = meta.showStarRatio ? '' : 'none';
-  document.querySelectorAll('.pg-chart-view').forEach(el=>{ el.style.display = (el.id==='pgChartWrap-'+view) ? '' : 'none'; });
-  const instanceMap = { region:chartRegionBarInstance, trainer:chartTrainerInstance, channel:chartChannelInstance, seniority:chartSeniorityInstance, star:chartStarInstance, shopsize:chartShopSizeInstance };
-  const inst = instanceMap[view];
-  if(inst) setTimeout(()=>inst.resize(), 0);
+  view=PG_CHART_META[view] ? view : 'region';
+  const meta=PG_CHART_META[view];
+  document.getElementById('pgChartTitle').textContent=meta.title;
+  document.getElementById('pgChartTotalInfo').style.display=meta.showTotal ? '' : 'none';
+  document.getElementById('starOver2RatioWrap').style.display=meta.showStarRatio ? '' : 'none';
+  document.querySelectorAll('.pg-chart-view').forEach(el=>{el.style.display=el.id==='pgChartWrap-'+view ? '' : 'none';});
+  renderSelectedPgChart_(view);
 }
 document.getElementById('pgChartSelect').addEventListener('change', (e)=> applyPgChartView(e.target.value));
 const PG_PAGE_SIZE = 10;
@@ -7817,31 +7937,22 @@ function resetPgForm(){
   document.getElementById('savePgBtn').textContent='Thêm nhân sự';
   document.getElementById('cancelEditPgBtn').style.display='none';
 }
-async function requestPgStatusChange_(pg, newStatus){
-  if(!pg || !isTrainer() || pg.trainerId!==session.trainerId) return false;
-  const oldStatus = pg.status || 'Đang làm';
-  if(newStatus===oldStatus){
-    // Nếu Trainer đổi lại đúng trạng thái hiện tại thì hủy yêu cầu đang chờ (nếu có).
-    const before=pendingPgStatusRequests.length;
-    pendingPgStatusRequests=pendingPgStatusRequests.filter(r=>!(r.month===currentMonth && r.pgId===pg.id));
-    if(pendingPgStatusRequests.length!==before) await dbSet('pendingPgStatusRequests', pendingPgStatusRequests);
-    return false;
+async function requestPgStatusChange_(pg,newStatus,roster=null){
+  if(!isTrainer()||!pgStatusCanEdit_(pg,roster)||!STATUS_LIST.includes(newStatus))return false;
+  const context=pgStatusContext_(),month=currentMonth,state=await pgStatusReadState_(month);
+  if(context!==pgStatusContext_()||monthLocked)throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy thực hiện lại.');
+  const target=pgStatusTarget_(pg,roster,state.pgs,state.roster);
+  if(!target||!pgStatusCanEdit_(target.pg,target.roster))return false;
+  const oldStatus=pgStatusCurrent_(target.pg,target.roster),tr=trainerOf(session.trainerId);
+  const existing=state.requests.find(r=>pgStatusMatches_(r,target.pg,target.roster,month));
+  state.requests=state.requests.filter(r=>!pgStatusMatches_(r,target.pg,target.roster,month));
+  if(newStatus!==oldStatus){
+    state.requests.push({id:existing?.id||uid('pgsr'),month,pgId:target.pg?.id??'',
+      ...(target.roster?{onoffId:target.roster.id}:{}),pgCode:(target.roster||target.pg).code||'',pgName:(target.roster||target.pg).name||'',
+      trainerId:session.trainerId,trainerName:tr?.name||session.displayName||'Trainer',oldStatus,newStatus,requestedAt:new Date().toISOString()});
   }
-  let req=pendingPgStatusRequests.find(r=>r.month===currentMonth && r.pgId===pg.id);
-  const tr=trainerOf(session.trainerId);
-  if(req){
-    req.newStatus=newStatus;
-    req.requestedAt=new Date().toISOString();
-    req.trainerId=session.trainerId;
-    req.trainerName=tr?tr.name:(session.displayName||'Trainer');
-  }else{
-    pendingPgStatusRequests.push({
-      id:uid('pgsr'), month:currentMonth, pgId:pg.id, pgCode:pg.code||'', pgName:pg.name||'',
-      trainerId:session.trainerId, trainerName:tr?tr.name:(session.displayName||'Trainer'),
-      oldStatus, newStatus, requestedAt:new Date().toISOString()
-    });
-  }
-  await dbSet('pendingPgStatusRequests', pendingPgStatusRequests);
+  await pgStatusPersist_([{key:'pendingPgStatusRequests',value:state.requests}]);
+  if(context===pgStatusContext_())pendingPgStatusRequests=state.requests;
   return true;
 }
 function renderPendingPgStatusBell_(){
@@ -7855,38 +7966,42 @@ function renderPendingPgStatusBell_(){
 }
 function syncApprovedPgStatusToOnOff_(pg,newStatus){
   // Đồng bộ note sang roster On/Off để các thống kê/Target dựa trên roster cũng loại PG không còn "Đang làm".
-  const code=String(pg.code||'').trim();
+  const code=pgStatusCode_(pg.code);
   if(!code) return false;
   let changed=false;
   onoffRoster.forEach(r=>{
-    if(String(r.code||'').trim()===code){
+    if(pgStatusCode_(r.code)===code&&String(r.trainerId)===String(pg.trainerId)){
       r.devStatusNote = newStatus==='Đang làm' ? '' : newStatus;
+      r.statusChangedAt=pg.statusChangedAt||new Date().toISOString();
+      if(pg.statusApprovedAt)r.statusApprovedAt=pg.statusApprovedAt;
       changed=true;
     }
   });
   return changed;
 }
 async function approvePgStatusRequest_(id){
-  const req=pendingPgStatusRequests.find(r=>r.id===id);
-  if(!req || !isAdmin()) return;
-  const pg=pgs.find(p=>p.id===req.pgId);
-  if(pg){
-    pg.status=req.newStatus;
-    pg.statusChangedAt=new Date().toISOString();
-    pg.statusChangedBy=req.trainerName||req.trainerId||'Trainer';
-    pg.statusApprovedAt=new Date().toISOString();
-    await dbSet('pgs:'+currentMonth, pgs);
-    if(syncApprovedPgStatusToOnOff_(pg,req.newStatus)) await dbSet('onoffRoster', onoffRoster);
-  }
-  pendingPgStatusRequests=pendingPgStatusRequests.filter(r=>r.id!==id);
-  await dbSet('pendingPgStatusRequests', pendingPgStatusRequests);
-  renderPendingPgStatusModal_(); renderPendingPgStatusBell_(); renderOverviewAll(); renderKpiAll();
+  if(!isAdmin())return;
+  const context=pgStatusContext_();
+  try{
+    await pgStatusApplyChange_(null,null,null,null,id);
+    if(context!==pgStatusContext_())return;
+    renderPendingPgStatusModal_();renderPendingPgStatusBell_();renderOverviewAll();renderKpiAll();
+  }catch(error){pgStatusModalFeedback_(error.message||'Không duyệt được trạng thái. Hãy thử lại.');}
 }
 async function rejectPgStatusRequest_(id){
-  if(!isAdmin()) return;
-  pendingPgStatusRequests=pendingPgStatusRequests.filter(r=>r.id!==id);
-  await dbSet('pendingPgStatusRequests', pendingPgStatusRequests);
-  renderPendingPgStatusModal_(); renderPendingPgStatusBell_(); renderOverviewAll();
+  if(!isAdmin())return;
+  const context=pgStatusContext_(),month=currentMonth;
+  try{
+    if(monthLocked)throw Error('Tháng đã khoá. Hãy mở tháng trước khi xử lý yêu cầu.');
+    const state=await pgStatusReadState_(month);
+    if(context!==pgStatusContext_()||monthLocked)throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy thực hiện lại.');
+    const req=state.requests.find(r=>String(r.id)===String(id)&&r.month===month);if(!req)return;
+    state.requests=state.requests.filter(r=>String(r.id)!==String(id));
+    await pgStatusPersist_([{key:'pendingPgStatusRequests',value:state.requests}]);
+    if(context!==pgStatusContext_())return;
+    pendingPgStatusRequests=state.requests;
+    renderPendingPgStatusModal_();renderPendingPgStatusBell_();renderOverviewAll();renderKpiAll();
+  }catch(error){pgStatusModalFeedback_(error.message||'Không từ chối được yêu cầu. Hãy thử lại.');}
 }
 function renderPendingPgStatusModal_(){
   const box=document.getElementById('pendingPgStatusModalBody');
@@ -7895,13 +8010,13 @@ function renderPendingPgStatusModal_(){
   if(!items.length){ box.innerHTML='<div class="empty">Không có thay đổi trạng thái PG nào đang chờ duyệt.</div>'; return; }
   box.innerHTML=items.map(it=>`<div class="form-card" style="margin-bottom:12px;">
     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
-      <div><strong>${it.pgName||'—'}</strong> <span style="color:var(--muted);">(${it.pgCode||'—'})</span></div>
-      <div style="font-size:var(--cap);color:var(--muted);">${it.trainerName||'Trainer'} · ${it.requestedAt?new Date(it.requestedAt).toLocaleString('vi-VN'):''}</div>
+      <div><strong>${escapeHtml(it.pgName||'—')}</strong> <span style="color:var(--muted);">(${escapeHtml(it.pgCode||'—')})</span></div>
+      <div style="font-size:var(--cap);color:var(--muted);">${escapeHtml(it.trainerName||'Trainer')} · ${it.requestedAt?escapeHtml(new Date(it.requestedAt).toLocaleString('vi-VN')):''}</div>
     </div>
-    <div style="font-size:var(--cap);margin-bottom:10px;">Trạng thái: <span class="status-badge ${STATUS_CLASS[it.oldStatus]||''}">${it.oldStatus}</span> → <span class="status-badge ${STATUS_CLASS[it.newStatus]||''}">${it.newStatus}</span></div>
+    <div style="font-size:var(--cap);margin-bottom:10px;">Trạng thái: <span class="status-badge ${STATUS_CLASS[it.oldStatus]||''}">${escapeHtml(it.oldStatus)}</span> → <span class="status-badge ${STATUS_CLASS[it.newStatus]||''}">${escapeHtml(it.newStatus)}</span></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="primary" data-approve-pgsr="${it.id}">✓ Duyệt thay đổi</button>
-      <button class="secondary" data-reject-pgsr="${it.id}">Từ chối</button>
+      <button class="primary" data-approve-pgsr="${escapeHtml(it.id)}" ${monthLocked?'disabled':''}>✓ Duyệt thay đổi</button>
+      <button class="secondary" data-reject-pgsr="${escapeHtml(it.id)}" ${monthLocked?'disabled':''}>Từ chối</button>
     </div>
   </div>`).join('');
   box.querySelectorAll('[data-approve-pgsr]').forEach(b=>b.addEventListener('click',()=>approvePgStatusRequest_(b.getAttribute('data-approve-pgsr'))));
@@ -7947,11 +8062,16 @@ document.getElementById('savePgBtn').addEventListener('click', async ()=>{
     existing.shop=document.getElementById('pgShop').value.trim();
     existing.shopSize=document.getElementById('pgShopSize').value.trim();
     await dbSet('pgs:'+currentMonth, pgs);
-    await requestPgStatusChange_(existing, requestedStatus);
+    try{
+      if(!await requestPgStatusChange_(existing,requestedStatus))throw Error('Không gửi được yêu cầu đổi trạng thái.');
+    }catch(error){
+      const msg=document.getElementById('pgSaveMsg');msg.style.display='block';msg.style.color='var(--red)';msg.textContent=error.message;return;
+    }
   }
 
   resetPgForm(); renderOverviewAll(); renderPendingPgStatusBell_();
   const msg=document.getElementById('pgSaveMsg'); msg.style.display='block';
+  msg.style.color='var(--green-ok)';
   msg.textContent = trainer && existing && requestedStatus!==existing.status
     ? 'Đã gửi yêu cầu đổi trạng thái cho Admin duyệt. Trạng thái hiện tại chưa thay đổi.'
     : 'Đã lưu.';
@@ -7974,6 +8094,10 @@ function renderOnOffTrainerTable(){
   }).join('');
 }
 function renderOnOff(){
+  document.querySelectorAll('[data-onoffview]').forEach(btn=>{
+    const active=btn.getAttribute('data-onoffview')===onoffViewMode;
+    btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));
+  });
   renderRecruitAttritionChart();
   renderOnOffDetailList();
 }
@@ -8009,94 +8133,362 @@ function monthsDiff(d1,d2){
   if(!d1||!d2) return 0;
   return Math.max(0,(d2.getFullYear()-d1.getFullYear())*12 + (d2.getMonth()-d1.getMonth()));
 }
-function onoffRosterMatchesScope(rec){
-  const trainerVal = document.getElementById('ovFilterTrainer').value;
-  const regionVal = document.getElementById('ovFilterRegion').value;
-  if(trainerVal) return rec.trainerId===trainerVal;
-  if(regionVal){ return rec.area===regionVal; }
+const ONOFF_TENURE_GROUPS_ = [
+  {value:'lt3', label:'<3T', color:'#E9A23B'},
+  {value:'3to6', label:'3T–6T', color:'#E67F32'},
+  {value:'6to12', label:'6T–1N', color:'#D4574E'},
+  {value:'12to36', label:'1N–3N', color:'#A84668'},
+  {value:'gte36', label:'>3N', color:'#6C4B8C'},
+  {value:'unknown', label:'Chưa xác định', color:'#87938D'},
+];
+let onoffTenureFilter_ = '';
+let onoffChartView_ = 'trend';
+// Reuse the formatter; constructing it for every row/month blocks the UI.
+const ONOFF_VN_DATE_FORMAT_ = new Intl.DateTimeFormat('en-GB',{
+  timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'
+});
+function onoffEffectiveTenure_(){
+  return onoffChartView_==='tenure' ? onoffTenureFilter_ : '';
+}
+// Date-only values are calendar dates in Vietnam; instants are converted to Vietnam first.
+function onoffDateParts_(value){
+  if(value===null || value===undefined || value==='') return null;
+  let instant;
+  if(value instanceof Date){
+    if(!Number.isFinite(value.getTime())) return null;
+    instant = value;
+  } else {
+    const str = String(value).trim();
+    const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(Z|[+-]\d{2}:?\d{2})?)?$/i);
+    const vn = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+    if(!iso && !vn) return null;
+    const year = Number(iso ? iso[1] : vn[3]);
+    const month = Number(iso ? iso[2] : vn[2]);
+    const day = Number(iso ? iso[3] : vn[1]);
+    const time = iso || vn;
+    const hour = Number(time[4]||0), minute = Number(time[5]||0), second = Number(time[6]||0);
+    const leap = year%4===0 && (year%100!==0 || year%400===0);
+    const days = [31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+    if(year<1000 || month<1 || month>12 || day<1 || day>days[month-1] || hour>23 || minute>59 || second>59) return null;
+    if(!iso || !iso[7]) return {year,month,day};
+    instant = new Date(str);
+    if(!Number.isFinite(instant.getTime())) return null;
+  }
+  const parts = ONOFF_VN_DATE_FORMAT_.formatToParts(instant);
+  const part = type=>Number(parts.find(p=>p.type===type)?.value);
+  return {year:part('year'),month:part('month'),day:part('day')};
+}
+function onoffEventMonth_(value){
+  const p=onoffDateParts_(value);
+  return p ? `${p.year}-${pad(p.month)}` : '';
+}
+function onoffDateLabel_(value){
+  const p=onoffDateParts_(value);
+  return p ? `${pad(p.day)}/${pad(p.month)}/${p.year}` : '';
+}
+function onoffTenureMonthsBetween_(start,end){
+  if(!start || !end) return null;
+  const key=p=>p.year*10000+p.month*100+p.day;
+  if(key(end)<key(start)) return null;
+  let months=(end.year-start.year)*12+end.month-start.month;
+  // Clamp anniversaries to month-end (Jan 31 → Apr 30 is three full months).
+  const endMonthDays=new Date(Date.UTC(end.year,end.month,0)).getUTCDate();
+  if(end.day<Math.min(start.day,endMonthDays)) months--;
+  return months;
+}
+function onoffOffTenureMonths_(r){
+  return onoffTenureMonthsBetween_(onoffDateParts_(r.joinedAt),onoffDateParts_(r.offDate));
+}
+function onoffTenureBucketForMonths_(m){
+  return m===null ? 'unknown' : m<3 ? 'lt3' : m<6 ? '3to6' : m<12 ? '6to12' : m<36 ? '12to36' : 'gte36';
+}
+function onoffTenureBucket_(r){
+  return onoffTenureBucketForMonths_(onoffOffTenureMonths_(r));
+}
+function onoffMatchesTenure_(r,filter=onoffEffectiveTenure_()){
+  return !filter || onoffTenureBucket_(r)===filter;
+}
+function onoffTenureLabel_(){
+  return ONOFF_TENURE_GROUPS_.find(g=>g.value===onoffEffectiveTenure_())?.label || 'Tất cả thâm niên';
+}
+function onoffScope_(cards=false){
+  const selected=cards ? topCardScopeVals_() : {
+    trainerVal:document.getElementById('ovFilterTrainer')?.value||'',
+    regionVal:document.getElementById('ovFilterRegion')?.value||'',
+  };
+  const saleVal=document.getElementById('ovFilterSale')?.value||'';
+  const {trainerVal,regionVal}=selected;
+  const regionLabel=regionVal || (isTrainer() ? session.region : '') || 'Toàn Miền Trung';
+  const label=(trainerVal ? (trainerOf(trainerVal)?.name||'Trainer đang chọn') : regionLabel) + (saleVal ? ` · Sale: ${saleVal}` : '');
+  // Build a per-render lookup rather than scanning all personnel for every roster row.
+  const saleIndex=saleVal ? new Map() : null;
+  if(saleIndex) pgs.forEach(p=>{
+    if(p.brand!=='OPPO') return;
+    const code=normalizeCode_(p.code);
+    if(!code) return;
+    if(!saleIndex.has(code)) saleIndex.set(code,[]);
+    saleIndex.get(code).push(p);
+  });
+  return {trainerVal,regionVal,saleVal,label,saleIndex};
+}
+function onoffMatchesScope_(rec,scope,personnel=false){
+  const tr=trainerOf(rec.trainerId);
+  const region=normalizeAreaVN(personnel ? (tr?.region||rec.area) : (rec.area||tr?.region));
+  if(isTrainer()){
+    if(session.region){
+      if(region!==normalizeAreaVN(session.region)) return false;
+    } else if(!session.trainerId || rec.trainerId!==session.trainerId) return false;
+  }
+  if(scope.trainerVal && rec.trainerId!==scope.trainerVal) return false;
+  if(scope.regionVal && region!==normalizeAreaVN(scope.regionVal)) return false;
+  if(scope.saleVal){
+    if(personnel) return String(rec.sale||'').trim()===scope.saleVal;
+    const code=normalizeCode_(rec.code);
+    if(!code) return false;
+    // Roster has no Sale: use a unique OPPO personnel match with the same event owner.
+    const candidates=scope.saleIndex ? (scope.saleIndex.get(code)||[]) : pgs.filter(p=>p.brand==='OPPO' && normalizeCode_(p.code)===code);
+    const matches=candidates.filter(p=>rec.trainerId ? p.trainerId===rec.trainerId : normalizeAreaVN(trainerOf(p.trainerId)?.region||p.area)===region);
+    if(matches.length!==1 || String(matches[0].sale||'').trim()!==scope.saleVal) return false;
+  }
   return true;
 }
-function renderRecruitAttritionChart(){
-  const months = monthsFromJanTo(currentMonth);
-  document.getElementById('onoffTrendRange').textContent = `${monthLabel(months[0])} → ${monthLabel(months[months.length-1])}`;
-
-  const scoped = onoffRoster.filter(onoffRosterMatchesScope);
-  const totalRoster = scoped.length;
-
-  const onData = months.map(m => scoped.filter(r=> monthKeyOf(r.joinedAt? new Date(r.joinedAt):null)===m).length);
-  const offData = months.map(m => scoped.filter(r=> monthKeyOf(r.offDate? new Date(r.offDate):null)===m).length);
-  const onPctData = onData.map(c=> totalRoster ? Math.round((c/totalRoster)*1000)/10 : 0);
-  const offPctData = offData.map(c=> totalRoster ? Math.round((c/totalRoster)*1000)/10 : 0);
-
-  const regionVal = document.getElementById('ovFilterRegion').value;
-  const trainerVal = document.getElementById('ovFilterTrainer').value;
-  const scopeLabel = trainerVal ? (trainerOf(trainerVal)?trainerOf(trainerVal).name:'Trainer đang chọn') : (regionVal || 'Toàn Miền Trung');
-
-  // Ghi chú 2 dòng: Tỉ lệ tuyển mới (ON) & Tỉ lệ nghỉ việc (OFF) của THÁNG ĐANG CHỌN (currentMonth), theo đúng phạm vi Khu vực/Trainer đang lọc
-  const onCountThisMonth = scoped.filter(r=> monthKeyOf(r.joinedAt? new Date(r.joinedAt):null)===currentMonth).length;
-  const offCountThisMonth = scoped.filter(r=> monthKeyOf(r.offDate? new Date(r.offDate):null)===currentMonth).length;
-  const onPctThisMonth = totalRoster ? Math.round((onCountThisMonth/totalRoster)*1000)/10 : 0;
-  const offPctThisMonth = totalRoster ? Math.round((offCountThisMonth/totalRoster)*1000)/10 : 0;
-  const noteEl = document.getElementById('onoffAttritionNote');
-  if(noteEl){
-    noteEl.innerHTML = totalRoster
-      ? `Tỉ lệ tuyển mới (ON) — ${scopeLabel}, ${monthLabel(currentMonth)}: <strong>${onPctThisMonth}%</strong> (${onCountThisMonth}/${totalRoster} PGs)<br>
-         Tỉ lệ nghỉ việc (OFF) — ${scopeLabel}, ${monthLabel(currentMonth)}: <strong>${offPctThisMonth}%</strong> (${offCountThisMonth}/${totalRoster} PGs)`
-      : `Chưa có dữ liệu On/Off cho phạm vi "${scopeLabel}".`;
+function onoffRosterMatchesScope(rec){
+  return onoffMatchesScope_(rec,onoffScope_());
+}
+function onoffActiveCount_(scope){
+  return pgs.filter(p=>p.brand==='OPPO' && p.status==='Đang làm' && onoffMatchesScope_(p,scope,true)).length;
+}
+function buildOnOffChartModel_(scope,tenure='',month=currentMonth){
+  const months=monthsFromJanTo(month), year=Number(months[0].slice(0,4));
+  const onData=months.map(()=>0), offTotals=months.map(()=>0);
+  const counts=Object.fromEntries(ONOFF_TENURE_GROUPS_.map(g=>[g.value,months.map(()=>0)]));
+  // One pass. Parse each event date once and classify tenure once, not once per month/group.
+  onoffRoster.forEach(r=>{
+    if(!onoffMatchesScope_(r,scope)) return;
+    const joined=onoffDateParts_(r.joinedAt), off=onoffDateParts_(r.offDate);
+    if(joined && joined.year===year && joined.month<=months.length) onData[joined.month-1]++;
+    if(off && off.year===year && off.month<=months.length){
+      const i=off.month-1;
+      offTotals[i]++;
+      counts[onoffTenureBucketForMonths_(onoffTenureMonthsBetween_(joined,off))][i]++;
+    }
+  });
+  const groups=ONOFF_TENURE_GROUPS_.filter(g=>(!tenure || g.value===tenure) &&
+    (g.value!=='unknown' || tenure==='unknown' || counts.unknown.some(n=>n>0)));
+  const datasets=groups.map(g=>({
+    label:g.label,tenure:g.value,data:counts[g.value],
+    pctData:counts[g.value].map((n,i)=>offTotals[i] ? Math.round(n/offTotals[i]*1000)/10 : 0),
+    backgroundColor:g.color,borderColor:'#FFFFFF',borderWidth:1,stack:'off',maxBarThickness:52,
+  }));
+  const last=months.length-1;
+  return {months,activeCount:onoffActiveCount_(scope),onData,
+    onCount:onData[last],offCount:datasets.reduce((n,d)=>n+d.data[last],0),offTotals,datasets};
+}
+document.querySelectorAll('[data-onoffchartview]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    onoffChartView_=btn.dataset.onoffchartview==='tenure' ? 'tenure' : 'trend';
+    onoffDetailPage=1;
+    renderOnOff();
+  });
+});
+document.getElementById('onoffOffTenureFilter').addEventListener('change',e=>{
+  onoffTenureFilter_=ONOFF_TENURE_GROUPS_.some(g=>g.value===e.target.value) ? e.target.value : '';
+  onoffDetailPage=1;
+  renderOnOff();
+});
+// Historical headcount is read only when the tenure chart is opened. Keep aggregates,
+// not full personnel snapshots, and apply the current authorized scope on every render.
+const ONOFF_MONTHLY_PG_TTL_ = 60000;
+const onoffMonthlyPgCache_ = new Map();
+let onoffMonthlyPgTask_ = null;
+function onoffPgGroups_(rows){
+  const groups=new Map();
+  rows.forEach(p=>{
+    if(p.brand!=='OPPO' || p.status!=='Đang làm') return;
+    const trainerId=p.trainerId||'', area=normalizeAreaVN(trainerOf(trainerId)?.region||p.area)||'Chưa xác định';
+    const sale=String(p.sale||'').trim(), key=JSON.stringify([trainerId,area,sale]);
+    if(!groups.has(key)) groups.set(key,{trainerId,area,sale,count:0});
+    groups.get(key).count++;
+  });
+  return Array.from(groups.values());
+}
+function ensureOnOffMonthlyPgs_(months){
+  const now=Date.now();
+  const due=months.filter(month=>{
+    if(month===currentMonth) return false;
+    const cached=onoffMonthlyPgCache_.get(month);
+    return !cached || (!cached.pending && now-cached.fetchedAt>=ONOFF_MONTHLY_PG_TTL_);
+  });
+  if(!due.length) return onoffMonthlyPgTask_;
+  due.forEach(month=>{
+    const cached=onoffMonthlyPgCache_.get(month);
+    onoffMonthlyPgCache_.set(month,{status:cached?.status||'loading',groups:cached?.groups||[],fetchedAt:now,pending:true});
+  });
+  // dbGetMulti is read-only. Never use loadMonthlyData here: it creates missing months.
+  const task=Promise.resolve().then(()=>dbGetMulti(due.map(month=>'pgs:'+month))).then(values=>{
+    due.forEach(month=>{
+      const rows=values?.['pgs:'+month];
+      onoffMonthlyPgCache_.set(month,{
+        status:Array.isArray(rows) ? 'ready' : rows===null ? 'missing' : 'error',
+        groups:Array.isArray(rows) ? onoffPgGroups_(rows) : [],fetchedAt:Date.now(),pending:false,
+      });
+    });
+  }).catch(()=>{
+    due.forEach(month=>onoffMonthlyPgCache_.set(month,{status:'error',groups:[],fetchedAt:Date.now(),pending:false}));
+  }).finally(()=>{
+    if(onoffMonthlyPgTask_===task) onoffMonthlyPgTask_=null;
+    const panel=document.getElementById('panel-ov-onoff'), overview=document.getElementById('tab-overview');
+    if(onoffChartView_==='tenure' && panel?.classList.contains('active') && (!overview || overview.classList.contains('active'))){
+      renderRecruitAttritionChart();
+    }
+  });
+  onoffMonthlyPgTask_=task;
+  return task;
+}
+function onoffScopeRegions_(scope){
+  const tr=scope.trainerVal ? trainerOf(scope.trainerVal) : null;
+  let regions=scope.trainerVal ? [tr?.region] : scope.regionVal ? [scope.regionVal] : (config.regions||[]);
+  regions=Array.from(new Set(regions.filter(Boolean).map(normalizeAreaVN)));
+  if(isTrainer()){
+    const own=normalizeAreaVN(session.region||trainerOf(session.trainerId)?.region);
+    regions=regions.filter(region=>region===own);
   }
-  // 2 thẻ tổng quan số liệu On/Off của đúng tháng đang xem (currentMonth) — RIÊNG cho thẻ trên cùng,
-  // Trainer mặc định chỉ thấy của mình (topCardOnoffRoster), khác với ghi chú/biểu đồ dưới (luôn theo dropdown).
-  const cardScoped = topCardOnoffRoster();
-  const cardTotalRoster = cardScoped.length;
-  const cardOnCount = cardScoped.filter(r=> monthKeyOf(r.joinedAt? new Date(r.joinedAt):null)===currentMonth).length;
-  const cardOffCount = cardScoped.filter(r=> monthKeyOf(r.offDate? new Date(r.offDate):null)===currentMonth).length;
-  const cardOnPct = cardTotalRoster ? Math.round((cardOnCount/cardTotalRoster)*1000)/10 : 0;
-  const cardOffPct = cardTotalRoster ? Math.round((cardOffCount/cardTotalRoster)*1000)/10 : 0;
-  const cardScopeLabel = topCardScopeLabel_();
-  document.getElementById('onoffSummaryMonthLabel1').textContent = monthLabel(currentMonth);
-  document.getElementById('onoffSummaryMonthLabel2').textContent = monthLabel(currentMonth);
-  document.getElementById('onoffSummaryOnCount').textContent = cardOnCount;
-  document.getElementById('onoffSummaryOffCount').textContent = cardOffCount;
-  document.getElementById('onoffSummaryOnFrac').textContent = cardTotalRoster ? `${cardOnPct}% trên tổng ${cardTotalRoster} PGs (${cardScopeLabel})` : `Chưa có dữ liệu (${cardScopeLabel})`;
-  document.getElementById('onoffSummaryOffFrac').textContent = cardTotalRoster ? `${cardOffPct}% trên tổng ${cardTotalRoster} PGs (${cardScopeLabel})` : `Chưa có dữ liệu (${cardScopeLabel})`;
+  return regions;
+}
+function onoffMonthlyPgStats_(scope,month){
+  const cached=month===currentMonth ? {status:'ready',groups:onoffPgGroups_(pgs)} : onoffMonthlyPgCache_.get(month);
+  if(cached?.status!=='ready') return {status:cached?.status||'loading',total:null,regions:[]};
+  const totals=new Map(onoffScopeRegions_(scope).map(region=>[region,0]));
+  let total=0;
+  cached.groups.forEach(group=>{
+    if(!onoffMatchesScope_(group,scope,true)) return;
+    const region=normalizeAreaVN(trainerOf(group.trainerId)?.region||group.area)||'Chưa xác định';
+    totals.set(region,(totals.get(region)||0)+group.count);
+    total+=group.count;
+  });
+  return {status:'ready',total,regions:Array.from(totals,([region,count])=>({region,count})).sort((a,b)=>a.region.localeCompare(b.region,'vi'))};
+}
+function buildOnOffRateModel_(scope,model){
+  const pgStats=model.months.map(month=>onoffMonthlyPgStats_(scope,month));
+  const offCounts=model.months.map((_,i)=>model.datasets.reduce((sum,d)=>sum+d.data[i],0));
+  const percentages=pgStats.map((stats,i)=>stats.status==='ready' && stats.total>0 ? Math.round(offCounts[i]/stats.total*1000)/10 : null);
+  return {pgStats,offCounts,percentages};
+}
+function onoffRateTooltip_(rate,model,index){
+  const stats=rate.pgStats[index];
+  if(!stats || stats.status!=='ready'){
+    const state=stats?.status==='loading' ? 'Đang tải' : stats?.status==='error' ? 'Không tải được' : 'Chưa có';
+    return [`${state} dữ liệu PGs ${monthLabel(model.months[index])}.`,'Chưa tính tỷ lệ OFF cho tháng này.'];
+  }
+  return [`OFF đang chọn: ${rate.offCounts[index]} PGs`,`PGs đang làm: ${stats.total} PGs`,
+    'PGs đang làm theo khu vực:',...stats.regions.map(r=>`${r.region}: ${r.count} PGs`),
+    ...(stats.total===0 ? ['Không tính tỷ lệ khi tổng PGs bằng 0.'] : [])];
+}
 
+function renderRecruitAttritionChart(){
+  const tenureMode=onoffChartView_==='tenure', effectiveTenure=onoffEffectiveTenure_();
+  document.getElementById('onoffTenureControls').hidden=!tenureMode;
+  document.getElementById('onoffChartTitle').textContent=tenureMode ? 'Nhân sự OFF theo thâm niên' : 'Biến động nhân sự ON/OFF';
+  document.querySelectorAll('[data-onoffchartview]').forEach(btn=>{
+    const active=btn.dataset.onoffchartview===onoffChartView_;
+    btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));
+  });
+  const scope=onoffScope_(), model=buildOnOffChartModel_(scope,effectiveTenure);
+  const {months}=model;
+  if(tenureMode) ensureOnOffMonthlyPgs_(months);
+  const rate=tenureMode ? buildOnOffRateModel_(scope,model) : null;
+  const pct=(n,total)=>total ? `${Math.round(n/total*1000)/10}%` : '—';
+  const tenureLabel=onoffTenureLabel_();
+  document.getElementById('onoffTrendRange').textContent=`${monthLabel(months[0])} → ${monthLabel(months[months.length-1])}`;
+  const noteEl=document.getElementById('onoffAttritionNote');
+  if(noteEl){
+    noteEl.textContent=tenureMode
+      ? `${monthLabel(currentMonth)} · ${scope.label} · ${tenureLabel}: ${model.offCount} OFF / ${model.activeCount} PGs OPPO đang làm` +
+        (model.activeCount ? ` = ${pct(model.offCount,model.activeCount)}.` : '. Chưa có PGs đang làm để tính tỷ lệ.') +
+        ' Cột: số PGs OFF theo thâm niên tại ngày nghỉ. Đường: OFF đang chọn / PGs đang làm của đúng từng tháng (trục % bên phải). Rê chuột để xem tổng PGs theo khu vực.'
+      : `${monthLabel(currentMonth)} · ${scope.label}: ON ${model.onCount} (${pct(model.onCount,model.activeCount)}) · OFF ${model.offCount} (${pct(model.offCount,model.activeCount)}). ` +
+        `Tỷ lệ trên biểu đồ tính trên ${model.activeCount} PGs OPPO đang làm của ${monthLabel(currentMonth)} trong phạm vi đang chọn.`;
+  }
+  const rateStatus=document.getElementById('onoffRateStatus');
+  if(rateStatus){
+    rateStatus.hidden=!tenureMode;
+    if(tenureMode){
+      const pending=months.filter((_,i)=>rate.pgStats[i].status==='loading');
+      const missing=months.filter((_,i)=>rate.pgStats[i].status==='missing');
+      const errors=months.filter((_,i)=>rate.pgStats[i].status==='error');
+      const zero=months.filter((_,i)=>rate.pgStats[i].status==='ready' && rate.pgStats[i].total===0);
+      const short=list=>list.map(m=>m.slice(5)).join(', ');
+      rateStatus.textContent=[
+        pending.length ? 'Đang tải dữ liệu PGs theo tháng…' : '',
+        missing.length ? `Chưa có dữ liệu PGs tháng ${short(missing)}: để trống tỷ lệ.` : '',
+        errors.length ? `Không tải được dữ liệu PGs tháng ${short(errors)}: chưa tính tỷ lệ.` : '',
+        zero.length ? `Tháng ${short(zero)} có 0 PGs đang làm: chưa tính tỷ lệ.` : '',
+      ].filter(Boolean).join(' ');
+    }
+  }
+  // Reuse the model when cards and chart have the same scope; no persisted/cache data involved.
+  const cardScope=onoffScope_(true);
+  const sameScope=['trainerVal','regionVal','saleVal'].every(k=>cardScope[k]===scope[k]);
+  const card=sameScope ? model : buildOnOffChartModel_(cardScope,effectiveTenure);
+  document.getElementById('onoffSummaryMonthLabel1').textContent=monthLabel(currentMonth);
+  document.getElementById('onoffSummaryMonthLabel2').textContent=monthLabel(currentMonth);
+  document.getElementById('onoffSummaryOffTenureLabel').textContent=effectiveTenure ? ` · ${tenureLabel}` : '';
+  document.getElementById('onoffSummaryOnCount').textContent=card.onCount;
+  document.getElementById('onoffSummaryOffCount').textContent=card.offCount;
+  const frac=n=>card.activeCount ? `${pct(n,card.activeCount)} trên tổng ${card.activeCount} PGs OPPO đang làm (${cardScope.label})` : `0 PGs OPPO đang làm — chưa tính tỷ lệ (${cardScope.label})`;
+  document.getElementById('onoffSummaryOnFrac').textContent=frac(card.onCount);
+  document.getElementById('onoffSummaryOffFrac').textContent=frac(card.offCount);
+  const datasets=tenureMode ? model.datasets.map(d=>({...d,yAxisID:'y',order:2})) : [
+    {label:'On (tuyển mới)',data:model.onData,borderColor:'#016C38',backgroundColor:'#016C38',tension:0.25,fill:false,pointRadius:4,datalabels:{align:'bottom',offset:6}},
+    {label:'Off (nghỉ việc)',data:model.offTotals,borderColor:'#B23A32',backgroundColor:'#B23A32',tension:0.25,fill:false,pointRadius:4,datalabels:{align:'top',offset:6}},
+  ].map(d=>({...d,pctData:d.data.map(n=>model.activeCount ? Math.round(n/model.activeCount*1000)/10 : 0)}));
+  if(tenureMode){
+    datasets.push({
+      type:'line',label:'Tỷ lệ OFF',isOffRate:true,data:rate.percentages,yAxisID:'yOffRate',order:0,
+      borderColor:'#125E85',backgroundColor:'#125E85',borderWidth:2.5,fill:false,tension:0.2,
+      pointRadius:4,pointHoverRadius:6,pointBackgroundColor:'#FFFFFF',pointBorderWidth:2,
+      spanGaps:false,clip:false,
+      datalabels:{anchor:'end',align:'top',offset:ctx=>ctx.chart.width<520 ? (ctx.dataIndex%2 ? 17 : 3) : 5,color:'#125E85',backgroundColor:'#FFFFFF',
+        borderRadius:4,padding:3,font:{size:10,weight:'bold'},
+        formatter:v=>v===null || !Number.isFinite(v) ? '' : v.toLocaleString('vi-VN',{maximumFractionDigits:1})+'%'},
+    });
+  }
   if(chartRecruitAttritionInstance) chartRecruitAttritionInstance.destroy();
-  const ctx = document.getElementById('chartRecruitAttrition');
-  if(!onoffRoster.length) return;
-  chartRecruitAttritionInstance = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels: months.map(m=>monthLabel(m)),
-      datasets:[
-        { label:'On (tuyển mới)', data:onData, pctData:onPctData, borderColor:'#016C38', backgroundColor:'#016C38', tension:0.25, fill:false, pointRadius:4,
-          datalabels:{ align:'bottom', offset:6 } },
-        { label:'Off (nghỉ việc)', data:offData, pctData:offPctData, borderColor:'#B23A32', backgroundColor:'#B23A32', tension:0.25, fill:false, pointRadius:4,
-          datalabels:{ align:'top', offset:6 } },
-      ]
-    },
+  chartRecruitAttritionInstance=new Chart(document.getElementById('chartRecruitAttrition'),{
+    type:tenureMode ? 'bar' : 'line',
+    data:{labels:months.map(monthLabel),datasets},
     options:{
-      responsive:true, maintainAspectRatio:false, clip:false,
-      layout:{ padding:{ top:26, right:16, bottom:22 } },
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      layout:{padding:{top:tenureMode?30:26,right:16,bottom:tenureMode?0:22}},
       plugins:{
-        legend:{ position:'bottom', labels:{font:{size:9},boxWidth:12} },
-        datalabels:{
-          align:'top', offset:4, clamp:true, color:'#333', font:{size:9,weight:'bold'},
-          formatter:(v,ctx)=>{ const pct=ctx.dataset.pctData[ctx.dataIndex]; return pct>0 ? pct+'%' : ''; }
-        },
-        tooltip:{
-          callbacks:{
-            label:(ctx)=>{
-              const pct = ctx.dataset.pctData ? ctx.dataset.pctData[ctx.dataIndex] : 0;
-              return `${ctx.dataset.label}: ${ctx.parsed.y} PGs (${pct}%)`;
-            }
-          }
-        }
+        legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:16}},
+        datalabels:tenureMode
+          ? {color:'#FFFFFF',font:{size:11,weight:'bold'},anchor:'center',align:'center',clamp:true,formatter:v=>v>0?v:''}
+          : {color:'#333333',font:{size:9,weight:'bold'},clamp:true,formatter:(v,ctx)=>{
+              const value=ctx.dataset.pctData[ctx.dataIndex];return value>0 ? value+'%' : '';
+            }},
+        tooltip:{bodyFont:{size:11},callbacks:{
+          label:ctx=>ctx.dataset.isOffRate
+            ? `Tỷ lệ OFF: ${ctx.parsed.y.toLocaleString('vi-VN',{maximumFractionDigits:1})}%`
+            : tenureMode
+            ? `${ctx.dataset.label}: ${ctx.parsed.y} PGs (${ctx.dataset.pctData[ctx.dataIndex]}% tổng OFF tháng)`
+            : `${ctx.dataset.label}: ${ctx.parsed.y} PGs (${model.activeCount ? ctx.dataset.pctData[ctx.dataIndex]+'%' : 'chưa có mẫu số'})`,
+          afterBody:items=>tenureMode && items.length ? onoffRateTooltip_(rate,model,items[0].dataIndex) : [],
+          footer:items=>tenureMode && items.length ? `Tổng OFF tháng: ${model.offTotals[items[0].dataIndex]} PGs` : '',
+        }},
       },
       scales:{
-        x:{ ticks:{font:{size:9}}, grid:{display:false} },
-        y:{ beginAtZero:true, suggestedMax: Math.ceil(Math.max(1, ...onData, ...offData)*1.3), ticks:{stepSize:1,font:{size:9}}, grid:{color:'#EDF1EF'} }
-      }
-    }
+        x:{stacked:tenureMode,ticks:{font:{size:10}},grid:{display:false}},
+        y:{stacked:tenureMode,beginAtZero:true,
+          suggestedMax:Math.max(1,...months.map((_,i)=>tenureMode ? model.datasets.reduce((sum,d)=>sum+d.data[i],0) : Math.max(...datasets.map(d=>d.data[i]))))*(tenureMode?1:1.3),
+          title:{display:tenureMode,text:'Số PGs OFF'},ticks:{precision:0,font:{size:10}},grid:{color:'#EDF1EF'}},
+        ...(tenureMode ? {yOffRate:{position:'right',stacked:false,beginAtZero:true,
+          suggestedMax:Math.max(5,...rate.percentages.filter(v=>v!==null).map(v=>v*1.3)),
+          title:{display:true,text:'Tỷ lệ OFF (%)',color:'#125E85'},
+          ticks:{font:{size:10},color:'#125E85',callback:v=>Number(v).toLocaleString('vi-VN')+'%'},grid:{drawOnChartArea:false}}} : {}),
+      },
+    },
   });
 }
 
@@ -8147,15 +8539,16 @@ document.getElementById('onoffDetailRegionFilter').addEventListener('change', (e
   renderOnOffDetailList();
 });
 function visibleOnOffDetailList(){
-  let scoped = onoffRoster.filter(onoffRosterMatchesScope);
-  if(onoffDetailRegion) scoped = scoped.filter(r=> (r.area||'').trim()===onoffDetailRegion);
+  const scope=onoffScope_();
+  let scoped = onoffRoster.filter(r=>onoffMatchesScope_(r,scope));
+  if(onoffDetailRegion) scoped = scoped.filter(r=> normalizeAreaVN(r.area||trainerOf(r.trainerId)?.region)===normalizeAreaVN(onoffDetailRegion));
   let list;
   if(onoffViewMode==='On'){
-    list = scoped.filter(r=> !!r.joinedAt);
-    if(onoffDetailMonth) list = list.filter(r=> monthKeyOf(r.joinedAt?new Date(r.joinedAt):null)===onoffDetailMonth);
+    list = scoped.filter(r=> !!onoffEventMonth_(r.joinedAt));
+    if(onoffDetailMonth) list = list.filter(r=> onoffEventMonth_(r.joinedAt)===onoffDetailMonth);
   } else {
-    list = scoped.filter(r=> !!r.offDate);
-    if(onoffDetailMonth) list = list.filter(r=> monthKeyOf(r.offDate?new Date(r.offDate):null)===onoffDetailMonth);
+    list = scoped.filter(r=> !!onoffEventMonth_(r.offDate) && onoffMatchesTenure_(r));
+    if(onoffDetailMonth) list = list.filter(r=> onoffEventMonth_(r.offDate)===onoffDetailMonth);
   }
   return list;
 }
@@ -8181,15 +8574,16 @@ function renderOnOffDetailList(){
 
   // Tổng số On/Off của đúng tháng đang xem (ưu tiên tháng đang lọc, nếu "Tất cả các tháng" thì lấy tháng đang chọn ở đầu trang)
   const targetMonth = onoffDetailMonth || currentMonth;
-  let scopedForSummary = onoffRoster.filter(onoffRosterMatchesScope);
-  if(onoffDetailRegion) scopedForSummary = scopedForSummary.filter(r=> (r.area||'').trim()===onoffDetailRegion);
-  const onCountMonth = scopedForSummary.filter(r=> r.joinedAt && monthKeyOf(new Date(r.joinedAt))===targetMonth).length;
-  const offCountMonth = scopedForSummary.filter(r=> r.offDate && monthKeyOf(new Date(r.offDate))===targetMonth).length;
+  const scope=onoffScope_();
+  let scopedForSummary = onoffRoster.filter(r=>onoffMatchesScope_(r,scope));
+  if(onoffDetailRegion) scopedForSummary = scopedForSummary.filter(r=> normalizeAreaVN(r.area||trainerOf(r.trainerId)?.region)===normalizeAreaVN(onoffDetailRegion));
+  const onCountMonth = scopedForSummary.filter(r=> onoffEventMonth_(r.joinedAt)===targetMonth).length;
+  const offCountMonth = scopedForSummary.filter(r=> onoffEventMonth_(r.offDate)===targetMonth && onoffMatchesTenure_(r)).length;
   const summaryEl = document.getElementById('onoffDetailSummary');
   if(summaryEl){
     summaryEl.textContent = onoffViewMode==='On'
       ? `Tổng số ON ${monthLabel(targetMonth)}: ${onCountMonth}`
-      : `Tổng số OFF ${monthLabel(targetMonth)}: ${offCountMonth}`;
+      : `Tổng số OFF ${monthLabel(targetMonth)}${onoffEffectiveTenure_() ? " · "+onoffTenureLabel_() : ""}: ${offCountMonth}`;
   }
 
   const isOffMode = onoffViewMode==='Off';
@@ -8206,7 +8600,7 @@ function renderOnOffDetailList(){
   if(alertEl){
     if(isOffMode){
       // Chỉ tính số chưa note của ĐÚNG tháng đang xem — không cộng dồn các tháng trước
-      const missing = fullList.filter(r=> monthKeyOf(r.offDate?new Date(r.offDate):null)===targetMonth && !r.noteConfirmed);
+      const missing = fullList.filter(r=> onoffEventMonth_(r.offDate)===targetMonth && !r.noteConfirmed);
       if(missing.length>0){
         const trainerNames = Array.from(new Set(missing.map(r=>{
           const tr = trainerOf(r.trainerId);
@@ -8237,7 +8631,7 @@ function renderOnOffDetailList(){
   body.innerHTML = list.map(r=>{
     const joined = r.joinedAt ? new Date(r.joinedAt) : null;
     const off = r.offDate ? new Date(r.offDate) : null;
-    const seniority = onoffViewMode==='On' ? monthsDiff(joined, now) : monthsDiff(joined, off);
+    const seniority = onoffViewMode==='On' ? monthsDiff(joined, now) : onoffOffTenureMonths_(r);
 
     // Trainer/Kênh/Shop: với ON — tra trực tiếp từ data Nhân sự (pgs) hiện tại theo Code (luôn mới nhất);
     // với OFF — dùng đúng dữ liệu đã tham chiếu lúc import (bắt đầu từ tháng nhập liệu, tự lùi về tháng trước nếu cần).
@@ -8280,7 +8674,7 @@ function renderOnOffDetailList(){
       </td>`;
     }
     const delCell = isAdmin() ? `<td><button class="danger" data-oo-del="${r.id}">Xóa</button></td>` : '';
-    return `<tr><td>${r.code||'—'}</td><td><strong>${r.name}</strong></td><td>${r.area||'—'}</td><td>${trainerName}</td><td>${channelName}</td><td>${shopName}</td><td>${shopSizeName}</td><td>${seniority} tháng</td>${noteCell}${delCell}</tr>`;
+    return `<tr><td>${r.code||'—'}</td><td><strong>${r.name}</strong></td><td>${r.area||'—'}</td><td>${trainerName}</td><td>${channelName}</td><td>${shopName}</td><td>${shopSizeName}</td><td>${seniority===null ? 'Chưa xác định' : seniority+' tháng'}</td>${noteCell}${delCell}</tr>`;
   }).join('');
 
   body.querySelectorAll('.onoff-note-check').forEach(chk=>{
@@ -8339,14 +8733,14 @@ function renderOnOffDetailList(){
 document.getElementById('exportOnOffDetailBtn').addEventListener('click', ()=>{
   let list = visibleOnOffDetailList();
   if(isTrainer() && session.region){
-    list = list.filter(r=> r.area===session.region);
+    list = list.filter(r=> normalizeAreaVN(r.area||trainerOf(r.trainerId)?.region)===normalizeAreaVN(session.region));
   }
   if(list.length===0){ alert('Không có dữ liệu để export.'); return; }
   const now = new Date();
   const rows = list.map(r=>{
     const joined = r.joinedAt ? new Date(r.joinedAt) : null;
     const off = r.offDate ? new Date(r.offDate) : null;
-    const seniority = onoffViewMode==='On' ? monthsDiff(joined, now) : monthsDiff(joined, off);
+    const seniority = onoffViewMode==='On' ? monthsDiff(joined, now) : onoffOffTenureMonths_(r);
     let trainerName = '—', channelName = '', shopName = '', shopSizeName = '';
     if(onoffViewMode==='On'){
       const matchedPg = findPgByCode_(pgs, r.code);
@@ -8370,10 +8764,10 @@ document.getElementById('exportOnOffDetailBtn').addEventListener('click', ()=>{
       'Kênh': channelName,
       'Shop': shopName,
       'Size shop': shopSizeName,
-      'Thâm niên (tháng)': seniority,
+      'Thâm niên (tháng)': seniority===null ? '' : seniority,
       'Trạng thái': r.status||'',
-      'Ngày tuyển (Joined at)': joined ? joined.toLocaleDateString('vi-VN') : '',
-      'Ngày nghỉ (Off date)': off ? off.toLocaleDateString('vi-VN') : '',
+      'Ngày tuyển (Joined at)': onoffDateLabel_(r.joinedAt),
+      'Ngày nghỉ (Off date)': onoffDateLabel_(r.offDate),
       'Lý do nghỉ việc (Trainer note)': r.trainerNote||'',
       'Đã ghi nhận': r.noteConfirmed?'Có':'Chưa',
     };
@@ -9268,9 +9662,12 @@ document.getElementById('exportBrandShopBtn').addEventListener('click', ()=>{
 });
 
 function renderOverviewAll(){
+  const panel=document.querySelector('#tab-overview > .panel.active')?.id || 'panel-ov-nhansu';
+  if(panel==='panel-ov-onoff'){ renderOnOff(); return; }
+  if(panel==='panel-ov-hang'){ renderBrandStats(); return; }
   populatePgTrainerSelect();
-  renderNhanSuBreakdown(); renderPgOppoTable();
-  renderOnOff(); renderBrandStats();
+  renderNhanSuBreakdown();
+  renderPgOppoTable();
 }
 
 /* ============ TIẾN ĐỘ KPI (theo tháng) ============ */
@@ -11749,50 +12146,17 @@ function rerenderNoiboLists_(){
   renderNewPgList25_();
   renderSurveyForm();
 }
-/* Ô "Trạng thái" cho từng PG mới trong 2 bảng PGs mới — Trainer đổi trực tiếp trạng thái PG (Đang làm/
-   THAI SẢN/CODE ĐẠI LÝ/OFF), có xác nhận bước 2 trước khi áp dụng. Đồng bộ 2 nơi:
-   1) pgs[].status (trạng thái thật của PG, hiển thị khắp app)
-   2) onoffRoster[].devStatusNote (giữ nguyên cơ chế cũ: khác "Đang làm" thì tự loại khỏi Target Coaching PGs mới)
-   PG vừa đổi được đánh dấu statusChangedAt để tô đỏ + đưa lên đầu danh sách. */
+/* PGs mới dùng cùng ô trạng thái và quy trình duyệt với PGs 0★/1★ và Tổng quan. */
 function devStatusNoteCellHtml_(r, canEdit){
-  const matchedPg = pgs.find(p=>p.code && r.code && p.code===r.code);
-  const cur = matchedPg ? matchedPg.status : (r.devStatusNote || 'Đang làm');
-  const statuses = ['Đang làm','THAI SẢN','CODE ĐẠI LÝ','OFF (chưa cắt Center)'];
-  return `<select class="dev-status-note-select" data-oo-id="${r.id}" style="width:100%;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:7.5pt;" ${canEdit?'':'disabled'}>
-    ${statuses.map(s=>`<option value="${s}" ${cur===s?'selected':''}>${s}</option>`).join('')}
-  </select>`;
+  return statusSelectHtml_(pgStatusPgForRoster_(r),canEdit,r);
 }
 function wireDevStatusNoteSelects_(box){
-  box.querySelectorAll('.dev-status-note-select').forEach(sel=>{
-    sel.addEventListener('change', async ()=>{
-      const rec = onoffRoster.find(r=>r.id===sel.getAttribute('data-oo-id'));
-      if(!rec) return;
-      const matchedPg = pgs.find(p=>p.code && rec.code && p.code===rec.code);
-      const newStatus = sel.value;
-      const oldStatus = matchedPg ? matchedPg.status : (rec.devStatusNote || 'Đang làm');
-      if(newStatus===oldStatus) return;
-      const ok = await showConfirm(`Xác nhận đổi trạng thái của "${rec.name||rec.code||'PG này'}" (${rec.code||'—'}) từ "${oldStatus}" sang "${newStatus}"?`);
-      if(!ok){ sel.value = oldStatus; return; }
-      rec.devStatusNote = (newStatus==='Đang làm') ? '' : newStatus;
-      rec.statusChangedAt = new Date().toISOString();
-      if(matchedPg){ matchedPg.status = newStatus; matchedPg.statusChangedAt = rec.statusChangedAt; await dbSet('pgs:'+currentMonth, pgs); }
-      await dbSet('onoffRoster', onoffRoster);
-      // Target Coaching PGs mới cần đổi do note này — KHÔNG tự áp dụng ngay, gửi yêu cầu chờ Admin duyệt.
-      if(rec.trainerId) await requestTargetAdjustment_(rec.trainerId, rec.code, rec.name, newStatus);
-      renderKpiCategory('noibo');
-      renderOverviewAll();
-      renderPendingTargetBell_();
-    });
-  });
+  wirePgStatusSelects_(box);
 }
 /* Trạng thái hiệu lực của 1 bản ghi PGs mới (onoffRoster): ưu tiên trạng thái thật của PG (pgs[]),
    nếu chưa khớp được PG nào thì fallback theo devStatusNote (hoặc "Đang làm" nếu chưa note gì). */
 function effectivePgMoiStatus_(r){
-  // ƯU TIÊN trạng thái Trainer note ở bảng PGs Dev (devStatusNote) — đây là cập nhật mới nhất, chính xác nhất.
-  if(r.devStatusNote && String(r.devStatusNote).trim()) return r.devStatusNote;
-  // Nếu không có note riêng -> lấy trạng thái từ Danh sách Nhân sự chính (pgs) theo Code.
-  const matchedPg = pgs.find(p=>p.code && r.code && p.code===r.code);
-  return matchedPg ? matchedPg.status : 'Đang làm';
+  return pgStatusCurrent_(pgStatusPgForRoster_(r),r);
 }
 function renderSurveyFormPagination_(totalItems){
   const box = document.getElementById('surveyFormPagination');
@@ -11841,7 +12205,7 @@ function renderNewPgList(){
   const now = new Date();
   const lateList = [];
   let html = '';
-  const canEditNote = isAdmin() || isTrainer();
+  const canEditNote = (isAdmin() || isTrainer()) && !monthLocked;
   // Tính cảnh báo trễ TRÊN TOÀN BỘ danh sách đã lọc (không phải chỉ trang đang xem) — để cảnh báo đầu
   // trang luôn đúng, không phụ thuộc đang xem trang mấy.
   newPgs.forEach(r=>{
@@ -11949,7 +12313,7 @@ function renderNewPgList25_(){
   const now = new Date();
   const lateList = [];
   let html = '';
-  const canEditNote = isAdmin() || isTrainer();
+  const canEditNote = (isAdmin() || isTrainer()) && !monthLocked;
   const tableRows = newPgs.map((r,idx)=>{
     const tr = config.trainers.find(t=>t.id===r.trainerId);
     const cnt = surveyCountForCodeNew(r.code);
@@ -14051,6 +14415,7 @@ document.querySelectorAll('[data-sub]').forEach(btn=>{
     group.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-'+btn.dataset.sub).classList.add('active');
+    if(group.id==='tab-overview') renderOverviewAll();
   });
 });
 document.querySelectorAll('[data-kpi]').forEach(btn=>{
