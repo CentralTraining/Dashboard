@@ -1163,6 +1163,48 @@
     #panel-ov-onoff .onoff-tenure-filters select{flex:1 1 100%!important;width:100%!important;min-width:0!important;}
     #panel-ov-onoff .onoff-tenure-filters>span{flex:1 1 100%;}
   }
+
+  .so-shop-result{text-align:center;white-space:nowrap;}
+  .so-stage{display:inline-block;padding:4px 9px;border-radius:999px;font-size:var(--tag);font-weight:800;white-space:nowrap;}
+  .so-stage-high{background:#DFF3E8;color:#087841;}.so-stage-mid{background:#E4EFF8;color:#236393;}
+  .so-stage-low{background:#FFF1D9;color:#A56608;}.so-stage-none{background:#EFF3F1;color:#64766D;}
+  #soShopSheetLinkBtn{white-space:normal;max-width:100%;}
+  .scope-filters.so-filter-bar{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:flex-end!important;gap:12px;max-width:100%;overflow-x:auto;}
+  .so-filter-bar .so-filter-fields{display:grid;grid-template-columns:1.3fr 1fr 1.1fr .65fr 1.1fr;gap:10px;flex:1 1 auto;min-width:0;}
+  .so-filter-bar .so-filter-field{display:flex;flex-direction:column;gap:6px;min-width:0;margin:0;}
+  .so-filter-bar .so-filter-field .scope-label{display:block;white-space:nowrap;}
+  .scope-filters.so-filter-bar .so-filter-field select,.scope-filters.so-filter-bar .so-filter-field input{flex:none!important;box-sizing:border-box;width:100%!important;min-width:0!important;max-width:100%;height:38px;margin:0;padding:7px 10px;border:1.5px solid #9FD8CB;border-radius:10px;font-family:inherit;font-size:var(--cap);background:#fff;}
+  .so-filter-bar .so-filter-count{flex:0 0 auto;white-space:nowrap;padding-bottom:10px;}
+  .so-stats-pages{display:flex;gap:8px;margin-bottom:18px;}
+  .so-stats-pages button{padding:9px 16px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--green-dark);font-family:inherit;font-size:var(--cap);font-weight:600;cursor:pointer;}
+  .so-stats-pages button.active{background:var(--green-dark);border-color:var(--green-dark);color:#fff;}
+  .so-stats-page[hidden]{display:none!important;}
+  #soMilestonePage .so-filter-fields{grid-template-columns:1.15fr 1fr 1.3fr .85fr 1.1fr;}
+  .so-milestone-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px;}
+  .so-milestone-head h3{margin:0 0 6px;color:var(--green-dark);font-size:var(--h3);}
+  .so-milestone-head p{margin:0;color:var(--muted);font-size:var(--cap);line-height:1.6;}
+  .so-milestone-period{flex:0 0 auto;background:#E7F4ED;border:1px solid #CCE5D7;border-radius:9px;padding:7px 10px;color:#075D37;font-size:var(--cap);font-weight:700;white-space:nowrap;}
+  #soMilestoneCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px;}
+  #soMilestoneCards .kpi-card{padding:15px 18px;border-top:3px solid var(--so-stage-color,#087B4C);min-width:0;}
+  #soMilestoneCards .label{font-size:11px!important;}
+  #soMilestoneCards .value{color:var(--so-stage-color,#087B4C);font-size:25px!important;}
+  #soMilestoneCards .frac{margin-top:6px;color:var(--muted);font-size:12px!important;}
+  .so-milestone-note{font-size:var(--cap);color:var(--muted);line-height:1.7;margin:10px 0 16px;}
+  #soMilestoneTable{width:100%;min-width:760px;table-layout:auto;font-size:var(--cap);}
+  #soMilestoneTable th:first-child,#soMilestoneTable td:first-child{white-space:nowrap;}
+  #soMilestoneTable th:not(:first-child),#soMilestoneTable td:not(:first-child){text-align:center;white-space:nowrap;}
+  #soMilestoneTable td .so-milestone-ratio{display:block;color:var(--muted);font-size:var(--tag);margin-top:3px;}
+  #soMilestoneTable tfoot{background:#E9F5EF;font-weight:700;}
+  @media(max-width:760px){
+    #soMilestoneCards{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+    #soMilestoneCards .kpi-card{padding:12px;}
+    .so-milestone-head{flex-wrap:wrap;}
+    .so-stats-pages button{flex:1;min-width:0;padding:9px;font-size:11px;}
+  }
+  @media(max-width:760px){
+    .so-filter-bar .so-filter-fields{min-width:620px;}
+    .so-filter-bar .so-filter-count{display:none;}
+  }
 </style>
 <style id="olie-theme">
 :root{--bg:#f4f8f6;--green:#07864a;--green-dark:#075d37;--line:#e3ece6;--radius:16px}
@@ -1870,25 +1912,37 @@ const dailyOlieMessages_ = ["Chúc bạn một ngày làm việc tràn đầy n�
     <!-- ===== DANH SÁCH ===== -->
     <div id="sotab-list" class="panel active">
       <div class="kpi-row" id="soKpiRow"></div>
-      <div class="scope-filters" style="justify-content:space-between;">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <span class="scope-label">Tìm theo Code/Tên PG:</span>
-          <input type="text" id="soListSearchInput" placeholder="Nhập Code hoặc Tên..." style="min-width:200px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
-          <span class="scope-label">Khu vực:</span>
-          <select id="soListFilterRegion"><option value="">Tất cả Khu vực</option></select>
-          <span class="scope-label">Trainer:</span>
-          <select id="soListFilterTrainer"><option value="">Tất cả Trainer</option></select>
-          <span class="scope-label">Sao:</span>
-          <select id="soListFilterStar">
+      <div class="scope-filters so-filter-bar">
+        <div class="so-filter-fields">
+          <label class="so-filter-field"><span class="scope-label">Code / Tên PG</span>
+            <input type="text" id="soListSearchInput" placeholder="Nhập Code hoặc Tên...">
+          </label>
+          <label class="so-filter-field"><span class="scope-label">Khu vực</span>
+            <select id="soListFilterRegion"><option value="">Tất cả Khu vực</option></select>
+          </label>
+          <label class="so-filter-field"><span class="scope-label">Trainer</span>
+            <select id="soListFilterTrainer"><option value="">Tất cả Trainer</option></select>
+          </label>
+          <label class="so-filter-field"><span class="scope-label">Sao</span>
+            <select id="soListFilterStar">
             <option value="">Tất cả Sao</option>
             <option value="0">0 ★</option><option value="1">1 ★</option><option value="2">2 ★</option>
             <option value="3">3 ★</option><option value="4">4 ★</option><option value="5">5 ★</option>
-          </select>
+            </select>
+          </label>
+          <label class="so-filter-field"><span class="scope-label">Mốc hoàn thành</span>
+            <select id="soListFilterMilestone">
+              <option value="">Tất cả mốc</option>
+              <option value="moc 1">Mốc 1</option><option value="moc 2">Mốc 2</option><option value="moc 3">Mốc 3</option>
+              <option value="chua dat">Chưa đạt</option><option value="khong co">Không có</option>
+              <option value="__unmatched__">Chưa có dữ liệu Shop</option>
+            </select>
+          </label>
         </div>
-        <span class="scope-label" id="soListRowCount"></span>
+        <span class="scope-label so-filter-count" id="soListRowCount"></span>
       </div>
       <table>
-        <thead><tr><th>Code PG</th><th>Tên PG</th><th>Khu vực</th><th>Trainer</th><th>Shop</th><th>Sao</th><th>S.O Phone</th><th>S.O IOT</th><th>S.O Accessories</th><th>Tổng S.O</th><th></th></tr></thead>
+        <thead><tr><th>Code PG</th><th>Tên PG</th><th>Khu vực</th><th>Trainer</th><th>Shop</th><th>Sao</th><th>S.O Phone</th><th>% Hoàn thành target<br>(Shop)</th><th>Mốc hoàn thành<br>(Shop)</th><th>Tổng S.O</th><th></th></tr></thead>
         <tbody id="soListBody"></tbody>
       </table>
       <div class="pagination-bar" id="soListPagination"></div>
@@ -1896,6 +1950,46 @@ const dailyOlieMessages_ = ["Chúc bạn một ngày làm việc tràn đầy n�
 
     <!-- ===== THỐNG KÊ ===== -->
     <div id="sotab-stats" class="panel">
+      <div class="so-stats-pages" role="group" aria-label="Trang thống kê S.O">
+        <button type="button" data-so-stats-page="milestones" class="active" aria-pressed="true">Hoàn thành Target theo mốc</button>
+        <button type="button" data-so-stats-page="phone" aria-pressed="false">S.O Phone trung bình</button>
+      </div>
+      <div id="soMilestonePage" class="so-stats-page">
+        <div class="so-milestone-head">
+          <div><h3>Tiến độ hoàn thành Target của PGs</h3><p>So sánh số lượng và tỷ lệ PGs ở từng mốc hoàn thành.</p></div>
+          <span id="soMilestonePeriod" class="so-milestone-period"></span>
+        </div>
+        <div class="scope-filters so-filter-bar">
+          <div class="so-filter-fields">
+            <label class="so-filter-field"><span class="scope-label">Xem theo</span>
+              <select id="soMilestoneGroup"><option value="region">Khu vực</option><option value="trainer">Trainer</option><option value="star">Nhóm sao PGs</option><option value="tenure">Thâm niên</option></select>
+            </label>
+            <label class="so-filter-field"><span class="scope-label">Khu vực</span>
+              <select id="soMilestoneRegion"><option value="">Tất cả Khu vực</option></select>
+            </label>
+            <label class="so-filter-field"><span class="scope-label">Trainer</span>
+              <select id="soMilestoneTrainer"><option value="">Tất cả Trainer</option></select>
+            </label>
+            <label class="so-filter-field"><span class="scope-label">Nhóm sao PGs</span>
+              <select id="soMilestoneStar"><option value="">Tất cả Sao</option><option value="0">0 ★</option><option value="1">1 ★</option><option value="2">2 ★</option><option value="3">3 ★</option><option value="4">4 ★</option><option value="5">5 ★</option><option value="unknown">Chưa rõ sao</option></select>
+            </label>
+            <label class="so-filter-field"><span class="scope-label">Thâm niên</span>
+              <select id="soMilestoneTenure"><option value="">Tất cả thâm niên</option><option value="0">&lt; 3 tháng</option><option value="1">3 – &lt; 6 tháng</option><option value="2">6 – &lt; 12 tháng</option><option value="3">1 – &lt; 3 năm</option><option value="4">≥ 3 năm</option><option value="unknown">Chưa rõ thâm niên</option></select>
+            </label>
+          </div>
+        </div>
+        <div id="soMilestoneCards"></div>
+        <p id="soMilestoneNote" class="so-milestone-note" aria-live="polite"></p>
+        <div class="region-card">
+          <div class="region-head"><h3>Chi tiết số PGs và tỷ lệ hoàn thành</h3></div>
+          <div style="overflow-x:auto;"><table id="soMilestoneTable">
+            <thead><tr><th id="soMilestoneGroupHeading">Khu vực</th><th>Tổng PGs</th><th>Mốc 1</th><th>Mốc 2</th><th>Mốc 3</th><th>Chưa đạt</th><th>Không có mốc</th><th>Chưa xác định</th></tr></thead>
+            <tbody id="soMilestoneTableBody"></tbody><tfoot id="soMilestoneTableFoot"></tfoot>
+          </table></div>
+        </div>
+        <p class="so-milestone-note">Mỗi PG được tính một lần tại mốc ghi trên Sheet, không cộng dồn Mốc 3 vào Mốc 1–2. Tỷ lệ = số PG ở mốc / tổng PG Đang làm thuộc bộ lọc. PGs cùng Shop dùng chung kết quả Shop nhưng vẫn tính riêng từng PG. “Chưa xác định” gồm PG chưa ghép được Shop hoặc mốc chưa được nhận diện. Nhóm sao và thâm niên theo danh sách nhân sự đang xem.</p>
+      </div>
+      <div id="soPhoneStatsPage" class="so-stats-page" hidden>
       <div class="kpi-row" id="soKpiRowStats"></div>
       <p class="section-desc">S.O Phone trung bình / PG — chỉ tính PGs Đang làm và có dữ liệu S.O.</p>
       <div class="scope-filters">
@@ -1916,6 +2010,7 @@ const dailyOlieMessages_ = ["Chúc bạn một ngày làm việc tràn đầy n�
       <div class="region-card">
         <div class="region-head"><h3 id="soStatsChartTitle">Theo Khu vực</h3></div>
         <div class="chart-wrap" id="soStatsChartWrap" style="height:360px;"><canvas id="chartSoStats"></canvas></div>
+      </div>
       </div>
     </div>
   </section>
@@ -2256,23 +2351,29 @@ const dailyOlieMessages_ = ["Chúc bạn một ngày làm việc tràn đầy n�
         <p class="section-desc" style="margin-bottom:10px;">Dùng file xuất Sellout theo dòng (mỗi dòng = 1 lượt bán): Store ID, Store name, Staff code, Staff name, Area, Vùng, Title, Sellout date, Channel, Model, Category (Phone/IOT/Accessories), Color, Sellout. Hệ thống tự gộp theo từng PG (Staff code) — ra số lượng bán theo 3 danh mục và chi tiết theo từng Model.</p>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <input type="file" id="soImportInput" accept=".xlsx,.xls">
-          <button class="secondary admin-only-gsheet" id="soSheetLinkBtn" type="button">🔗 Cập nhật từ Google Sheet</button>
-          <button class="danger" id="soClearBtn" type="button">🗑 Xoá dữ liệu S.O tháng này</button>
+          <button class="secondary admin-only-gsheet" id="soSheetLinkBtn" type="button">🔗 Cập nhật S.O PGs</button>
+          <button class="secondary admin-only-gsheet" id="soShopSheetLinkBtn" type="button">🔗 Cập nhật Google Sheet S.O Shop</button>
+          <button class="danger" id="soClearBtn" type="button">🗑 Xoá S.O PGs tháng này</button>
         </div>
         <span class="save-msg" id="soImportMsg" style="display:none;"></span>
+        <p id="soShopImportInfo" class="section-desc" style="margin:10px 0 0;"></p>
+        <span class="save-msg" id="soShopImportMsg" style="display:none;" role="status"></span>
       </div>
 
       <div id="soSummaryArea" style="display:none;">
-        <div class="scope-filters" style="justify-content:space-between;">
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <span class="scope-label">Tìm theo Code/Tên PG:</span>
-            <input type="text" id="soSearchInput" placeholder="Nhập Code hoặc Tên..." style="min-width:200px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
-            <span class="scope-label">Khu vực:</span>
-            <select id="soFilterRegion"><option value="">Tất cả Khu vực</option></select>
-            <span class="scope-label">Kênh:</span>
-            <select id="soFilterChannel"><option value="">Tất cả Kênh</option></select>
-            <span class="scope-label">Sao:</span>
-            <select id="soFilterStar">
+        <div class="scope-filters so-filter-bar">
+          <div class="so-filter-fields">
+            <label class="so-filter-field"><span class="scope-label">Code / Tên PG</span>
+              <input type="text" id="soSearchInput" placeholder="Nhập Code hoặc Tên...">
+            </label>
+            <label class="so-filter-field"><span class="scope-label">Khu vực</span>
+              <select id="soFilterRegion"><option value="">Tất cả Khu vực</option></select>
+            </label>
+            <label class="so-filter-field"><span class="scope-label">Kênh</span>
+              <select id="soFilterChannel"><option value="">Tất cả Kênh</option></select>
+            </label>
+            <label class="so-filter-field"><span class="scope-label">Sao</span>
+              <select id="soFilterStar">
               <option value="">Tất cả Sao</option>
               <option value="0">0 ★</option>
               <option value="1">1 ★</option>
@@ -2281,12 +2382,21 @@ const dailyOlieMessages_ = ["Chúc bạn một ngày làm việc tràn đầy n�
               <option value="4">4 ★</option>
               <option value="5">5 ★</option>
               <option value="__unknown__">— Chưa xác định (không có trong Nhân sự) —</option>
-            </select>
+              </select>
+            </label>
+            <label class="so-filter-field"><span class="scope-label">Mốc hoàn thành</span>
+              <select id="soFilterMilestone">
+                <option value="">Tất cả mốc</option>
+                <option value="moc 1">Mốc 1</option><option value="moc 2">Mốc 2</option><option value="moc 3">Mốc 3</option>
+                <option value="chua dat">Chưa đạt</option><option value="khong co">Không có</option>
+                <option value="__unmatched__">Chưa có dữ liệu Shop</option>
+              </select>
+            </label>
           </div>
-          <span class="scope-label" id="soRowCount"></span>
+          <span class="scope-label so-filter-count" id="soRowCount"></span>
         </div>
         <table>
-          <thead><tr><th>Code PG</th><th>Tên PG</th><th>Khu vực</th><th>Kênh</th><th>Shop</th><th>Sao PGs</th><th>S.O Phone</th><th>S.O IOT</th><th>S.O Accessories</th><th>Tổng S.O</th><th></th></tr></thead>
+          <thead><tr><th>Code PG</th><th>Tên PG</th><th>Khu vực</th><th>Kênh</th><th>Shop</th><th>Sao PGs</th><th>S.O Phone</th><th>% Hoàn thành target<br>(Shop)</th><th>Mốc hoàn thành<br>(Shop)</th><th>Tổng S.O</th><th></th></tr></thead>
           <tbody id="soSummaryBody"></tbody>
         </table>
         <div class="pagination-bar" id="soPagination"></div>
@@ -2405,6 +2515,8 @@ function loadScriptBackground_(src){
       const active=typeof currentTabId_==='function'?currentTabId_():'';
       if(active==='overview'||active==='kpi'){
         try{ renderAll(); }catch(e){ console.error('Lỗi vẽ lại biểu đồ sau khi Chart.js tải xong:', e); }
+      }else if(active==='so'&&document.getElementById('sotab-stats')?.classList.contains('active')){
+        try{renderSoStatsTab_();}catch(e){console.error('Lỗi vẽ thống kê S.O:',e);}
       }
     }
   }
@@ -2906,6 +3018,7 @@ function googleSheetUpdateModules_(){
       return runGoogleSheetWorkbookUpdate_('aiCheckSheetLinkBtn',null,async wb=>processAiCheckWorkbook_(wb,camp));
     }},
     {key:'mediaSheetLinkBtn', label:'Kết quả Truyền thông', prepare:()=>{ try{ renderMediaImportBox(); }catch(e){} }, run:()=>runGoogleSheetWorkbookUpdate_('mediaSheetLinkBtn',null,processMediaWorkbook_)},
+    {key:'soShopSheetLinkBtn', label:'S.O Shop — % target và mốc hoàn thành', run:runSoShopSavedUpdate_},
     {key:'soSheetLinkBtn', label:'DATA S.O', run:()=>runGoogleSheetFileInputUpdate_('soSheetLinkBtn','soImportInput',null,'SO_GoogleSheet.xlsx')},
   ];
 }
@@ -14404,7 +14517,6 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     document.getElementById('pageTitleHeader').textContent=btn.dataset.title||btn.textContent.trim();
     // Render nội dung tab vừa chuyển đến (lazy render để tối ưu tốc độ).
     try{ renderTabContent_(btn.dataset.tab); }catch(e){ console.error(e); }
-    if(btn.dataset.tab==='so'){ loadSoData_().then(()=>{ renderSoListTab_(); }); }
     updateOlieQrWidgetVisibility_();
   });
 });
@@ -14449,7 +14561,7 @@ document.querySelectorAll('[data-dsub]').forEach(btn=>{
     });
     btn.classList.add('active');
     document.getElementById('panel-data-'+btn.dataset.dsub).classList.add('active');
-    if(btn.dataset.dsub==='so'){ loadSoData_().then(renderSoSummary_); }
+    if(btn.dataset.dsub==='so'){ loadSoData_().then(loaded=>{if(loaded)renderSoSummary_();}); }
   });
 });
 document.querySelectorAll('[data-dsub2]').forEach(btn=>{
@@ -15183,7 +15295,8 @@ function renderTabContent_(tabId){
     case 'overview': renderOverviewAll(); break;
     case 'kpi': renderKpiAll(); break;
     case 'settings': renderSettingsConfig(); break;
-    case 'data': renderSettingsConfig(); break;
+    case 'so': renderSoActiveTab_(); break;
+    case 'data': renderSettingsConfig();if(document.getElementById('panel-data-so')?.classList.contains('active'))loadSoData_().then(loaded=>{if(loaded)renderSoSummary_();});break;
     case 'account': if(isAdmin()){ renderAccountList(); renderLoginStatsBox_(); } break;
   }
   applyPermissionLocks();
@@ -15301,6 +15414,8 @@ function updateSoTitle_(){
   if(el) el.textContent = `Import dữ liệu S.O ${monthLabel(soTargetMonth_())} (tháng trước)`;
   const btn = document.getElementById('dataSoTabBtn');
   if(btn) btn.textContent = `DATA S.O ${monthLabel(soTargetMonth_())}`;
+  const info=document.getElementById('soShopImportInfo');
+  if(info)info.textContent=`S.O Shop ${monthLabel(soTargetMonth_())}: cập nhật % Hoàn thành và Mức đạt theo Store ID. Các PGs cùng Shop nhận chung kết quả của Shop.`;
 }
 function soAggregate_(rows){
   const byCode = {};
@@ -15328,9 +15443,193 @@ function soAggregate_(rows){
   return Object.values(byCode).sort((a,b)=> (b.phone+b.iot+b.accessories) - (a.phone+a.iot+a.accessories));
 }
 async function loadSoData_(){
-  const month = soTargetMonth_();
-  soAggregated = (await dbGet('soAgg:'+month)) || [];
+  const month=soTargetMonth_(),context=soShopContext_(),sequence=++soLoadSequence_,shopRevision=soShopRevision_;
+  if(soLoadedMonth_!==month){
+    soAggregated=[];soShopProgressData_=null;soLoadedMonth_='';
+    ['soSummaryBody','soListBody'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=`<tr><td colspan="11" class="empty">Đang tải S.O ${escapeHtml(monthLabel(month))}…</td></tr>`;});
+    ['soPagination','soListPagination','soKpiRow','soKpiRowStats'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  }
+  const data=await dbGetMulti(['soAgg:'+month,'soShopProgress:'+month]);
+  if(sequence!==soLoadSequence_||context!==soShopContext_())return false;
+  soAggregated=Array.isArray(data['soAgg:'+month])?data['soAgg:'+month]:[];
+  const progress=data['soShopProgress:'+month];
+  if(shopRevision===soShopRevision_)soShopProgressData_=progress?.month===month&&Array.isArray(progress.shops)?progress:null;
+  soLoadedMonth_=month;updateSoTitle_();return true;
 }
+async function renderSoActiveTab_(){
+  if(!await loadSoData_())return;
+  if(!document.getElementById('tab-so')?.classList.contains('active'))return;
+  if(document.getElementById('sotab-stats')?.classList.contains('active'))renderSoStatsTab_();
+  else renderSoListTab_();
+}
+/* S.O Shop: monthly shop achievement, shared unchanged by every PG assigned to that shop. */
+const SO_SHOP_CONFIG_KEY_='soShopSheetLinkBtn';
+const SO_SHOP_SAMPLE_URL_='https://docs.google.com/spreadsheets/d/1DcMOw6Gd8G7rJRtFDDupk0lNDT8cPBl7802zk-1sywg/edit?gid=1204522556#gid=1204522556';
+let soShopProgressData_=null, soLoadedMonth_='', soLoadSequence_=0, soShopRevision_=0, soShopUpdating_=false;
+function soShopContext_(){return JSON.stringify([soTargetMonth_(),session?.role,session?.trainerId,session?.region,session?.username||session?.userId||session?.displayName]);}
+function soShopId_(value){return normalizeCode_(value);}
+function soShopPercent_(value){
+  let s=String(value??'').normalize('NFC').trim();
+  const label=normalizeImportHeader_(s);
+  if(!s || ['khong co','n a','na'].includes(label) || /^[—–-]$/.test(s))return null;
+  s=s.replace(/%\s*$/,'').replace(/[\s\u00a0]/g,'');
+  if(s.includes(',')&&s.includes('.')){
+    const decimal=s.lastIndexOf(',')>s.lastIndexOf('.')?',':'.';
+    s=s.replace(decimal===','?/\./g:/,/g,'').replace(',','.');
+  }else s=s.replace(',','.');
+  if(!/^\d+(?:\.\d+)?$/.test(s))throw Error('Giá trị % Hoàn thành không hợp lệ.');
+  const n=Number(s);if(!Number.isFinite(n))throw Error('Giá trị % Hoàn thành không hợp lệ.');
+  return n;
+}
+function parseSoShopRows_(aoa){
+  if(!Array.isArray(aoa)||!aoa.length)throw Error('Sheet không có dữ liệu.');
+  const aliases={id:['store id','shop id','id shop'],name:['store name','shop name','ten shop'],area:['area','khu vuc'],zone:['vung','mien'],pct:['hoan thanh','hoan thanh target','target achievement'],stage:['muc dat','moc dat','moc hoan thanh']};
+  let at=-1,cols;
+  for(let i=0;i<Math.min(20,aoa.length);i++){
+    const h=(aoa[i]||[]).map(normalizeImportHeader_);
+    const found=Object.fromEntries(Object.entries(aliases).map(([k,names])=>[k,h.findIndex(x=>names.includes(x))]));
+    if(['id','area','pct','stage'].every(k=>found[k]>=0)){
+      if(Object.entries(aliases).some(([k,names])=>h.filter(x=>names.includes(x)).length>1))throw Error('Sheet có cột trùng tên. Hãy kiểm tra lại tiêu đề.');
+      at=i;cols=found;break;
+    }
+  }
+  if(at<0)throw Error('Thiếu cột bắt buộc: Store ID, Area, % Hoàn thành, Mức đạt.');
+  const allowed=new Set((config.regions||[]).map(normalizeAreaVN));
+  if(!allowed.size)throw Error('Chưa có cấu hình khu vực để đối chiếu dữ liệu Shop.');
+  const byId=new Map();let skipped=0,duplicates=0;
+  for(let i=at+1;i<aoa.length;i++){
+    const row=aoa[i]||[];if(!row.some(c=>String(c??'').trim()))continue;
+    const area=normalizeAreaVN(row[cols.area]),zone=cols.zone<0?'':normalizeImportHeader_(row[cols.zone]);
+    if(!allowed.has(area)||(zone&&zone!=='mien trung')){skipped++;continue;}
+    const storeId=soShopId_(row[cols.id]);if(!storeId)throw Error(`Dòng ${i+1} thiếu Store ID.`);
+    let pct;try{pct=soShopPercent_(row[cols.pct]);}catch{throw Error(`Dòng ${i+1}: % Hoàn thành không hợp lệ.`);}
+    const milestone=String(row[cols.stage]??'').normalize('NFC').trim();
+    const record={storeId,storeName:cols.name<0?'':String(row[cols.name]??'').normalize('NFC').trim(),area,pct,milestone};
+    if(byId.has(storeId)){
+      const old=byId.get(storeId);
+      if(old.area!==area||old.pct!==pct||normalizeImportHeader_(old.milestone)!==normalizeImportHeader_(milestone))throw Error(`Dòng ${i+1}: Store ID bị trùng nhưng kết quả khác nhau.`);
+      duplicates++;continue;
+    }
+    byId.set(storeId,record);
+  }
+  if(!byId.size)throw Error('Không có Shop phù hợp với các khu vực trên dashboard.');
+  return {shops:Array.from(byId.values()),skipped,duplicates};
+}
+function soShopConfig_(raw){
+  let url;try{url=new URL(String(raw?.url||'').trim());}catch{throw Error('Hãy nhập link Google Sheet hợp lệ.');}
+  if(url.protocol!=='https:'||url.hostname!=='docs.google.com'||!/^\/spreadsheets\/d\/[a-zA-Z0-9_-]+\//.test(url.pathname))throw Error('Link phải có dạng https://docs.google.com/spreadsheets/d/.../edit.');
+  const name=String(raw.sheetName??(raw.sheetNames?.length===1?raw.sheetNames[0]:'')).trim();
+  if(!name)throw Error('Hãy nhập chính xác một tên sheet/tab chứa S.O Shop.');
+  return {url:url.href,sheetName:name};
+}
+async function loadSoShopConfig_(){
+  let local;try{local=JSON.parse(localStorage.getItem('gsync:'+SO_SHOP_CONFIG_KEY_)||'null');}catch{}
+  if(local){try{return soShopConfig_(local);}catch{}}
+  const saved=await dbGet('gsync_config:'+SO_SHOP_CONFIG_KEY_);
+  if(saved){try{return soShopConfig_(saved);}catch{}}
+  return null;
+}
+async function saveSoShopConfig_(cfg){
+  const stored={...cfg,sheetNames:cfg.sheetName};
+  try{localStorage.setItem('gsync:'+SO_SHOP_CONFIG_KEY_,JSON.stringify(stored));}catch{}
+  try{await dbSet('gsync_config:'+SO_SHOP_CONFIG_KEY_,stored);}catch{}
+}
+function soShopProgressIndex_(){
+  const byId=new Map(),byName=new Map(),byCode=new Map();
+  if(soLoadedMonth_===soTargetMonth_()&&soShopProgressData_?.month===soTargetMonth_()){
+    (soShopProgressData_.shops||[]).forEach(s=>{
+      byId.set(soShopId_(s.storeId),s);
+      const name=normalizeImportHeader_(s.storeName),key=JSON.stringify([normalizeAreaVN(s.area),name]);
+      if(name){if(!byName.has(key))byName.set(key,[]);byName.get(key).push(s);}
+    });
+  }
+  pgs.filter(p=>p.brand==='OPPO').forEach(p=>{
+    const code=normalizeCode_(p.code);if(!byCode.has(code))byCode.set(code,[]);byCode.get(code).push(p);
+  });
+  return {byId,byName,byCode};
+}
+function soShopForPg_(entry,index){
+  const candidates=index.byCode.get(normalizeCode_(entry.code))||[];
+  if(candidates.length>1)return null;
+  const person=candidates.length===1?candidates[0]:entry;
+  const area=normalizeAreaVN(trainerOf(person.trainerId)?.region||person.region||person.area||entry.region||entry.area);
+  if(isTrainer()){
+    const own=normalizeAreaVN(session.region||trainerOf(session.trainerId)?.region);
+    if(!own||area!==own)return null;
+  }
+  const id=soShopId_(person.shopId||person.storeId||entry.shopId||entry.storeId);
+  let found;
+  if(id)found=index.byId.get(id);
+  else{
+    const name=normalizeImportHeader_(person.shop||entry.shop);
+    const matches=index.byName.get(JSON.stringify([area,name]))||[];
+    if(matches.length===1)found=matches[0];
+  }
+  return found&&normalizeAreaVN(found.area)===area?found:null;
+}
+function soShopMatchesMilestone_(entry,index,filter){
+  if(!filter)return true;
+  const shop=soShopForPg_(entry,index);
+  const stage=shop&&normalizeImportHeader_(shop.milestone||'');
+  return (stage||'__unmatched__')===filter;
+}
+function soShopCells_(entry,index){
+  const s=soShopForPg_(entry,index);
+  if(!s)return '<td class="so-shop-result" title="Chưa có kết quả Shop phù hợp">—</td><td class="so-shop-result">—</td>';
+  const pct=s.pct===null||s.pct===undefined?'Không có':Number(s.pct).toLocaleString('vi-VN',{maximumFractionDigits:2})+'%';
+  const stage=s.milestone||'—',tier=normalizeImportHeader_(stage);
+  const css=tier==='moc 3'?'so-stage-high':tier==='moc 2'?'so-stage-mid':tier==='moc 1'?'so-stage-low':'so-stage-none';
+  return `<td class="so-shop-result"><strong>${escapeHtml(pct)}</strong></td><td class="so-shop-result"><span class="so-stage ${css}">${escapeHtml(stage)}</span></td>`;
+}
+async function updateSoShopFromGoogle_(raw){
+  if(!isAdmin())throw Error('Chỉ Admin được cập nhật S.O Shop.');
+  if(soShopUpdating_)throw Error('S.O Shop đang được cập nhật.');
+  const cfg=soShopConfig_(raw),context=soShopContext_(),month=soTargetMonth_();
+  soShopUpdating_=true;
+  const btn=document.getElementById(SO_SHOP_CONFIG_KEY_);if(btn)btn.disabled=true;
+  try{
+    const id=parseGoogleSheetId_(cfg.url);let rows;
+    try{rows=await fetchGoogleSheetRows_(id,cfg.sheetName,{allowFallback:false});}catch{throw Error('Không đọc được đúng tab Google Sheet. Hãy kiểm tra link, tên sheet và quyền đọc dữ liệu.');}
+    const parsed=parseSoShopRows_(rows);
+    if(!isAdmin()||context!==soShopContext_())throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy cập nhật lại.');
+    const payload={version:1,month,updatedAt:new Date().toISOString(),source:cfg,shops:parsed.shops};
+    if(!await dbSet('soShopProgress:'+month,payload))throw Error('Không lưu được S.O Shop. Kết quả trước đó được giữ nguyên.');
+    if(context===soShopContext_()){
+      soShopRevision_++;soShopProgressData_=payload;soLoadedMonth_=month;
+      soCurrentPage=1;soListCurrentPage=1;
+      renderSoSummary_();renderSoListTab_();
+      if(document.getElementById('sotab-stats')?.classList.contains('active'))renderSoStatsTab_();
+    }
+    if(isAdmin()&&context===soShopContext_())await saveSoShopConfig_(cfg);
+    return {status:'ok',message:`Đã cập nhật ${payload.shops.length} Shop · ${monthLabel(month)}.${parsed.skipped?' Bỏ qua '+parsed.skipped+' dòng ngoài phạm vi.':''}${parsed.duplicates?' Gộp '+parsed.duplicates+' dòng trùng cùng kết quả.':''}`};
+  }finally{soShopUpdating_=false;if(btn)btn.disabled=!isAdmin();}
+}
+async function runSoShopSavedUpdate_(){
+  const cfg=await loadSoShopConfig_();
+  if(!cfg)return {status:'skip',message:'Chưa cấu hình link và tên sheet S.O Shop.'};
+  return updateSoShopFromGoogle_(cfg);
+}
+async function openSoShopSheetForm_(){
+  if(!isAdmin()||soShopUpdating_)return;
+  const context=soShopContext_(),saved=await loadSoShopConfig_();
+  if(!isAdmin()||context!==soShopContext_())return;
+  const html=`<p class="section-desc">Cập nhật kết quả Shop cho <strong>${escapeHtml(monthLabel(soTargetMonth_()))}</strong> (tháng trước). Mỗi PG gán vào cùng Store ID dùng chung % target và mốc của Shop.</p>
+    <div class="form-row"><label for="soShopSourceUrl">Link Google Sheet</label><input id="soShopSourceUrl" type="url" value="${escapeHtml(saved?.url||SO_SHOP_SAMPLE_URL_)}" style="width:100%;"></div>
+    <div class="form-row"><label for="soShopSourceName">Tên sheet / tab</label><input id="soShopSourceName" type="text" value="${escapeHtml(saved?.sheetName||'')}" placeholder="Nhập đúng tên tab chứa S.O Shop" style="width:100%;"></div>
+    <p id="soShopConfigError" style="color:var(--red);font-size:var(--cap);" role="alert"></p>`;
+  const cfg=await showFormModal_('Cập nhật Google Sheet S.O Shop',html,()=>{
+    try{return soShopConfig_({url:document.getElementById('soShopSourceUrl').value,sheetName:document.getElementById('soShopSourceName').value});}
+    catch(e){document.getElementById('soShopConfigError').textContent=e.message;return false;}
+  });
+  if(!cfg)return;
+  const msg=document.getElementById('soShopImportMsg');msg.style.display='block';msg.style.color='var(--muted)';msg.textContent='Đang cập nhật S.O Shop…';
+  try{
+    if(context!==soShopContext_())throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy cập nhật lại.');
+    const result=await updateSoShopFromGoogle_(cfg);msg.style.color='var(--green-ok)';msg.textContent=result.message;
+  }catch(e){msg.style.color='var(--red)';msg.textContent=e.message;}
+}
+document.getElementById(SO_SHOP_CONFIG_KEY_).addEventListener('click',openSoShopSheetForm_);
+
 function soStarForCode_(code){
   const norm = normalizeCode_(code);
   const p = pgs.find(x=>normalizeCode_(x.code)===norm);
@@ -15338,7 +15637,7 @@ function soStarForCode_(code){
 }
 /* Trainer chỉ được xem S.O của ĐÚNG Khu vực mình phụ trách — Admin/Viewer xem toàn bộ. */
 function soScopedList_(){
-  if(isTrainer() && session.region) return soAggregated.filter(e=> e.area===session.region);
+  if(isTrainer()){const region=normalizeAreaVN(session.region||trainerOf(session.trainerId)?.region);return region?soAggregated.filter(e=>normalizeAreaVN(e.area)===region):[];}
   return soAggregated;
 }
 function populateSoFilters_(){
@@ -15354,6 +15653,7 @@ function populateSoFilters_(){
     regionSel.value = session.region||'';
     regionSel.disabled = true;
   } else {
+    regionSel.disabled=false;
     regionSel.innerHTML = '<option value="">Tất cả Khu vực</option>' + regions.map(r=>`<option value="${r}">${r}</option>`).join('');
     if(regions.includes(curRegion)) regionSel.value = curRegion;
   }
@@ -15370,6 +15670,8 @@ function renderSoSummary_(){
   const regionVal = document.getElementById('soFilterRegion').value;
   const channelVal = document.getElementById('soFilterChannel').value;
   const starVal = document.getElementById('soFilterStar').value;
+  const milestoneVal = document.getElementById('soFilterMilestone').value;
+  const shopIndex=soShopProgressIndex_();
   let list = soScopedList_();
   if(term) list = list.filter(e=> e.code.toLowerCase().includes(term) || e.name.toLowerCase().includes(term));
   if(regionVal) list = list.filter(e=> e.area===regionVal);
@@ -15381,6 +15683,7 @@ function renderSoSummary_(){
       return star===Number(starVal);
     });
   }
+  if(milestoneVal) list = list.filter(e=>soShopMatchesMilestone_(e,shopIndex,milestoneVal));
   document.getElementById('soRowCount').textContent = `${list.length}/${soScopedList_().length} PG`;
   const body = document.getElementById('soSummaryBody');
   if(list.length===0){ body.innerHTML = '<tr><td colspan="11" class="empty">Không khớp bộ lọc.</td></tr>'; document.getElementById('soPagination').innerHTML=''; return; }
@@ -15396,7 +15699,7 @@ function renderSoSummary_(){
     return `<tr>
       <td>${e.code}</td><td><strong>${e.name||'—'}</strong></td><td>${e.area||'—'}</td><td>${e.channel||'—'}</td><td>${e.shop||'—'}</td>
       <td class="stars">${starDisplayText}</td>
-      <td style="text-align:center;">${e.phone}</td><td style="text-align:center;">${e.iot}</td><td style="text-align:center;">${e.accessories}</td>
+      <td style="text-align:center;">${e.phone}</td>${soShopCells_(e,shopIndex)}
       <td style="text-align:center;font-weight:700;">${total}</td>
       <td><button class="secondary" data-so-detail="${e.code}" type="button">Chi tiết model</button></td>
     </tr>`;
@@ -15439,6 +15742,7 @@ function renderSoPagination_(totalItems){
 document.getElementById('soFilterRegion').addEventListener('change', ()=>{ soCurrentPage=1; renderSoSummary_(); });
 document.getElementById('soFilterChannel').addEventListener('change', ()=>{ soCurrentPage=1; renderSoSummary_(); });
 document.getElementById('soFilterStar').addEventListener('change', ()=>{ soCurrentPage=1; renderSoSummary_(); });
+document.getElementById('soFilterMilestone').addEventListener('change', ()=>{ soCurrentPage=1; renderSoSummary_(); });
 function soModelTableHtml_(catLabel, modelsObj){
   const entries = Object.entries(modelsObj||{}).sort((a,b)=>b[1]-a[1]);
   if(entries.length===0) return `<h4 style="margin:14px 0 6px;color:var(--green-dark);">${catLabel}</h4><div class="empty">Không có dữ liệu.</div>`;
@@ -15494,7 +15798,7 @@ document.getElementById('soSearchInput').addEventListener('input', (e)=>{ soSear
 document.getElementById('soClearBtn').addEventListener('click', async ()=>{
   if(!isAdmin()) return;
   const month = soTargetMonth_();
-  const ok = await showConfirm(`Xoá toàn bộ dữ liệu S.O của ${monthLabel(month)}? Không thể hoàn tác.`);
+  const ok = await showConfirm(`Xoá dữ liệu bán hàng S.O PGs của ${monthLabel(month)}? Không thể hoàn tác.`);
   if(!ok) return;
   soAggregated = [];
   await dbSet('soAgg:'+month, []);
@@ -15525,12 +15829,13 @@ const SO_LIST_PAGE_SIZE = 10;
 let soListCurrentPage = 1;
 let soListSearchTerm = '';
 function soJoinedList_(){
-  return scopedActivePgs('OPPO').map(p=>{
+  const byCode=new Map();soAggregated.forEach(e=>{const c=normalizeCode_(e.code);if(!byCode.has(c))byCode.set(c,e);});
+  return scopedActivePgs('OPPO').filter(p=>!isTrainer()||(session.region?normalizeAreaVN(trainerOf(p.trainerId)?.region||p.area)===normalizeAreaVN(session.region):p.trainerId===session.trainerId)).map(p=>{
     const tr = trainerOf(p.trainerId);
-    const soEntry = soAggregated.find(e=>normalizeCode_(e.code)===normalizeCode_(p.code));
+    const soEntry = byCode.get(normalizeCode_(p.code));
     return {
       code: p.code, name: p.name, region: tr?tr.region:(p.area||''), trainerId: p.trainerId, trainerName: tr?tr.name:'',
-      shop: p.shop, star: Number(p.star)||0, seniority: Number(p.seniority)||0,
+      shop: p.shop, shopId:p.shopId||p.storeId||'',channel:p.channel||'',star: Number(p.star)||0, seniority: Number(p.seniority)||0,
       phone: soEntry?soEntry.phone:0, iot: soEntry?soEntry.iot:0, accessories: soEntry?soEntry.accessories:0,
       soEntry,
     };
@@ -15541,11 +15846,12 @@ function populateSoListFilters_(){
   const trainerSel = document.getElementById('soListFilterTrainer');
   const curRegion = regionSel.value, curTrainer = trainerSel.value;
   const regions = visibleRegions();
-  const trainers = visibleTrainers();
+  const trainers = visibleTrainers().filter(t=>!isTrainer()||normalizeAreaVN(t.region)===normalizeAreaVN(session.region||trainerOf(session.trainerId)?.region));
   if(isTrainer()){
     regionSel.innerHTML = `<option value="${session.region||''}">${session.region||'Khu vực của tôi'}</option>`;
     regionSel.value = session.region||''; regionSel.disabled = true;
   } else {
+    regionSel.disabled=false;
     regionSel.innerHTML = '<option value="">Tất cả Khu vực</option>' + regions.map(r=>`<option value="${r}">${r}</option>`).join('');
     if(regions.includes(curRegion)) regionSel.value = curRegion;
   }
@@ -15596,11 +15902,14 @@ function renderSoListTab_(){
   const regionVal = document.getElementById('soListFilterRegion').value;
   const trainerVal = document.getElementById('soListFilterTrainer').value;
   const starVal = document.getElementById('soListFilterStar').value;
+  const milestoneVal = document.getElementById('soListFilterMilestone').value;
+  const shopIndex=soShopProgressIndex_();
   let list = soJoinedList_();
   if(term) list = list.filter(e=> (e.code||'').toLowerCase().includes(term) || (e.name||'').toLowerCase().includes(term));
   if(regionVal) list = list.filter(e=> e.region===regionVal);
   if(trainerVal) list = list.filter(e=> e.trainerId===trainerVal);
   if(starVal) list = list.filter(e=> e.star===Number(starVal));
+  if(milestoneVal) list = list.filter(e=>soShopMatchesMilestone_(e,shopIndex,milestoneVal));
   list.sort((a,b)=> (b.phone+b.iot+b.accessories) - (a.phone+a.iot+a.accessories));
   document.getElementById('soListRowCount').textContent = `${list.length} PG Đang làm`;
   const body = document.getElementById('soListBody');
@@ -15615,7 +15924,7 @@ function renderSoListTab_(){
     return `<tr>
       <td>${e.code||'—'}</td><td><strong>${e.name||'—'}</strong></td><td>${e.region||'—'}</td><td>${e.trainerName||'—'}</td><td>${e.shop||'—'}</td>
       <td class="stars">${starDisplay(e.star)}</td>
-      <td style="text-align:center;">${e.phone}</td><td style="text-align:center;">${e.iot}</td><td style="text-align:center;">${e.accessories}</td>
+      <td style="text-align:center;">${e.phone}</td>${soShopCells_(e,shopIndex)}
       <td style="text-align:center;font-weight:700;">${total}</td>
       <td>${e.soEntry?`<button class="secondary" data-solist-detail="${e.code}" type="button">Chi tiết model</button>`:'<span style="color:var(--muted);font-size:var(--tag);">Chưa có S.O</span>'}</td>
     </tr>`;
@@ -15651,6 +15960,7 @@ document.getElementById('soListSearchInput').addEventListener('input', (e)=>{ so
 document.getElementById('soListFilterRegion').addEventListener('change', ()=>{ soListCurrentPage=1; renderSoListTab_(); });
 document.getElementById('soListFilterTrainer').addEventListener('change', ()=>{ soListCurrentPage=1; renderSoListTab_(); });
 document.getElementById('soListFilterStar').addEventListener('change', ()=>{ soListCurrentPage=1; renderSoListTab_(); });
+document.getElementById('soListFilterMilestone').addEventListener('change', ()=>{ soListCurrentPage=1; renderSoListTab_(); });
 
 /* ============ THỐNG KÊ S.O Phone trung bình ============ */
 const SO_CHART_COLORS = ['#016C38','#2E9E5B','#6FBF3E','#E8C023','#E8862A','#C0392B','#2F6FB0','#9B59B6'];
@@ -15751,7 +16061,7 @@ function renderSoKpiRowStats_(){
     <div class="kpi-card"><div class="label">TB S.O/PG theo Thâm niên</div><div class="value">${totalAvg}</div><div class="frac">${nSeniority} nhóm</div></div>
   `;
 }
-function renderSoStatsTab_(){
+function renderSoPhoneStats_(){
   populateSoStatsFilters_();
   renderSoKpiRowStats_();
   const view = document.getElementById('soStatsViewSelect').value;
@@ -15821,9 +16131,100 @@ function renderSoStatsTab_(){
       }
     };
   }
-  chartSoStatsInstance = new Chart(ctx, cfg);
+  if(typeof Chart!=='undefined')chartSoStatsInstance = new Chart(ctx, cfg);
 }
 document.getElementById('soStatsViewSelect').addEventListener('change', renderSoStatsTab_);
+
+/* ============ THỐNG KÊ MỐC HOÀN THÀNH S.O SHOP ============ */
+let soStatsCurrentPage_='milestones';
+const SO_MILESTONE_STAGES_=[
+  {source:'moc 1',label:'Mốc 1',color:'#3F94B5',text:'#FFFFFF'},
+  {source:'moc 2',label:'Mốc 2',color:'#27A58B',text:'#FFFFFF'},
+  {source:'moc 3',label:'Mốc 3',color:'#087B4C',text:'#FFFFFF'},
+  {source:'chua dat',label:'Chưa đạt',color:'#E5B255',text:'#473508'},
+  {source:'khong co',label:'Không có mốc',color:'#A5B4BF',text:'#233440'},
+  {source:'',label:'Chưa xác định',color:'#E2E8E4',text:'#42564A'}
+];
+const SO_MILESTONE_TENURES_=['< 3 tháng','3 – < 6 tháng','6 – < 12 tháng','1 – < 3 năm','≥ 3 năm'];
+const SO_MILESTONE_GROUPS_={region:'Khu vực',trainer:'Trainer',star:'Nhóm sao PGs',tenure:'Thâm niên'};
+const soMilestoneNumber_=new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1});
+function soMilestonePct_(count,total){return total?soMilestoneNumber_.format(count/total*100)+'%':'—';}
+function soMilestoneRoster_(){
+  if(!session)return [];
+  const index=soShopProgressIndex_(),seen=new Set(),out=[];
+  const own=isTrainer()?normalizeAreaVN(session.region||trainerOf(session.trainerId)?.region):'';
+  if(isTrainer()&&!own)return [];
+  pgs.forEach((p,i)=>{
+    if(p.brand!=='OPPO'||p.status!=='Đang làm')return;
+    const trainer=trainerOf(p.trainerId),region=normalizeAreaVN(trainer?.region||p.region||p.area);
+    if(isTrainer()&&region!==own)return;
+    const identity=normalizeCode_(p.code)||'__row_'+i;if(seen.has(identity))return;seen.add(identity);
+    const shop=soShopForPg_(p,index),source=normalizeImportHeader_(shop?.milestone||'');
+    const stage=SO_MILESTONE_STAGES_.findIndex(s=>s.source&&s.source===source);
+    const star=p.star!==null&&p.star!==undefined&&String(p.star).trim()!==''?Number(p.star):NaN;
+    const months=p.seniority!==null&&p.seniority!==undefined&&String(p.seniority).trim()!==''?Number(p.seniority):NaN;
+    const tenure=Number.isFinite(months)&&months>=0?(months<3?0:months<6?1:months<12?2:months<36?3:4):'unknown';
+    out.push({region,trainerId:p.trainerId||'',trainerName:trainer?.name||'Chưa gán Trainer',star:Number.isInteger(star)&&star>=0&&star<=5?String(star):'unknown',tenure:String(tenure),stage:stage<0?5:stage});
+  });
+  return out;
+}
+function populateSoMilestoneFilters_(roster){
+  const region=document.getElementById('soMilestoneRegion'),trainer=document.getElementById('soMilestoneTrainer');
+  const oldRegion=region.value,oldTrainer=trainer.value;
+  const own=isTrainer()?normalizeAreaVN(session.region||trainerOf(session.trainerId)?.region):'';
+  const regions=isTrainer()?(own?[own]:[]):Array.from(new Set(roster.map(e=>e.region).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'vi'));
+  region.innerHTML=(isTrainer()?'':'<option value="">Tất cả Khu vực</option>')+regions.map(r=>`<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+  if(isTrainer()&&!own)region.innerHTML='<option value="">Chưa xác định khu vực</option>';
+  region.disabled=isTrainer();
+  if(regions.includes(oldRegion))region.value=oldRegion;
+  const scope=region.value,trainers=new Map();
+  roster.forEach(e=>{if(e.trainerId&&(!scope||e.region===scope))trainers.set(e.trainerId,e.trainerName);});
+  trainer.innerHTML='<option value="">Tất cả Trainer</option>'+Array.from(trainers).sort((a,b)=>a[1].localeCompare(b[1],'vi')).map(([id,name])=>`<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join('');
+  if(trainers.has(oldTrainer))trainer.value=oldTrainer;
+}
+function soMilestoneFiltered_(roster){
+  const region=document.getElementById('soMilestoneRegion').value,trainer=document.getElementById('soMilestoneTrainer').value;
+  const star=document.getElementById('soMilestoneStar').value,tenure=document.getElementById('soMilestoneTenure').value;
+  return roster.filter(e=>(!region||e.region===region)&&(!trainer||e.trainerId===trainer)&&(!star||e.star===star)&&(!tenure||e.tenure===tenure));
+}
+function soMilestoneAggregate_(list,view){
+  const map=new Map(),totals=Array(6).fill(0);
+  list.forEach(e=>{
+    const key=view==='trainer'?e.trainerId:view==='star'?e.star:view==='tenure'?e.tenure:e.region;
+    const label=view==='trainer'?e.trainerName:view==='star'?(key==='unknown'?'Chưa rõ sao':key+' ★'):view==='tenure'?(SO_MILESTONE_TENURES_[Number(key)]||'Chưa rõ thâm niên'):(key||'Chưa rõ khu vực');
+    if(!map.has(key))map.set(key,{key,label,total:0,counts:Array(6).fill(0)});
+    const group=map.get(key);group.total++;group.counts[e.stage]++;totals[e.stage]++;
+  });
+  const rows=Array.from(map.values());
+  if(view==='star'||view==='tenure')rows.sort((a,b)=>(a.key==='unknown'?99:Number(a.key))-(b.key==='unknown'?99:Number(b.key)));
+  else rows.sort((a,b)=>a.label.localeCompare(b.label,'vi'));
+  return {rows,total:list.length,counts:totals};
+}
+function renderSoMilestones_(){
+  const roster=soMilestoneRoster_();populateSoMilestoneFilters_(roster);
+  const view=document.getElementById('soMilestoneGroup').value,list=soMilestoneFiltered_(roster),summary=soMilestoneAggregate_(list,view);
+  const month=soTargetMonth_(),ready=soLoadedMonth_===month&&soShopProgressData_?.month===month&&Array.isArray(soShopProgressData_?.shops);
+  document.getElementById('soMilestonePeriod').textContent='S.O '+monthLabel(month);
+  document.getElementById('soMilestoneGroupHeading').textContent=SO_MILESTONE_GROUPS_[view];
+  const card=(label,value,desc,color)=>`<div class="kpi-card" style="--so-stage-color:${color}"><div class="label">${label}</div><div class="value">${value}<span style="font-size:var(--cap);font-weight:600;"> PGs</span></div><div class="frac">${desc}</div></div>`;
+  document.getElementById('soMilestoneCards').innerHTML=card('Tổng PGs Đang làm',summary.total,'Trong phạm vi bộ lọc','#234B36')+SO_MILESTONE_STAGES_.slice(0,3).map((s,i)=>card(s.label,summary.counts[i],soMilestonePct_(summary.counts[i],summary.total)+' tổng PGs',s.color)).join('');
+  let note=ready?`Đã xác định mốc: ${summary.total-summary.counts[5]}/${summary.total} PGs · Chưa xác định: ${summary.counts[5]} PGs. `:`Chưa cập nhật S.O Shop ${monthLabel(month)}. Vào DATA → DATA S.O → Cập nhật Google Sheet S.O Shop. `;
+  note+='Mốc lấy từ cột “Mức đạt” của Shop, không suy ra từ % target. Mẫu số tỷ lệ gồm toàn bộ PGs Đang làm thuộc bộ lọc.';
+  document.getElementById('soMilestoneNote').textContent=note;
+  const cells=row=>`<td><strong>${row.total}</strong></td>`+row.counts.map(count=>`<td><strong>${count} PGs</strong><span class="so-milestone-ratio">${soMilestonePct_(count,row.total)}</span></td>`).join('');
+  document.getElementById('soMilestoneTableBody').innerHTML=summary.rows.length?summary.rows.map(row=>`<tr><td><strong>${escapeHtml(row.label)}</strong></td>${cells(row)}</tr>`).join(''):'<tr><td colspan="8" class="empty">Không có PGs phù hợp với bộ lọc.</td></tr>';
+  document.getElementById('soMilestoneTableFoot').innerHTML=summary.rows.length?`<tr><td>Tổng phạm vi</td>${cells({total:summary.total,counts:summary.counts})}</tr>`:'';
+}
+function renderSoStatsTab_(){
+  const milestones=soStatsCurrentPage_==='milestones';
+  document.getElementById('soMilestonePage').hidden=!milestones;document.getElementById('soPhoneStatsPage').hidden=milestones;
+  document.querySelectorAll('[data-so-stats-page]').forEach(btn=>{const active=btn.dataset.soStatsPage===soStatsCurrentPage_;btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));});
+  if(milestones){if(chartSoStatsInstance){chartSoStatsInstance.destroy();chartSoStatsInstance=null;}renderSoMilestones_();}
+  else renderSoPhoneStats_();
+}
+document.querySelectorAll('[data-so-stats-page]').forEach(btn=>btn.addEventListener('click',()=>{soStatsCurrentPage_=btn.dataset.soStatsPage;renderSoStatsTab_();}));
+document.getElementById('soMilestoneRegion').addEventListener('change',()=>{document.getElementById('soMilestoneTrainer').value='';renderSoMilestones_();});
+['soMilestoneGroup','soMilestoneTrainer','soMilestoneStar','soMilestoneTenure'].forEach(id=>document.getElementById(id).addEventListener('change',renderSoMilestones_));
 
 renderAuthScreen();
 
