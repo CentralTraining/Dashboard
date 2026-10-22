@@ -2063,6 +2063,14 @@ html body :is(nav.tabs,.subnav,.so-stats-pages,.mobile-home-chart-tabs)>button:f
 .mobile-layout #soMilestoneTable td .so-milestone-ratio{display:block;margin-top:1px;font-size:10px;line-height:12px;white-space:nowrap;}
 .mobile-layout #soMilestoneTable td[colspan]{grid-column:1/-1;text-align:center;background:transparent;}
 </style>
+<style id="frequency-campaign-picker-20261022">
+.frequency-campaign-picker{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 0 12px;border:1px solid var(--line);border-radius:9px;background:#fff;min-width:0;max-width:100%;}
+.frequency-campaign-picker label{font-size:12px;font-weight:700;color:var(--green-dark);white-space:nowrap;}
+.frequency-campaign-picker select{flex:1 1 0;min-width:0;max-width:560px;min-height:36px;border:1px solid #b8d9c7;border-radius:7px;padding:6px 9px;font:inherit;font-size:12px;background:#fff;color:var(--text);}
+.mobile-layout .frequency-campaign-picker{gap:6px;padding:7px 8px;margin-bottom:8px;}
+.mobile-layout .frequency-campaign-picker label{font-size:10px;}
+.mobile-layout .frequency-campaign-picker select{width:100%;min-height:32px;padding:4px 6px;font-size:16px;}
+</style>
 </head>
 <body>
 
@@ -3570,12 +3578,12 @@ function googleSheetUpdateModules_(){
       return runGoogleSheetWorkbookUpdate_('workshopActualSheetLinkBtn',['Data'], async wb=>processWorkshopActualWorkbook_(wb,camp));
     }},
     {key:'testOnlineSheetLinkBtn', label:'Kết quả Test Online', run:async()=>{
-      const camp=campaigns.find(c=>c.month===currentMonth && c.group==='noibo' && campaignSubtype(c)==='testonline');
+      const camp=frequencyCampaignForSubtype_('testonline');
       if(!camp) throw new Error('Chưa có chiến dịch Nội bộ - Test Online trong tháng đang xem.');
       return runGoogleSheetWorkbookUpdate_('testOnlineSheetLinkBtn',null,async wb=>processTestOnlineWorkbook_(wb,camp));
     }},
     {key:'aiCheckSheetLinkBtn', label:'Kết quả Tư vấn AI & Check shop', run:async()=>{
-      const camp=campaigns.find(c=>c.month===currentMonth && c.group==='noibo' && campaignSubtype(c)==='tuvanai_checkshop');
+      const camp=frequencyCampaignForSubtype_('tuvanai_checkshop');
       if(!camp) throw new Error('Chưa có chiến dịch Nội bộ - Tư vấn AI & Check shop trong tháng đang xem.');
       return runGoogleSheetWorkbookUpdate_('aiCheckSheetLinkBtn',null,async wb=>processAiCheckWorkbook_(wb,camp));
     }},
@@ -10350,6 +10358,18 @@ function renderKpiCampaignContext(){
   const box=document.getElementById('kpiCampaignContext');
   box.textContent = `Đang xem tiến độ: ${monthLabel(currentMonth)}`;
 }
+// View selection is independent for each month and subtype; campaign data keeps its existing ID keys.
+const frequencyCampaignSelection_=new Map();
+function frequencyCampaignForSubtype_(subtype){
+ const key=currentMonth+':'+subtype;
+ const list=campaignsForGroupMonth('noibo').filter(c=>campaignSubtype(c)===subtype);
+ const camp=list.find(c=>c.id===frequencyCampaignSelection_.get(key))||list[0];
+ if(camp)frequencyCampaignSelection_.set(key,camp.id);else frequencyCampaignSelection_.delete(key);
+ return camp;
+}
+function frequencyCampaignViewMatches_(camp){
+ return !!camp&&camp.month===currentMonth&&document.querySelector('#kpiSubBody-noibo [data-frequency-campaign-id]')?.dataset.frequencyCampaignId===String(camp.id);
+}
 // Khóa ID trên TẤT CẢ phân mục KPI, kể cả khi DOM được dựng lại sau cập nhật.
 const OTR_ID_FIELDS_={
  testonline:['otrCampaignId'], aicheck:['otrAiCampaignId'],
@@ -10361,8 +10381,8 @@ const OTR_ID_FIELDS_={
 function otrCampaignForKind_(kind){
  const find=(group,subtype)=>campaigns.find(c=>c.month===currentMonth&&c.group===group&&campaignSubtype(c)===subtype);
  switch(kind){
- case 'testonline':return find('noibo','testonline');
- case 'aicheck':return find('noibo','tuvanai_checkshop');
+ case 'testonline':return frequencyCampaignForSubtype_('testonline');
+ case 'aicheck':return frequencyCampaignForSubtype_('tuvanai_checkshop');
  case 'wsnoibo':return find('noibo','workshop');
  case 'ftf':return find('doitac','ftf');
  case 'wsdoitac':return find('doitac','workshop');
@@ -10618,7 +10638,9 @@ async function processTestOnlineWorkbook_(wb,camp){
   const saleInfo=await saveSaleFreqFromRows_(rows,camp,'test'); // cùng file: tách dòng Sale
 
   // Render lại ngay để PG đạt đủ X biến mất khỏi danh sách chưa hoàn thành.
+  if(!frequencyCampaignViewMatches_(camp))return;
   await renderFrequencyNoiboBody_('testonline');
+  if(!frequencyCampaignViewMatches_(camp))return;
   const msg=document.getElementById('testOnlineImportMsg');
   if(msg){
     msg.style.display='block';
@@ -10903,7 +10925,9 @@ async function processAiCheckWorkbook_(wb,camp){
   await dbSet('aiCheckProgress:'+camp.id,data);
   aiCheckProgressCache_[camp.id] = data; // cập nhật luôn cache — không cần tải lại mạng để thấy data mới
   const saleInfo=await saveSaleFreqFromRows_(rows,camp,'ai'); // cùng file: tách dòng Sale
+  if(!frequencyCampaignViewMatches_(camp))return;
   await renderFrequencyNoiboBody_('tuvanai_checkshop');
+  if(!frequencyCampaignViewMatches_(camp))return;
   const msg=document.getElementById('aiCheckImportMsg');
   if(msg){
     msg.style.display='block';
@@ -11032,6 +11056,7 @@ async function renderSaleFreqSection_(camp,kind){
   const x=campaignFrequencyX_(camp);
   const data=await loadSaleFreq_(camp,kind);
   const roster=(await loadSaleRoster_()).list;
+  if(!box.isConnected||!frequencyCampaignViewMatches_(camp))return;
   const sales=roster.map(r=>({code:r.code,name:r.name,region:r.region,count:Number(data.counts[r.key]||0)})).filter(saleInScope_);
   const pctOf=(a,b)=>b?Math.round(a/b*1000)/10:0;
   const pfx='sale'+kind;
@@ -11100,20 +11125,31 @@ async function renderSaleFreqSection_(camp,kind){
 }
 async function renderFrequencyNoiboBody_(subtype){
   const container=document.getElementById('kpiSubBody-noibo');
+  if(!container)return;
   const campsHere=campaignsForGroupMonth('noibo').filter(c=>campaignSubtype(c)===subtype);
-  const camp=campsHere[0];
+  const camp=frequencyCampaignForSubtype_(subtype);
   const label=campaignSubtypeLabel('noibo',subtype);
   if(!camp){
     container.innerHTML=`<div class="campaign-context">Chưa có chiến dịch ${label} trong ${monthLabel(currentMonth)} — tạo ở Cài đặt &gt; Chiến dịch.</div>`;
     return;
   }
 
+  const picker=campsHere.length>1?`<div class="frequency-campaign-picker"><label for="frequencyCampaignSelect">Chiến dịch</label><select id="frequencyCampaignSelect" aria-label="Chọn chiến dịch ${escapeHtml(label)} trong ${escapeHtml(monthLabel(currentMonth))}">${campsHere.map(c=>`<option value="${escapeHtml(String(c.id))}" ${c.id===camp.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select></div>`:'';
+  container.innerHTML=picker+`<div data-frequency-campaign-id="${escapeHtml(String(camp.id))}"><div class="empty" role="status">Đang tải tiến độ chiến dịch…</div></div>`;
+  const select=container.querySelector('#frequencyCampaignSelect');
+  if(select)select.addEventListener('change',()=>{frequencyCampaignSelection_.set(currentMonth+':'+subtype,select.value);renderFrequencyNoiboBody_(subtype);queueOtrLockRefresh_();});
+  return renderFrequencyNoiboCampaign_(container.querySelector('[data-frequency-campaign-id]'),camp,subtype);
+}
+async function renderFrequencyNoiboCampaign_(container,camp,subtype){
+  const label=campaignSubtypeLabel('noibo',subtype);
   const x=campaignFrequencyX_(camp);
+  const updateMonthlySummary=campaignsForGroupMonth('noibo').find(c=>campaignSubtype(c)===subtype)?.id===camp.id;
   const trainers=visibleTrainers();
 
   // ===== TEST ONLINE =====
   if(subtype==='testonline'){
     const progress=await loadFrequencyProgress_(camp);
+    if(!container.isConnected||!frequencyCampaignViewMatches_(camp))return;
     const trainerRows=trainers.map(t=>{
       const list=activePgsOfTrainer_(t.id);
       let qualified=0;
@@ -11127,17 +11163,16 @@ async function renderFrequencyNoiboBody_(subtype){
       // hình" ở con số cũ, không phản ánh đúng thực tế — đúng lỗi đã gặp (61 PG cũ dù chỉ còn 51 PG
       // Đang làm thật). Vẫn ghi lại rec.testOnlineTarget để đồng bộ cho các chỗ khác có đọc giá trị này.
       const targetPgs=totalPgs;
-      rec.testOnlineTarget=targetPgs;
-      rec.testOnlineActual=qualified;
+      if(updateMonthlySummary){rec.testOnlineTarget=targetPgs;rec.testOnlineActual=qualified;}
       return {t,list,qualified,totalPgs,targetPgs,qualifiedPct:targetPgs?Math.round(qualified/targetPgs*1000)/10:0};
     });
-    dbSet('records:'+currentMonth, records); // lưu ở NỀN, không chờ — không cần chặn hiển thị vì records đã cập nhật xong trong bộ nhớ ở trên
+    if(updateMonthlySummary)dbSet('records:'+currentMonth, records); // Preserve the legacy summary of the primary campaign when viewing another one.
     const scopeIds=new Set(topScopeTrainers().map(t=>t.id));
     const scoped=trainerRows.filter(r=>scopeIds.has(r.t.id));
     const sTarget=scoped.reduce((a,r)=>a+r.targetPgs,0), sQualified=scoped.reduce((a,r)=>a+r.qualified,0);
     const qp=sTarget?Math.round(sQualified/sTarget*1000)/10:0;
 
-    let html=`<div class="campaign-context">Chiến dịch: <strong>${camp.name}</strong> — ${monthLabel(currentMonth)} · Chuẩn đạt: <strong>${x} lần / PG</strong></div>`;
+    let html=`<div class="campaign-context">Chiến dịch: <strong>${escapeHtml(camp.name)}</strong> — ${monthLabel(currentMonth)} · Chuẩn đạt: <strong>${x} lần / PG</strong></div>`;
     html+=`<div class="kpi-row"><div class="kpi-card"><div class="label">PG đạt chuẩn ${x} lần</div><div class="value ${statusClass(qp).status}">${qp}%</div><div class="frac">${sQualified} / ${sTarget} PG</div></div></div>`;
     html+=`<h3 class="kpi-section-title">Tiến độ ${label} — chỉ PG đủ ${x} lần mới tính hoàn thành</h3>`;
     html+=`<table class="mobile-frequency-progress"><thead><tr><th>Trainer</th><th>Khu vực</th><th>PG đạt chuẩn</th></tr></thead><tbody>`;
@@ -11221,6 +11256,7 @@ async function renderFrequencyNoiboBody_(subtype){
   // (Cài đặt ▸ Target), không còn cố định 4. Target (mẫu số) vẫn là số PG OPPO trạng thái Đang làm.
   const aiThreshold=campaignFrequencyX_(camp);
   const aiCheck=await loadAiCheckProgress_(camp);
+  if(!container.isConnected||!frequencyCampaignViewMatches_(camp))return;
   const trainerRows=trainers.map(t=>{
     const list=activePgsOfTrainer_(t.id);
     let aiQualified=0,checkQualified=0,bothQualified=0;
@@ -11238,17 +11274,19 @@ async function renderFrequencyNoiboBody_(subtype){
     const aiTarget=list.length;
     const checkTarget=list.length;
     // Đồng bộ snapshot target cũ (nếu trước đây từng bị lưu = số PG x 4) về đúng số PG đang làm.
-    rec.tuVanAINbTarget=aiTarget;
-    rec.checkShopNbTarget=checkTarget;
-    rec.tuVanAINbActual=aiQualified;
-    rec.checkShopNbActual=checkQualified;
+    if(updateMonthlySummary){
+      rec.tuVanAINbTarget=aiTarget;
+      rec.checkShopNbTarget=checkTarget;
+      rec.tuVanAINbActual=aiQualified;
+      rec.checkShopNbActual=checkQualified;
+    }
     return {
       t,list,aiQualified,checkQualified,bothQualified,aiTarget,checkTarget,
       aiPct:aiTarget?Math.round(aiQualified/aiTarget*1000)/10:0,
       checkPct:checkTarget?Math.round(checkQualified/checkTarget*1000)/10:0
     };
   });
-  dbSet('records:'+currentMonth,records); // lưu ở NỀN, không chờ — không cần chặn hiển thị vì records đã cập nhật xong trong bộ nhớ ở trên
+  if(updateMonthlySummary)dbSet('records:'+currentMonth,records); // Switching the view must not replace the primary campaign's monthly snapshot.
 
   const scopeIds=new Set(topScopeTrainers().map(t=>t.id));
   const scoped=trainerRows.filter(r=>scopeIds.has(r.t.id));
@@ -11257,7 +11295,7 @@ async function renderFrequencyNoiboBody_(subtype){
   const aiPct=aiTargetTotal?Math.round(aiDoneTotal/aiTargetTotal*1000)/10:0;
   const checkPct=checkTargetTotal?Math.round(checkDoneTotal/checkTargetTotal*1000)/10:0;
 
-  let html=`<div class="campaign-context">Chiến dịch: <strong>${camp.name}</strong> — ${monthLabel(currentMonth)} · Tư vấn AI đạt khi <strong>Kết quả Luyện TV ≥ ${aiThreshold}</strong> · Check shop đạt khi <strong>Kết quả Check = Pass</strong></div>`;
+  let html=`<div class="campaign-context">Chiến dịch: <strong>${escapeHtml(camp.name)}</strong> — ${monthLabel(currentMonth)} · Tư vấn AI đạt khi <strong>Kết quả Luyện TV ≥ ${aiThreshold}</strong> · Check shop đạt khi <strong>Kết quả Check = Pass</strong></div>`;
   html+=`<div class="kpi-row cols-2">
     <div class="kpi-card"><div class="label">Tư vấn AI — PG đạt chuẩn ${aiThreshold} lần</div><div class="value ${statusClass(aiPct).status}">${aiPct}%</div><div class="frac">${aiDoneTotal} / ${aiTargetTotal} PG</div></div>
     <div class="kpi-card"><div class="label">Check shop — PG đạt Pass</div><div class="value ${statusClass(checkPct).status}">${checkPct}%</div><div class="frac">${checkDoneTotal} / ${checkTargetTotal} PG</div></div>
