@@ -49,16 +49,24 @@ def given_name(value):
     return words[-1].title() if words else 'bạn'
 
 
-def compact_links(value):
-    """Only change display labels; preserve the complete destination and codes."""
+def split_links(value):
+    """Separate links without dropping useful inline labels or changing URLs."""
     destinations = []
     def remember(url):
         if url not in destinations: destinations.append(url)
         return ''
-    text = re.sub(r'\[([^\]]*)\]\((https?://[^\s]+)\)', lambda m: remember(m[2]), str(value))
+    def markdown_link(match):
+        remember(match[2])
+        label = match[1].strip()
+        return '' if label == match[2] or re.fullmatch(r'link(?:\s+\d+)?', label, re.I) else label
+    text = re.sub(r'\[([^\]]*)\]\((https?://[^\s]+)\)', markdown_link, str(value))
     text = re.sub(r'https?://[^\s<>]+', lambda m: remember(m[0].rstrip('\\')), text)
-    text = re.sub(r'(?m)^\s*(?:🔗\s*)?(?:Link(?: Zoom)?|Đường dẫn)\s*:\s*$', '', text, flags=re.I)
+    text = re.sub(r'(?m)^\s*(?:🔗\s*)?(?:Link(?: Zoom| điền| nộp| đăng ký)?|Đường dẫn|Biểu mẫu)\s*:\s*$', '', text, flags=re.I)
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
+    return text, destinations
+
+
+def link_labels(destinations):
     links = []
     for index, url in enumerate(destinations, 1):
         # The DingTalk client chooses link text colour. A red indicator works
@@ -66,20 +74,62 @@ def compact_links(value):
         label = 'Link' if len(destinations) == 1 else f'Link {index}'
         destination = url
         links.append(f'🔴 **[{label}]({destination})**')
-    return text + ('\n' + ' · '.join(links) if links else '')
+    return ' · '.join(links)
+
+
+def compact_links(value):
+    """Only change display labels; preserve the complete destination and codes."""
+    text, destinations = split_links(value)
+    links = link_labels(destinations)
+    return text + ('\n' + links if links else '')
+
+
+def concise_task_details(value):
+    """Remove presentation boilerplate, never cut actions, quantities or access codes.
+
+    The saved notice stays intact. This local formatter makes no AI/API calls.
+    """
+    text, destinations = split_links(value)
+    actions, notes, seen = [], [], set()
+    in_notes = False
+    for raw in text.splitlines():
+        line = re.sub(r'@Ollie_MT\b', '', raw, flags=re.I).strip().rstrip('\\')
+        line = re.sub(r'\*\*|__|`', '', line)
+        line = re.sub(r'^\s*(?:[-+•*]\s+|\d+[.)]\s+)', '', line)
+        line = re.sub(r'^[^\wÀ-ỹ]+', '', line).strip()
+        if not line or re.fullmatch(r'[_=\-—–\s]+', line): continue
+        if re.fullmatch(r'(?:dear|kính gửi|xin chào|chào)\s+(?:anh em(?: Trainer)?|các bạn|mọi người|cả (?:Team|nhà))[\s,!.]*', line, re.I): continue
+        if re.fullmatch(r'(?:trân trọng|cảm ơn(?: (?:anh em|mọi người|các bạn))?|hẹn gặp (?:anh em|mọi người|các bạn)(?: vào (?:chiều|sáng) mai)?)[\s,!.]*', line, re.I): continue
+        if re.match(r'^(?:deadline|hạn (?:hoàn thành|cuối|chót)|thời gian(?: hoàn thành)?)\s*[:：]', line, re.I): continue
+        line = re.sub(r'^thông báo\s*[:：—–-]?\s*', '', line, flags=re.I)
+        line = re.sub(r'^nội dung(?: công việc)?\s*[:：]\s*', '', line, flags=re.I).strip()
+        note = re.match(r'^(?:lưu ý|chú ý|yêu cầu|quan trọng)\s*[:：]\s*(.*)$', line, re.I)
+        if note:
+            in_notes = True
+            line = note[1].strip()
+        access = re.match(r'^(?:ID(?: cuộc họp| họp)?|meeting ID|mật (?:mã|khẩu)|passcode|password|hình thức|địa điểm)\s*[:：]', line, re.I)
+        if not line: continue
+        line = re.sub(r'\s+', ' ', line)
+        key = line.casefold()
+        if key in seen: continue
+        seen.add(key)
+        (notes if in_notes or access else actions).append(line)
+    return '; '.join(actions) or 'Công việc theo thông báo', notes, destinations
 
 
 def format_deadline_digest(name, tasks, now, group=False):
     """Tasks are (id, content, deadline, assignees), sorted by the caller."""
     local = datetime.fromtimestamp(now, ZoneInfo('Asia/Ho_Chi_Minh'))
     name = 'cả Team' if group else given_name(name)
-    lines = [f'Xin chào {name}! Chúc bạn một ngày mới vui vẻ!' if not group else
-             'Xin chào cả Team! Chúc mọi người một ngày mới vui vẻ!',
+    lines = [f'Xin chào {name}!' if not group else 'Xin chào cả Team!',
              '🌟 ' + WISHES[(local.date().toordinal() - 1) % len(WISHES)], '',
-             '📌 Hôm nay hãy nhớ những hạng mục cần hoàn thành!']
+             '📌 Việc cần hoàn thành:']
     for index, (_, content, deadline, _) in enumerate(tasks, 1):
         due = datetime.fromtimestamp(deadline, ZoneInfo('Asia/Ho_Chi_Minh'))
-        lines.extend(['', f'{index}. {compact_links(content)}',
-                      '⏰ Thời gian cần hoàn thành: ' + due.strftime('%H:%M · %d/%m/%Y')])
-    lines.extend(['', 'Hãy nhớ sắp xếp công việc để hoàn thành deadline nhé!'])
+        action, notes, destinations = concise_task_details(content)
+        lines.extend(['', f'{index}. {action}',
+                      '⏰ Hạn: ' + due.strftime('%H:%M · %d/%m/%Y')])
+        if notes: lines.append('📝 Lưu ý: ' + '; '.join(notes))
+        if destinations: lines.append(link_labels(destinations))
     return MarkdownMessage('\n'.join(lines))
+

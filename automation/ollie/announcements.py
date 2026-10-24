@@ -6,6 +6,7 @@ import json
 import unicodedata
 from datetime import datetime, timedelta
 from tracker import VIETNAM, folded
+from daily_digest import split_links
 
 
 def notice_source_id(group, owner, posted, text):
@@ -33,7 +34,7 @@ def meeting_access(text):
     """Retain usable links and joining credentials outside the summary limit."""
     # Markdown often repeats a URL as both the label and destination. Keep one
     # complete copy, including every query parameter, rather than shortening it.
-    urls = list(dict.fromkeys(re.findall(r"https?://[^\s<>\[\]()\\]+", text)))
+    _, urls = split_links(text)
     details = [f"🔗 Link: {url}" for url in urls]
     labels = {"id cuoc hop", "meeting id", "id hop", "id", "mat ma",
               "mat khau", "passcode", "password", "meeting passcode"}
@@ -148,7 +149,8 @@ def parse_announcement(text, source_time):
             cue=DUE_CUE.search(folded(value))
             value=value[:cue.start()].strip(' :—–-') if cue else ''
             value=re.sub(r'^[^\wÀ-ỹ]+','',value).strip()
-        if not value or 'http://' in value or 'https://' in value: continue
+        value, _ = split_links(value)
+        if not value: continue
         if label.startswith(('dear ', 'xin chao', 'anh em sap xep', 'hen gap', 'id cuoc hop:', 'mat ma:', 'link:', 'link zoom:')): continue
         if 'thong bao' in label: value = re.sub(r'(?i)^.*?thông báo\s*', '', value).strip(' :—–-')
         clean.append(value)
@@ -157,3 +159,4 @@ def parse_announcement(text, source_time):
     if len(summary) > 2000:
         raise ValueError('Chưa lưu: nội dung quá dài; hãy tách thông báo theo từng việc và deadline.')
     return summary + ('\n' + access if access else ''), deadline
+

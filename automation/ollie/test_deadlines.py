@@ -9,6 +9,7 @@ import unittest
 from unittest.mock import Mock
 
 from daily_digest import compact_links, format_deadline_digest, MarkdownMessage
+from announcements import parse_announcement
 from deadline_scheduler import configure_deadline_policy
 from deadline_source import DeadlineSource, import_sources
 from kpi import KpiSourceError
@@ -60,6 +61,70 @@ class DeadlineChecks(unittest.TestCase):
         self.assertIn(f'**[Link]({url})**', text)
         self.assertIn('ID cuộc họp: 123 456', text)
         self.assertIn('Mật mã: 001901', text)
+
+    def test_two_deadlines_share_one_daily_message_per_person_and_keep_scope(self):
+        incoming = SimpleNamespace(sender_staff_id='leader', original_text='Synthetic notice')
+        for event, content, due, recipients in (
+            ('late', 'Nộp 2 video', stamp(20, 17), ['do', 'cam', 'leader']),
+            ('early', 'Điền báo cáo', stamp(20, 9), ['do', 'cam', 'leader']),
+            ('private', 'Việc chỉ giao Cảm', stamp(21, 17), ['cam', 'leader']),
+        ):
+            self.tracker.save_task(content, due, incoming, event, stamp(12), recipients)
+        now = stamp(13, 8)
+        self.tracker.prepare_jobs(now)
+        self.tracker.prepare_jobs(now)
+        jobs = self.tracker.next_jobs(now)
+        self.assertEqual(len(jobs), 3, 'one outbox entry per day/person, not per task')
+        self.assertTrue(all(job[3] == 'dm' for job in jobs))
+        messages = {job[4]: self.tracker.job_content(job, now) for job in jobs}
+        self.assertIn('1. Điền báo cáo', messages['do'])
+        self.assertIn('2. Nộp 2 video', messages['do'])
+        self.assertLess(messages['do'].index('Điền báo cáo'), messages['do'].index('Nộp 2 video'))
+        self.assertNotIn('Việc chỉ giao Cảm', messages['do'])
+        self.assertIn('3. Việc chỉ giao Cảm', messages['cam'])
+        self.assertEqual(messages['leader'].count('Điền báo cáo'), 1)
+        sender = Mock()
+        sender.send.return_value = 'synthetic-receipt'
+        self.assertEqual(deliver_jobs(self.tracker, sender, Mock(), now)['accepted'], 3)
+        self.assertEqual(deliver_jobs(self.tracker, sender, Mock(), now)['accepted'], 0)
+        self.assertEqual(sender.send.call_count, 3)
+
+    def test_digest_keeps_work_notes_deadline_and_complete_form_link(self):
+        url = 'https://example.test/forms/report?entry=2&token=abc%2B123#section'
+        content = ('📢 THÔNG BÁO\nDear anh em Trainer,\n'
+                   'Nội dung công việc: Mỗi Trainer nộp 2 video A7 Pro\n'
+                   'Deadline: 20/10/2026 17:00\n'
+                   'Lưu ý:\n- Giữ tên file theo mẫu\n- Không sửa số liệu\n'
+                   f'Link điền: [{url}]({url})\nCảm ơn mọi người!')
+        text = format_deadline_digest('Đô', [(1, content, stamp(20, 17), ['do'])], stamp(13, 8))
+        self.assertIn('1. Mỗi Trainer nộp 2 video A7 Pro', text)
+        self.assertIn('⏰ Hạn: 17:00 · 20/10/2026', text)
+        self.assertIn('📝 Lưu ý: Giữ tên file theo mẫu; Không sửa số liệu', text)
+        self.assertEqual(text.count(url), 1)
+        self.assertIn(f'**[Link]({url})**', text)
+        for boilerplate in ('Dear anh em', 'THÔNG BÁO', 'Cảm ơn mọi người', 'Deadline:'):
+            self.assertNotIn(boilerplate, text)
+
+    def test_inline_form_instructions_and_multiple_destinations_are_preserved(self):
+        first = 'https://example.test/form_(team)?entry=2&token=abc%2B123'
+        second = 'https://example.test/guide?file=12#page-3'
+        content, due = parse_announcement(
+            f'THÔNG BÁO\nĐiền [báo cáo ngày]({first}) và nộp 2 ảnh\n'
+            f'Tài liệu: {second}\nHạn cuối: 20/10/2026 17:00', stamp(12))
+        text = format_deadline_digest('Đô', [(1, content, due, ['do'])], stamp(13, 8))
+        self.assertIn('Điền báo cáo ngày và nộp 2 ảnh', text)
+        self.assertEqual(text.count(first), 1)
+        self.assertEqual(text.count(second), 1)
+
+    def test_meeting_codes_and_all_requirements_are_not_cut_by_compaction(self):
+        url = 'https://example.zoom.us/j/12345678901?pwd=' + 'a' * 900
+        requirements = '; '.join(f'Yêu cầu {i}: nộp {i} ảnh' for i in range(1, 12))
+        content = f'Họp Trainer — A7 Pro, Buds3s\n{requirements}\nID cuộc họp: 123 4567 8901\nMật mã: 000019\nLink Zoom: {url}'
+        text = format_deadline_digest('Đô', [(1, content, stamp(20, 14), ['do'])], stamp(13, 8))
+        self.assertIn(requirements, text)
+        self.assertIn('ID cuộc họp: 123 4567 8901', text)
+        self.assertIn('Mật mã: 000019', text)
+        self.assertEqual(text.count(url), 1)
 
     def test_notice_has_original_and_durable_completion_event(self):
         incoming = SimpleNamespace(sender_staff_id='leader', sender_nick='Nghĩa', create_at=None,
@@ -132,3 +197,4 @@ class NoticeCryptoChecks(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
