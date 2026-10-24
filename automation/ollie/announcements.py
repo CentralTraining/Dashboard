@@ -31,8 +31,9 @@ def has_deadline(text):
 
 
 def deadline_line(text):
-    line=folded(notice_spacing(text)).replace('：',':')
-    line=re.sub(r"(?<!\d)([01]?\d|2[0-3])\s*(?:h|gio)\s*([0-5]\d)?(?!\d)",lambda m:f"{int(m[1]):02}:{m[2] or '00'}",line)
+    plain, _ = split_links(notice_spacing(text))
+    line=folded(plain).replace('：',':')
+    line=re.sub(r"(?<!\d)([01]?\d|2[0-3])\s*(?:h|gio)(?![a-z])\s*([0-5]\d)?(?!\d)",lambda m:f"{int(m[1]):02}:{m[2] or '00'}",line)
     line=re.sub(r"\b(20\d{2})-(\d{1,2})-(\d{1,2})\b",lambda m:f'{m[3]}/{m[2]}/{m[1]}',line)
     return line
 

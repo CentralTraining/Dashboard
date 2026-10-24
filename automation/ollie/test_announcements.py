@@ -62,6 +62,15 @@ class AnnouncementChecks(unittest.TestCase):
         self.assertIn(link, summary)
         self.assertEqual(datetime.fromtimestamp(due, VIETNAM).hour, 22)
 
+    def test_bare_sheet_link_after_short_date_does_not_become_an_extra_clock(self):
+        posted = datetime(2026, 10, 23, 12, tzinfo=VIETNAM).timestamp()
+        for link in ('https://example.test/form?gid=0', 'https://example.test/form?session=14:00&gid=0'):
+            with self.subTest(link=link):
+                summary, due = parse_announcement(f'Điền link đăng kí page trước 22h ngày 25/10 {link}', posted)
+                self.assertEqual(datetime.fromtimestamp(due, VIETNAM).isoformat(), '2026-10-25T22:00:00+07:00')
+                self.assertIn('Điền link đăng kí page', summary)
+                self.assertIn(link, summary)
+
     def test_short_dates_do_not_reschedule_old_notices_or_guess_distant_years(self):
         posted = datetime(2026, 10, 24, 12, tzinfo=VIETNAM).timestamp()
         for date in ('23.10', '25.2', '31.2'):
