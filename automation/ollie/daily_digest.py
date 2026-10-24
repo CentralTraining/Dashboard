@@ -97,12 +97,17 @@ def concise_task_details(value):
         line = re.sub(r'\*\*|__|`', '', line)
         line = re.sub(r'^\s*(?:[-+•*]\s+|\d+[.)]\s+)', '', line)
         line = re.sub(r'^[^\wÀ-ỹ]+', '', line).strip()
+        line = re.sub(r'\s+', ' ', line)
         if not line or re.fullmatch(r'[_=\-—–\s]+', line): continue
+        if line.casefold() in ('image', 'ảnh', 'hình ảnh', '@tất cả', 'tất cả'): continue
+        if re.fullmatch(r'như\b.*?\bgửi lại chi tiết thông tin(?: và các công việc cần làm)?[.!]*', line, re.I): continue
         if re.fullmatch(r'(?:dear|kính gửi|xin chào|chào)\s+(?:anh em(?: Trainer)?|các bạn|mọi người|cả (?:Team|nhà))[\s,!.]*', line, re.I): continue
         if re.fullmatch(r'(?:trân trọng|cảm ơn(?: (?:anh em|mọi người|các bạn))?|hẹn gặp (?:anh em|mọi người|các bạn)(?: vào (?:chiều|sáng) mai)?)[\s,!.]*', line, re.I): continue
         if re.match(r'^(?:deadline|hạn (?:hoàn thành|cuối|chót)|thời gian(?: hoàn thành)?)\s*[:：]', line, re.I): continue
         line = re.sub(r'^thông báo\s*[:：—–-]?\s*', '', line, flags=re.I)
+        line = re.sub(r'^chương trình\s*[:：—–-]\s*', '', line, flags=re.I)
         line = re.sub(r'^nội dung(?: công việc)?\s*[:：]\s*', '', line, flags=re.I).strip()
+        line = re.sub(r'^trước tiên(?:\s+(?:anh em|mọi người|các bạn))?\s+', '', line, flags=re.I)
         note = re.match(r'^(?:lưu ý|chú ý|yêu cầu|quan trọng)\s*[:：]\s*(.*)$', line, re.I)
         if note:
             in_notes = True

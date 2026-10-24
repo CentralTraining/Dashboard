@@ -10,6 +10,24 @@ from tracker import Tracker, VIETNAM
 
 
 class GroupCaptureTests(unittest.TestCase):
+    def test_short_findx10_deadline_starts_next_original_morning_once(self):
+        database = sqlite3.connect(':memory:')
+        state = {'leader_staff_id': 'owner', 'leader_name': 'Leader thử nghiệm',
+                 'conversation_id': 'group', 'audience_staff_ids': ['trainer']}
+        tracker = Tracker(database, state)
+        configure_deadline_policy(tracker)
+        posted = datetime(2026, 10, 23, 12, tzinfo=VIETNAM).timestamp()
+        text = 'THÔNG BÁO LĂNG KÍNH FIND X10\nNộp nội dung chương trình.\nDeadline: 22h ngày 25.10'
+        incoming = SimpleNamespace(sender_staff_id='owner', create_at=posted * 1000,
+                                   conversation_type='2', conversation_id='group')
+        for message_id in ('stream', 'history'):
+            tracker.handle(text, incoming, message_id, now=posted)
+        self.assertEqual(database.execute('SELECT count(*) FROM tasks').fetchone()[0], 1)
+        due, first = database.execute('SELECT deadline,first_reminder_at FROM tasks').fetchone()
+        self.assertEqual(datetime.fromtimestamp(due, VIETNAM).isoformat(), '2026-10-25T22:00:00+07:00')
+        self.assertEqual(datetime.fromtimestamp(first, VIETNAM).isoformat(), '2026-10-24T08:00:00+07:00')
+        database.close()
+
     def test_relative_day_in_heading_and_clock_on_separate_line(self):
         posted = message_time("2026-10-12 00:30:00")
         _, due = parse_announcement("Mẫu nhắc việc ngày mai!\nNộp báo cáo tuần.\nThời gian : 20:25", posted)
@@ -75,3 +93,4 @@ class GroupCaptureTests(unittest.TestCase):
         self.assertEqual(database.execute("SELECT count(*) FROM tasks").fetchone()[0], 1)
         self.assertEqual(database.execute("SELECT count(*) FROM assignments").fetchone()[0], 2)
         database.close()
+

@@ -17,14 +17,21 @@ def notice_source_id(group, owner, posted, text):
 
 
 DUE_CUE = re.compile(r"\b(?:deadline|han (?:hoan thanh|chot|cuoi)|thoi gian(?: hoan thanh)?|hoan thanh truoc|cham nhat)\b\s*(?:[:：]|(?=\d{1,2}(?:[:h./-]|\s*gio)|20\d{2}-|ngay\s+(?:mai|kia|\d)|hom nay))|\btruoc\s+(?=\d{1,2}(?:[:h./-]|\s*gio)|ngay\s+(?:mai|kia|\d))",re.I)
+NATURAL_DUE = re.compile(r"(?<!\d)(?:[01]?\d|2[0-3])\s*(?:(?:h|gio)\s*(?:[0-5]\d)?|:[0-5]\d)\s*[,—–-]?\s*ngay\s+\d{1,2}[./-]\d{1,2}(?:[./-]20\d{2})?(?![\d./-])", re.I)
+
+
+def notice_spacing(text):
+    # Copied DingTalk notices often use NBSP between words, including due labels.
+    return re.sub(r'[^\S\n]+', ' ', str(text).replace('\r\n', '\n'))
 
 
 def has_deadline(text):
-    return bool(DUE_CUE.search(folded(text)))
+    value = folded(notice_spacing(text))
+    return bool(DUE_CUE.search(value) or NATURAL_DUE.search(value))
 
 
 def deadline_line(text):
-    line=folded(text).replace('：',':')
+    line=folded(notice_spacing(text)).replace('：',':')
     line=re.sub(r"(?<!\d)([01]?\d|2[0-3])\s*(?:h|gio)\s*([0-5]\d)?(?!\d)",lambda m:f"{int(m[1]):02}:{m[2] or '00'}",line)
     line=re.sub(r"\b(20\d{2})-(\d{1,2})-(\d{1,2})\b",lambda m:f'{m[3]}/{m[2]}/{m[1]}',line)
     return line
@@ -74,6 +81,7 @@ def summarize_meeting(text):
 
 
 def meeting_deadline(text, source_time):
+    text = notice_spacing(text)
     lines = [line for line in text.splitlines() if has_deadline(line)]
     if len(lines) != 1:
         raise ValueError("Chưa lưu: cần một dòng Thời gian hoặc Deadline cho mỗi thông báo.")
@@ -101,7 +109,7 @@ def meeting_deadline(text, source_time):
     elif "ngay kia" in line:
         relative = original_day + timedelta(days=2)
     full = re.search(r"(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](20\d{2})(?!\d)", line)
-    short = re.search(r"(?<!\d)(\d{1,2})[./](\d{1,2})(?![\d./])", line)
+    short = re.search(r"(?<!\d)(\d{1,2})[./-](\d{1,2})(?![\d./-])", line)
     if full:
         day, month, year = map(int, full.groups())
         try:
@@ -114,6 +122,17 @@ def meeting_deadline(text, source_time):
         date = relative
         if short and tuple(map(int, short.groups())) != (date.day, date.month):
             raise ValueError("Chưa lưu: ‘ngày mai’ và ngày/tháng ghi trong thông báo không khớp. Gửi ngày, tháng, năm chính xác nhé.")
+    elif short:
+        day, month = map(int, short.groups())
+        year = original_day.year + int(original_day.month == 12 and month == 1)
+        try:
+            date = datetime(year, month, day).date()
+        except ValueError:
+            raise ValueError("Chưa lưu: ngày hoàn thành không hợp lệ.") from None
+        # Use the original posting date, never today's replay/capture date.
+        # Do not roll an old/forwarded deadline into the following year.
+        if not 0 <= (date - original_day).days <= 90:
+            raise ValueError("Chưa lưu: ngày thiếu năm ngoài khoảng 90 ngày từ tin gốc; cần ngày, tháng và năm đầy đủ.")
     else:
         raise ValueError("Chưa lưu: cần ngày, tháng và năm, ví dụ Thời gian: 14:00, 20/10/2026.")
     weekdays = {"thu hai":0,"thu ba":1,"thu tu":2,"thu nam":3,"thu sau":4,"thu bay":5,"chu nhat":6}
@@ -124,11 +143,13 @@ def meeting_deadline(text, source_time):
 
 
 def parse_meeting(text, source_time):
+    text = notice_spacing(text)
     return summarize_meeting(text), meeting_deadline(text, source_time)
 
 
 def parse_announcement(text, source_time):
     """Meetings keep joining details; other notices retain actions and quantities."""
+    text = notice_spacing(text)
     title = next((line for line in text.splitlines() if 'thong bao' in folded(line)), '')
     if re.search(r'\bhop\b|\bmeeting\b', folded(title)):
         return parse_meeting(text, source_time)
@@ -146,7 +167,7 @@ def parse_announcement(text, source_time):
         value = line.strip().rstrip('\\')
         label = folded(re.sub(r'^[^\wÀ-ỹ]+', '', value))
         if line in lines:
-            cue=DUE_CUE.search(folded(value))
+            cue=DUE_CUE.search(folded(value)) or NATURAL_DUE.search(folded(value))
             value=value[:cue.start()].strip(' :—–-') if cue else ''
             value=re.sub(r'^[^\wÀ-ỹ]+','',value).strip()
         value, _ = split_links(value)

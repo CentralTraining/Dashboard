@@ -19,6 +19,65 @@ Mật mã: 001901
 
 
 class AnnouncementChecks(unittest.TestCase):
+    def test_short_day_month_uses_original_posting_year_and_exact_evening_hour(self):
+        posted = datetime(2026, 10, 23, 12, tzinfo=VIETNAM).timestamp()
+        for text in (
+            'THÔNG BÁO LĂNG KÍNH FIND X10\nNộp nội dung chương trình.\nDeadline: 22h ngày 25.10',
+            'Thông báo lăng kính Find X10, hoàn thành trước 22h ngày 25.10',
+            'Lăng kính Find X10 — 22h ngày 25.10',
+            'Lăng kính Find X10\nThời gian: 22:00, 25/10',
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(has_deadline(text))
+                summary, due = parse_announcement(text, posted)
+                self.assertIn('find x10', summary.casefold())
+                self.assertEqual(datetime.fromtimestamp(due, VIETNAM).isoformat(), '2026-10-25T22:00:00+07:00')
+
+    def test_inline_registration_notice_keeps_work_and_both_complete_links(self):
+        from daily_digest import format_deadline_digest
+        posted = datetime(2026, 10, 23, 12, tzinfo=VIETNAM).timestamp()
+        form = 'https://docs.google.com/spreadsheets/d/SYNTHETIC_FORM/edit?gid=0#gid=0'
+        image = 'https://example.test/notice-image.jpg'
+        text = ("CHƯƠNG TRÌNH - LĂNG KÍNH FINDX10 SERIES\n"
+                "Như các thông tin trưa nay đã họp nhanh về Chương trình thi đua truyền thông FindX10 giữa các khu vực, Leader gửi lại chi tiết thông tin và các công việc cần làm.\n"
+                f"Trước tiên anh em điền link đăng kí page đăng bài trước 22h ngày 25/10 [{form}]({form})\n"
+                f"[image]({image})\n=======\n@Tất cả")
+        text = text.replace(' ', '\u00a0')
+        summary, due = parse_announcement(text, posted)
+        self.assertEqual(datetime.fromtimestamp(due, VIETNAM).isoformat(), '2026-10-25T22:00:00+07:00')
+        rendered = format_deadline_digest('Trainer thử nghiệm', [(1, summary, due, ['synthetic'])], posted)
+        self.assertIn('điền link đăng kí page đăng bài', rendered)
+        self.assertNotIn('Như các thông tin', rendered)
+        self.assertNotIn('image;', rendered)
+        self.assertNotIn('Tất cả', rendered)
+        self.assertEqual(rendered.count(form), 1)
+        self.assertEqual(rendered.count(image), 1)
+
+    def test_nbsp_due_labels_are_read_and_link_destinations_are_unchanged(self):
+        posted = datetime(2026, 10, 23, 12, tzinfo=VIETNAM).timestamp()
+        link = 'https://example.test/form?token=abc%2B123&entry=2'
+        text = f'Nộp báo cáo\nHạn\u00a0hoàn\u00a0thành:\u00a022h\u00a0ngày\u00a025/10\nLink: {link}'
+        self.assertTrue(has_deadline(text))
+        summary, due = parse_announcement(text, posted)
+        self.assertIn(link, summary)
+        self.assertEqual(datetime.fromtimestamp(due, VIETNAM).hour, 22)
+
+    def test_short_dates_do_not_reschedule_old_notices_or_guess_distant_years(self):
+        posted = datetime(2026, 10, 24, 12, tzinfo=VIETNAM).timestamp()
+        for date in ('23.10', '25.2', '31.2'):
+            with self.subTest(date=date), self.assertRaises(ValueError):
+                parse_announcement(f'Nộp báo cáo\nDeadline: 22h ngày {date}', posted)
+        december = datetime(2026, 12, 30, 12, tzinfo=VIETNAM).timestamp()
+        _, due = parse_announcement('Nộp báo cáo\nDeadline: 22h ngày 2.1', december)
+        self.assertEqual(datetime.fromtimestamp(due, VIETNAM).isoformat(), '2027-01-02T22:00:00+07:00')
+
+    def test_multiple_natural_deadlines_and_conflicting_relative_dates_stay_ambiguous(self):
+        posted = datetime(2026, 10, 23, 12, tzinfo=VIETNAM).timestamp()
+        with self.assertRaises(ValueError):
+            parse_announcement('Nộp 2 video\n22h ngày 25.10\n17h ngày 26.10', posted)
+        with self.assertRaisesRegex(ValueError, 'không khớp'):
+            parse_announcement('Nộp báo cáo\nDeadline: 22h ngày mai 25.10', posted)
+
     def test_natural_inline_deadline_retains_the_work_and_vietnam_hour(self):
         source=datetime(2026,10,14,9,tzinfo=VIETNAM).timestamp()
         for suffix in ('trước 17h ngày 20/10/2026','chậm nhất 17 giờ 30 ngày 20/10/2026','Deadline 20/10/2026 17:00'):
@@ -71,3 +130,4 @@ class AnnouncementChecks(unittest.TestCase):
 
 if __name__=='__main__':
     unittest.main()
+

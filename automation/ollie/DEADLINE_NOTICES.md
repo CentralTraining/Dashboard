@@ -62,8 +62,14 @@ Thời gian hoàn thành: 20/10/2026 17:00
 ```
 
 Deadline chỉ có ngày dùng 23:59 ngày đó. Buổi họp cần giờ rõ ràng. Bot không
-đoán ngày/năm hoặc tự sửa “ngày mai” khi mâu thuẫn với ngày ghi rõ; thông báo
+đổi “ngày mai” khi mâu thuẫn với ngày ghi rõ; thông báo
 thiếu hoặc có nhiều deadline cần bổ sung/tách từng việc để được tạo lịch.
+
+Ngày/tháng viết gọn như `Deadline: 22h ngày 25.10` dùng năm của thời điểm
+đăng tin gốc, khi ngày đó nằm từ hôm đăng đến 90 ngày tiếp theo. Riêng tháng
+12 sang tháng 1 dùng năm kế tiếp. Ngày đã qua, quá xa hoặc không hợp lệ cần
+ghi đủ năm; bot không đổi thông báo cũ thành lịch mới khi quét lại. Cụm rõ
+giờ/ngày như `Lăng kính Find X10 — 22h ngày 25.10` cũng được nhận.
 
 ## Vận hành
 
