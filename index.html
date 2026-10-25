@@ -2106,6 +2106,270 @@ html body :is(nav.tabs,.subnav,.so-stats-pages,.mobile-home-chart-tabs)>button:f
 @media print{.progress-capture-tools,#progressCaptureNotice{display:none!important;}}
 
 </style>
+<style id="trainer-channel-20261024">
+#tab-extensions{min-width:0;max-width:100%;--channel-teal:#168881;--channel-blue:#4e77b8;}
+.channel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
+.channel-heading h2{margin:0 0 5px;}.channel-heading p{margin:0;color:var(--muted);font-size:13px;}
+.channel-toolbar{display:flex;align-items:end;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin:14px 0;}
+.channel-toolbar label{display:grid;gap:5px;font-size:11px;font-weight:700;color:var(--muted);min-width:125px;flex:1 1 130px;}
+.channel-toolbar input,.channel-toolbar select{width:100%;min-width:0;padding:7px 9px;font-size:12px;min-height:34px;}
+.channel-modes{display:flex;gap:3px;align-self:end;padding:3px;background:#edf3ef;border-radius:7px;}
+.channel-modes button{padding:8px 11px;border:0;border-radius:5px;background:transparent;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.channel-modes button[aria-pressed=true]{color:#fff;background:#0b5e36;}
+.channel-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0;}
+.channel-stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0;}
+.channel-stat>span{display:block;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+.channel-stat strong{display:block;font-size:27px;color:var(--green-dark);line-height:1.35;margin:4px 0;}
+.channel-stat small{font-size:11px;color:var(--muted);line-height:1.4;display:block;}
+.channel-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:14px;margin:14px 0;}
+.channel-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0;}
+.channel-card h3{font-size:16px;margin:0 0 5px;color:var(--green-dark);}.channel-card p{font-size:11px;color:var(--muted);margin:0 0 14px;line-height:1.5;}
+.channel-chart-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(90px,2.1fr) 88px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #eff4f1;}
+.channel-chart-row:last-child{border-bottom:0;}.channel-chart-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:700;}
+.channel-chart-name small{display:block;font-size:10px;font-weight:400;color:var(--muted);}
+.channel-track{position:relative;background:#edf4ef;border-radius:5px;height:12px;overflow:hidden;}.channel-track>i{display:block;height:100%;background:#0b7547;border-radius:5px;}
+.channel-track.unknown{background:repeating-linear-gradient(135deg,#f0f3f1,#f0f3f1 4px,#e1e7e3 4px,#e1e7e3 5px);}
+.channel-chart-value{text-align:right;font-size:11px;font-weight:700;white-space:nowrap;}.channel-chart-value small{display:block;font-size:10px;font-weight:400;color:var(--muted);}
+.channel-legend{display:flex;gap:14px;font-size:10px;color:var(--muted);margin:10px 0 4px;}.channel-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;background:#0b7547;margin-right:4px;}.channel-legend i.remaining{background:#e2ece5;}
+.channel-engagement .channel-track>i{background:var(--channel-teal);}.channel-engagement[data-metric=shares] .channel-track>i{background:var(--channel-blue);}
+.channel-compact-tabs{display:flex;gap:4px;margin-bottom:10px;}.channel-compact-tabs button{border:1px solid var(--line);background:#fff;color:var(--muted);padding:5px 9px;border-radius:5px;font-size:11px;cursor:pointer;}.channel-compact-tabs button.active{border-color:#168881;color:#096f67;background:#edf8f6;}
+.channel-timeline{height:170px;display:flex;align-items:stretch;gap:5px;padding:7px 0 0;overflow:hidden;}
+.channel-day{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:end;gap:4px;font-size:9px;color:var(--muted);}
+.channel-day-bar{width:65%;max-width:40px;background:#2e9e74;border-radius:4px 4px 0 0;min-height:2px;position:relative;}.channel-day-bar span{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-weight:700;font-size:10px;color:#17633c;}
+.channel-day>small{font-size:8px;white-space:nowrap;}.channel-timeline.no-values{align-items:center;justify-content:center;color:var(--muted);font-size:12px;}
+.channel-banner{border:1px solid #cce0d3;background:#f1f8f3;padding:12px 14px;border-radius:9px;font-size:12px;line-height:1.6;}.channel-banner button{margin-left:8px;}
+.channel-status{font-size:11px;color:var(--muted);margin:10px 0;min-height:17px;}.channel-status[data-error=true]{color:#b33529;}
+.channel-detail-table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12px;}.channel-detail-table th,.channel-detail-table td{padding:9px 8px;vertical-align:middle;overflow-wrap:anywhere;border-bottom:1px solid var(--line);}
+.channel-detail-table th{font-size:11px;background:#eaf4ed;color:#0b5e36;text-align:left;}.channel-detail-table th:first-child{width:20%;}.channel-detail-table a{color:#075e38;text-decoration:none;}
+.channel-detail-table small{display:block;font-size:10px;color:var(--muted);}.channel-detail-table button{font-size:10px;padding:4px 6px;white-space:nowrap;}
+.channel-tag{display:inline-block;font-size:10px;padding:3px 5px;background:#eef3f0;border-radius:4px;color:var(--muted);}.channel-tag.good{background:#e3f3e9;color:#09623a;}.channel-tag.wait{background:#fff4dd;color:#946000;}
+.channel-overlay{position:fixed;inset:0;z-index:250;background:#123b2570;display:flex;align-items:center;justify-content:center;padding:16px;}
+.channel-dialog{width:min(760px,100%);max-height:86vh;overflow:auto;background:#fff;border-radius:12px;padding:20px;box-shadow:0 15px 70px #07391f2b;}.channel-dialog h3{margin:0 0 14px;color:#075e38;}.channel-dialog .channel-close{float:right;border:1px solid var(--line);background:#fff;padding:3px 9px;border-radius:5px;cursor:pointer;}
+.channel-dialog label{display:grid;gap:6px;margin:12px 0;font-size:12px;font-weight:700;}.channel-dialog input,.channel-dialog select{width:100%;font-size:13px;}.channel-dialog ol{padding-left:20px;font-size:13px;line-height:1.8;}.channel-dialog code{overflow-wrap:anywhere;font-size:11px;white-space:normal;}.channel-dialog button{margin-right:5px;}.channel-video{padding:11px 0;border-bottom:1px solid var(--line);font-size:12px;line-height:1.6;}.channel-video a{color:#075e38;}.channel-video small{display:block;color:var(--muted);}
+.channel-empty{padding:25px 15px;text-align:center;color:var(--muted);font-size:12px;}.channel-note{font-size:10px;color:var(--muted);line-height:1.6;margin:12px 0;}
+.mobile-layout #tab-extensions .channel-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:8px;gap:7px;}.mobile-layout #tab-extensions .channel-toolbar label{min-width:0;font-size:9px;}.mobile-layout #tab-extensions .channel-toolbar :is(input,select){font-size:10px;min-height:29px;padding:4px;}.mobile-layout .channel-modes{grid-column:1/-1;justify-content:stretch;}.mobile-layout .channel-modes button{flex:1;padding:6px;font-size:10px;}
+.mobile-layout .channel-heading{gap:7px;align-items:start;}.mobile-layout .channel-heading h2{font-size:19px;}.mobile-layout .channel-heading p{font-size:10px;}.mobile-layout .channel-heading button{font-size:10px;padding:6px;}
+.mobile-layout .channel-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}.mobile-layout .channel-stat{padding:9px;}.mobile-layout .channel-stat strong{font-size:22px;margin:1px 0;}.mobile-layout .channel-stat>span{font-size:9px;}.mobile-layout .channel-stat small{font-size:9px;}
+.mobile-layout .channel-grid{grid-template-columns:minmax(0,1fr);gap:8px;}.mobile-layout .channel-card{padding:11px;}.mobile-layout .channel-card h3{font-size:14px;}.mobile-layout .channel-card p{font-size:10px;margin-bottom:7px;}.mobile-layout .channel-chart-row{grid-template-columns:minmax(76px,1fr) minmax(72px,1.5fr) 68px;gap:6px;padding:7px 0;}.mobile-layout .channel-chart-name{font-size:10px;}.mobile-layout .channel-chart-name small,.mobile-layout .channel-chart-value small{font-size:9px;}.mobile-layout .channel-chart-value{font-size:10px;}.mobile-layout .channel-track{height:9px;}
+.mobile-layout .channel-banner{font-size:10px;padding:9px;}.mobile-layout .channel-banner button{font-size:10px;padding:4px 6px;}.mobile-layout .channel-timeline{height:125px;}.mobile-layout .channel-day>small{font-size:7px;}
+.mobile-layout .channel-detail-table th,.mobile-layout .channel-detail-table td{padding:7px 4px;font-size:9px;}.mobile-layout .channel-detail-table small{font-size:8px;}.mobile-layout .channel-detail-table th:nth-child(2),.mobile-layout .channel-detail-table td:nth-child(2){display:none;}.mobile-layout .channel-detail-table th:first-child{width:31%;}.mobile-layout .channel-detail-table th:last-child{width:24%;}.mobile-layout .channel-detail-table button{font-size:8px;padding:3px 4px;}.mobile-layout .channel-dialog{padding:14px;}.mobile-layout .channel-dialog :is(input,select){min-width:0;font-size:12px;}
+.mobile-layout #tab-extensions .channel-detail-table{min-width:0!important;width:100%!important;max-width:100%!important;table-layout:fixed;}
+.mobile-layout #tab-extensions .table-scroll:has(.channel-detail-table){overflow:visible!important;border:0;max-width:100%;}
+.mobile-layout #tab-extensions .table-scroll:has(.channel-detail-table):before{display:none!important;}
+.mobile-layout .channel-detail-table :is(button,.channel-tag){max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:8px;}
+.channel-followers-card{margin:14px 0}.channel-followers-card .channel-heading{margin-bottom:10px}.channel-follow-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px 0 16px;border-bottom:1px solid var(--line)}.channel-follow-summary>div{min-width:0}.channel-follow-summary span,.channel-follow-summary small{display:block;font-size:10px;color:var(--muted);line-height:1.5}.channel-follow-summary strong{display:block;font-size:25px;line-height:1.5;color:var(--green-dark)}.channel-follow-summary .down strong,.channel-follower-change.down,.channel-chart-value.down{color:#b33d3d}.channel-follow-summary .up strong,.channel-follower-change.up,.channel-chart-value.up{color:#0b7547}.channel-follow-summary .unknown strong{color:var(--muted)}
+.channel-follow-warning{padding:9px 11px;background:#fff4df;color:#815509!important;border-radius:6px;margin:9px 0!important}
+.channel-follow-summary strong span{font:inherit;color:inherit;line-height:inherit;display:inline}
+.mobile-layout .channel-follow-summary strong span{font:inherit;color:inherit;line-height:inherit}
+.channel-follow-missing{padding:8px 10px;background:#f1f5f3;border-radius:6px;color:var(--muted);margin:9px 0!important}.channel-follow-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}.channel-followers-card .channel-heading>div:first-child{min-width:0}.channel-follow-actions button{font-size:10px;padding:6px 9px}.channel-count-compact{display:none}.channel-follow-trend circle.manual-baseline{fill:white;stroke:#198365;stroke-dasharray:2 2;stroke-width:2}.channel-follow-history th:first-child{width:54%}.channel-follow-history th:nth-child(2){width:21%}.channel-follow-history th:last-child{width:25%}.channel-follow-history td:nth-child(2){text-align:right}
+.channel-metrics-card{margin:14px 0}.channel-metrics-table{width:100%;min-width:0}.channel-metrics-row{display:grid;grid-template-columns:minmax(100px,1.2fr) repeat(3,minmax(0,1fr));gap:18px;padding:11px 8px;align-items:center;border-bottom:1px solid #edf3ef}.channel-metrics-row>div{min-width:0}.channel-metrics-row:last-child{border-bottom:0}.channel-metrics-head{background:#ecf5ef;color:#0b5e36;border-radius:7px;font-weight:700;font-size:12px}.channel-metrics-head>div:not(:first-child){text-align:right}.channel-metrics-head small{display:block;font-size:10px;font-weight:400;color:var(--muted);margin-top:3px}.channel-metric-trainer strong{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:12px}.channel-metric-trainer small{display:block;font-size:10px;color:var(--muted);margin-top:3px}.channel-metric-number{text-align:right;font-size:12px;font-weight:750;font-variant-numeric:tabular-nums;line-height:1.5}.channel-metric-number .channel-follow-detail{text-align:right;font-size:inherit}.channel-metric-cell>small{display:block;text-align:right;font-size:9px;color:var(--muted);margin-top:3px}.channel-metric-track{height:8px;margin-top:4px;border-radius:4px;background:#eef4f0;position:relative;overflow:hidden}.channel-metric-track>i{position:absolute;top:0;bottom:0;background:#198365}.channel-metric-track.follow:after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px solid #bdcec3}.channel-metric-cell.down .channel-metric-number{color:#b33d3d}.channel-metric-cell.down .channel-metric-track>i{background:#c75b59}.channel-metric-cell.up .channel-metric-number{color:#0b7547}.channel-metric-track.like>i{background:#168881}.channel-metric-track.share>i{background:#4e77b8}.channel-metric-track.unknown{background:repeating-linear-gradient(135deg,#f0f3f1,#f0f3f1 4px,#e1e7e3 4px,#e1e7e3 5px)}
+.mobile-layout .channel-metrics-row{grid-template-columns:minmax(60px,1.2fr) repeat(3,minmax(0,1fr));gap:6px;padding:8px 2px}.mobile-layout .channel-metrics-head{font-size:9px}.mobile-layout .channel-metrics-head small{font-size:7px}.mobile-layout .channel-metric-trainer strong{font-size:10px}.mobile-layout .channel-metric-trainer small{display:none}.mobile-layout .channel-metric-number{font-size:11px}.mobile-layout .channel-metric-cell>small{font-size:8px;line-height:1.25}.mobile-layout .channel-metric-track{height:5px}.mobile-layout .channel-count-full{display:none}.mobile-layout .channel-count-compact{display:inline;white-space:nowrap}.mobile-layout .channel-follow-actions{gap:4px}.mobile-layout .channel-follow-actions button{font-size:9px;padding:5px}.mobile-layout .channel-follow-summary strong{overflow-wrap:anywhere}
+.channel-follow-history table{min-width:0!important;table-layout:fixed}.channel-follow-history th:first-child{width:75%}.channel-follow-history th:last-child{width:25%}.mobile-layout .channel-follow-trend text{font-size:22px}.mobile-layout .channel-follow-history .table-scroll{overflow:visible!important}.mobile-layout .channel-follow-history .table-scroll:before{display:none!important}
+.channel-follow-track{height:12px;position:relative;border-radius:4px;background:#f0f5f2;overflow:hidden}.channel-follow-track:after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px solid #b2c4b9}.channel-follow-track>i{position:absolute;top:0;bottom:0;background:#21845d;min-width:0}.channel-follow-track.down>i{background:#c75b59}.channel-follow-track.unknown{background:repeating-linear-gradient(135deg,#f0f3f1,#f0f3f1 4px,#e1e7e3 4px,#e1e7e3 5px)}.channel-follow-name,.channel-follow-detail{border:0;background:none;color:inherit;cursor:pointer;font:inherit;padding:0;text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.channel-follow-name{text-decoration:underline;text-decoration-color:#bed5c7;text-underline-offset:3px}.channel-follow-detail{font-weight:700}.channel-follow-trend{margin-top:12px}.channel-follow-trend svg{display:block;width:100%;max-width:100%;height:auto;max-height:230px;overflow:visible}.channel-follow-trend text{fill:var(--muted);font-size:12px}.channel-follow-axis{stroke:#cbdcd1;stroke-width:1}.channel-follow-line{fill:none;stroke:#198365;stroke-width:2.5;stroke-linejoin:round}.channel-follow-trend circle{fill:#198365;stroke:white;stroke-width:1.5}.channel-follow-trend circle:focus,.channel-follow-trend circle:hover{fill:#075434;r:6}.channel-follow-observed{font-size:11px;color:var(--muted);margin:5px 0;line-height:1.6}.channel-follow-footnote{font-size:10px!important;line-height:1.65!important;margin:12px 0 0!important}.channel-follow-upgrade{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}.channel-follow-upgrade button{font-size:11px;padding:6px 9px}.channel-follow-upgrade details{font-size:11px;width:100%}.channel-follow-upgrade details>div{display:flex;gap:6px;flex-wrap:wrap;padding-top:8px}.channel-follow-upgrade summary{cursor:pointer;color:#08673d}.channel-follow-empty{padding:24px 12px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}.channel-follow-history{max-height:330px;overflow:auto}.channel-follow-history table{width:100%;border-collapse:collapse;font-size:12px}.channel-follow-history th,.channel-follow-history td{padding:9px 6px;text-align:left;border-bottom:1px solid var(--line)}.channel-follow-history th{position:sticky;top:0;background:white;color:#075e38}.channel-follow-history th:last-child,.channel-follow-history td:last-child{text-align:right}
+#tab-extensions .channel-detail-table th:nth-child(1){width:18%}#tab-extensions .channel-detail-table th:nth-child(2){width:17%}#tab-extensions .channel-detail-table th:nth-child(3){width:13%}#tab-extensions .channel-detail-table th:nth-child(4),#tab-extensions .channel-detail-table th:nth-child(5){width:7%}#tab-extensions .channel-detail-table th:nth-child(6){width:11%}#tab-extensions .channel-detail-table th:nth-child(7){width:12%}#tab-extensions .channel-detail-table th:nth-child(8){width:15%}#tab-extensions .channel-detail-table .channel-follow-detail{border:0;padding:0;background:transparent;white-space:nowrap}
+.mobile-layout .channel-follow-summary{gap:7px;padding:9px 0}.mobile-layout .channel-follow-summary strong{font-size:20px}.mobile-layout .channel-follow-summary span,.mobile-layout .channel-follow-summary small{font-size:8px}.mobile-layout .channel-followers-card .channel-heading h3{font-size:14px}.mobile-layout .channel-followers-card .channel-follow-help{font-size:9px;padding:4px 6px}.mobile-layout .channel-follow-observed{font-size:9px}.mobile-layout .channel-follow-upgrade button{font-size:9px;padding:5px 7px}.mobile-layout .channel-follow-footnote{font-size:9px!important}.mobile-layout .channel-follow-comparison .channel-chart-row{grid-template-columns:minmax(62px,1fr) minmax(50px,1.5fr) 68px}.mobile-layout #tab-extensions .channel-detail-table th:nth-child(4),.mobile-layout #tab-extensions .channel-detail-table th:nth-child(5),.mobile-layout #tab-extensions .channel-detail-table td:nth-child(4),.mobile-layout #tab-extensions .channel-detail-table td:nth-child(5){display:none}.mobile-layout #tab-extensions .channel-detail-table th:nth-child(1){width:27%}.mobile-layout #tab-extensions .channel-detail-table th:nth-child(3){width:17%}.mobile-layout #tab-extensions .channel-detail-table th:nth-child(6){width:15%}.mobile-layout #tab-extensions .channel-detail-table th:nth-child(7){width:17%}.mobile-layout #tab-extensions .channel-detail-table th:nth-child(8){width:24%}.mobile-layout #tab-extensions .channel-detail-table .channel-follow-detail{font-size:9px}.mobile-layout .channel-follow-history th,.mobile-layout .channel-follow-history td{font-size:10px;padding:8px 4px}
+#tab-extensions #channelTool{--channel-row:29px}.channel-grid-compact{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:12px;align-items:stretch;margin:10px 0}.channel-grid-compact>.channel-card{margin:0;padding:13px 14px}.channel-grid-compact .channel-card h3{font-size:14px;margin:0}.channel-grid-compact .channel-panel-title{display:flex;justify-content:space-between;gap:8px;align-items:center;height:21px}.channel-grid-compact .channel-panel-caption{font-size:9px;line-height:1.5;margin:1px 0 8px;min-height:14px;color:var(--muted)}.channel-chart-help,.channel-stat-info{padding:0!important;border:0!important;background:none!important;color:#658173!important;font-size:12px;cursor:pointer;line-height:1}.channel-compact-heading{margin-bottom:8px;gap:8px}.channel-compact-heading h2{font-size:22px!important;line-height:1.2;margin:0!important}.channel-compact-heading p{font-size:10px;margin-top:3px}.channel-heading-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}.channel-heading-actions button{font-size:11px;padding:7px 9px}.channel-toolbar{padding:8px 10px;gap:8px;margin:9px 0}.channel-toolbar label{font-size:10px;gap:3px}.channel-toolbar :is(input,select){min-height:30px;font-size:11px;padding:5px 7px}.channel-modes button{font-size:11px;padding:6px 9px}.channel-status{margin:6px 0;font-size:10px;min-height:14px}.channel-summary-compact{margin:8px 0;gap:9px}.channel-summary-compact .channel-stat{padding:8px 11px;border-radius:10px}.channel-summary-compact .channel-stat>span{font-size:9px}.channel-summary-compact .channel-stat strong{font-size:23px;line-height:1.25;margin:3px 0}.channel-summary-compact .channel-stat strong em{font-size:12px;font-style:normal;font-weight:500;color:var(--muted)}.channel-summary-compact .channel-stat small{font-size:9px;line-height:1.35}.channel-summary-compact .channel-stat strong span{font:inherit}.channel-posts-head{display:grid;grid-template-columns:minmax(100px,1fr) minmax(90px,2.1fr) 88px;gap:10px;background:#ecf5ef;color:#0b5e36;font-size:10px;font-weight:650;align-items:center;height:29px;padding:0 4px;border-radius:5px}.channel-posts-head span:last-child{text-align:right}.channel-grid-compact .channel-chart-row{min-height:var(--channel-row);height:var(--channel-row);padding:3px 4px;gap:10px}.channel-grid-compact .channel-chart-name{font-size:10px;line-height:1.15}.channel-grid-compact .channel-chart-name small{font-size:8px;margin-top:2px}.channel-grid-compact .channel-chart-value{font-size:10px;line-height:1.2}.channel-grid-compact .channel-chart-value small{font-size:8px;line-height:1.15}.channel-grid-compact .channel-track{height:8px;border-radius:3px}.channel-interaction-panel .channel-metrics-row{grid-template-columns:minmax(73px,1.05fr) repeat(3,minmax(0,1fr));gap:7px;min-height:var(--channel-row);height:var(--channel-row);padding:3px 4px}.channel-interaction-panel .channel-metrics-head{border-radius:5px;font-size:9px;padding-top:0;padding-bottom:0}.channel-interaction-panel .channel-metric-trainer strong{font-size:9px;line-height:1.2}.channel-interaction-panel .channel-metric-trainer small{font-size:8px;margin-top:1px;line-height:1.1}.channel-interaction-panel .channel-metric-number{font-size:10px;line-height:1.2;display:flex;justify-content:flex-end;gap:3px;align-items:baseline;white-space:nowrap}.channel-inline-pct{font-size:7px!important;color:var(--muted);font-weight:400}.channel-interaction-panel .channel-metric-track{height:4px;margin-top:4px}.channel-interaction-panel .channel-follow-detail{font-size:inherit}.channel-interaction-panel .channel-metric-cell{overflow:hidden}.channel-mobile-posts{display:none}.channel-metric-note{font-size:9px;color:var(--muted);margin-top:7px}.channel-metric-note summary{cursor:pointer}.channel-metric-note p{margin:7px 0 0!important;font-size:10px!important;line-height:1.55!important}.channel-rhythm-panel{padding:13px 14px;margin-top:10px}.channel-rhythm-panel h3{font-size:14px;margin-bottom:3px}.channel-rhythm-panel>p{font-size:9px;margin-bottom:3px}.channel-rhythm-panel .channel-timeline{height:138px}.channel-management{margin-top:10px;border:1px solid var(--line);background:white;border-radius:10px}.channel-management>summary{cursor:pointer;list-style:none;padding:10px 13px;display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:650;color:var(--green-dark)}.channel-management>summary::-webkit-details-marker{display:none}.channel-management>summary:after{content:'＋';font-size:13px}.channel-management[open]>summary:after{content:'−'}.channel-management-body{padding:0 12px 12px}.channel-management-body>.channel-card{padding:10px;border-radius:8px}.channel-management-tools{display:flex;gap:7px;align-items:center;justify-content:flex-end;margin-bottom:8px}.channel-management-tools button{font-size:10px;padding:5px 8px}.channel-management-body .channel-note{margin-bottom:0}.channel-detail-table [data-channel-follow-connect]{margin-top:3px;font-size:9px;padding:3px 5px}.channel-management .channel-follow-help{font-size:10px}
+body:has(#tab-extensions.active) #monthStatusBar{display:none!important}.channel-grid-compact .channel-chart-name{font-size:11px}.channel-grid-compact .channel-chart-value{font-size:11px}.channel-interaction-panel .channel-metric-trainer strong{font-size:11px}.channel-interaction-panel .channel-metric-number{font-size:12px}.channel-interaction-panel .channel-metrics-head{font-size:10px}
+.mobile-layout #tab-extensions>.subnav:has(>button:only-child){display:none!important}.mobile-layout #tab-extensions #channelTool{--channel-row:28px}.mobile-layout .channel-compact-heading h2{font-size:17px!important}.mobile-layout .channel-compact-heading p{font-size:9px}.mobile-layout .channel-heading-actions{gap:4px}.mobile-layout .channel-heading-actions button{font-size:8px;padding:6px}.mobile-layout .channel-compact-heading{align-items:center}.mobile-layout #tab-extensions .channel-toolbar{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:6px;margin:7px 0}.mobile-layout #tab-extensions .channel-toolbar:has(#channelFrom){grid-template-columns:repeat(2,minmax(0,1fr))}.mobile-layout .channel-modes{grid-column:1/-1}.mobile-layout .channel-modes button{font-size:9px;padding:5px}.mobile-layout #tab-extensions .channel-toolbar label{font-size:8px;gap:3px}.mobile-layout #tab-extensions .channel-toolbar :is(input,select){font-size:9px;min-height:27px;padding:3px}.mobile-layout .channel-summary-compact{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:7px 0}.mobile-layout .channel-summary-compact .channel-stat{padding:7px 5px;min-width:0}.mobile-layout .channel-summary-compact .channel-stat>span{font-size:7px;letter-spacing:0;white-space:nowrap}.mobile-layout .channel-summary-compact .channel-stat strong{font-size:17px;line-height:1.2}.mobile-layout .channel-summary-compact .channel-stat strong span{font:inherit}.mobile-layout .channel-summary-compact .channel-stat strong em{font-size:9px}.mobile-layout .channel-summary-compact .channel-stat small{font-size:7px;line-height:1.3}.mobile-layout .channel-summary-compact .channel-stat-info{font-size:9px}.mobile-layout .channel-grid-compact{grid-template-columns:minmax(0,1fr);gap:0;margin:8px 0}.mobile-layout .channel-posts-panel{display:none}.mobile-layout .channel-grid-compact>.channel-card{padding:10px}.mobile-layout .channel-grid-compact .channel-card h3{font-size:13px}.mobile-layout .channel-grid-compact .channel-panel-caption{font-size:8px;margin-bottom:5px}.mobile-layout .channel-interaction-panel .channel-metrics-row{grid-template-columns:minmax(60px,1.45fr) repeat(4,minmax(0,1fr));gap:5px;min-height:var(--channel-row);height:var(--channel-row);padding:2px}.mobile-layout .channel-mobile-posts{display:block;text-align:right}.mobile-layout .channel-mobile-post-value{font-size:9px;font-weight:650;white-space:nowrap}.mobile-layout .channel-interaction-panel .channel-metrics-head{font-size:8px}.mobile-layout .channel-interaction-panel .channel-metric-number{font-size:10px}.mobile-layout .channel-interaction-panel .channel-metric-trainer strong{font-size:9px}.mobile-layout .channel-interaction-panel .channel-metric-trainer small{display:none}.mobile-layout .channel-inline-pct{display:none}.mobile-layout .channel-interaction-panel .channel-metric-track{height:3px;margin-top:3px}.mobile-layout .channel-metric-note{font-size:8px;margin-top:5px}.mobile-layout .channel-rhythm-panel{padding:10px;margin-top:8px}.mobile-layout .channel-rhythm-panel .channel-timeline{height:125px}.mobile-layout .channel-rhythm-panel h3{font-size:13px}.mobile-layout .channel-management>summary{padding:9px 10px;font-size:10px}.mobile-layout .channel-management-body{padding:0 7px 9px}.mobile-layout .channel-management-tools{gap:4px}.mobile-layout .channel-management-tools button{font-size:9px;padding:4px 6px}
+/* Fit every desktop navigation item and account details inside the viewport.
+   The measured height accounts for the dashboard's existing desktop zoom. */
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner{
+  display:flex!important;flex-direction:column!important;
+  box-sizing:border-box!important;
+  height:var(--sidebar-fit-height,calc(100dvh - 96px))!important;
+  min-height:0!important;max-height:none!important;
+  padding:clamp(8px,1.4vh,16px) 12px!important;
+  gap:clamp(5px,.9vh,10px)!important;
+  overflow:clip!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>.sidebar-brand{
+  flex:0 0 auto!important;min-height:35px;padding:3px 2px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs{
+  display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;
+  flex:1 1 0!important;min-height:0!important;max-height:none!important;
+  overflow:visible!important;gap:clamp(3px,.7vh,7px)!important;
+  justify-content:space-evenly!important;padding:5px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs>.nav-group{
+  display:contents!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs button{
+  flex:1 1 0!important;min-height:0!important;max-height:56px!important;
+  padding:5px 9px!important;line-height:1.2!important;
+  display:flex;align-items:center!important;gap:8px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope{
+  flex:0 0 auto!important;min-height:0!important;
+  padding:clamp(7px,1.3vh,13px) 8px!important;
+  overflow:visible!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope .scope-avatar{
+  width:34px!important;height:34px!important;font-size:11px!important;margin:0 auto 5px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope .scope-value{
+  font-size:12px!important;line-height:1.3!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope .scope-sub{
+  font-size:10px!important;line-height:1.3!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>.sidebar-tagline{
+  flex:0 0 auto!important;font-size:9px!important;line-height:1.3!important;padding-top:0!important;
+}
+@media screen and (max-height:620px){
+  html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner{padding:7px 10px!important;gap:5px!important;}
+  html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-brand h1{font-size:14px!important;}
+  html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-brand .sub{font-size:9px!important;}
+  html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs{gap:3px!important;padding:3px!important;}
+  html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs button{padding:3px 7px!important;font-size:10px!important;}
+  html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope{padding:6px!important;}
+  html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope .scope-avatar{width:26px!important;height:26px!important;margin-bottom:3px!important;}
+}
+/* Keep the old two-panel proportions and add View between Follow and Like. */
+.channel-interaction-panel .channel-metrics-row{
+  grid-template-columns:minmax(73px,1.05fr) repeat(4,minmax(0,1fr));gap:6px;
+}
+.channel-interaction-panel .channel-metric-track.view i{background:#5385cc;}
+.channel-interaction-panel .channel-metric-track.share i{background:#8163b8;}
+.mobile-layout .channel-interaction-panel .channel-metrics-row{
+  grid-template-columns:minmax(60px,1.45fr) repeat(5,minmax(0,1fr));gap:4px;
+}
+.mobile-layout .channel-interaction-panel .channel-metrics-head{font-size:8px;}
+.mobile-layout .channel-interaction-panel .channel-metric-number{font-size:9px;}
+@media(max-width:350px){
+  .mobile-layout .channel-grid-compact>.channel-card{padding:9px 7px;}
+  .mobile-layout .channel-interaction-panel .channel-metrics-row{grid-template-columns:minmax(58px,1.4fr) repeat(5,minmax(0,1fr));gap:3px;}
+  .mobile-layout .channel-interaction-panel .channel-metrics-head{font-size:7px;}
+  .mobile-layout .channel-interaction-panel .channel-metric-trainer strong{font-size:8px;}
+}
+
+</style>
+
+<style id="public-policy-links-20261025">
+.public-policy-links{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 16px;padding-top:16px;margin-top:16px;border-top:1px solid var(--line);font-size:11px;line-height:1.6;}
+.public-policy-links a{color:var(--green-dark);text-decoration:underline;text-underline-offset:3px;}
+.sidebar-inner>.public-policy-links{margin-top:8px;padding-top:8px;font-size:10px;gap:5px 12px;flex-shrink:0;}
+.mobile-layout .sidebar-inner>.public-policy-links{display:none;}
+</style>
+<style id="sidebar-design-20261025">
+/* A calm, consistent navigation system; reserve flexible space above the account,
+   rather than stretching individual menu items across a tall screen. */
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner{
+  --nav-height:42px;--nav-gap:4px;--nav-section-gap:14px;
+  padding:16px 12px 12px!important;gap:14px!important;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbf9 100%)!important;
+  border:1px solid #dce8e1!important;border-radius:16px!important;
+  box-shadow:0 4px 18px #143d2910!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner::before,
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner::after{display:none!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>.sidebar-brand{
+  display:flex!important;align-items:center!important;gap:10px!important;
+  min-height:48px!important;padding:4px 6px 10px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-brand .brand-icon{
+  width:34px!important;height:34px!important;border-radius:9px!important;
+  background:#0b5e36!important;color:#fff!important;font-size:11px!important;letter-spacing:.2px;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-brand h1{
+  font-size:16px!important;line-height:1.25!important;letter-spacing:.1px!important;color:#173f2e!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-brand .sub{
+  font-size:9px!important;line-height:1.45!important;margin-top:3px!important;color:#74877b!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs{
+  display:flex!important;flex-direction:column!important;flex:0 0 auto!important;
+  padding:0!important;margin:0!important;gap:var(--nav-section-gap)!important;
+  background:transparent!important;border:0!important;border-radius:0!important;
+  justify-content:flex-start!important;overflow:visible!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs>.nav-group{
+  display:flex!important;flex-direction:column!important;gap:var(--nav-gap)!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs>.nav-group+.nav-group{
+  padding-top:12px!important;border-top:1px solid #e6eee8!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs .nav-group-label{
+  display:block!important;padding:0 11px 3px!important;
+  color:#8a9a90!important;font-size:9px!important;font-weight:650!important;
+  letter-spacing:1px!important;line-height:14px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs button{
+  position:relative!important;flex:0 0 auto!important;box-sizing:border-box!important;
+  height:var(--nav-height)!important;min-height:var(--nav-height)!important;max-height:var(--nav-height)!important;
+  padding:0 11px!important;gap:10px!important;border:1px solid transparent!important;
+  border-radius:8px!important;background:transparent!important;box-shadow:none!important;
+  color:#52655a!important;font-size:13px!important;font-weight:550!important;
+  text-align:left!important;justify-content:flex-start!important;
+  transition:background .15s ease,color .15s ease,border-color .15s ease!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs button .nav-label{
+  text-transform:none!important;letter-spacing:0!important;line-height:1.2!important;
+  color:inherit!important;white-space:nowrap!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs button .nav-ic{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:18px!important;height:18px!important;flex:0 0 18px!important;
+  color:inherit!important;opacity:.85!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs button:hover:not(.active){
+  background:#edf5f0!important;color:#1a6744!important;border-color:#dfebe3!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs button.active{
+  background:#0b5e36!important;border-color:#0b5e36!important;color:white!important;
+  font-weight:650!important;box-shadow:0 2px 5px #0b5e3618!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>nav.tabs button.active::after{
+  content:'';display:block;width:5px;height:5px;border-top:1.4px solid currentColor;
+  border-right:1.4px solid currentColor;transform:rotate(45deg);margin-left:auto;opacity:.7;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope{
+  display:grid!important;grid-template-columns:32px minmax(0,1fr)!important;
+  grid-template-areas:'avatar name' 'avatar role';column-gap:9px!important;row-gap:2px!important;
+  align-items:center!important;text-align:left!important;margin-top:auto!important;
+  padding:11px 9px!important;border:1px solid #e0eae3!important;border-radius:10px!important;
+  background:#fff!important;box-shadow:0 1px 5px #143d2905!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope .scope-avatar{
+  grid-area:avatar;align-self:center;width:32px!important;height:32px!important;
+  margin:0!important;border:0!important;box-shadow:none!important;background:#e5f3ea!important;
+  color:#0b5e36!important;font-size:10px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope .scope-value{
+  grid-area:name;font-size:12px!important;font-weight:750!important;line-height:1.35!important;color:#233d2e!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-scope .scope-sub{
+  grid-area:role;margin:0!important;font-size:10px!important;line-height:1.35!important;
+  color:#718779!important;font-weight:500!important;letter-spacing:0!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>.sidebar-tagline{
+  padding:0!important;text-align:center!important;font-size:8px!important;line-height:1.3!important;color:#92a197!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner[data-density=compact]{
+  --nav-height:36px;--nav-gap:3px;--nav-section-gap:10px;
+  padding:11px 10px 9px!important;gap:10px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=compact]>.sidebar-brand{min-height:42px!important;padding-bottom:4px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=compact]>nav.tabs>.nav-group+.nav-group{padding-top:9px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner[data-density=compact]>.sidebar-scope{padding:9px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner[data-density=tight]{
+  --nav-height:30px;--nav-gap:2px;--nav-section-gap:7px;
+  padding:8px 9px!important;gap:8px!important;
+}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=tight]>.sidebar-brand{min-height:34px!important;padding:0 4px 3px!important;gap:8px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=tight] .sidebar-brand h1{font-size:14px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=tight] .sidebar-brand .brand-icon{width:28px!important;height:28px!important;border-radius:7px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=tight]>nav.tabs .nav-group-label{display:none!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=tight]>nav.tabs>.nav-group+.nav-group{padding-top:7px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=tight]>nav.tabs button{font-size:11px!important;padding:0 9px!important;gap:8px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-col .sidebar-inner[data-density=tight]>.sidebar-scope{padding:7px 8px!important;}
+html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner[data-density=tight]>.sidebar-tagline{display:none!important;}
+nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
+.mobile-layout nav.tabs .nav-ic:has(svg){display:flex;align-items:center;justify-content:center;width:14px!important;height:14px!important;flex:0 0 auto;}
+@media(prefers-reduced-motion:reduce){nav.tabs button{transition:none!important;}}
+
+</style>
 </head>
 <body>
 
@@ -2144,6 +2408,7 @@ html body :is(nav.tabs,.subnav,.so-stats-pages,.mobile-home-chart-tabs)>button:f
       <div class="login-error" id="loginError"></div>
       <div class="login-foot">Quên mật khẩu? Liên hệ quản trị viên để được hỗ trợ.</div>
     </div>
+<nav class="public-policy-links" aria-label="Điều khoản và bảo mật"><a href="./terms.html" target="_blank" rel="noopener noreferrer">Điều khoản sử dụng</a><a href="./privacy.html" target="_blank" rel="noopener noreferrer">Chính sách bảo mật</a></nav>
   </div>
 </div>
 
@@ -2187,23 +2452,27 @@ html body :is(nav.tabs,.subnav,.so-stats-pages,.mobile-home-chart-tabs)>button:f
     </div>
   <nav class="tabs">
     <div class="nav-group">
-      <button data-tab="home" data-title="Home" class="active"><span class="nav-ic">🏠</span><span class="nav-label">Home</span><span class="nav-short">Home</span></button>
-      <button data-tab="overview" data-title="TỔNG QUAN HR"><span class="nav-ic">▦</span><span class="nav-label">Tổng quan HR</span><span class="nav-short">HR</span></button>
-      <button data-tab="kpi" data-title="Tiến độ KPI"><span class="nav-ic">▤</span><span class="nav-label">Tiến độ KPI</span><span class="nav-short">KPI</span></button>
-      <button data-tab="so" data-title="DATA S.O" id="navSoBtn"><span class="nav-ic">📊</span><span class="nav-label">DATA S.O</span><span class="nav-short">S.O</span></button>
+      <div class="nav-group-label" aria-hidden="true">HOẠT ĐỘNG</div>
+      <button data-tab="home" data-title="Home" class="active"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7"/><path d="M5 9v12h14V9M9 21v-7h6v7"/></svg></span><span class="nav-label">Home</span><span class="nav-short">Home</span></button>
+      <button data-tab="overview" data-title="TỔNG QUAN HR"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 21v-2a6 6 0 0 0-4-5.65"/></svg></span><span class="nav-label">Tổng quan HR</span><span class="nav-short">HR</span></button>
+      <button data-tab="kpi" data-title="Tiến độ KPI"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 3v18h17M8 16v-4M13 16V8M18 16V5"/></svg></span><span class="nav-label">Tiến độ KPI</span><span class="nav-short">KPI</span></button>
+      <button data-tab="so" data-title="DATA S.O" id="navSoBtn"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 3v18h17M7 14l4-4 4 3 6-7M17 6h4v4"/></svg></span><span class="nav-label">DATA S.O</span><span class="nav-short">S.O</span></button>
     </div>
     <div class="nav-group">
-      <button data-tab="settings" data-title="Cài đặt" id="navSettingsBtn"><span class="nav-ic">⚙</span><span class="nav-label">Cài đặt</span><span class="nav-short">Cài đặt</span></button>
-      <button data-tab="data" data-title="DATA" id="navDataBtn"><span class="nav-ic">🗄</span><span class="nav-label">DATA</span><span class="nav-short">DATA</span></button>
-      <button data-tab="account" data-title="Tài khoản"><span class="nav-ic">👤</span><span class="nav-label">Tài khoản</span><span class="nav-short">T.Khoản</span></button>
+      <div class="nav-group-label" aria-hidden="true">CÔNG CỤ</div>
+      <button data-tab="settings" data-title="Cài đặt" id="navSettingsBtn"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 3-.7 2.4-2.4 1.4-2.4-.6-1.5 2.6 1.7 1.8v2.8L2 15.2l1.5 2.6 2.4-.6 2.4 1.4L9 21h3l.7-2.4 2.4-1.4 2.4.6 1.5-2.6-1.7-1.8v-2.8L19 8.8l-1.5-2.6-2.4.6-2.4-1.4L12 3Z"/><circle cx="10.5" cy="12" r="3"/></svg></span><span class="nav-label">Cài đặt</span><span class="nav-short">Cài đặt</span></button>
+      <button data-tab="data" data-title="DATA" id="navDataBtn"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></svg></span><span class="nav-label">DATA</span><span class="nav-short">DATA</span></button>
+      <button data-tab="extensions" data-title="Mở rộng" id="navExtensionsBtn"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label">Mở rộng</span><span class="nav-short">Mở rộng</span></button>
+      <button data-tab="account" data-title="Tài khoản"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M5.5 18a7 7 0 0 1 13 0"/></svg></span><span class="nav-label">Tài khoản</span><span class="nav-short">T.Khoản</span></button>
     </div>
   </nav>
+    
     <div class="sidebar-scope">
       <div class="scope-avatar" id="sidebarAvatarInitials">--</div>
       <div class="scope-value" id="sidebarUserName">—</div>
       <div class="scope-sub" id="sidebarUserRole">—</div>
     </div>
-    <div style="text-align:center;font-size:8pt;color:var(--muted);padding-top:6px;">OPPO · Gắn Kết – Phát Triển</div>
+    <div class="sidebar-tagline" style="text-align:center;font-size:8pt;color:var(--muted);padding-top:6px;">OPPO · Gắn Kết – Phát Triển</div>
    </div>
   </div>
 
@@ -2803,6 +3072,7 @@ html body :is(nav.tabs,.subnav,.so-stats-pages,.mobile-home-chart-tabs)>button:f
   </section>
 
   <!-- ============ DATA (Admin) — Gom tất cả Import về 1 mối ============ -->
+  <section id="tab-extensions" class="maintab"><div class="subnav" role="group" aria-label="Ứng dụng mở rộng"><button type="button" class="active" aria-pressed="true">▥ Xây kênh</button></div><div id="channelTool"></div></section>
   <section id="tab-data" class="maintab">
     <div class="olie-all-pages-banner" aria-label="Olie đồng hành - Data">
       <div class="olie-all-pages-banner-copy"><span>OPPO TRAINER HUB · MIỀN TRUNG</span><strong>Data</strong><small>Gắn Kết · Phát Triển</small></div>
@@ -16264,6 +16534,7 @@ function renderTabContent_(tabId){
     case 'settings': renderSettingsConfig(); break;
     case 'so': renderSoActiveTab_(); break;
     case 'data': renderSettingsConfig();if(document.getElementById('panel-data-so')?.classList.contains('active'))loadSoData_().then(loaded=>{if(loaded)renderSoSummary_();});break;
+    case 'extensions': renderChannelTool_(); break;
     case 'account': if(isAdmin()){ renderAccountList(); renderLoginStatsBox_(); } break;
   }
   applyPermissionLocks();
@@ -19397,6 +19668,295 @@ async function pgsmRenderTrainerChangePanel_(camp,d){
  }
  const root=document.getElementById('tab-kpi');
  if(root){new MutationObserver(schedule).observe(root,{childList:true,subtree:true});root.addEventListener('change',schedule);sync();}
+})();
+
+</script>
+<script id="trainer-channel-20261024-script">
+/* Date ranges use Vietnam calendar days. TikTok engagement is the latest total
+   on videos PUBLISHED in that range, not engagement gained during that range. */
+const ChannelModel=(()=>{
+ const DAY=86400000,iso=d=>d.toISOString().slice(0,10),date=s=>new Date(s+'T00:00:00Z');
+ const valid=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s))&&!Number.isNaN(+date(s))&&iso(date(s))===s;
+ const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const add=(s,n)=>iso(new Date(+date(s)+n*DAY));
+ function period(f){
+  let from,to;
+  if(f.mode==='week'){if(!valid(f.anchor))throw Error('Chọn ngày thuộc tuần cần xem.');const d=date(f.anchor);from=add(f.anchor,-((d.getUTCDay()+6)%7));to=add(from,6);}
+  else if(f.mode==='month'){if(!/^\d{4}-\d{2}$/.test(f.month))throw Error('Chọn tháng cần xem.');from=f.month+'-01';if(!valid(from))throw Error('Tháng không hợp lệ.');const d=date(from);to=iso(new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)));}
+  else{from=f.from;to=f.to;}
+  if(!valid(from)||!valid(to)||from>to||(+date(to)-+date(from))/DAY>365)throw Error('Khoảng ngày hợp lệ tối đa 366 ngày.');
+  return {from,to,days:Math.round((+date(to)-+date(from))/DAY)+1};
+ }
+ const goal=(t,p)=>{const from=t.trackingFrom&&t.trackingFrom>p.from?t.trackingFrom:p.from;return from>p.to?0:Math.ceil((Math.round((+date(p.to)-+date(from))/DAY)+1)*3/7);};
+ const day=v=>iso(new Date(Date.parse(v.createdAt)+7*3600000));
+ function report(trainers,p){
+  const rows=trainers.map(t=>{const videos=(t.videos||[]).filter(v=>day(v)>=p.from&&day(v)<=p.to);const target=goal(t,p),known=!!t.known;return {...t,videos,target,actual:known?videos.length:null,views:known&&videos.every(v=>Number.isSafeInteger(v.views)&&v.views>=0)?videos.reduce((n,v)=>n+v.views,0):null,likes:known?videos.reduce((n,v)=>n+v.likes,0):null,shares:known?videos.reduce((n,v)=>n+v.shares,0):null,pct:known&&target?Math.round(videos.length/target*1000)/10:null};});
+  const totals=rows.reduce((a,t)=>({target:a.target+t.target,actual:a.actual+(t.actual||0),likes:a.likes+(t.likes||0),shares:a.shares+(t.shares||0),known:a.known+Number(t.known)}),{target:0,actual:0,likes:0,shares:0,known:0});
+  const binSize=p.days>35?7:1,bins=[];for(let start=p.from;start<=p.to;start=add(start,binSize))bins.push({from:start,to:add(start,binSize-1)>p.to?p.to:add(start,binSize-1),count:0});
+  for(const t of rows.filter(t=>t.known))for(const v of t.videos){const i=Math.floor((+date(day(v))-+date(p.from))/DAY/binSize);if(bins[i])bins[i].count++;}
+  return {rows,totals,bins,complete:rows.length>0&&totals.known===rows.length};
+ }
+ return {today,period,goal,report,day,add};
+})();
+
+// Follower growth is measured between recorded observations, not reconstructed history.
+const FollowerModel=(()=>{
+ const baselineDate='2026-10-01';
+ const day=at=>new Date(Date.parse(at)+7*3600000).toISOString().slice(0,10);
+ const valid=p=>typeof p?.at==='string'&&Number.isFinite(Date.parse(p.at))&&Number.isSafeInteger(p.count)&&p.count>=0;
+ function row(trainer,period){
+  const raw=trainer.followers||{},map=new Map();
+  for(const p of Array.isArray(raw.history)?raw.history:[]){if(valid(p)&&day(p.at)>=baselineDate&&day(p.at)<=period.to)map.set(p.at,{at:p.at,count:p.count});}
+  const observed=[...map.values()].sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)),saved=raw.baseline;
+  const baseline=saved?.date===baselineDate&&Number.isSafeInteger(saved.count)&&saved.count>=0?{date:baselineDate,dateOnly:true,count:saved.count,source:'admin_record'}:observed.find(p=>day(p.at)===baselineDate)||null;
+  const points=baseline?.dateOnly&&period.to>=baselineDate?[baseline,...observed]:observed,first=baseline,last=observed[observed.length-1]||null;
+  const current=Number.isSafeInteger(raw.current)&&raw.current>=0&&Number.isFinite(Date.parse(raw.asOf))?raw.current:null;
+  const today=day(new Date().toISOString()),effectiveEnd=period.to<today?period.to:today;
+  const comparable=!!baseline&&!!last&&period.to>=baselineDate&&period.from<=today&&(baseline.dateOnly||Date.parse(last.at)>Date.parse(baseline.at)),delta=comparable?last.count-baseline.count:null;
+  return {...trainer,points,observed,first,last,baseline,comparable,delta,current,asOf:current===null?null:raw.asOf,
+   growthPct:comparable&&first.count>0?Math.round(delta/first.count*1000)/10:null,
+   partial:comparable&&day(last.at)<effectiveEnd,
+   authorized:raw.authorized===true,status:raw.status||(!trainer.connected?'not_connected':'needs_authorization')};
+ }
+ function report(trainers,period){
+  const rows=trainers.map(t=>row(t,period)),currentKnown=rows.filter(t=>t.current!==null),comparable=rows.filter(t=>t.comparable),complete=rows.length>0&&comparable.length===rows.length;
+  const start=comparable.reduce((n,t)=>n+t.first.count,0),end=comparable.reduce((n,t)=>n+t.last.count,0);
+  return {rows,currentKnown:currentKnown.length,comparable:comparable.length,complete,
+   current:currentKnown.length?currentKnown.reduce((n,t)=>n+t.current,0):null,
+   delta:complete?end-start:null,growthPct:complete&&start>0?Math.round((end-start)/start*1000)/10:null};
+ }
+ return {row,report,day,baselineDate};
+})();
+
+/* Extensions / Channel building. All TikTok calls go through the authenticated
+   Edge Function. No account tokens, API secrets, or scraped content in HTML. */
+let channelView_={filters:{mode:'week',anchor:ChannelModel.today(),month:ChannelModel.today().slice(0,7),from:ChannelModel.today(),to:ChannelModel.today(),region:'',trainer:''},data:null,owner:'',configured:false,managementOpen:false,busy:false,load:0,request:0,timer:null};
+const channelEscape_=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const channelNumber_=n=>n===null||n===undefined?'—':Number(n).toLocaleString('vi-VN');
+const channelShort_=s=>String(s||'').trim().split(/\s+/).slice(-2).join(' ');
+function channelOwner_(){return session?JSON.stringify([session.userId,session.role,session.region,session.trainerId]):'';}
+function channelUrl_(){return SUPABASE_URL+'/functions/v1/'+(location.pathname.startsWith('/Test/')?'trainer-channel-test':'trainer-channel');}
+function channelMessage_(text,error=false){const box=document.getElementById('channelStatus');if(box){box.textContent=text;box.dataset.error=String(error);}}
+async function channelApi_(action,extra={}){
+ const owner=channelOwner_();const token=action==='status'?null:await workshopNoiboToken_();
+ const res=await fetch(channelUrl_(),{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify({action,...extra,...(token?{dashboardToken:token}:{})}),signal:AbortSignal.timeout(115000)});
+ let out;try{out=await res.json();}catch{throw Error('Chưa nhận được phản hồi Xây kênh. Hãy thử lại.');}
+ if(owner!==channelOwner_())throw Error('Tài khoản đã thay đổi. Hãy mở lại Xây kênh.');
+ if(res.status===401)sessionStorage.removeItem('workshop_private_session');
+ if(!res.ok||!out.ok)throw Error(out.error||'Không đọc được dữ liệu Xây kênh.');return out;
+}
+function channelInitial_(){
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+ return (config.trainers||[]).filter(t=>isAdmin()||isTrainer()&&norm(session.region)&&norm(t.region)===norm(session.region)).map(t=>({...t,id:String(t.id),known:false,connected:false,handle:'',videos:[]}));
+}
+async function renderChannelTool_(){
+ const root=document.getElementById('channelTool');if(!root)return;
+ const owner=channelOwner_();if(owner!==channelView_.owner){clearTimeout(channelView_.timer);channelView_.data=null;channelView_.owner=owner;channelView_.filters.region='';channelView_.filters.trainer='';channelView_.managementOpen=false;channelView_.busy=false;}
+ channelDraw_();if(!isAdmin()&&!isTrainer())return;
+ const load=++channelView_.load;
+ try{
+  const status=await channelApi_('status');if(load!==channelView_.load||owner!==channelOwner_())return;channelView_.configured=status.configured;
+  await channelLoad_(false);if(load!==channelView_.load||owner!==channelOwner_())return;channelDraw_();
+  if(channelView_.configured){channelSync_(false);}
+ }catch(error){channelDraw_();channelMessage_(error.message,true);}
+ if(location.hash.startsWith('#channel-connect=')){
+  const ok=location.hash==='#channel-connect=ok';history.replaceState(null,'',location.pathname+location.search);channelMessage_(ok?'Đã kết nối TikTok. Đang đọc video…':'Chưa kết nối được. Hãy dùng đúng tài khoản TikTok được gán và đồng ý đủ quyền.',!ok);
+ }
+}
+async function channelLoad_(draw=true){
+ const owner=channelOwner_(),period=ChannelModel.period(channelView_.filters),version=++channelView_.request;
+ const data=await channelApi_('overview',{from:period.from,to:period.to});
+ if(owner!==channelOwner_()||version!==channelView_.request)return;
+ channelView_.data=data;if(draw)channelDraw_();
+}
+// Date filters are independent from monthly KPI data and never write to KPI records.
+function channelDraw_(){
+ const root=document.getElementById('channelTool');if(!root)return;
+ if(!isAdmin()&&!isTrainer()){root.innerHTML='<div class="channel-empty">Mục Xây kênh dành cho Admin và Trainer.</div>';return;}
+ const f=channelView_.filters,list=channelView_.data?.trainers||channelInitial_();let period;
+ try{period=ChannelModel.period(f);}catch(e){channelMessage_(e.message,true);return;}
+ const regions=[...new Set(list.map(t=>t.region).filter(Boolean))],trainers=list.filter(t=>!f.region||t.region===f.region);
+ const selected=trainers.filter(t=>!f.trainer||String(t.id)===f.trainer),report=ChannelModel.report(selected,period),e=channelEscape_,num=channelNumber_;
+ const choices=(rows,value)=>rows.map(([v,label])=>`<option value="${e(v)}" ${v===value?'selected':''}>${e(label)}</option>`).join('');
+ const videoText=report.totals.known?num(report.totals.actual):'—',pct=report.complete&&report.totals.target?Math.round(report.totals.actual/report.totals.target*1000)/10:null;
+ root.innerHTML=`<div class="channel-heading channel-compact-heading"><div><h2>Xây kênh TikTok</h2><p>3 bài/tuần · Theo dõi tiến độ và tương tác</p></div><div class="channel-heading-actions"><button type="button" class="secondary" data-channel-manage>Quản lý kênh</button><button type="button" class="secondary" id="channelSync" ${channelView_.busy||!channelView_.configured?'disabled':''}>↻ Đồng bộ</button></div></div>
+ ${!channelView_.configured?`<div class="channel-banner"><strong>Chưa cấu hình ứng dụng TikTok.</strong> Admin gán trang cho Trainer, sau đó hoàn tất Login Kit và Display API để tự lấy video, like/share. <button type="button" class="secondary" id="channelSetup">Hướng dẫn kết nối</button></div>`:''}
+ <div class="channel-toolbar" aria-label="Bộ lọc tiến độ xây kênh">
+  <div class="channel-modes" role="group" aria-label="Kỳ báo cáo">${[['week','Tuần'],['month','Tháng'],['range','Khoảng ngày']].map(([v,label])=>`<button type="button" data-channel-mode="${v}" aria-pressed="${f.mode===v}">${label}</button>`).join('')}</div>
+  ${f.mode==='week'?`<label>Chọn tuần<input type="date" id="channelAnchor" value="${f.anchor}"></label>`:f.mode==='month'?`<label>Chọn tháng<input type="month" id="channelMonth" value="${f.month}"></label>`:`<label>Từ ngày<input type="date" id="channelFrom" value="${f.from}"></label><label>Đến ngày<input type="date" id="channelTo" value="${f.to}"></label>`}
+  <label>Khu vực<select id="channelRegion"><option value="">Tất cả khu vực</option>${choices(regions.map(r=>[r,r]),f.region)}</select></label>
+  <label>Trainer<select id="channelTrainer"><option value="">Tất cả Trainer</option>${choices(trainers.map(t=>[String(t.id),t.name]),f.trainer)}</select></label>
+ </div>
+ <div class="channel-status" id="channelStatus" role="status" aria-live="polite">${channelView_.busy?'Đang đồng bộ video và chỉ số kênh…':`${period.from.split('-').reverse().join('/')} – ${period.to.split('-').reverse().join('/')} · Đã có dữ liệu ${report.totals.known}/${selected.length} Trainer`}</div>
+ ${channelCompactSummary_(report,selected,period)}
+ <div class="channel-grid channel-grid-compact"><section class="channel-card channel-posts-panel"><div class="channel-panel-title"><h3>Tiến độ bài đăng</h3></div><p class="channel-panel-caption">3 bài/tuần · Giữ số thực khi vượt target</p><div class="channel-posts-head"><span>Trainer</span><span>Tiến độ</span><span>Bài / Target</span></div>
+ ${report.rows.map(t=>`<div class="channel-chart-row" title="${e(t.name)} · ${t.actual===null?'Chưa đồng bộ':t.actual+'/'+t.target+' video'}"><div class="channel-chart-name" title="${e(t.name)}">${e(channelShort_(t.name))}<small>${e(t.region)}</small></div><div class="channel-track ${t.known?'':'unknown'}" role="img" aria-label="${e(t.name)}: ${t.actual===null?'chưa đồng bộ':t.actual+'/'+t.target+' video'}">${t.known?`<i style="width:${Math.min(100,t.pct||0)}%"></i>`:''}</div><div class="channel-chart-value">${t.known?num(t.actual)+'/'+num(t.target):'— / '+num(t.target)}<small>${t.pct===null?'Chưa đồng bộ':num(t.pct)+'%'}</small></div></div>`).join('')||'<div class="channel-empty">Chưa có Trainer trong phạm vi.</div>'}
+ </section>${channelMetricsCard_(report,period)}</div>
+ <section class="channel-card channel-rhythm-panel"><h3>Nhịp đăng video</h3><p>${period.days>35?'Theo từng nhóm 7 ngày':'Theo ngày'} · Giờ Việt Nam</p>${channelTimeline_(report)}
+ </section>
+ <details class="channel-management" id="channelManagement" ${channelView_.managementOpen?'open':''}><summary><span>Quản lý kênh · ${selected.length} Trainer</span></summary><div class="channel-management-body"><div class="channel-management-tools">${isAdmin()?'<button type="button" class="secondary" data-channel-follow-baseline>Mốc follower 01/10</button>':''}<button type="button" class="secondary" data-channel-follow-help>Hướng dẫn follower</button></div> <section class="channel-card"><div class="channel-heading"><div><h3>Kênh của từng Trainer</h3><p>Số liệu chỉ tính video công khai; bấm Trainer để xem video</p></div>${isAdmin()?'<button type="button" class="secondary" id="channelAssign">＋ Gán trang TikTok</button>':''}</div>
+ <table class="channel-detail-table" aria-label="Tiến độ xây kênh TikTok"><thead><tr><th>Trainer</th><th>Trang TikTok</th><th>Video / Target</th><th>♥ Like</th><th>↗ Share</th><th>Follower gần nhất</th><th>Tăng từ 01/10</th><th>Kết nối</th></tr></thead><tbody>${report.rows.map(t=>`<tr><td><button type="button" class="secondary" data-channel-videos="${e(t.id)}" title="${e(t.name)}">${e(channelShort_(t.name))}</button><small>${e(t.region)}</small></td><td>${t.handle?`<a href="https://www.tiktok.com/@${e(t.handle)}" target="_blank" rel="noopener noreferrer">@${e(t.handle)}</a>`:'Chưa gán'}</td><td>${t.known?num(t.actual):'—'} / ${num(t.target)}<small>${t.pct===null?'Chưa đồng bộ':num(t.pct)+'%'}</small></td><td>${num(t.likes)}</td><td>${num(t.shares)}</td>${channelFollowerCells_(t,period)}<td><span class="channel-tag ${t.known?'good':'wait'}">${t.known?'Đã đồng bộ':t.connected?'Đã kết nối':t.handle?'Chờ kết nối':'Chưa gán'}</span>${isAdmin()||String(t.id)===String(session.trainerId)?`<button type="button" class="secondary" data-channel-connect="${e(t.id)}" ${!t.handle||!channelView_.configured?'disabled':''} title="Đăng nhập đúng tài khoản TikTok đã gán">${t.connected?'Kết nối lại':'Kết nối'}</button>`:''}${t.connected&&!t.followers?.authorized&&(isAdmin()||String(t.id)===String(session.trainerId))?`<button type="button" class="secondary" data-channel-follow-connect="${e(t.id)}">Cấp quyền follow</button>`:''}<small>${t.syncedAt?e(new Date(t.syncedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})):''}</small></td></tr>`).join('')||'<tr><td colspan="8">Chưa có Trainer trong phạm vi.</td></tr>'}</tbody></table></section>
+ <p class="channel-note">Tuần: thứ Hai – Chủ nhật. Target tháng/khoảng ngày = 3 × số ngày theo dõi / 7, làm tròn lên. Like/share là tổng hiện tại của các video đăng trong kỳ, không phải lượt tương tác tăng riêng trong kỳ. Tự đồng bộ khi mở trang và mỗi 15 phút khi đang xem; TikTok có thể cập nhật số liệu chậm.</p>
+ </div></details>`;
+ root.querySelectorAll('[data-channel-mode]').forEach(b=>b.onclick=()=>{f.mode=b.dataset.channelMode;channelDraw_();channelChangePeriod_();});
+ const bind=(id,field,reset=false)=>{const el=root.querySelector('#'+id);if(el)el.onchange=()=>{const prev=f[field];f[field]=el.value;if(reset)f.trainer='';try{ChannelModel.period(f);if(['region','trainer'].includes(field))channelDraw_();else channelChangePeriod_();}catch(error){f[field]=prev;el.value=prev;channelMessage_(error.message,true);}};};
+ [['channelAnchor','anchor'],['channelMonth','month'],['channelFrom','from'],['channelTo','to'],['channelRegion','region',true],['channelTrainer','trainer']].forEach(args=>bind(...args));
+ root.querySelector('#channelSync').onclick=()=>channelSync_(true);root.querySelector('#channelSetup')?.addEventListener('click',channelSetup_);root.querySelector('#channelAssign')?.addEventListener('click',channelAssign_);
+ root.querySelectorAll('[data-channel-connect]').forEach(b=>b.onclick=()=>channelConnect_(b.dataset.channelConnect));
+ root.querySelectorAll('[data-channel-videos]').forEach(b=>b.onclick=()=>channelVideos_(report.rows.find(t=>t.id===b.dataset.channelVideos)));
+ channelBindFollowers_(root,selected,period);
+ channelBindCompact_(root);
+}
+async function channelChangePeriod_(){channelView_.data=null;channelDraw_();channelMessage_('Đang tải số liệu theo kỳ đã chọn…');try{await channelLoad_();}catch(error){channelMessage_(error.message,true);}}
+function channelTimeline_(report){
+ if(!report.totals.known)return '<div class="channel-timeline no-values">Kết nối TikTok để xem nhịp đăng video</div>';
+ const max=Math.max(1,...report.bins.map(b=>b.count));return `<div class="channel-timeline" role="img" aria-label="Số video đăng theo thời gian">${report.bins.map((b,i)=>`<div class="channel-day" title="${b.from} – ${b.to}: ${b.count} video"><div class="channel-day-bar" style="height:${Math.max(1,b.count/max*110)}px">${b.count?`<span>${b.count}</span>`:''}</div><small>${report.bins.length>16&&i%3?'':b.from.slice(5).split('-').reverse().join('/')}</small></div>`).join('')}</div>`;
+}
+function channelDialog_(title,html){
+ document.querySelector('.channel-overlay')?.remove();const ov=document.createElement('div');ov.className='channel-overlay';ov.innerHTML=`<div class="channel-dialog" role="dialog" aria-modal="true" aria-label="${channelEscape_(title)}"><button type="button" class="channel-close" aria-label="Đóng">×</button><h3>${channelEscape_(title)}</h3>${html}</div>`;
+ const close=()=>ov.remove();ov.querySelector('.channel-close').onclick=close;ov.onclick=e=>{if(e.target===ov)close();};ov.onkeydown=e=>{if(e.key==='Escape')close();};document.body.append(ov);ov.querySelector('button')?.focus();return ov;
+}
+function channelSetup_(){
+ const test=location.pathname.startsWith('/Test/'),slug=test?'trainer-channel-test':'trainer-channel',redirect=SUPABASE_URL+'/functions/v1/'+slug+'/oauth/callback',site='https://centraltraining.github.io/'+(test?'Test/':'Dashboard/');
+ channelDialog_('Bật tự đồng bộ TikTok',`<ol><li>Mở <a href="https://developers.tiktok.com/" target="_blank" rel="noopener noreferrer">TikTok for Developers</a> → chọn ứng dụng. Với bản thử nghiệm, tạo Sandbox và thêm đúng tài khoản TikTok vào Target users.</li><li>Thêm <b>Login Kit</b>. Trong <b>Scopes</b>, thêm <code>user.info.basic</code>, <code>user.info.profile</code>, <code>video.list</code>. Thêm <code>user.info.stats</code> để đọc follower.</li><li>Login Kit Web Redirect URI: <code>${channelEscape_(redirect)}</code>. Website: <code>${channelEscape_(site)}</code>.</li><li>Lưu cấu hình TikTok. Production cần được xét duyệt; Sandbox chỉ dùng với tài khoản thử nghiệm đã thêm.</li><li>Trong Supabase → Edge Functions → Secrets, cấu hình <code>${test?'TIKTOK_TEST_CLIENT_KEY':'TIKTOK_CLIENT_KEY'}</code> và <code>${test?'TIKTOK_TEST_CLIENT_SECRET':'TIKTOK_CLIENT_SECRET'}</code> của đúng ứng dụng hoặc Sandbox. Nhập khóa trực tiếp tại Supabase.</li><li>Admin gán đúng @TikTok cho Trainer. Chủ kênh bấm <b>Kết nối</b> để đọc video; bấm <b>Cấp quyền follow</b> để cho phép ghi mốc follower.</li></ol><p class="channel-note">Like/share là số mới nhất của video. Tăng trưởng follower được tính từ những mốc ứng dụng ghi nhận sau khi được cấp quyền, không tự dựng dữ liệu quá khứ.</p>`);
+}
+function channelAssign_(){
+ if(!isAdmin())return;const list=channelView_.data?.trainers||channelInitial_(),e=channelEscape_;
+ const ov=channelDialog_('Gán trang TikTok cho Trainer',`<form id="channelAssignForm"><label>Trainer<select id="channelAssignTrainer">${list.map(t=>`<option value="${e(t.id)}">${e(t.name)} · ${e(t.region)}</option>`).join('')}</select></label><label>Trang TikTok<input id="channelHandle" placeholder="https://www.tiktok.com/@tenkenh hoặc @tenkenh" required autocomplete="off"></label><label>Bắt đầu tính target<input id="channelTracking" type="date" required></label><p class="channel-note">Mỗi Trainer có một kênh. Đổi trang TikTok sẽ yêu cầu chủ kênh kết nối lại; số liệu kênh cũ được thay sau khi xác thực đúng kênh mới.</p><p id="channelAssignError" role="alert" style="color:var(--red)"></p><button type="submit" class="primary">Lưu trang TikTok</button></form>`);
+ const select=ov.querySelector('#channelAssignTrainer'),fill=()=>{const t=list.find(t=>t.id===select.value);ov.querySelector('#channelHandle').value=t?.handle?'@'+t.handle:'';ov.querySelector('#channelTracking').value=t?.trackingFrom||ChannelModel.period(channelView_.filters).from;};select.onchange=fill;fill();
+ ov.querySelector('form').onsubmit=async event=>{event.preventDefault();const b=ov.querySelector('[type=submit]');b.disabled=true;try{await channelApi_('assign',{trainerId:select.value,handle:ov.querySelector('#channelHandle').value,trackingFrom:ov.querySelector('#channelTracking').value});ov.remove();await channelLoad_();channelMessage_('Đã gán trang TikTok. Chủ kênh cần bấm Kết nối để cho phép đọc video.');}catch(error){ov.querySelector('#channelAssignError').textContent=error.message;b.disabled=false;}};
+}
+async function channelConnect_(id,followerStats=false){
+ try{const returnUrl=location.origin+location.pathname;if(!['https://centraltraining.github.io/Test/','https://centraltraining.github.io/Dashboard/'].includes(returnUrl))throw Error('Hãy mở dashboard trên website chính thức để kết nối.');const out=await channelApi_('connect',{trainerId:id,returnUrl,followerStats:followerStats===true});const u=new URL(out.url);if(u.origin!=='https://www.tiktok.com'||u.pathname!=='/v2/auth/authorize/')throw Error('Địa chỉ kết nối TikTok không hợp lệ.');location.assign(u.href);}catch(error){channelMessage_(error.message,true);}
+}
+function channelVideos_(t){
+ if(!t)return;const e=channelEscape_,n=channelNumber_;
+ channelDialog_(t.name+' · Video trong kỳ',t.known?t.videos.map(v=>`<div class="channel-video"><a href="https://www.tiktok.com/@${e(t.handle)}/video/${e(v.id)}" target="_blank" rel="noopener noreferrer">${e(v.title||'Video TikTok')}</a><small>${e(new Date(v.createdAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))} · ♥ ${n(v.likes)} · ↗ ${n(v.shares)} · ${n(v.views)} lượt xem</small></div>`).join('')||'<p class="channel-empty">TikTok xác nhận chưa có video công khai trong kỳ này.</p>':'<p class="channel-empty">Chưa đồng bộ được dữ liệu kênh này.</p>');
+}
+async function channelSync_(force){
+ if(channelView_.busy||!channelView_.configured)return;channelView_.busy=true;const owner=channelOwner_();channelDraw_();
+ const list=(channelView_.data?.trainers||[]).filter(t=>t.connected&&(!channelView_.filters.region||t.region===channelView_.filters.region)&&(!channelView_.filters.trainer||t.id===channelView_.filters.trainer));
+ let done=0,failed=0,pending=0;
+ try{
+  for(const t of list){
+   if(owner!==channelOwner_()||currentTabId_()!=='extensions')break;
+   channelMessage_('Đang đồng bộ kênh: '+t.name+' ('+(done+1)+'/'+list.length+')');
+   try{let out;for(let pass=0;pass<50;pass++){out=await channelApi_('sync',{trainerId:t.id,force:!!force&&pass===0});if(out.complete)break;if(currentTabId_()!=='extensions'||owner!==channelOwner_())break;}if(out?.complete)done++;else pending++;}catch{failed++;}
+  }
+  if(owner===channelOwner_()){await channelLoad_(false);channelView_.busy=false;channelDraw_();channelMessage_(list.length?`Đã đồng bộ ${done}/${list.length} kênh.${failed?' '+failed+' kênh chưa lấy được; giữ dữ liệu trước.':''}${pending?' '+pending+' kênh còn đang lấy trang video.':''}`:'Chưa có kênh TikTok đã kết nối trong phạm vi.',failed>0);}
+ }catch(error){channelMessage_(error.message,true);}
+ finally{channelView_.busy=false;clearTimeout(channelView_.timer);if(owner===channelOwner_())channelView_.timer=setTimeout(()=>{if(currentTabId_()==='extensions')channelSync_(false);},15*60000);const btn=document.getElementById('channelSync');if(btn)btn.disabled=!channelView_.configured;}
+}
+document.getElementById('logoutBtn').addEventListener('click',()=>{channelView_.data=null;channelView_.owner='';channelView_.load++;channelView_.request++;clearTimeout(channelView_.timer);document.querySelector('.channel-overlay')?.remove();const root=document.getElementById('channelTool');if(root)root.replaceChildren();});
+// OAuth return links reopen this extension after the existing dashboard boot completes.
+if(location.hash.startsWith('#channel-connect=')){
+ const watcher=setInterval(()=>{if(session&&config.trainers?.length&&document.querySelector('#mainApp:not(.hidden)')){clearInterval(watcher);document.querySelector('nav.tabs [data-tab="extensions"]')?.click();}},250);setTimeout(()=>clearInterval(watcher),30000);
+}
+
+function channelFollowerDate_(at){return at?new Date(at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';}
+function channelFollowerPointDate_(point){return point?.dateOnly?point.date.split('-').reverse().join('/')+' · mốc Admin ghi nhận':channelFollowerDate_(point?.at);}
+function channelFollowerSigned_(n,suffix=''){return n===null||n===undefined?'—':(n>0?'+':'')+channelNumber_(n)+suffix;}
+function channelFollowerTone_(n){return n===null?'unknown':n>0?'up':n<0?'down':'flat';}
+function channelFollowerCount_(value,signed=false){
+ const full=signed?channelFollowerSigned_(value):channelNumber_(value),compact=value===null||value===undefined?'—':(signed&&value>0?'+':'')+new Intl.NumberFormat('vi-VN',{notation:'compact',maximumFractionDigits:1}).format(value);
+ return `<span class="channel-count-full">${full}</span><span class="channel-count-compact">${compact}</span>`;
+}
+function channelFollowerState_(r){
+ if(r.status==='unavailable')return 'Chưa cập nhật được; giữ mốc trước';
+ if(!r.connected)return 'Chưa kết nối';
+ if(!r.baseline)return 'Thiếu số follower thực tế ngày 01/10/2026';
+ if(!r.authorized)return 'Cần cấp quyền follower';
+ if(!r.last)return 'Chưa có mốc cuối để đối chiếu';
+ return r.partial?'Theo mốc cuối đã ghi nhận':'Đối chiếu với mốc 01/10/2026';
+}
+function channelFollowerCells_(trainer,period){
+ const r=FollowerModel.row(trainer,period),e=channelEscape_,tip=r.comparable?'Mốc gốc: '+channelFollowerPointDate_(r.first)+' · '+r.first.count+'; mốc cuối: '+channelFollowerPointDate_(r.last)+' · '+r.last.count:channelFollowerState_(r);
+ return `<td class="channel-follower-current" title="${e(r.asOf?'Mốc gần nhất: '+channelFollowerDate_(r.asOf)+' · '+r.current:'Chưa ghi nhận follower')}">${channelFollowerCount_(r.current)}<small>${r.asOf?e(new Date(r.asOf).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit'})):'Chưa có mốc'}</small></td><td class="channel-follower-change ${channelFollowerTone_(r.delta)}" title="${e(tip)}"><button type="button" class="channel-follow-detail" data-channel-followers="${e(r.id)}">${channelFollowerCount_(r.delta,true)}</button><small>${r.comparable?channelFollowerSigned_(r.growthPct,'%'):!r.baseline?'Thiếu mốc 01/10':r.authorized?'Chưa có mốc cuối':'Cần cấp quyền'}</small></td>`;
+}
+function channelFollowerTrend_(row){
+ const e=channelEscape_,points=row.points;
+ if(!points.length)return `<div class="channel-follow-empty">${e(channelFollowerState_(row))}. ${row.authorized?'Bấm Đồng bộ TikTok để ghi số follower hiện tại.':'Chủ kênh cấp quyền follower để bắt đầu tự ghi nhận.'}</div>`;
+ const position=p=>p.dateOnly?Date.parse(p.date+'T00:00:00+07:00'):Date.parse(p.at);
+ const width=760,height=190,left=95,right=25,top=20,bottom=35,first=position(points[0]),last=position(points[points.length-1]),minimum=Math.min(...points.map(p=>p.count)),maximum=Math.max(...points.map(p=>p.count)),padding=Math.max(1,(maximum-minimum)*.15),low=Math.max(0,minimum-padding),high=maximum+padding;
+ const axis=n=>new Intl.NumberFormat('vi-VN',{notation:'compact',maximumFractionDigits:1}).format(n),x=p=>points.length===1?width/2:left+(position(p)-first)/Math.max(1,last-first)*(width-left-right),y=p=>height-bottom-(p.count-low)/Math.max(1,high-low)*(height-top-bottom);
+ const polyline=points.map(p=>x(p).toFixed(2)+','+y(p).toFixed(2)).join(' '),labels=[points[0],...(points.length>1?[points[points.length-1]]:[])];
+ const note=row.comparable?'Mốc 01/10: '+channelNumber_(row.first.count)+' → mốc cuối '+channelNumber_(row.last.count)+' follower · '+channelFollowerState_(row):!row.baseline?'Đã ghi '+points.length+' mốc hiện tại; còn thiếu số follower thực tế ngày 01/10/2026.':row.last?'Mốc gốc và mốc cuối chưa đủ điều kiện đối chiếu.':'Đã có mốc gốc; đang chờ mốc đồng bộ từ TikTok.';
+ return `<div class="channel-follow-trend"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Follower ${e(row.name)} theo các mốc ghi nhận"><line x1="${left}" y1="${height-bottom}" x2="${width-right}" y2="${height-bottom}" class="channel-follow-axis"/><text x="${left-8}" y="${top+8}" text-anchor="end">${axis(Math.ceil(high))}</text><text x="${left-8}" y="${height-bottom}" text-anchor="end">${axis(Math.floor(low))}</text>${points.length>1?`<polyline points="${polyline}" class="channel-follow-line"/>`:''}${points.map(p=>`<circle cx="${x(p).toFixed(2)}" cy="${y(p).toFixed(2)}" r="4" tabindex="0" class="${p.dateOnly?'manual-baseline':''}"><title>${e(channelFollowerPointDate_(p))}: ${channelNumber_(p.count)} follower</title></circle>`).join('')}${labels.map((p,i)=>`<text x="${points.length===1?width/2:i?width-right:left}" y="${height-10}" text-anchor="${points.length===1?'middle':i?'end':'start'}">${e(channelFollowerPointDate_(p).replace(' · mốc Admin ghi nhận',''))}</text>`).join('')}</svg><div class="channel-follow-observed">${e(note)}</div></div>`;
+}
+function channelFollowerHistory_(trainer,period){
+ if(!trainer)return;const r=FollowerModel.row(trainer,period),e=channelEscape_,n=channelNumber_;
+ channelDialog_(r.name+' · Lịch sử follower',`<p class="channel-note">${e(channelFollowerState_(r))}. Mốc gốc: 01/10/2026; nguồn của mỗi mốc được ghi rõ.</p>${channelFollowerTrend_(r)}<div class="channel-follow-history"><table><thead><tr><th>Mốc ghi nhận · giờ Việt Nam</th><th>Follower</th><th>Nguồn</th></tr></thead><tbody>${r.points.map(p=>`<tr><td>${e(channelFollowerPointDate_(p))}</td><td>${n(p.count)}</td><td>${p.dateOnly?'Admin nhập':'TikTok API'}</td></tr>`).join('')||'<tr><td colspan="3">Chưa có mốc đã ghi nhận.</td></tr>'}</tbody></table></div>`);
+}
+function channelFollowerHelp_(){
+ channelDialog_('Theo dõi follower từ 01/10/2026',`<ol><li>Trong TikTok for Developers, chọn đúng ứng dụng hoặc Sandbox → <b>Scopes → Add scopes → user.info.stats</b>, rồi lưu.</li><li>Chủ kênh bấm <b>Cấp quyền follow</b>, đăng nhập đúng kênh đã gán và đồng ý quyền bổ sung. Các lần đồng bộ sau sẽ tự lấy follower hiện tại.</li><li>Mức tăng = follower mốc cuối − follower thực tế ngày <b>01/10/2026</b>. TikTok API không trả số lịch sử ngày 01/10 nếu trước đó ứng dụng chưa ghi nhận.</li><li>Nếu có bản ghi hoặc báo cáo thực tế ngày 01/10, Admin có thể nhập tại <b>Mốc 01/10</b>. Mốc này được đánh dấu nguồn Admin; để trống khi chưa có số liệu.</li><li>Chọn Trainer để xem các mốc và biểu đồ. Số liệu chưa đủ sẽ hiển thị “—”; không lấy follower hiện tại làm số ngày 01/10.</li></ol>`);
+}
+function channelFollowerBaseline_(){
+ if(!isAdmin())return;const list=(channelView_.data?.trainers||[]).filter(t=>t.handle),e=channelEscape_;
+ if(!list.length){channelMessage_('Gán kênh TikTok trước khi nhập mốc đầu kỳ.',true);return;}
+ const ov=channelDialog_('Mốc follower ngày 01/10/2026',`<form id="channelFollowerBaselineForm"><label>Trainer<select id="channelFollowerBaselineTrainer">${list.map(t=>`<option value="${e(t.id)}">${e(t.name)} · @${e(t.handle)}</option>`).join('')}</select></label><label>Follower thực tế ngày 01/10/2026<input id="channelFollowerBaselineCount" type="number" min="0" step="1" required placeholder="Nhập số liệu đã ghi nhận ngày 01/10"></label><p class="channel-note">Chỉ nhập số từ bản ghi hoặc báo cáo thực tế. Mốc được đánh dấu nguồn Admin nhập; không tự sao chép số hiện tại hoặc điền 0 khi chưa có số đầu kỳ.</p><p id="channelFollowerBaselineError" role="alert" style="color:var(--red)"></p><button type="submit" class="primary">Lưu mốc 01/10</button></form>`);
+ const select=ov.querySelector('#channelFollowerBaselineTrainer'),input=ov.querySelector('#channelFollowerBaselineCount'),fill=()=>{const baseline=list.find(t=>String(t.id)===select.value)?.followers?.baseline;input.value=Number.isSafeInteger(baseline?.count)?String(baseline.count):'';};select.onchange=fill;fill();
+ ov.querySelector('form').onsubmit=async event=>{event.preventDefault();const button=ov.querySelector('[type=submit]');try{if(input.value.trim()==='')throw Error('Chưa có số follower đầu kỳ.');const count=Number(input.value);if(!Number.isSafeInteger(count)||count<0)throw Error('Nhập số nguyên không âm.');button.disabled=true;await channelApi_('set_follower_baseline',{trainerId:select.value,count});ov.remove();await channelLoad_();channelMessage_('Đã lưu mốc 01/10/2026 theo số liệu Admin nhập.');}catch(error){ov.querySelector('#channelFollowerBaselineError').textContent=error.message;button.disabled=false;}};
+}
+function channelBindFollowers_(root,trainers,period){
+ root.querySelectorAll('[data-channel-followers]').forEach(b=>b.onclick=()=>channelFollowerHistory_(trainers.find(t=>String(t.id)===b.dataset.channelFollowers),period));
+ root.querySelectorAll('[data-channel-follow-connect]').forEach(b=>b.onclick=()=>channelConnect_(b.dataset.channelFollowConnect,true));
+ root.querySelectorAll('[data-channel-follow-help]').forEach(b=>b.addEventListener('click',channelFollowerHelp_));root.querySelector('[data-channel-follow-baseline]')?.addEventListener('click',channelFollowerBaseline_);
+}
+
+function channelCompactSummary_(report,trainers,period){
+ const follower=FollowerModel.report(trainers,period),e=channelEscape_,known=report.totals.known;
+ const progress=report.complete&&report.totals.target?channelNumber_(Math.round(report.totals.actual/report.totals.target*1000)/10)+'%':known+'/'+trainers.length+' kênh có dữ liệu';
+ return `<div class="channel-summary channel-summary-compact"><div class="channel-stat"><span>Bài đăng</span><strong>${channelFollowerCount_(known?report.totals.actual:null)}<em> / ${channelNumber_(report.totals.target)}</em></strong><small>${e(progress)}</small></div><div class="channel-stat"><span>↑ Tăng follow</span><strong>${channelFollowerCount_(follower.delta,true)}</strong><small>${follower.complete?channelFollowerSigned_(follower.growthPct,'%')+' · từ 01/10':follower.comparable+'/'+trainers.length+' kênh đủ mốc 01/10'} <button type="button" class="channel-stat-info" data-channel-follow-help title="Cách tính follower">ⓘ</button></small></div><div class="channel-stat"><span>♥ Like</span><strong>${channelFollowerCount_(known?report.totals.likes:null)}</strong><small>Video trong kỳ</small></div><div class="channel-stat"><span>↗ Share</span><strong>${channelFollowerCount_(known?report.totals.shares:null)}</strong><small>Video trong kỳ</small></div></div>`;
+}
+function channelMetricCompact_(value,signed=false){return value===null||value===undefined?'—':(signed&&value>0?'+':'')+new Intl.NumberFormat('vi-VN',{notation:'compact',maximumFractionDigits:1}).format(value);}
+function channelMetricsCard_(report,period){
+ const e=channelEscape_,rows=report.rows.map(t=>({trainer:t,follower:FollowerModel.row(t,period)}));
+ const maxFollow=Math.max(1,...rows.map(x=>Math.abs(x.follower.delta||0))),maxView=Math.max(1,...rows.map(x=>x.trainer.views||0)),maxLike=Math.max(1,...rows.map(x=>x.trainer.likes||0)),maxShare=Math.max(1,...rows.map(x=>x.trainer.shares||0));
+ function metric(value,max,kind,t,f){
+  const unknown=value===null||value===undefined,tone=kind==='follow'?channelFollowerTone_(value):kind,width=unknown?0:Math.abs(value)/max*(kind==='follow'?50:100),left=kind==='follow'?(value<0?50-width:50):0;
+  const full=kind==='follow'?channelFollowerSigned_(value):channelNumber_(value),tip=kind==='follow'?(f.comparable?full+' follower · '+channelFollowerSigned_(f.growthPct,'%')+' · '+channelFollowerPointDate_(f.first)+' → '+channelFollowerPointDate_(f.last):channelFollowerState_(f)):unknown?'Chưa có đủ số liệu '+({view:'lượt xem',like:'lượt thích',share:'lượt chia sẻ'}[kind]):full+' '+({view:'lượt xem',like:'lượt thích',share:'lượt chia sẻ'}[kind])+' của video đăng trong kỳ';
+  return `<div role="cell" class="channel-metric-cell ${tone}" title="${e(tip)}"><div class="channel-metric-number">${kind==='follow'?`<button type="button" class="channel-follow-detail" data-channel-followers="${e(t.id)}">${e(channelMetricCompact_(value,true))}</button>${f.comparable?`<small class="channel-inline-pct">${channelFollowerSigned_(f.growthPct,'%')}</small>`:''}`:e(channelMetricCompact_(value))}</div><div class="channel-metric-track ${kind} ${unknown?'unknown':''}" aria-hidden="true"><i style="left:${left}%;width:${width}%"></i></div></div>`;
+ }
+ return `<section class="channel-card channel-metrics-card channel-interaction-panel"><div class="channel-panel-title"><h3>Follow · View · Like · Share</h3><button type="button" class="channel-chart-help" data-channel-follow-help title="Cách tính các chỉ số">ⓘ</button></div><p class="channel-panel-caption">Hiển thị đồng thời · Follow từ 01/10/2026</p><div class="channel-metrics-table" role="table" aria-label="Bài đăng, tăng follower, view, like và share"><div class="channel-metrics-row channel-metrics-head" role="row"><div role="columnheader">Trainer</div><div role="columnheader" class="channel-mobile-posts">Bài đăng</div><div role="columnheader">↑ Follow</div><div role="columnheader">◉ View</div><div role="columnheader">♥ Like</div><div role="columnheader">↗ Share</div></div>${rows.map(({trainer:t,follower:f})=>`<div class="channel-metrics-row" role="row"><div role="rowheader" class="channel-metric-trainer"><strong title="${e(t.name)}">${e(channelShort_(t.name))}</strong><small>${e(t.region)}</small></div><div role="cell" class="channel-mobile-posts channel-mobile-post-value" title="${t.known?t.actual+'/'+t.target+' bài · '+channelNumber_(t.pct)+'%':'Chưa đồng bộ bài đăng'}">${t.known?channelMetricCompact_(t.actual)+'/'+channelMetricCompact_(t.target):'—'}</div>${metric(f.delta,maxFollow,'follow',t,f)}${metric(t.views,maxView,'view',t,f)}${metric(t.likes,maxLike,'like',t,f)}${metric(t.shares,maxShare,'share',t,f)}</div>`).join('')||'<div class="channel-empty">Chưa có Trainer trong phạm vi.</div>'}</div><details class="channel-metric-note"><summary>Cách đọc số liệu</summary><p>Follow: chênh lệch từ mốc thực tế ngày 01/10 đến mốc cuối đã ghi. Thiếu mốc/quyền hiển thị “—”. View/Like/Share: tổng lượt xem, thích và chia sẻ mới nhất của video đăng trong kỳ; không phải lượt tăng riêng trong kỳ. Rê chuột vào số để xem đầy đủ; bấm số Follow để xem lịch sử.</p></details></section>`;
+}
+function channelBindCompact_(root){
+ const details=root.querySelector('#channelManagement');
+ if(details)details.ontoggle=()=>{channelView_.managementOpen=details.open;};
+ root.querySelectorAll('[data-channel-manage]').forEach(button=>button.onclick=()=>{if(!details)return;details.open=!details.open;channelView_.managementOpen=details.open;if(details.open)details.scrollIntoView({behavior:'smooth',block:'nearest'});});
+}
+
+</script>
+<script id="sidebar-fit-20261025">
+/* Navigation only: no account data, external requests, or changes to permissions. */
+(()=>{
+  const root=document.documentElement,sidebar=document.querySelector('.sidebar-col .sidebar-inner');
+  if(!sidebar)return;
+  let queued=false;
+  function fit(){
+    queued=false;
+    if(root.matches('.mobile-layout,.ui-force-mobile')){
+      sidebar.style.removeProperty('--sidebar-fit-height');delete sidebar.dataset.density;return;
+    }
+    const box=sidebar.getBoundingClientRect();
+    if(box.width<=0||sidebar.offsetWidth<=0)return;
+    const scale=box.width/sidebar.offsetWidth;
+    const available=window.innerHeight-Math.max(8,box.top)-12;
+    const height=Math.max(240,Math.floor(available/scale)),value=height+'px';
+    const density=height<600?'tight':height<760?'compact':'regular';
+    if(sidebar.dataset.density!==density)sidebar.dataset.density=density;
+    if(sidebar.style.getPropertyValue('--sidebar-fit-height')!==value)
+      sidebar.style.setProperty('--sidebar-fit-height',value);
+  }
+  function schedule(){if(!queued){queued=true;requestAnimationFrame(fit);}}
+  addEventListener('resize',schedule,{passive:true});
+  addEventListener('scroll',schedule,{passive:true});
+  document.addEventListener('click',event=>{if(event.target.closest('nav.tabs button'))schedule();});
+  new MutationObserver(schedule).observe(root,{attributes:true,attributeFilter:['class']});
+  new MutationObserver(schedule).observe(document.getElementById('mainApp'),{attributes:true,attributeFilter:['class','style']});
+  const observer=new ResizeObserver(schedule);
+  document.querySelectorAll('header.top,#monthStatusBar,.sidebar-brand,.sidebar-scope').forEach(el=>observer.observe(el));
+  if(document.fonts?.ready)document.fonts.ready.then(schedule);
+  schedule();
 })();
 
 </script>

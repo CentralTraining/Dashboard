@@ -1,0 +1,6 @@
+# Existing custom dashboard authentication is validated inside the handler.
+# TikTok OAuth callbacks do not carry a Supabase Auth JWT.
+[functions.trainer-channel]
+verify_jwt = false
+entrypoint = "./functions/trainer-channel/index.ts"
+import_map = "./functions/trainer-channel/deno.json"
