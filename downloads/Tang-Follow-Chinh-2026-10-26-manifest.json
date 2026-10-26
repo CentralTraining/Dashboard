@@ -1,0 +1,13 @@
+{
+  "environment": "Dashboard chính",
+  "version": "2026-10-26",
+  "tested_commit": "de18e7bd44ff8e1b60abfac4edb2d24417bff616",
+  "parent_commit": "1d206a3ca132d715501ca172514b0b6d5e3509b6",
+  "exact_test_html": true,
+  "only_channel_blocks_changed": true,
+  "bytes": 2448414,
+  "sha256": "2b9269615f6949e1f939ae1162e9047422601e8ce13d61bbd065ac88414a4b96",
+  "git_blob_sha": "6c58062ee9322a0e7b0537c70baf2686f9d1d9ca",
+  "file": "Dashboard-Chinh-2026-10-26-Tang-Follow-Theo-Thang.html",
+  "backend_changed": false
+}
