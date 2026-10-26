@@ -1,3 +1,5 @@
+import { nativeMainRequest } from './owner-route.ts';
+import { sharedApiProxy } from './api-proxy.ts';
 import { SHARED_CALLBACK_PATH, MAIN_CALLBACK_PATH, MAIN_STATE_PREFIX, isMainOauthState, isLegacyOauthState } from './oauth-route.ts';
 import { authenticate, AccessError } from './access.ts';
 import { FOLLOWER_SCOPE, FOLLOWER_BASELINE_DATE, recordFollowers, followerView } from './followers.ts';
@@ -175,6 +177,9 @@ Deno.serve(async req=>{
   if(req.method!=='POST')return respond({error:'Chỉ hỗ trợ POST.'},405);
   if(Number(req.headers.get('content-length')||0)>8000)return respond({error:'Yêu cầu quá dài.'},413);
   const raw=await req.text();if(raw.length>8000)return respond({error:'Yêu cầu quá dài.'},413);let body;try{body=JSON.parse(raw);}catch{failure('Yêu cầu không hợp lệ.');}
+  const ownerHeader=req.headers.has('x-channel-owner-at')||req.headers.has('x-channel-owner-signature');
+  if(ownerHeader){if(!['sync','connect'].includes(body.action)||!await nativeMainRequest(req,raw,env().secret))failure('Phiên chuyển tiếp không hợp lệ.',403);}
+  else return sharedApiProxy(req,raw,env().url);
   if(body.action==='status')return respond({ok:true,configured:configured(),credentialSource:env().credentialSource,redirectUri:callback(),scopes:SCOPES,optionalScopes:[FOLLOWER_SCOPE],followerHistory:true,followerBaselineDate:FOLLOWER_BASELINE_DATE});
   const p=await authenticate(body.dashboardToken);let out;
   switch(body.action){case 'overview':out=await overview(body,p);break;case 'assign':out=await assign(body,p);break;case 'connect':out=await connect(body,p);break;case 'sync':out=await sync(body,p);break;case 'set_follower_baseline':out=await setFollowerBaseline(body,p);break;default:failure('Thao tác không hợp lệ.');}

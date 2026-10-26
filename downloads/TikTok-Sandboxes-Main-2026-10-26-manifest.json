@@ -1,0 +1,53 @@
+{
+  "html": {
+    "name": "Dashboard-Chinh-2026-10-26-TikTok-Sandboxes.html",
+    "bytes": 2442741,
+    "sha256": "0bd1f283600a92988b69c9a120f36dd5bd4c8c050d2d1ef0937aae6043b6cd0c",
+    "git_blob_sha": "6797be9bd8440693c973579bf141a5ee35f3fb5d"
+  },
+  "zip": {
+    "name": "Dashboard-Chinh-2026-10-26-TikTok-Sandboxes-Full-Source.zip",
+    "bytes": 1016927,
+    "sha256": "c8e8f48f7e57fec8b4533fa3833cc8b081fa0baa8e0515a5cb7a92f221a0bef7",
+    "git_blob_sha": "f128922013935fef47f6c2911cbd1f76dac60872"
+  },
+  "html_characters": 2379793,
+  "files": [
+    "README.md",
+    "index.html",
+    "privacy.html",
+    "supabase/functions/trainer-channel-api/access.ts",
+    "supabase/functions/trainer-channel-api/deno.json",
+    "supabase/functions/trainer-channel-api/followers.ts",
+    "supabase/functions/trainer-channel-api/index.ts",
+    "supabase/functions/trainer-channel-api/oauth-route.ts",
+    "supabase/functions/trainer-channel-api/owner-route.ts",
+    "supabase/functions/trainer-channel-api/sandboxes.ts",
+    "supabase/functions/trainer-channel-test/api-proxy.ts",
+    "supabase/functions/trainer-channel-test/deno.json",
+    "supabase/functions/trainer-channel-test/index.ts",
+    "supabase/functions/trainer-channel/access.ts",
+    "supabase/functions/trainer-channel/api-proxy.ts",
+    "supabase/functions/trainer-channel/deno.json",
+    "supabase/functions/trainer-channel/followers.ts",
+    "supabase/functions/trainer-channel/index.ts",
+    "supabase/functions/trainer-channel/oauth-route.ts",
+    "supabase/functions/trainer-channel/owner-route.ts",
+    "terms.html",
+    "verification/api-regression-verification.json",
+    "verification/live-verification.json",
+    "verification/promotion-verification.json",
+    "verification/sandbox-verification.json",
+    "verification/shared-backend-verification.json",
+    "verification/test-live-verification.json",
+    "verification/ui-verification.json"
+  ],
+  "function_versions": {
+    "trainer-channel-api": 2,
+    "trainer-channel": 10,
+    "trainer-channel-test": 14
+  },
+  "exact_test_html": true,
+  "private_channel_data_not_copied": true,
+  "tiktok_callback_unchanged": true
+}

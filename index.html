@@ -2242,6 +2242,10 @@ html:not(.ui-force-mobile):not(.mobile-layout) body .sidebar-inner>.sidebar-tagl
   .mobile-layout .channel-interaction-panel .channel-metrics-head{font-size:7px;}
   .mobile-layout .channel-interaction-panel .channel-metric-trainer strong{font-size:8px;}
 }
+.channel-sandbox-label{display:block;color:var(--muted);font-size:9px;line-height:1.3;margin-top:3px;}
+.channel-sandbox-status{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 16px;}
+.channel-management-tools{flex-wrap:wrap;}
+.channel-management .channel-tag{white-space:normal;}
 
 </style>
 
@@ -19706,7 +19710,7 @@ const FollowerModel=(()=>{
  const valid=p=>typeof p?.at==='string'&&Number.isFinite(Date.parse(p.at))&&Number.isSafeInteger(p.count)&&p.count>=0;
  function row(trainer,period){
   const raw=trainer.followers||{},map=new Map();
-  for(const p of Array.isArray(raw.history)?raw.history:[]){if(valid(p)&&day(p.at)>=baselineDate&&day(p.at)<=period.to)map.set(p.at,{at:p.at,count:p.count});}
+  for(const p of Array.isArray(raw.history)?raw.history:[]){if(valid(p)&&day(p.at)>=baselineDate&&day(p.at)<=period.to)map.set(p.at,{at:p.at,count:p.count,source:p.source||'tiktok_api'});}
   const observed=[...map.values()].sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)),saved=raw.baseline;
   const baseline=saved?.date===baselineDate&&Number.isSafeInteger(saved.count)&&saved.count>=0?{date:baselineDate,dateOnly:true,count:saved.count,source:'admin_record'}:observed.find(p=>day(p.at)===baselineDate)||null;
   const points=baseline?.dateOnly&&period.to>=baselineDate?[baseline,...observed]:observed,first=baseline,last=observed[observed.length-1]||null;
@@ -19730,7 +19734,7 @@ const FollowerModel=(()=>{
 
 /* Extensions / Channel building. All TikTok calls go through the authenticated
    Edge Function. No account tokens, API secrets, or scraped content in HTML. */
-let channelView_={filters:{mode:'week',anchor:ChannelModel.today(),month:ChannelModel.today().slice(0,7),from:ChannelModel.today(),to:ChannelModel.today(),region:'',trainer:''},data:null,owner:'',configured:false,managementOpen:false,busy:false,load:0,request:0,timer:null};
+let channelView_={filters:{mode:'week',anchor:ChannelModel.today(),month:ChannelModel.today().slice(0,7),from:ChannelModel.today(),to:ChannelModel.today(),region:'',trainer:''},data:null,owner:'',configured:false,sandboxes:[],managementOpen:false,busy:false,load:0,request:0,timer:null};
 const channelEscape_=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const channelNumber_=n=>n===null||n===undefined?'—':Number(n).toLocaleString('vi-VN');
 const channelShort_=s=>String(s||'').trim().split(/\s+/).slice(-2).join(' ');
@@ -19755,7 +19759,7 @@ async function renderChannelTool_(){
  channelDraw_();if(!isAdmin()&&!isTrainer())return;
  const load=++channelView_.load;
  try{
-  const status=await channelApi_('status');if(load!==channelView_.load||owner!==channelOwner_())return;channelView_.configured=status.configured;
+  const status=await channelApi_('status');if(load!==channelView_.load||owner!==channelOwner_())return;channelView_.configured=status.configured;channelView_.sandboxes=status.sandboxes||[];
   await channelLoad_(false);if(load!==channelView_.load||owner!==channelOwner_())return;channelDraw_();
   if(channelView_.configured){channelSync_(false);}
  }catch(error){channelDraw_();channelMessage_(error.message,true);}
@@ -19767,7 +19771,7 @@ async function channelLoad_(draw=true){
  const owner=channelOwner_(),period=ChannelModel.period(channelView_.filters),version=++channelView_.request;
  const data=await channelApi_('overview',{from:period.from,to:period.to});
  if(owner!==channelOwner_()||version!==channelView_.request)return;
- channelView_.data=data;if(draw)channelDraw_();
+ channelView_.data=data;if(data.sandboxes)channelView_.sandboxes=data.sandboxes;if(draw)channelDraw_();
 }
 // Date filters are independent from monthly KPI data and never write to KPI records.
 function channelDraw_(){
@@ -19779,8 +19783,8 @@ function channelDraw_(){
  const selected=trainers.filter(t=>!f.trainer||String(t.id)===f.trainer),report=ChannelModel.report(selected,period),e=channelEscape_,num=channelNumber_;
  const choices=(rows,value)=>rows.map(([v,label])=>`<option value="${e(v)}" ${v===value?'selected':''}>${e(label)}</option>`).join('');
  const videoText=report.totals.known?num(report.totals.actual):'—',pct=report.complete&&report.totals.target?Math.round(report.totals.actual/report.totals.target*1000)/10:null;
- root.innerHTML=`<div class="channel-heading channel-compact-heading"><div><h2>Xây kênh TikTok</h2><p>3 bài/tuần · Theo dõi tiến độ và tương tác</p></div><div class="channel-heading-actions"><button type="button" class="secondary" data-channel-manage>Quản lý kênh</button><button type="button" class="secondary" id="channelSync" ${channelView_.busy||!channelView_.configured?'disabled':''}>↻ Đồng bộ</button></div></div>
- ${!channelView_.configured?`<div class="channel-banner"><strong>Chưa cấu hình ứng dụng TikTok.</strong> Admin gán trang cho Trainer, sau đó hoàn tất Login Kit và Display API để tự lấy video, like/share. <button type="button" class="secondary" id="channelSetup">Hướng dẫn kết nối</button></div>`:''}
+ root.innerHTML=`<div class="channel-heading channel-compact-heading"><div><h2>Xây kênh TikTok</h2><p>3 bài/tuần · Theo dõi tiến độ và tương tác</p></div><div class="channel-heading-actions"><button type="button" class="secondary" data-channel-manage>Quản lý kênh</button><button type="button" class="secondary" id="channelSync" ${channelView_.busy||!channelView_.configured?'disabled':''}>↻ Đồng bộ TikTok</button></div></div>
+ ${!channelView_.configured?`<div class="channel-banner"><strong>Chưa cấu hình ứng dụng TikTok.</strong> Admin gán trang cho Trainer, sau đó hoàn tất Login Kit và quyền đọc video để lấy số liệu TikTok API. <button type="button" class="secondary" id="channelSetup">Hướng dẫn kết nối</button></div>`:''}
  <div class="channel-toolbar" aria-label="Bộ lọc tiến độ xây kênh">
   <div class="channel-modes" role="group" aria-label="Kỳ báo cáo">${[['week','Tuần'],['month','Tháng'],['range','Khoảng ngày']].map(([v,label])=>`<button type="button" data-channel-mode="${v}" aria-pressed="${f.mode===v}">${label}</button>`).join('')}</div>
   ${f.mode==='week'?`<label>Chọn tuần<input type="date" id="channelAnchor" value="${f.anchor}"></label>`:f.mode==='month'?`<label>Chọn tháng<input type="month" id="channelMonth" value="${f.month}"></label>`:`<label>Từ ngày<input type="date" id="channelFrom" value="${f.from}"></label><label>Đến ngày<input type="date" id="channelTo" value="${f.to}"></label>`}
@@ -19794,8 +19798,8 @@ function channelDraw_(){
  </section>${channelMetricsCard_(report,period)}</div>
  <section class="channel-card channel-rhythm-panel"><h3>Nhịp đăng video</h3><p>${period.days>35?'Theo từng nhóm 7 ngày':'Theo ngày'} · Giờ Việt Nam</p>${channelTimeline_(report)}
  </section>
- <details class="channel-management" id="channelManagement" ${channelView_.managementOpen?'open':''}><summary><span>Quản lý kênh · ${selected.length} Trainer</span></summary><div class="channel-management-body"><div class="channel-management-tools">${isAdmin()?'<button type="button" class="secondary" data-channel-follow-baseline>Mốc follower 01/10</button>':''}<button type="button" class="secondary" data-channel-follow-help>Hướng dẫn follower</button></div> <section class="channel-card"><div class="channel-heading"><div><h3>Kênh của từng Trainer</h3><p>Số liệu chỉ tính video công khai; bấm Trainer để xem video</p></div>${isAdmin()?'<button type="button" class="secondary" id="channelAssign">＋ Gán trang TikTok</button>':''}</div>
- <table class="channel-detail-table" aria-label="Tiến độ xây kênh TikTok"><thead><tr><th>Trainer</th><th>Trang TikTok</th><th>Video / Target</th><th>♥ Like</th><th>↗ Share</th><th>Follower gần nhất</th><th>Tăng từ 01/10</th><th>Kết nối</th></tr></thead><tbody>${report.rows.map(t=>`<tr><td><button type="button" class="secondary" data-channel-videos="${e(t.id)}" title="${e(t.name)}">${e(channelShort_(t.name))}</button><small>${e(t.region)}</small></td><td>${t.handle?`<a href="https://www.tiktok.com/@${e(t.handle)}" target="_blank" rel="noopener noreferrer">@${e(t.handle)}</a>`:'Chưa gán'}</td><td>${t.known?num(t.actual):'—'} / ${num(t.target)}<small>${t.pct===null?'Chưa đồng bộ':num(t.pct)+'%'}</small></td><td>${num(t.likes)}</td><td>${num(t.shares)}</td>${channelFollowerCells_(t,period)}<td><span class="channel-tag ${t.known?'good':'wait'}">${t.known?'Đã đồng bộ':t.connected?'Đã kết nối':t.handle?'Chờ kết nối':'Chưa gán'}</span>${isAdmin()||String(t.id)===String(session.trainerId)?`<button type="button" class="secondary" data-channel-connect="${e(t.id)}" ${!t.handle||!channelView_.configured?'disabled':''} title="Đăng nhập đúng tài khoản TikTok đã gán">${t.connected?'Kết nối lại':'Kết nối'}</button>`:''}${t.connected&&!t.followers?.authorized&&(isAdmin()||String(t.id)===String(session.trainerId))?`<button type="button" class="secondary" data-channel-follow-connect="${e(t.id)}">Cấp quyền follow</button>`:''}<small>${t.syncedAt?e(new Date(t.syncedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})):''}</small></td></tr>`).join('')||'<tr><td colspan="8">Chưa có Trainer trong phạm vi.</td></tr>'}</tbody></table></section>
+ <details class="channel-management" id="channelManagement" ${channelView_.managementOpen?'open':''}><summary><span>Quản lý kênh · ${selected.length} Trainer</span></summary><div class="channel-management-body"><div class="channel-management-tools">${isAdmin()?'<button type="button" class="secondary" data-channel-follow-baseline>Mốc follower 01/10</button><button type="button" class="secondary" data-channel-sandbox-setup>Thiết lập Sandbox</button>':''}<button type="button" class="secondary" data-channel-follow-help>Hướng dẫn follower</button></div> <section class="channel-card"><div class="channel-heading"><div><h3>Kênh của từng Trainer</h3><p>Số liệu chỉ tính video công khai; bấm Trainer để xem video</p></div>${isAdmin()?'<button type="button" class="secondary" id="channelAssign">＋ Gán trang TikTok</button>':''}</div>
+ <table class="channel-detail-table" aria-label="Tiến độ xây kênh TikTok"><thead><tr><th>Trainer</th><th>Trang TikTok</th><th>Video / Target</th><th>♥ Like</th><th>↗ Share</th><th>Follower gần nhất</th><th>Tăng từ 01/10</th><th>Kết nối</th></tr></thead><tbody>${report.rows.map(t=>`<tr><td><button type="button" class="secondary" data-channel-videos="${e(t.id)}" title="${e(t.name)}">${e(channelShort_(t.name))}</button><small>${e(t.region)}</small></td><td>${t.handle?`<a href="https://www.tiktok.com/@${e(t.handle)}" target="_blank" rel="noopener noreferrer">@${e(t.handle)}</a>`:'Chưa gán'}<small class="channel-sandbox-label">${e(channelSandboxLabel_(t.sandboxId))}</small></td><td>${t.known?num(t.actual):'—'} / ${num(t.target)}<small>${t.pct===null?'Chưa đồng bộ':num(t.pct)+'%'}</small></td><td>${num(t.likes)}</td><td>${num(t.shares)}</td>${channelFollowerCells_(t,period)}<td><span class="channel-tag ${t.known?'good':'wait'}">${t.needsSandboxReconnect?'Cần kết nối '+e(channelSandboxLabel_(t.sandboxId)):t.known?'Đã đồng bộ':t.connected?'Đã kết nối':t.handle?'Chờ kết nối':'Chưa gán'}</span>${isAdmin()||String(t.id)===String(session.trainerId)?`<button type="button" class="secondary" data-channel-connect="${e(t.id)}" ${!t.handle||t.sandboxReady===false||!channelView_.configured?'disabled':''} title="Đăng nhập đúng tài khoản TikTok đã gán">${t.connected?'Kết nối lại':'Kết nối'}</button>`:''}${t.connected&&!t.followers?.authorized&&(isAdmin()||String(t.id)===String(session.trainerId))?`<button type="button" class="secondary" data-channel-follow-connect="${e(t.id)}" ${t.sandboxReady===false?'disabled':''}>Cấp quyền follow</button>`:''}<small>${t.syncedAt?e(new Date(t.syncedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})):''}</small></td></tr>`).join('')||'<tr><td colspan="8">Chưa có Trainer trong phạm vi.</td></tr>'}</tbody></table></section>
  <p class="channel-note">Tuần: thứ Hai – Chủ nhật. Target tháng/khoảng ngày = 3 × số ngày theo dõi / 7, làm tròn lên. Like/share là tổng hiện tại của các video đăng trong kỳ, không phải lượt tương tác tăng riêng trong kỳ. Tự đồng bộ khi mở trang và mỗi 15 phút khi đang xem; TikTok có thể cập nhật số liệu chậm.</p>
  </div></details>`;
  root.querySelectorAll('[data-channel-mode]').forEach(b=>b.onclick=()=>{f.mode=b.dataset.channelMode;channelDraw_();channelChangePeriod_();});
@@ -19804,8 +19808,9 @@ function channelDraw_(){
  root.querySelector('#channelSync').onclick=()=>channelSync_(true);root.querySelector('#channelSetup')?.addEventListener('click',channelSetup_);root.querySelector('#channelAssign')?.addEventListener('click',channelAssign_);
  root.querySelectorAll('[data-channel-connect]').forEach(b=>b.onclick=()=>channelConnect_(b.dataset.channelConnect));
  root.querySelectorAll('[data-channel-videos]').forEach(b=>b.onclick=()=>channelVideos_(report.rows.find(t=>t.id===b.dataset.channelVideos)));
- channelBindFollowers_(root,selected,period);
+ channelBindFollowers_(root,report.rows,period);
  channelBindCompact_(root);
+ root.querySelector('[data-channel-sandbox-setup]')?.addEventListener('click',channelSandboxSetup_);
 }
 async function channelChangePeriod_(){channelView_.data=null;channelDraw_();channelMessage_('Đang tải số liệu theo kỳ đã chọn…');try{await channelLoad_();}catch(error){channelMessage_(error.message,true);}}
 function channelTimeline_(report){
@@ -19816,16 +19821,6 @@ function channelDialog_(title,html){
  document.querySelector('.channel-overlay')?.remove();const ov=document.createElement('div');ov.className='channel-overlay';ov.innerHTML=`<div class="channel-dialog" role="dialog" aria-modal="true" aria-label="${channelEscape_(title)}"><button type="button" class="channel-close" aria-label="Đóng">×</button><h3>${channelEscape_(title)}</h3>${html}</div>`;
  const close=()=>ov.remove();ov.querySelector('.channel-close').onclick=close;ov.onclick=e=>{if(e.target===ov)close();};ov.onkeydown=e=>{if(e.key==='Escape')close();};document.body.append(ov);ov.querySelector('button')?.focus();return ov;
 }
-function channelSetup_(){
- const test=location.pathname.startsWith('/Test/'),slug=test?'trainer-channel-test':'trainer-channel',redirect=SUPABASE_URL+'/functions/v1/'+slug+'/oauth/callback',site='https://centraltraining.github.io/'+(test?'Test/':'Dashboard/');
- channelDialog_('Bật tự đồng bộ TikTok',`<ol><li>Mở <a href="https://developers.tiktok.com/" target="_blank" rel="noopener noreferrer">TikTok for Developers</a> → chọn ứng dụng. Với bản thử nghiệm, tạo Sandbox và thêm đúng tài khoản TikTok vào Target users.</li><li>Thêm <b>Login Kit</b>. Trong <b>Scopes</b>, thêm <code>user.info.basic</code>, <code>user.info.profile</code>, <code>video.list</code>. Thêm <code>user.info.stats</code> để đọc follower.</li><li>Login Kit Web Redirect URI: <code>${channelEscape_(redirect)}</code>. Website: <code>${channelEscape_(site)}</code>.</li><li>Lưu cấu hình TikTok. Production cần được xét duyệt; Sandbox chỉ dùng với tài khoản thử nghiệm đã thêm.</li><li>Trong Supabase → Edge Functions → Secrets, cấu hình <code>${test?'TIKTOK_TEST_CLIENT_KEY':'TIKTOK_CLIENT_KEY'}</code> và <code>${test?'TIKTOK_TEST_CLIENT_SECRET':'TIKTOK_CLIENT_SECRET'}</code> của đúng ứng dụng hoặc Sandbox. Nhập khóa trực tiếp tại Supabase.</li><li>Admin gán đúng @TikTok cho Trainer. Chủ kênh bấm <b>Kết nối</b> để đọc video; bấm <b>Cấp quyền follow</b> để cho phép ghi mốc follower.</li></ol><p class="channel-note">Like/share là số mới nhất của video. Tăng trưởng follower được tính từ những mốc ứng dụng ghi nhận sau khi được cấp quyền, không tự dựng dữ liệu quá khứ.</p>`);
-}
-function channelAssign_(){
- if(!isAdmin())return;const list=channelView_.data?.trainers||channelInitial_(),e=channelEscape_;
- const ov=channelDialog_('Gán trang TikTok cho Trainer',`<form id="channelAssignForm"><label>Trainer<select id="channelAssignTrainer">${list.map(t=>`<option value="${e(t.id)}">${e(t.name)} · ${e(t.region)}</option>`).join('')}</select></label><label>Trang TikTok<input id="channelHandle" placeholder="https://www.tiktok.com/@tenkenh hoặc @tenkenh" required autocomplete="off"></label><label>Bắt đầu tính target<input id="channelTracking" type="date" required></label><p class="channel-note">Mỗi Trainer có một kênh. Đổi trang TikTok sẽ yêu cầu chủ kênh kết nối lại; số liệu kênh cũ được thay sau khi xác thực đúng kênh mới.</p><p id="channelAssignError" role="alert" style="color:var(--red)"></p><button type="submit" class="primary">Lưu trang TikTok</button></form>`);
- const select=ov.querySelector('#channelAssignTrainer'),fill=()=>{const t=list.find(t=>t.id===select.value);ov.querySelector('#channelHandle').value=t?.handle?'@'+t.handle:'';ov.querySelector('#channelTracking').value=t?.trackingFrom||ChannelModel.period(channelView_.filters).from;};select.onchange=fill;fill();
- ov.querySelector('form').onsubmit=async event=>{event.preventDefault();const b=ov.querySelector('[type=submit]');b.disabled=true;try{await channelApi_('assign',{trainerId:select.value,handle:ov.querySelector('#channelHandle').value,trackingFrom:ov.querySelector('#channelTracking').value});ov.remove();await channelLoad_();channelMessage_('Đã gán trang TikTok. Chủ kênh cần bấm Kết nối để cho phép đọc video.');}catch(error){ov.querySelector('#channelAssignError').textContent=error.message;b.disabled=false;}};
-}
 async function channelConnect_(id,followerStats=false){
  try{const returnUrl=location.origin+location.pathname;if(!['https://centraltraining.github.io/Test/','https://centraltraining.github.io/Dashboard/'].includes(returnUrl))throw Error('Hãy mở dashboard trên website chính thức để kết nối.');const out=await channelApi_('connect',{trainerId:id,returnUrl,followerStats:followerStats===true});const u=new URL(out.url);if(u.origin!=='https://www.tiktok.com'||u.pathname!=='/v2/auth/authorize/')throw Error('Địa chỉ kết nối TikTok không hợp lệ.');location.assign(u.href);}catch(error){channelMessage_(error.message,true);}
 }
@@ -19835,7 +19830,7 @@ function channelVideos_(t){
 }
 async function channelSync_(force){
  if(channelView_.busy||!channelView_.configured)return;channelView_.busy=true;const owner=channelOwner_();channelDraw_();
- const list=(channelView_.data?.trainers||[]).filter(t=>t.connected&&(!channelView_.filters.region||t.region===channelView_.filters.region)&&(!channelView_.filters.trainer||t.id===channelView_.filters.trainer));
+ const list=(channelView_.data?.trainers||[]).filter(t=>t.connected&&t.sandboxReady!==false&&!t.needsSandboxReconnect&&(!channelView_.filters.region||t.region===channelView_.filters.region)&&(!channelView_.filters.trainer||t.id===channelView_.filters.trainer));
  let done=0,failed=0,pending=0;
  try{
   for(const t of list){
@@ -19923,6 +19918,29 @@ function channelBindCompact_(root){
  const details=root.querySelector('#channelManagement');
  if(details)details.ontoggle=()=>{channelView_.managementOpen=details.open;};
  root.querySelectorAll('[data-channel-manage]').forEach(button=>button.onclick=()=>{if(!details)return;details.open=!details.open;channelView_.managementOpen=details.open;if(details.open)details.scrollIntoView({behavior:'smooth',block:'nearest'});});
+}
+
+function channelSandboxes_(){return channelView_.sandboxes?.length?channelView_.sandboxes:[{id:'primary',label:'Sandbox 1',configured:channelView_.configured},{id:'secondary',label:'Sandbox 2',configured:false}];}
+function channelSandboxLabel_(id){return channelSandboxes_().find(s=>s.id===(id||'primary'))?.label||'Sandbox chưa xác định';}
+function channelSandboxSetup_(){
+ if(!isAdmin())return;const e=channelEscape_,redirect=SUPABASE_URL+'/functions/v1/trainer-channel-test/oauth/callback';
+ const rows=channelSandboxes_(),second=rows.find(s=>s.id==='secondary');
+ const counts=id=>(channelView_.data?.trainers||[]).filter(t=>(t.sandboxId||'primary')===id).length;
+ channelDialog_('Thiết lập 2 Sandbox TikTok',`<div class="channel-sandbox-status">${rows.map(s=>`<span class="channel-tag ${s.configured?'good':'wait'}">${e(s.label)} · ${s.configured?'Sẵn sàng':'Chưa cấu hình'} · ${counts(s.id)} kênh được gán</span>`).join('')}</div><ol><li>Giữ nguyên Sandbox 1 và bộ khóa đang dùng. Không ghi đè bằng khóa Sandbox mới.</li><li>Tạo Sandbox 2 trong cùng ứng dụng TikTok. Thêm <b>Login Kit</b> và các quyền <code>user.info.basic</code>, <code>user.info.profile</code>, <code>video.list</code>, <code>user.info.stats</code>.</li><li>Sandbox 2 dùng lại Redirect URI: <code>${e(redirect)}</code>. Thêm đúng 3 tài khoản còn lại vào <b>Target users</b> rồi lưu thay đổi.</li><li>Trong Supabase → Edge Functions → Secrets, thêm bộ khóa Sandbox 2 vào <code>TIKTOK_TEST_SANDBOX2_CLIENT_KEY</code> và <code>TIKTOK_TEST_SANDBOX2_CLIENT_SECRET</code>. Nhập trực tiếp tại Supabase.</li><li>Mở <b>Gán trang TikTok</b>, chọn từng Trainer thuộc nhóm 3 người và gán <b>Sandbox 2</b>. Sau đó Trainer bấm <b>Kết nối</b>.</li><li>Dùng một nút <b>Đồng bộ TikTok</b> cho toàn bộ Trainer. Hệ thống tự dùng đúng Sandbox của từng kênh.</li></ol><p class="channel-note">${second?.configured?'Sandbox 2 đã sẵn sàng để gán Trainer.':'Sandbox 2 chỉ cho phép gán khi bộ khóa mới đã được cấu hình.'} Mỗi Sandbox tối đa 10 tài khoản thử nghiệm. Không gửi khóa hoặc mật khẩu TikTok vào cuộc trò chuyện.</p>`);
+}
+function channelSetup_(){
+ const e=channelEscape_,redirect=SUPABASE_URL+'/functions/v1/trainer-channel-test/oauth/callback';
+ channelDialog_('Kết nối TikTok qua Sandbox',`<ol><li>Admin gán đúng kênh TikTok và Sandbox cho từng Trainer tại <b>Quản lý kênh → Gán trang TikTok</b>.</li><li>Tài khoản TikTok phải có trong <b>Target users</b> của đúng Sandbox được gán.</li><li>Trong Sandbox, bật <b>Login Kit</b> và các quyền <code>user.info.basic</code>, <code>user.info.profile</code>, <code>video.list</code>. Quyền <code>user.info.stats</code> dùng để ghi follower.</li><li>Dùng callback đã đăng ký: <code>${e(redirect)}</code>.</li><li>Trainer đăng nhập đúng kênh, bấm <b>Kết nối</b> và đồng ý quyền đọc dữ liệu. Bấm <b>Cấp quyền follow</b> nếu kết nối cũ chưa có quyền follower.</li><li>Bấm <b>Đồng bộ TikTok</b> để cập nhật bài đăng, view, like, share và follower vào cùng bảng tiến độ.</li></ol>${isAdmin()?'<p class="channel-note">Thiết lập Sandbox 2 tại Quản lý kênh → Thiết lập Sandbox. Sandbox 1 giữ nguyên bộ khóa cũ.</p>':''}<p class="channel-note">Chỉ số chưa có dữ liệu hiển thị “—”. Mốc follower Admin ngày 01/10/2026 được giữ nguyên; TikTok API không tự trả lịch sử follower trước khi hệ thống ghi nhận.</p>`);
+}
+function channelAssign_(){
+ if(!isAdmin())return;const list=channelView_.data?.trainers||channelInitial_(),e=channelEscape_,sandboxes=channelSandboxes_();
+ const ov=channelDialog_('Gán trang TikTok cho Trainer',`<form id="channelAssignForm"><label>Trainer<select id="channelAssignTrainer">${list.map(t=>`<option value="${e(t.id)}">${e(t.name)} · ${e(t.region)}</option>`).join('')}</select></label><label>Trang TikTok<input id="channelHandle" placeholder="https://www.tiktok.com/@tenkenh hoặc @tenkenh" required autocomplete="off"></label><label>Sandbox TikTok<select id="channelSandbox">${sandboxes.map(s=>`<option value="${e(s.id)}" ${!s.configured&&s.id!=='primary'?'disabled':''}>${e(s.label)}${s.configured?'':' · Chưa cấu hình'}</option>`).join('')}</select></label><label>Bắt đầu tính target<input id="channelTracking" type="date" required></label><p class="channel-note">Giữ 10 Trainer ở Sandbox 1, gán 3 Trainer còn lại sang Sandbox 2 khi sẵn sàng. Đổi Sandbox giữ số liệu và mốc Admin; Trainer kết nối lại đúng Sandbox để tiếp tục đồng bộ.</p><p id="channelAssignError" role="alert" style="color:var(--red)"></p><button type="submit" class="primary">Lưu trang TikTok</button></form>`);
+ const select=ov.querySelector('#channelAssignTrainer'),fill=()=>{const t=list.find(t=>String(t.id)===select.value);ov.querySelector('#channelHandle').value=t?.handle?'@'+t.handle:'';ov.querySelector('#channelSandbox').value=t?.sandboxId||'primary';ov.querySelector('#channelTracking').value=t?.trackingFrom||ChannelModel.period(channelView_.filters).from;};select.onchange=fill;fill();
+ ov.querySelector('form').onsubmit=async event=>{
+  event.preventDefault();const b=ov.querySelector('[type=submit]');b.disabled=true;
+  try{await channelApi_('assign',{trainerId:select.value,handle:ov.querySelector('#channelHandle').value,sandboxId:ov.querySelector('#channelSandbox').value,trackingFrom:ov.querySelector('#channelTracking').value});ov.remove();await channelLoad_();channelMessage_('Đã lưu kênh và Sandbox. Trainer kết nối đúng kênh để đồng bộ TikTok API.');}
+  catch(error){ov.querySelector('#channelAssignError').textContent=error.message;b.disabled=false;}
+ };
 }
 
 </script>
