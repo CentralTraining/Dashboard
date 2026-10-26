@@ -1,3 +1,4 @@
+import { teamOverview } from './team-overview.ts';
 import { nativeMainRequest } from './owner-route.ts';
 import { sharedApiProxy } from './api-proxy.ts';
 import { SHARED_CALLBACK_PATH, MAIN_CALLBACK_PATH, MAIN_STATE_PREFIX, isMainOauthState, isLegacyOauthState } from './oauth-route.ts';
@@ -179,6 +180,7 @@ Deno.serve(async req=>{
   const raw=await req.text();if(raw.length>8000)return respond({error:'Yêu cầu quá dài.'},413);let body;try{body=JSON.parse(raw);}catch{failure('Yêu cầu không hợp lệ.');}
   const ownerHeader=req.headers.has('x-channel-owner-at')||req.headers.has('x-channel-owner-signature');
   if(ownerHeader){if(!['sync','connect'].includes(body.action)||!await nativeMainRequest(req,raw,env().secret))failure('Phiên chuyển tiếp không hợp lệ.',403);}
+  else if(body.action==='overview'){const principal=await authenticate(body.dashboardToken);return respond({ok:true,...await teamOverview(body,principal)});}
   else return sharedApiProxy(req,raw,env().url);
   if(body.action==='status')return respond({ok:true,configured:configured(),credentialSource:env().credentialSource,redirectUri:callback(),scopes:SCOPES,optionalScopes:[FOLLOWER_SCOPE],followerHistory:true,followerBaselineDate:FOLLOWER_BASELINE_DATE});
   const p=await authenticate(body.dashboardToken);let out;

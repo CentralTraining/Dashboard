@@ -1,0 +1,19 @@
+{
+  "environment": "Dashboard chính",
+  "version": "2026-10-26",
+  "parent_commit": "cd77100236891e9561411fe9e1a8b5ae0d1e73d5",
+  "tested_commit": "7fc3e74017f3cd74634214c593a96f555be68afb",
+  "html_file": "Dashboard-Chinh-2026-10-26-TikTok-Toan-Team.html",
+  "bytes": 2454714,
+  "sha256": "d44160563c971fc5098108d98678cd0254769fb8e085929da0b6120b4c835d96",
+  "git_blob_sha": "a5f88a0e614076ee522b68331c351bdd56af9828",
+  "zip_file": "Dashboard-Chinh-2026-10-26-TikTok-Toan-Team-Full-Source.zip",
+  "zip_bytes": 989601,
+  "zip_sha256": "835bd059802e5ddcce7ae4c003a5700ec17902afa4afbfab61a1ca3ee7a11cf6",
+  "zip_git_blob_sha": "4ec2cccb49a9668a4eb3bad79c078e6ade3fcf60",
+  "function": "trainer-channel",
+  "function_version": 11,
+  "function_sha256": "b6b4b15b5db0ad19b872c075e1ff6dacbb79badc97a39383f0a547ea89b3bbc0",
+  "exact_test_html": true,
+  "other_dashboard_blocks_unchanged": true
+}
