@@ -1,3 +1,4 @@
+import { SHARED_CALLBACK_PATH, MAIN_CALLBACK_PATH, MAIN_STATE_PREFIX, isMainOauthState, isLegacyOauthState } from './oauth-route.ts';
 import { authenticate, AccessError } from './access.ts';
 import { FOLLOWER_SCOPE, FOLLOWER_BASELINE_DATE, recordFollowers, followerView } from './followers.ts';
 // Official TikTok Display API only. Tokens never leave this function; no scraping.
@@ -12,7 +13,8 @@ const unb64=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.
 // The main dashboard uses the existing production credential variables.
 const env=()=>({url:Deno.env.get('SUPABASE_URL'),secret:Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
  client:Deno.env.get('TIKTOK_CLIENT_KEY')?.trim(),clientSecret:Deno.env.get('TIKTOK_CLIENT_SECRET')?.trim(),credentialSource:'legacy'});
-const callback=()=>env().url+'/functions/v1/'+ROOT+'/oauth/callback';
+const callback=()=>env().url+SHARED_CALLBACK_PATH;
+const ownCallback=()=>env().url+MAIN_CALLBACK_PATH;
 const configured=()=>!!(env().client&&env().clientSecret);
 const failure=(message,status=400)=>{throw new AccessError(message,status);};
 async function cryptKey(){return crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',te.encode('trainer-channel-private-v1:'+env().secret)),'AES-GCM',false,['encrypt','decrypt']);}
@@ -58,13 +60,13 @@ async function connect(body,p){
  const t=trainer(p,body.trainerId,true);if(!configured())failure('Chưa cấu hình ứng dụng TikTok. Xem hướng dẫn kết nối.',503);
  if(!ALLOWED.includes(body.returnUrl))failure('Địa chỉ quay lại không hợp lệ.');
  const rec=await read('channel:'+t.id);if(!rec.data?.handle)failure('Admin cần gán trang TikTok trước khi kết nối.');
- const state=crypto.randomUUID()+crypto.randomUUID();await put({key:'oauth:'+state,version:null},{trainerId:String(t.id),dashboardToken:body.dashboardToken,expected:rec.data.handle,returnUrl:body.returnUrl,expires:Date.now()+10*60000,version:rec.version});
+ const state=MAIN_STATE_PREFIX+crypto.randomUUID()+crypto.randomUUID();await put({key:'oauth:'+state,version:null},{trainerId:String(t.id),dashboardToken:body.dashboardToken,expected:rec.data.handle,returnUrl:body.returnUrl,redirectUri:callback(),expires:Date.now()+10*60000,version:rec.version});
  const requested=body.followerStats===true?[...SCOPES,FOLLOWER_SCOPE]:SCOPES;
  const url=new URL('https://www.tiktok.com/v2/auth/authorize/');url.search=new URLSearchParams({client_key:env().client,scope:requested.join(','),response_type:'code',redirect_uri:callback(),state,disable_auto_auth:'1'}).toString();
  return {url:url.href};
 }
 async function oauth(url){
- const state=url.searchParams.get('state')||'';if(!/^[a-f0-9-]{72}$/.test(state))failure('Phiên kết nối không hợp lệ.');
+ const state=url.searchParams.get('state')||'';if(!isMainOauthState(state)&&!isLegacyOauthState(state))failure('Phiên kết nối không hợp lệ.');
  const saved=await read('oauth:'+state);if(!saved.data||saved.data.expires<Date.now())failure('Phiên kết nối đã hết hạn. Hãy kết nối lại.');
  await consume(saved.key,saved.version);const back=saved.data.returnUrl;
  try{
@@ -72,7 +74,8 @@ async function oauth(url){
   const current=await read('channel:'+saved.data.trainerId);if(!current.data||current.version!==saved.data.version||current.data.handle!==saved.data.expected)throw Error();
   // Recheck the authorizing dashboard account and current ownership at callback time.
   const owner=await authenticate(saved.data.dashboardToken);trainer(owner,saved.data.trainerId,true);
-  const out=await tokenCall({grant_type:'authorization_code',code:url.searchParams.get('code'),redirect_uri:callback()});const token=tokenPayload(out);
+  const redirectUri=saved.data.redirectUri||ownCallback();if(![callback(),ownCallback()].includes(redirectUri))throw Error();
+  const out=await tokenCall({grant_type:'authorization_code',code:url.searchParams.get('code'),redirect_uri:redirectUri});const token=tokenPayload(out);
   const info=await official('/v2/user/info/?fields=open_id,display_name,username',{headers:{Authorization:'Bearer '+token.access}});const profile=info.data?.user;
   if(!profile||profile.open_id!==token.openId||handle(profile.username)!==saved.data.expected)throw Error();
   const sameAccount=current.data.token?.openId===token.openId;
@@ -178,5 +181,6 @@ Deno.serve(async req=>{
   return respond({ok:true,...out});
  }catch(e){return respond({error:e instanceof AccessError?e.message:'Chưa xử lý được yêu cầu Xây kênh. Dữ liệu cũ được giữ nguyên.'},e instanceof AccessError?e.status:500);}
 });
+
 
 
