@@ -1,0 +1,19 @@
+{
+  "scope": "Main",
+  "date": "2026-10-27",
+  "filename": "Dashboard-Chinh-2026-10-27-Coaching-Xuat-Excel.html",
+  "bytes": 2459466,
+  "characters": 2395960,
+  "sha256": "febf1d5448972c9f1a9f2704ff6c45d865cf6b8370320c563df0e7e367be0b70",
+  "git_blob_sha": "7fae289467013f5d00aac968c99e98494a1ff3be",
+  "changes": [
+    "Trainer-scoped Coaching PG survey list and completion counters",
+    "One PG per row with expandable original survey history",
+    "Survey count: green >=2 / orange <2",
+    "Filtered totals and unique-PG pagination",
+    "Top-left Excel export across all filtered pages"
+  ],
+  "database_changes": false,
+  "backend_changes": false,
+  "test_commit": "536a3286a2ccce3ecbdd8e3f24735dbe9f385f9e"
+}

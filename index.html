@@ -12592,11 +12592,19 @@ let coachingListFinalized=false;
 let coachStatusFilter='';
 let coachingAddMode=false;
 const COACHING_SESSIONS_TO_COMPLETE = 2; // Target 1 PG 0*/1* = đủ 2 lượt khảo sát/coaching trong tháng
-function surveyCountForCode(code){
-  if(!code) return 0;
-  const c = String(code).trim();
-  if(!c) return 0;
-  return surveyResponses.filter(s=>String(s.code||'').trim()===c).length;
+function coachingScopedTrainerList_(){
+  const allowed = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
+  const ids = noiboFilteredTrainerIds_(new Set(allowed.map(t=>t.id)));
+  return allowed.filter(t=>ids.has(t.id));
+}
+function coachingSurveyPgKey_(response){
+  const code=String(response.code||'').trim();
+  return code && response.trainerId ? JSON.stringify([response.trainerId,code]) : '';
+}
+function surveyCountForCode(code,trainerId){
+  const c=String(code||'').trim();
+  if(!c || !trainerId) return 0;
+  return surveyResponses.filter(s=>s.trainerId===trainerId && String(s.code||'').trim()===c).length;
 }
 function syncPg01ActualFromCoaching(trainerId, source=surveyResponses, targetRecords=records){
   const rec = targetRecords[trainerId] || (targetRecords[trainerId]=emptyRecord());
@@ -12685,8 +12693,8 @@ function renderPg01Panel(){
 function renderCoachingRegistration(){
   const box=document.getElementById('coachingRegBox');
   if(!box) return;
-  const tList = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
-  if(tList.length===0){ box.innerHTML='<div class="empty">Chưa có Trainer trong phạm vi đang xem.</div>'; return; }
+  const tList = coachingScopedTrainerList_();
+  if(tList.length===0){ coachRegTrainerId=null; box.innerHTML='<div class="empty">Chưa có Trainer trong phạm vi đang xem.</div>'; return; }
   if(!coachRegTrainerId || !tList.some(t=>t.id===coachRegTrainerId)) coachRegTrainerId=tList[0].id;
 
   let candidates = pgs.filter(p=> p.brand==='OPPO' && p.trainerId===coachRegTrainerId && (Number(p.star)===0 || Number(p.star)===1) && (p.status==='Đang làm' || p.statusChangedAt));
@@ -12761,7 +12769,7 @@ function renderCoachingRegistration(){
         <td class="stars">${starDisplay(p.star)}</td>
         <td>${statusSelectHtml_(p, canEdit)}</td>
         <td style="text-align:center;"><input type="checkbox" class="coach-reg-checkbox" data-pg="${p.id}" ${checked?'checked':''} ${(canEdit && !rowLocked)?'':'disabled'} style="width:18px;height:18px;cursor:pointer;"></td>
-        <td style="text-align:center;"><span class="pill ${surveyCountForCode(p.code)>=COACHING_SESSIONS_TO_COMPLETE?'pill-ok':'pill-warn'}">${surveyCountForCode(p.code)}/${COACHING_SESSIONS_TO_COMPLETE}</span></td>
+        <td style="text-align:center;"><span class="pill ${surveyCountForCode(p.code,p.trainerId)>=COACHING_SESSIONS_TO_COMPLETE?'pill-ok':'pill-warn'}">${surveyCountForCode(p.code,p.trainerId)}/${COACHING_SESSIONS_TO_COMPLETE}</span></td>
       </tr>`;
     });
     html += `</tbody></table>`;
@@ -12781,7 +12789,7 @@ function renderCoachingRegistration(){
   wirePgStatusSelects_(box);
 
   const sel=document.getElementById('coachRegTrainerSelect');
-  if(sel) sel.addEventListener('change', (e)=>{ coachRegTrainerId=e.target.value; coachRegPage=1; coachingListFinalized=false; coachingAddMode=false; renderCoachingRegistration(); });
+  if(sel) sel.addEventListener('change', (e)=>{ coachRegTrainerId=e.target.value; coachRegPage=1; surveyFormPage_=1; coachingListFinalized=false; coachingAddMode=false; renderCoachingRegistration(); renderSurveyForm(); });
 
   const statusSel=document.getElementById('coachStatusFilterSelect');
   if(statusSel) statusSel.addEventListener('change', (e)=>{ coachStatusFilter=e.target.value; coachRegPage=1; renderCoachingRegistration(); });
@@ -13214,74 +13222,121 @@ async function processSurvey01Workbook_(wb){
 let surveyFormPage_ = 1;
 let surveyFormLuotFilter_ = '';
 const SURVEY_FORM_PAGE_SIZE = 10;
+function exportCoachingSurveyGroups_(groups,trainer,month,filter){
+  if(!trainer||month!==currentMonth||filter!==surveyFormLuotFilter_||coachRegTrainerId!==trainer.id)return;
+  if(!isAdmin()&&!isTrainer())return;
+  if(!coachingScopedTrainerList_().some(t=>t.id===trainer.id))return;
+  if(isTrainer()){
+    const ownRegion=String(session.region||trainerOf(session.trainerId)?.region||'').trim().toUpperCase();
+    if(trainer.id!==session.trainerId||!ownRegion||String(trainer.region||'').trim().toUpperCase()!==ownRegion)return;
+  }
+  const selected=groups.filter(group=>group.responses.length&&group.responses.every(s=>s.trainerId===trainer.id));
+  if(!selected.length)return;
+  const filterLabel=filter==='2'?'Đủ ≥2 lượt':filter==='1'?'Có 1 lượt':'Tất cả';
+  const total=selected.reduce((sum,group)=>sum+group.count,0);
+  const rows=selected.map((group,index)=>{
+    const s=group.latest;
+    return [index+1,String(s.code||''),String(s.pgName||''),String(trainer.region||''),String(trainer.name||''),
+      String(s.pgGroup||''),Number(group.count),group.count>=COACHING_SESSIONS_TO_COMPLETE?'Đủ khảo sát':'Chưa đủ khảo sát',
+      s.timestamp?new Date(s.timestamp).toLocaleString('vi-VN'): ''];
+  });
+  const data=[['KẾT QUẢ KHẢO SÁT COACHING PGs 0★–1★'],
+    ['Tháng',month,'Trainer',trainer.name,'Khu vực',trainer.region||''],
+    ['Bộ lọc',filterLabel,'Số PG',rows.length,'Tổng khảo sát',total],[],
+    ['STT','Mã NV','Họ & Tên PGs','Khu vực','Trainer','Nhóm','Số khảo sát','Trạng thái','Khảo sát gần nhất'],
+    ...rows,['TỔNG','','','','','',total,'','']];
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[8,16,30,20,28,20,14,24,24].map(wch=>({wch}));
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:8}}];
+  ws['!autofilter']={ref:'A5:I'+(5+rows.length)};
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Danh sach PG');
+  const safeName=String(trainer.name||'Trainer').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'');
+  XLSX.writeFile(wb,`Khao_sat_Coaching_PGs_01_${month}_${safeName}_${filter||'tat_ca'}.xlsx`);
+}
 function renderSurveyForm(){
   const box=document.getElementById('surveyFormBox');
   if(!box) return;
 
-  const tList = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
-  const trainerIds = noiboFilteredTrainerIds_(new Set(tList.map(t=>t.id)));
-  const scopedResponses = surveyResponses.filter(s=> trainerIds.has(s.trainerId));
-
-  let html = '';
-  const monthEntries = scopedResponses.length;
-  const completedCount = coachingReg.filter(r=> surveyCountForCode(r.code) >= COACHING_SESSIONS_TO_COMPLETE).length;
-  html += `<div class="scope-filters" style="justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;">
+  const tList=coachingScopedTrainerList_();
+  const trainer=tList.find(t=>t.id===coachRegTrainerId);
+  const scopedResponses=trainer?surveyResponses.filter(s=>s.trainerId===trainer.id):[];
+  // Một dòng cho một mã PG của Trainer; chỉ gộp cách hiển thị, giữ nguyên từng phiếu.
+  const groupsByPg=new Map();
+  scopedResponses.forEach((s,index)=>{
+    const key=coachingSurveyPgKey_(s)||JSON.stringify(['unmatched',s.id||index]);
+    let group=groupsByPg.get(key);
+    if(!group){group={responses:[]};groupsByPg.set(key,group);}
+    group.responses.push(s);
+  });
+  const groups=[...groupsByPg.values()];
+  groups.forEach(group=>{
+    group.responses.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    group.latest=group.responses[0];group.count=group.responses.length;
+  });
+  groups.sort((a,b)=>new Date(b.latest.timestamp)-new Date(a.latest.timestamp));
+  const monthEntries=scopedResponses.length;
+  const completedCount=groups.filter(group=>group.count>=COACHING_SESSIONS_TO_COMPLETE).length;
+  let filteredGroups=groups;
+  if(surveyFormLuotFilter_)filteredGroups=groups.filter(group=>surveyFormLuotFilter_==='2'
+    ?group.count>=COACHING_SESSIONS_TO_COMPLETE:group.count===1);
+  const filteredEntries=filteredGroups.reduce((sum,group)=>sum+group.count,0);
+  const canExport=isAdmin()||isTrainer();
+  const exportMonth=currentMonth,exportFilter=surveyFormLuotFilter_;
+  let html=`${canExport?`<div style="display:flex;justify-content:flex-start;margin-bottom:10px;"><button class="secondary" id="exportCoachingSurveyBtn" type="button" ${filteredGroups.length?'':'disabled'} title="Xuất toàn bộ PG khớp bộ lọc, gồm tất cả các trang">⇩ Xuất Excel</button></div>`:''}<div class="scope-filters" style="justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <span class="scope-label">Đã nhập <strong>${monthEntries}</strong> lượt khảo sát trong ${monthLabel(currentMonth)} (khớp bộ lọc)</span>
-      <span class="scope-label">Lượt:</span>
-      <select id="surveyFormLuotSel" style="max-width:100px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
+      <span class="scope-label">${trainer?escapeHtml(trainer.name)+' · ':''}Tổng <strong>${monthEntries}</strong> phiếu khảo sát · <strong>${groups.length}</strong> PG trong ${monthLabel(currentMonth)}</span>
+      <span class="scope-label">Lọc PG:</span>
+      <select id="surveyFormLuotSel" style="max-width:145px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);">
         <option value="" ${surveyFormLuotFilter_===''?'selected':''}>Tất cả</option>
-        <option value="1" ${surveyFormLuotFilter_==='1'?'selected':''}>1/${COACHING_SESSIONS_TO_COMPLETE}</option>
-        <option value="2" ${surveyFormLuotFilter_==='2'?'selected':''}>${COACHING_SESSIONS_TO_COMPLETE}/${COACHING_SESSIONS_TO_COMPLETE}</option>
+        <option value="1" ${surveyFormLuotFilter_==='1'?'selected':''}>Có 1 lượt</option>
+        <option value="2" ${surveyFormLuotFilter_==='2'?'selected':''}>Đủ ≥${COACHING_SESSIONS_TO_COMPLETE} lượt</option>
       </select>
     </div>
-    <span class="scope-label">PG đã đủ ${COACHING_SESSIONS_TO_COMPLETE} lượt (hoàn thành Target): <strong>${completedCount}</strong></span>
+    <span class="scope-label">PG đủ ${COACHING_SESSIONS_TO_COMPLETE} lượt của Trainer đang chọn: <strong>${completedCount}</strong></span>
   </div>`;
-
-  let filteredResponses = scopedResponses;
-  if(surveyFormLuotFilter_) filteredResponses = filteredResponses.filter(s=> String(surveyCountForCode(s.code))===surveyFormLuotFilter_);
-
-  if(filteredResponses.length===0){
-    html += `<div class="empty">Chưa có khảo sát nào khớp bộ lọc trong tháng này.</div>`;
-  } else {
-    const sorted = [...filteredResponses].sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
-    const totalItems = sorted.length;
-    const totalPages = Math.max(1, Math.ceil(totalItems/SURVEY_FORM_PAGE_SIZE));
-    if(surveyFormPage_>totalPages) surveyFormPage_ = totalPages;
-    if(surveyFormPage_<1) surveyFormPage_ = 1;
-    const startIdx = (surveyFormPage_-1)*SURVEY_FORM_PAGE_SIZE;
-    const pageItems = sorted.slice(startIdx, startIdx+SURVEY_FORM_PAGE_SIZE);
-    html += `<table><thead><tr><th>Thời gian</th><th>Mã NV</th><th>Họ & Tên PGs</th><th>Trainer</th><th>Nhóm</th><th>Buổi thứ</th><th>Lượt/2</th>${isAdmin()?'<th></th>':''}</tr></thead><tbody>`;
-    pageItems.forEach(s=>{
-      const cnt = surveyCountForCode(s.code);
-      const done = cnt >= COACHING_SESSIONS_TO_COMPLETE;
-      html += `<tr>
-        <td>${s.timestamp ? new Date(s.timestamp).toLocaleString('vi-VN') : '—'}</td>
-        <td>${s.code||'—'}</td>
-        <td>${s.pgName||'—'}</td>
-        <td>${s.trainerName||'—'}</td>
-        <td>${s.pgGroup||'—'}</td>
-        <td>${s.sessionNo||'—'}</td>
-        <td><span class="pill ${done?'pill-ok':'pill-warn'}">${cnt}/${COACHING_SESSIONS_TO_COMPLETE}</span></td>
-        ${isAdmin()?`<td><button class="danger" data-del-survey="${s.id}">Xóa</button></td>`:''}
+  html+=`<p class="section-desc" style="margin:0 0 8px;">Mỗi PG hiển thị một dòng. Bộ lọc đang hiển thị <strong>${filteredGroups.length}/${groups.length} PG · ${filteredEntries}/${monthEntries} phiếu khảo sát</strong>. Mở chi tiết để xem từng phiếu.</p>`;
+  if(!filteredGroups.length){
+    html+='<div class="empty">Chưa có khảo sát nào khớp bộ lọc trong tháng này.</div>';
+  }else{
+    const totalPages=Math.max(1,Math.ceil(filteredGroups.length/SURVEY_FORM_PAGE_SIZE));
+    surveyFormPage_=Math.max(1,Math.min(surveyFormPage_,totalPages));
+    const startIdx=(surveyFormPage_-1)*SURVEY_FORM_PAGE_SIZE;
+    const pageGroups=filteredGroups.slice(startIdx,startIdx+SURVEY_FORM_PAGE_SIZE);
+    html+='<table><thead><tr><th>Khảo sát gần nhất</th><th>Mã NV</th><th>Họ &amp; Tên PGs</th><th>Trainer</th><th>Nhóm</th><th>Số khảo sát</th><th>Chi tiết</th></tr></thead><tbody>';
+    pageGroups.forEach(group=>{
+      const s=group.latest,done=group.count>=COACHING_SESSIONS_TO_COMPLETE;
+      const history=group.responses.map(response=>`<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);">
+        <span>${response.timestamp?new Date(response.timestamp).toLocaleString('vi-VN'):'—'}</span>
+        ${isAdmin()&&response.id?`<button class="danger" data-del-survey="${escapeHtml(response.id)}">Xóa phiếu</button>`:''}
+      </div>`).join('');
+      html+=`<tr data-survey-pg-row>
+        <td>${s.timestamp?new Date(s.timestamp).toLocaleString('vi-VN'):'—'}</td>
+        <td>${escapeHtml(s.code||'—')}</td>
+        <td>${escapeHtml(s.pgName||'—')}</td>
+        <td>${escapeHtml(trainer.name)}</td>
+        <td>${escapeHtml(s.pgGroup||'—')}</td>
+        <td><span class="pill ${done?'pill-ok':'pill-warn'}" data-survey-count>${group.count}</span></td>
+        <td><details><summary style="cursor:pointer;white-space:nowrap;">Xem ${group.count} phiếu</summary><div style="font-size:var(--cap);">${history}</div></details></td>
       </tr>`;
     });
-    html += `</tbody></table>`;
-    html += `<div class="pagination-bar" id="surveyFormPagination"></div>`;
+    html+='</tbody></table><div class="pagination-bar" id="surveyFormPagination"></div>';
   }
-
-  box.innerHTML = html;
-  const luotSel = document.getElementById('surveyFormLuotSel');
-  if(luotSel) luotSel.addEventListener('change', ()=>{ surveyFormLuotFilter_=luotSel.value; surveyFormPage_=1; renderSurveyForm(); });
-  if(filteredResponses.length>0) renderSurveyFormPagination_(filteredResponses.length);
-
+  box.innerHTML=html;
+  const luotSel=document.getElementById('surveyFormLuotSel');
+  if(luotSel)luotSel.addEventListener('change',()=>{surveyFormLuotFilter_=luotSel.value;surveyFormPage_=1;renderSurveyForm();});
+  if(filteredGroups.length)renderSurveyFormPagination_(filteredGroups.length);
+  const exportBtn=document.getElementById('exportCoachingSurveyBtn');
+  if(exportBtn)exportBtn.addEventListener('click',()=>{
+    try{exportCoachingSurveyGroups_(filteredGroups,trainer,exportMonth,exportFilter);}
+    catch(error){alert('Không xuất được Excel. Vui lòng thử lại: '+(error?.message||error));}
+  });
   box.querySelectorAll('[data-del-survey]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      if(!isAdmin()) return;
-      surveyResponses = surveyResponses.filter(s=>s.id!==btn.getAttribute('data-del-survey'));
-      await dbSet('surveyResponses:'+currentMonth, surveyResponses);
+    btn.addEventListener('click',async()=>{
+      if(!isAdmin())return;
+      surveyResponses=surveyResponses.filter(s=>s.id!==btn.getAttribute('data-del-survey'));
+      await dbSet('surveyResponses:'+currentMonth,surveyResponses);
       syncAllPg01Actuals();
-      await dbSet('records:'+currentMonth, records);
+      await dbSet('records:'+currentMonth,records);
       renderKpiCategory('noibo');
     });
   });
@@ -13350,8 +13405,10 @@ function noiboFilteredTrainerIds_(baseTrainerIds){
   return ids;
 }
 function rerenderNoiboLists_(){
+  coachRegPage=1; surveyFormPage_=1;
   renderNewPgList();
   renderNewPgList25_();
+  renderCoachingRegistration();
   renderSurveyForm();
 }
 /* PGs mới dùng cùng ô trạng thái và quy trình duyệt với PGs 0★/1★ và Tổng quan. */
@@ -13381,7 +13438,7 @@ function renderSurveyFormPagination_(totalItems){
   const from = (surveyFormPage_-1)*SURVEY_FORM_PAGE_SIZE + 1;
   const to = Math.min(surveyFormPage_*SURVEY_FORM_PAGE_SIZE, totalItems);
   box.innerHTML = `
-    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} lượt</span>
+    <span class="pagination-info">Hiển thị ${from}-${to} / ${totalItems} PG</span>
     <button data-survey-form-page="${surveyFormPage_-1}" ${surveyFormPage_<=1?'disabled':''}>‹</button>
     ${pageButtons}
     <button data-survey-form-page="${surveyFormPage_+1}" ${surveyFormPage_>=totalPages?'disabled':''}>›</button>

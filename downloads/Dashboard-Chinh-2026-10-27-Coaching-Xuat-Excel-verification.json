@@ -1,0 +1,81 @@
+{
+  "grouped_survey_checks": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "remote_writes": 0,
+    "unexpectedRequests": 0,
+    "checks": [
+      {
+        "viewport": 1440,
+        "passed": true,
+        "checks": [
+          "8 unique PG / totals sum to 14 surveys / 6 completed PG",
+          "actual green and orange badge colors",
+          "same-code Trainer isolation",
+          "6 PG >=2 reconcile to 12/14 surveys; one-survey filter reconciles to 2/14",
+          "pagination by unique PG with sums preserved",
+          "expandable source history remains intact",
+          "delete one mocked source survey without deleting other PG or Trainer",
+          "Trainer and region selectors, role and empty scope",
+          "no remote writes or page errors"
+        ]
+      },
+      {
+        "viewport": 390,
+        "passed": true,
+        "checks": [
+          "8 unique PG / totals sum to 14 surveys / 6 completed PG",
+          "actual green and orange badge colors",
+          "same-code Trainer isolation",
+          "6 PG >=2 reconcile to 12/14 surveys; one-survey filter reconciles to 2/14",
+          "pagination by unique PG with sums preserved",
+          "expandable source history remains intact",
+          "delete one mocked source survey without deleting other PG or Trainer",
+          "Trainer and region selectors, role and empty scope",
+          "no remote writes or page errors"
+        ]
+      }
+    ]
+  },
+  "excel_export_checks": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "remote_writes": 0,
+    "unexpectedRequests": 0,
+    "checks": [
+      {
+        "viewport": 1440,
+        "passed": true,
+        "checks": [
+          "actual XLSX downloads from the top-left button",
+          "8 PG and 14 surveys reconcile",
+          "1-survey and >=2-survey filters retained",
+          "all 13 PG / 19 surveys exported from page 2",
+          "numeric totals and Excel auto-filter",
+          "staff codes preserve leading zeros; text cannot become formulas",
+          "Trainer export and stale/foreign scope guards",
+          "viewer and empty-list handling",
+          "no remote writes or page errors"
+        ]
+      },
+      {
+        "viewport": 390,
+        "passed": true,
+        "checks": [
+          "actual XLSX downloads from the top-left button",
+          "8 PG and 14 surveys reconcile",
+          "1-survey and >=2-survey filters retained",
+          "all 13 PG / 19 surveys exported from page 2",
+          "numeric totals and Excel auto-filter",
+          "staff codes preserve leading zeros; text cannot become formulas",
+          "Trainer export and stale/foreign scope guards",
+          "viewer and empty-list handling",
+          "no remote writes or page errors"
+        ]
+      }
+    ]
+  },
+  "source_test_commit": "536a3286a2ccce3ecbdd8e3f24735dbe9f385f9e",
+  "synthetic_data_only": true,
+  "remote_writes": 0
+}
