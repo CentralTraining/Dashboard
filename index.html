@@ -19540,7 +19540,7 @@ async function pgsmDrawProgress_(camp){
  const regionOf=r=>String(r.region||'').trim();
  const regions=[...new Set(rows.map(regionOf).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
  const trainerIds=[...new Set(rows.map(r=>String(r.trainerId||'')).filter(Boolean))];
- el.innerHTML=`<div class="form-card" style="max-width:none">
+ el.innerHTML=`<div class="pgsm-pair-tabs" role="group" aria-label="Chọn tiến độ Find Master"><button type="button" id="pgsmViewIndividual" aria-pressed="true">Cá nhân</button><button type="button" id="pgsmViewPairs" aria-pressed="false">Bắt cặp thi đua</button></div><div id="pgsmPairHost" hidden></div><div id="pgsmIndividuals"><div class="form-card" style="max-width:none">
  <h3 class="kpi-section-title">Tiến độ PGs đạt mốc · PGs Master</h3>
  <div class="scope-filters" style="margin:10px 0 12px;flex-wrap:wrap">
   <span class="scope-label">Xem theo:</span><select id="pgsmProgressGroupBy"><option value="region">Khu vực</option><option value="trainer">Trainer</option></select>
@@ -19570,7 +19570,7 @@ async function pgsmDrawProgress_(camp){
  <p class="section-desc">Thêm: màu xanh · Loại: màu đỏ, kèm lý do Trainer. Yêu cầu chờ duyệt được ghi rõ; tổng tiến độ chỉ tính danh sách chính thức.</p>
  <div class="table-scroll" id="pgsmProgressTableWrap"><table id="pgsmProgressTable" aria-label="Danh sách PGs Master và tiến độ từng mốc"><colgroup>${[3,6,isTrainer()?11:12,isTrainer()?10:11,6,isTrainer()?9:10,4,isTrainer()?11:12,...PGSM_STAGES_.map(()=>isTrainer()?5.6:6),6,...(isTrainer()?[6]:[])].map(width=>`<col style="width:${width}%">`).join('')}</colgroup><thead><tr><th scope="col">STT</th><th scope="col">Mã PGs</th><th scope="col">Họ tên</th><th scope="col">Shop</th><th scope="col">Khu vực</th><th scope="col">Trainer</th><th scope="col">Kênh</th><th scope="col">Trạng thái</th>${PGSM_STAGES_.map(m=>`<th scope="col" class="pgsm-col-step" title="${escapeHtml(m.label)}">${escapeHtml(m.id.toUpperCase())}<span class="pgsm-stage-name">${escapeHtml(m.label.replace(/^M\d\s*·\s*/,''))}</span><small class="pgsm-stage-target">Target: ${Number(d.thresholds[m.id]||0)}</small></th>`).join('')}<th scope="col">Kết quả</th>${isTrainer()?'<th scope="col">Thao tác</th>':''}</tr></thead><tbody id="pgsmProgressRows"></tbody></table></div>
  <div id="pgsmProgressPagination"></div>
- </div><div id="pgsmTrainerChanges"></div>`;
+ </div><div id="pgsmTrainerChanges"></div></div>`;
  const $=id=>el.querySelector('#'+id);
  const regionSel=$('pgsmProgressRegion'),trainerSel=$('pgsmProgressTrainer'),channelSel=$('pgsmProgressChannel');
  const pgInput=$('pgsmProgressPgSearch'),shopInput=$('pgsmProgressShop'),statusSel=$('pgsmProgressStatus');
@@ -19708,6 +19708,7 @@ async function pgsmDrawProgress_(camp){
  });
  fillChannel();draw();
  await pgsmRenderTrainerChangePanel_(camp,d);
+ pgsmPairsMount_(camp,el);
 }
 function pgsmOpenRemoveRequest_(camp,pg){
  if(!isTrainer()||!pg||!pgsmCanSeeRegion_(pg.region)||String(pg.trainerId||'')!==String(session?.trainerId||''))return;
@@ -20709,6 +20710,209 @@ async function ftfAiDetail_(shop,campaignId,ov,head,bind,fail){
  ov.innerHTML=head(summary+`<div class="table-scroll"><table class="ftf-ai-people-table"><thead><tr><th style="width:8%">STT</th><th style="width:54%">Tên đối tác</th><th style="text-align:center;width:38%">Trạng thái tư vấn mẫu</th></tr></thead><tbody>${rows||'<tr><td colspan="3" class="empty">Shop chưa có người tham gia trong dữ liệu nguồn.</td></tr>'}</tbody></table></div><p class="section-desc">${readAt?'Dữ liệu lúc '+escapeHtml(new Date(readAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))+'. ':''}Bấm Cập nhật FTF từ hệ thống để làm mới số liệu toàn bảng.</p>`,`${counts.dat}/${people.length} đạt`);
  bind();
 }
+
+</script>
+<style id="pgsm-pairs-style-20261028">
+.pgsm-pair-tabs{display:flex;gap:5px;margin:4px 0 12px;padding:4px;background:#eaf3ee;border:1px solid #dce9e0;border-radius:10px;width:fit-content;max-width:100%;}
+.pgsm-pair-tabs button{border:0;border-radius:7px;padding:9px 15px;font:inherit;font-size:12px;color:#476254;background:transparent;cursor:pointer;}
+.pgsm-pair-tabs button[aria-pressed=true]{background:#0b663d;color:#fff;font-weight:750;box-shadow:0 2px 5px #104b2f18;}
+#pgsmPairHost[hidden],#pgsmIndividuals[hidden]{display:none!important;}
+#pgsmPairHost{min-width:0;max-width:100%;}
+.pgsm-pair-card{max-width:none!important;padding:18px!important;}
+.pgsm-pair-heading,.pgsm-pair-editor-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.pgsm-pair-heading h3,.pgsm-pair-editor h4{margin:0 0 5px;color:#075e38;}
+.pgsm-pair-heading p,.pgsm-pair-editor-head p,.pgsm-pair-footnote{font-size:11px;line-height:1.5;color:#657a6c;margin:4px 0;}
+.pgsm-pair-heading>div:last-child{display:flex;gap:6px;flex-shrink:0;}
+.pgsm-pair-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0;}
+.pgsm-pair-overview>div{display:grid;gap:5px;padding:12px 14px;border:1px solid #dce9df;border-radius:10px;background:#f7fbf8;}
+.pgsm-pair-overview span{font-size:10px;color:#637b6a;}
+.pgsm-pair-overview b{font-size:26px;color:#08683d;font-variant-numeric:tabular-nums;}
+.pgsm-pair-filters{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(180px,1.4fr);gap:8px!important;padding:10px!important;align-items:end;}
+.pgsm-pair-filters label,.pgsm-pair-editor>label{display:grid;gap:5px;min-width:0;font-size:10px;font-weight:650;color:#4f695a;}
+.pgsm-pair-filters :is(input,select),.pgsm-pair-editor select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;min-height:34px;padding:7px 8px;font:inherit;font-size:11px;border:1px solid #cbded0;border-radius:7px;background:#fff;}
+.pgsm-pair-summary{border:1px solid #dce9df;border-radius:11px;overflow:hidden;}
+.pgsm-pair-summary-head,.pgsm-pair-summary-row{display:grid;grid-template-columns:minmax(160px,1.8fr) minmax(65px,.7fr) repeat(5,minmax(55px,1fr)) minmax(75px,.9fr);gap:9px;padding:10px 12px;align-items:center;min-width:0;}
+.pgsm-pair-summary-head{background:#eaf4ed;color:#075d38;font-size:10px;}
+.pgsm-pair-summary-row{border-top:1px solid #e5eee7;font-size:11px;}
+.pgsm-pair-summary-row.is-total{background:#f2f8f4;}
+.pgsm-pair-summary-label{min-width:0;overflow-wrap:anywhere;line-height:1.45;}
+.pgsm-pair-summary-count{display:flex;align-items:center;justify-content:center;gap:6px;}
+.pgsm-pair-summary-count button{width:24px;height:24px;border:1px solid #c7dfce;border-radius:6px;background:#eaf5ee;color:#08653d;font-size:18px;line-height:20px;cursor:pointer;}
+.pgsm-pair-summary-count button:disabled{opacity:.4;cursor:default;}
+.pgsm-pair-summary-stage{text-align:center;font-size:10px;font-weight:650;color:#385d48;}
+.pgsm-pair-summary-stage i{display:block;background:#e6f0e9;height:4px;border-radius:3px;margin-top:5px;overflow:hidden;}
+.pgsm-pair-summary-stage em{display:block;background:#14945c;height:100%;border-radius:3px;}
+.pgsm-pair-summary-complete{text-align:center;color:#087447;font-weight:750;}
+.pgsm-pair-expanded{padding:12px;background:#f4f8f5;border-top:1px solid #dce9df;}
+.pgsm-pair-list-heading{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#567361;margin-bottom:8px;}
+.pgsm-pair-group{display:grid;grid-template-columns:minmax(130px,1.2fr) minmax(95px,.8fr) minmax(150px,1.3fr) minmax(230px,2fr) minmax(95px,.9fr);gap:10px;align-items:center;border:1px solid #dce8df;background:#fff;border-radius:9px;padding:11px;margin-top:7px;}
+.pgsm-pair-group-name,.pgsm-pair-group-channels,.pgsm-pair-group-result{display:grid;gap:4px;min-width:0;}
+.pgsm-pair-group-name>b{font-size:12px;color:#0a603b;overflow-wrap:anywhere;}
+.pgsm-pair-group-name small,.pgsm-pair-group-channels span,.pgsm-pair-group-members small{font-size:9px;color:#738778;}
+.pgsm-pair-group-channels b{font-size:10px;line-height:1.4;overflow-wrap:anywhere;}
+.pgsm-pair-group-members{display:grid;gap:4px;font-size:10px;line-height:1.4;min-width:0;overflow-wrap:anywhere;}
+.pgsm-pair-five{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;text-align:center;}
+.pgsm-pair-five>div{min-width:0;}.pgsm-pair-five small{display:block;font-size:9px;color:#5d7565;margin-bottom:4px;}
+.pgsm-pair-score{display:inline-flex;align-items:center;justify-content:center;max-width:100%;box-sizing:border-box;border-radius:6px;padding:4px 5px;font-size:10px;font-weight:750;white-space:nowrap;}
+.pgsm-pair-score.is-pass{background:#dcf2e5;color:#087543;}.pgsm-pair-score.is-pending{background:#fff0dc;color:#aa640a;}.pgsm-pair-score.is-unknown{background:#edf2ef;color:#708477;}
+.pgsm-pair-group-result{font-size:10px;color:#11683e;text-align:right;}.pgsm-pair-group-result>div{display:flex;gap:4px;justify-content:end;}.pgsm-pair-group-result button{font-size:9px!important;padding:4px 6px!important;min-height:25px!important;}
+.pgsm-pair-footnote{margin-top:10px;}
+.pgsm-pair-notice,.pgsm-pair-error,.pgsm-pair-success{font-size:11px;line-height:1.5;padding:9px 11px;border-radius:8px;}
+.pgsm-pair-notice{background:#fff4df;color:#8d6222;}.pgsm-pair-error{background:#fff0ed;color:#b83e2c;}.pgsm-pair-success{background:#e7f5ec;color:#08703e;}
+.pgsm-pair-editor{border:1px solid #bdddc8;border-radius:11px;background:#f5fbf7;padding:14px;margin:15px 0;}
+.pgsm-pair-editor-head h4{font-size:14px;}.pgsm-pair-editor>label{max-width:400px;margin:12px 0;}.pgsm-pair-owner{font-size:11px;color:#4e6d58;}
+.pgsm-pair-builder{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(220px,1fr);gap:14px;margin-top:12px;}
+.pgsm-pair-candidates{max-height:310px;overflow:auto;background:#fff;border:1px solid #d6e6db;border-radius:8px;}
+.pgsm-pair-candidates>label{display:flex;align-items:center;gap:9px;padding:10px;border-bottom:1px solid #edf3ef;cursor:pointer;}
+.pgsm-pair-candidates>label:last-child{border:0;}.pgsm-pair-candidates input{width:17px!important;height:17px!important;min-height:17px!important;flex:0 0 17px;accent-color:#117548;}
+.pgsm-pair-candidates>label>span{display:grid;gap:4px;min-width:0;}.pgsm-pair-candidates b{font-size:11px;}.pgsm-pair-candidates small{font-size:9px;color:#6b8173;}.pgsm-pair-candidates .is-used{opacity:.48;cursor:default;}
+.pgsm-pair-preview{padding:15px;background:#fff;border:1px solid #d6e6db;border-radius:8px;align-self:start;}.pgsm-pair-preview>small{font-size:10px;color:#6d8475;}.pgsm-pair-preview>strong{display:block;font-size:19px;margin:8px 0;color:#09673b;overflow-wrap:anywhere;}.pgsm-pair-preview p{font-size:10px;line-height:1.5;}.pgsm-pair-form-note{color:#93713c;}.pgsm-pair-form-ok{color:#087543;}.pgsm-pair-preview button{margin-top:10px;}
+.pgsm-pair-pagination{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;font-size:10px;}
+@media(max-width:700px){.mobile-layout #pgsmPairHost .pgsm-pair-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important;}.mobile-layout #pgsmPairHost .pgsm-pair-filters label:last-child{grid-column:1/-1;}}
+@media(max-width:1100px){.pgsm-pair-filters{grid-template-columns:repeat(3,minmax(0,1fr));}.pgsm-pair-group{grid-template-columns:minmax(120px,1.3fr) minmax(100px,1fr) minmax(90px,.8fr);}.pgsm-pair-group-members{grid-column:1/3;grid-row:2}.pgsm-pair-five{grid-column:1/3;grid-row:3}.pgsm-pair-group-result{grid-column:3;grid-row:1/4}.pgsm-pair-summary-head,.pgsm-pair-summary-row{grid-template-columns:minmax(120px,1.4fr) 55px repeat(5,minmax(42px,1fr)) 65px;gap:6px;padding:9px;}}
+@media(max-width:700px){.pgsm-pair-card{padding:10px!important;}.pgsm-pair-heading,.pgsm-pair-editor-head{flex-wrap:wrap;}.pgsm-pair-heading h3{font-size:16px;}.pgsm-pair-heading p,.pgsm-pair-footnote{font-size:10px;}.pgsm-pair-heading>div:last-child{width:100%;justify-content:end;}.pgsm-pair-heading button{font-size:10px!important;padding:6px 8px!important;}.pgsm-pair-overview{gap:6px;}.pgsm-pair-overview>div{padding:9px 7px;}.pgsm-pair-overview span{font-size:9px;line-height:1.4;}.pgsm-pair-overview b{font-size:22px;}.pgsm-pair-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important;}.pgsm-pair-filters label:last-child{grid-column:1/-1;}.pgsm-pair-summary-head{display:none;}.pgsm-pair-summary-row{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px 6px;padding:10px;}.pgsm-pair-summary-label{grid-column:1/4;font-size:11px;}.pgsm-pair-summary-count{grid-column:4/6;justify-content:end;}.pgsm-pair-summary-stage:before{content:attr(data-label);display:block;font-size:9px;color:#6b8373;margin-bottom:4px;}.pgsm-pair-summary-complete{grid-column:1/-1;text-align:right;font-size:10px;}.pgsm-pair-summary-complete:before{content:'Đủ 5 mốc: ';font-weight:400;color:#6d8173;}.pgsm-pair-expanded{padding:8px;}.pgsm-pair-list-heading{font-size:9px;}.pgsm-pair-group{grid-template-columns:1.3fr 1fr;padding:9px;gap:8px;}.pgsm-pair-group-name{grid-column:1;grid-row:1;}.pgsm-pair-group-channels{grid-column:2;grid-row:1;}.pgsm-pair-group-members{grid-column:1/-1;grid-row:2;}.pgsm-pair-five{grid-column:1/-1;grid-row:3;}.pgsm-pair-group-result{grid-column:1/-1;grid-row:4;display:flex;align-items:center;justify-content:space-between;}.pgsm-pair-builder{grid-template-columns:minmax(0,1fr);}.pgsm-pair-editor{padding:10px;}.pgsm-pair-candidates{max-height:230px;}.pgsm-pair-tabs{width:100%;box-sizing:border-box;}.pgsm-pair-tabs button{flex:1;font-size:11px;padding:8px 5px;}}
+
+</style>
+<script id="pgsm-pairs-model-20261028">
+const PairModel=(()=>{
+ const stages=['m1','m2','m3','m4','m5'];
+ const code=v=>String(v??'').trim().replace(/\.0+$/,'').toUpperCase();
+ const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const flag=v=>v===true||v===1||v==='1'||v==='true'||v==='TRUE'?true:v===false||v===0||v==='0'||v==='false'||v==='FALSE'?false:null;
+ const firstName=v=>String(v||'').trim().split(/\s+/).at(-1)||'Chưa có tên';
+ function roster(registered,meta,trainer){
+  const map=new Map(),ambiguous=new Set();
+  for(const p of registered||[]){
+   if(String(p.trainerId)!==String(trainer.id)||p.region&&norm(p.region)!==norm(trainer.region))continue;
+   const id=code(p.code);if(!id)continue;
+   if(map.has(id)){ambiguous.add(id);continue;}
+   const source=meta?.[id],fromSystem=source?.source==='OTRAINING FM';
+   const progress=Object.fromEntries(stages.map(stage=>{const value=fromSystem?flag(source.done?.[stage]):null;return [stage,{done:value===true,known:value!==null}];}));
+   map.set(id,{code:id,name:String(p.name||'').trim(),channel:String(p.channel||'').trim(),trainerId:String(trainer.id),region:String(trainer.region||p.region||''),progress});
+  }
+  ambiguous.forEach(id=>map.delete(id));
+  return [...map.values()].sort((a,b)=>a.code.localeCompare(b.code));
+ }
+ function group(raw,roster,ownerId){
+  const byCode=new Map(roster.map(p=>[p.code,p])),members=(raw.members||[]).map(id=>byCode.get(code(id))||{code:code(id),name:'PG không còn trong danh sách',channel:'',missing:true,progress:{}});
+  const valid=[2,3].includes(members.length)&&(members.length!==3||roster.length%2===1)&&new Set(members.map(p=>p.code)).size===members.length&&members.every(p=>!p.missing&&p.trainerId===String(ownerId));
+  const progress=Object.fromEntries(stages.map(stage=>{const passed=members.filter(p=>p.progress?.[stage]?.done===true).length,known=members.filter(p=>p.progress?.[stage]?.known===true).length;return [stage,{done:valid&&passed===members.length,passed,known,total:members.length}];}));
+  return {...raw,members,valid,name:members.map(p=>firstName(p.name)).join(' - '),channels:[...new Set(members.map(p=>p.channel).filter(Boolean))],progress,completed:stages.filter(s=>progress[s].done).length};
+ }
+ function validate(members,roster,groups,editingId){
+  if(!Array.isArray(members)||![2,3].includes(members.length))return 'Mỗi nhóm cần đúng 2 PG, hoặc 3 PG khi danh sách của Trainer có số lẻ.';
+  const codes=members.map(code);if(codes.some(x=>!x)||new Set(codes).size!==codes.length)return 'Không được chọn trùng PG trong nhóm.';
+  const available=new Set(roster.map(p=>p.code));if(codes.some(c=>!available.has(c)))return 'Chỉ được ghép PG trong danh sách Master do Trainer này phụ trách.';
+  if(groups.some(g=>g.id!==editingId&&(g.members||[]).some(c=>codes.includes(code(c)))))return 'Một PG chỉ được thuộc một nhóm trong chiến dịch. Hãy tải lại danh sách.';
+  if(codes.length===3&&(roster.length%2===0||groups.some(g=>g.id!==editingId&&g.members?.length===3)))return 'Chỉ tạo một nhóm 3 khi tổng PG của Trainer là số lẻ.';
+  return '';
+ }
+ function summary(groups){return {total:groups.length,stages:stages.map(s=>groups.filter(g=>g.progress[s].done).length),completed:groups.filter(g=>g.completed===5).length,invalid:groups.filter(g=>!g.valid).length};}
+ return {stages,code,norm,flag,firstName,roster,group,validate,summary};
+})();
+
+</script>
+<script id="pgsm-pairs-ui-20261028">
+const pgsmPairViews_=new Map();
+const pgsmPairOwner_=()=>JSON.stringify([session?.userId,session?.role,session?.trainerId,session?.region]);
+function pgsmPairCurrent_(state){return state.root?.isConnected&&state.owner===pgsmPairOwner_()&&currentMonth===state.camp.month&&String(document.getElementById('pgsmProgressCampaign')?.value||'')===String(state.camp.id);}
+async function pgsmPairCall_(state,action,extra={}){
+ const tokenPromise=workshopNoiboToken_(),title=document.querySelector('#wsnbAuthOverlay h3');if(title)title.textContent='Xác thực nhóm Find Master';
+ const token=await tokenPromise;if(!pgsmPairCurrent_(state))throw Error('Tài khoản hoặc chiến dịch đã thay đổi. Hãy mở lại Find Master.');
+ const name=location.pathname.startsWith('/Test/')?'pgsm-pairs-test':'pgsm-pairs';
+ const response=await fetch(SUPABASE_URL+'/functions/v1/'+name,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},body:JSON.stringify({action,campaignId:String(state.camp.id),month:state.camp.month,dashboardToken:token,...extra}),signal:AbortSignal.timeout(30000)});
+ let out;try{out=await response.json();}catch{throw Error('Chưa nhận được xác nhận. Hãy tải lại danh sách nhóm trước khi thử lưu tiếp.');}
+ if(response.status===401)sessionStorage.removeItem('workshop_private_session');
+ if(!response.ok||!out.ok)throw Object.assign(Error(out.error||'Không đọc/lưu được nhóm Find Master.'),{status:response.status});
+ if(out.campaignId!==String(state.camp.id)||out.month!==state.camp.month||!Array.isArray(out.trainers))throw Error('Danh sách nhóm chưa đúng chiến dịch đang xem.');
+ return out;
+}
+async function pgsmPairLoad_(state){
+ if(state.busy||!pgsmPairCurrent_(state))return;
+ const run=++state.run;state.busy=true;state.error='';pgsmPairDraw_(state);
+ try{const out=await pgsmPairCall_(state,'view');if(run!==state.run||!pgsmPairCurrent_(state))return;state.data=out;state.editor=null;state.message='';}
+ catch(error){if(run===state.run&&pgsmPairCurrent_(state)){state.error=error.message;if([401,403].includes(error.status))state.data=null;}}
+ finally{if(run===state.run&&pgsmPairCurrent_(state)){state.busy=false;pgsmPairDraw_(state);}}
+}
+async function pgsmPairMutate_(state,action,extra){
+ if(state.busy||!pgsmPairCurrent_(state))return;
+ const run=++state.run;state.busy=true;state.error='';state.message='';pgsmPairDraw_(state);
+ try{const out=await pgsmPairCall_(state,action,extra);if(run!==state.run||!pgsmPairCurrent_(state))return;state.data=out;state.editor=null;state.message=action==='delete'?'Đã xóa nhóm. Các PG có thể được ghép lại.':'Đã lưu nhóm Find Master.';}
+ catch(error){if(run===state.run&&pgsmPairCurrent_(state)){state.error=error.message;if([401,403].includes(error.status)){state.data=null;state.editor=null;}}}
+ finally{if(run===state.run&&pgsmPairCurrent_(state)){state.busy=false;pgsmPairDraw_(state);}}
+}
+function pgsmPairOpenEditor_(state,trainerId,groupId){
+ const trainer=state.data?.trainers.find(t=>t.id===trainerId&&t.canManage);if(!trainer)return;
+ const group=trainer.groups.find(g=>g.id===groupId);
+ state.editor={trainerId,id:group?.id||crypto.randomUUID(),selected:new Set(group?.members.map(p=>p.code)||[]),editing:!!group};state.error='';pgsmPairDraw_(state);
+}
+function pgsmPairBadge_(progress){
+ const done=progress.done,unknown=progress.known<progress.total;
+ return `<span class="pgsm-pair-score ${done?'is-pass':unknown?'is-unknown':'is-pending'}" title="${progress.passed}/${progress.total} thành viên đạt${unknown?' · Chưa đủ kết quả của tất cả thành viên':''}">${done?'✓ ':''}${progress.passed}/${progress.total}${unknown?' ?':''}</span>`;
+}
+function pgsmPairDetail_(trainer,group){
+ const e=escapeHtml;
+ return `<article class="pgsm-pair-group" data-pair-group="${e(group.id)}"><div class="pgsm-pair-group-name"><b>${e(group.name)}</b><small>${e(trainer.name)} · ${group.members.length} PG${group.valid?'':' · Cần ghép lại'}</small></div><div class="pgsm-pair-group-channels"><span>Kênh</span><b>${e(group.channels.join(' · ')||'Chưa gán kênh')}</b></div><div class="pgsm-pair-group-members">${group.members.map(p=>`<span title="${e(p.code)}">${e(p.name)} <small>(${e(p.code)})</small></span>`).join('')}</div><div class="pgsm-pair-five">${PGSM_STAGES_.map(m=>`<div><small title="${e(m.label)}">${e(m.id.toUpperCase())}</small>${pgsmPairBadge_(group.progress[m.id])}</div>`).join('')}</div><div class="pgsm-pair-group-result"><b>${group.completed===5?'🏆 Đủ 5 mốc':group.completed+'/5 mốc'}</b>${trainer.canManage?`<div><button type="button" class="secondary" data-pair-edit="${e(group.id)}" data-pair-owner="${e(trainer.id)}">Sửa</button><button type="button" class="secondary" data-pair-delete="${e(group.id)}" data-pair-owner="${e(trainer.id)}">Xóa</button></div>`:''}</div></article>`;
+}
+function pgsmPairEditor_(state){
+ const editor=state.editor;if(!editor)return '';
+ const e=escapeHtml,trainer=state.data.trainers.find(t=>t.id===editor.trainerId);if(!trainer?.canManage)return '';
+ const raw=trainer.groups.map(g=>({id:g.id,members:g.members.map(p=>p.code)}));
+ const used=new Map(raw.filter(g=>g.id!==editor.id).flatMap(g=>g.members.map(code=>[code,g.id])));
+ const max=trainer.roster.length%2===1&&!raw.some(g=>g.id!==editor.id&&g.members.length===3)?3:2;
+ const selected=[...editor.selected].map(code=>trainer.roster.find(p=>p.code===code)).filter(Boolean),name=selected.map(p=>PairModel.firstName(p.name)).join(' - ');
+ const validation=PairModel.validate([...editor.selected],trainer.roster,raw,editor.id);
+ return `<section class="pgsm-pair-editor" aria-label="Ghép nhóm PGs"><div class="pgsm-pair-editor-head"><div><h4>${editor.editing?'Chỉnh sửa nhóm':'Tạo nhóm Find Master'}</h4><p>Chọn 2 PG${max===3?' hoặc 3 PG vì danh sách của Trainer có số lẻ':''}. Mỗi PG chỉ thuộc một nhóm.</p></div><button type="button" class="secondary" data-pair-cancel ${state.busy?'disabled':''}>Đóng</button></div>${state.data.role==='admin'?`<label>Trainer phụ trách<select id="pgsmPairManageTrainer" ${editor.editing||state.busy?'disabled':''}>${state.data.trainers.filter(t=>t.canManage).map(t=>`<option value="${e(t.id)}" ${t.id===trainer.id?'selected':''}>${e(t.name)} · ${t.roster.length} PG</option>`).join('')}</select></label>`:`<p class="pgsm-pair-owner">${e(trainer.name)} · ${e(trainer.region)}</p>`}<div class="pgsm-pair-builder"><div class="pgsm-pair-candidates">${trainer.roster.map(p=>`<label class="${used.has(p.code)?'is-used':''}"><input type="checkbox" data-pair-member="${e(p.code)}" ${editor.selected.has(p.code)?'checked':''} ${state.busy||used.has(p.code)||!editor.selected.has(p.code)&&editor.selected.size>=max?'disabled':''}><span><b>${e(p.name)}</b><small>${e(p.code)} · ${e(p.channel||'Chưa gán kênh')}${used.has(p.code)?' · Đã có nhóm':''}</small></span></label>`).join('')||'<p>Chưa có PG Master được chốt cho Trainer này.</p>'}</div><div class="pgsm-pair-preview"><small>Tên nhóm tự tạo</small><strong>${e(name||'Chọn thành viên')}</strong><p>${editor.selected.size} thành viên đã chọn</p>${validation?`<p class="pgsm-pair-form-note">${e(validation)}</p>`:'<p class="pgsm-pair-form-ok">Đủ thành viên để lưu nhóm.</p>'}<button type="button" class="primary" data-pair-save ${state.busy||validation?'disabled':''}>${state.busy?'Đang lưu…':'Lưu nhóm'}</button></div></div></section>`;
+}
+function pgsmPairDraw_(state){
+ if(!pgsmPairCurrent_(state))return;const host=state.root.querySelector('#pgsmPairHost');if(!host)return;
+ const e=escapeHtml,data=state.data;
+ if(!data){host.innerHTML=`<div class="form-card pgsm-pair-card"><h3>Bắt cặp thi đua Find Master</h3><p>Ghép PG của cùng Trainer thành nhóm 2 hoặc nhóm 3 khi lẻ. Mỗi mốc chỉ đạt khi tất cả thành viên đều đạt.</p>${state.error?`<p class="pgsm-pair-error" role="alert">${e(state.error)}</p>`:''}<button type="button" class="primary" id="pgsmPairsReload" ${state.busy?'disabled':''}>${state.busy?'Đang tải nhóm…':'Mở danh sách nhóm'}</button></div>`;host.querySelector('#pgsmPairsReload').onclick=()=>pgsmPairLoad_(state);return;}
+ const trainers=data.trainers.filter(t=>(!state.region||PairModel.norm(t.region)===PairModel.norm(state.region))&&(!state.trainer||t.id===state.trainer));
+ const allGroups=trainers.flatMap(t=>t.groups.map(g=>({...g,owner:t}))),search=PairModel.norm(state.search);
+ const groups=allGroups.filter(g=>(!state.channel||g.channels.includes(state.channel))&&(!search||PairModel.norm(g.name+' '+g.members.map(p=>p.name+' '+p.code).join(' ')).includes(search)));
+ const grouped=new Map();for(const t of trainers){const key=state.groupBy==='region'?t.region:t.id;if(!grouped.has(key))grouped.set(key,{key,label:state.groupBy==='region'?t.region:t.name,groups:[]});grouped.get(key).groups.push(...groups.filter(g=>g.owner.id===t.id));}
+ const summaryRows=[{key:'__all__',label:data.role==='admin'?'TỔNG PHẠM VI':'TỔNG KHU VỰC',groups,total:true},...[...grouped.values()].sort((a,b)=>a.label.localeCompare(b.label,'vi'))];
+ const regions=[...new Set(data.trainers.map(t=>t.region))].filter(Boolean),channels=[...new Set(allGroups.flatMap(g=>g.channels))].sort((a,b)=>a.localeCompare(b,'vi'));
+ const choices=data.trainers.filter(t=>!state.region||PairModel.norm(t.region)===PairModel.norm(state.region));
+ const canManage=data.trainers.some(t=>t.canManage),manage= data.role==='trainer'?data.ownTrainerId:state.trainer||data.trainers.find(t=>t.canManage&&t.roster.length>=2)?.id;
+ const unpaired=trainers.reduce((sum,t)=>{const assigned=new Set(t.groups.flatMap(g=>g.members.filter(p=>!p.missing).map(p=>p.code)));return sum+t.roster.filter(p=>!assigned.has(p.code)).length;},0);
+ const stats=PairModel.summary(groups);
+ const detail=entry=>{
+  const page=Math.min(state.pages.get(entry.key)||1,Math.max(1,Math.ceil(entry.groups.length/8)));state.pages.set(entry.key,page);
+  return `<div class="pgsm-pair-expanded" data-pair-expanded="${e(entry.key)}"><div class="pgsm-pair-list-heading"><b>Tên nhóm · Kênh · Thành viên · Tiến độ 5 mốc</b><span>${entry.groups.length} nhóm</span></div>${entry.groups.slice((page-1)*8,page*8).map(g=>pgsmPairDetail_(g.owner,g)).join('')}${entry.groups.length>8?`<div class="pgsm-pair-pagination"><button type="button" class="secondary" data-pair-page="${e(entry.key)}" data-page="${page-1}" ${page<=1?'disabled':''}>‹</button><span>${page}/${Math.ceil(entry.groups.length/8)}</span><button type="button" class="secondary" data-pair-page="${e(entry.key)}" data-page="${page+1}" ${page*8>=entry.groups.length?'disabled':''}>›</button></div>`:''}</div>`;
+ };
+ host.innerHTML=`<section class="form-card pgsm-pair-card"><div class="pgsm-pair-heading"><div><h3>Bắt cặp thi đua Find Master</h3><p>Một mốc của nhóm chỉ Đạt khi cả 2 hoặc 3 thành viên cùng đạt mốc đó.</p></div><div><button type="button" class="secondary" id="pgsmPairsReload" ${state.busy?'disabled':''}>↻ Tải lại</button>${canManage?`<button type="button" class="primary" id="pgsmPairsCreate" ${state.busy||!manage?'disabled':''}>＋ Tạo nhóm</button>`:''}</div></div>
+ ${state.error?`<p class="pgsm-pair-error" role="alert">${e(state.error)}</p>`:''}${state.message?`<p class="pgsm-pair-success" role="status">${e(state.message)}</p>`:''}
+ <div class="pgsm-pair-overview"><div><span>Số cặp trong bộ lọc</span><b>${stats.total}</b></div><div><span>Nhóm đủ 5 mốc</span><b>${stats.completed}</b></div><div><span>PG chưa ghép trong phạm vi</span><b>${unpaired}</b></div></div>
+ ${data.monthLocked?'<p class="pgsm-pair-notice">Tháng đã khóa. Có thể xem tiến độ, chưa thể sửa nhóm.</p>':''}${stats.invalid?`<p class="pgsm-pair-notice">${stats.invalid} nhóm cần ghép lại do danh sách thành viên thay đổi. Các nhóm này chưa được tính đạt mốc.</p>`:''}
+ ${pgsmPairEditor_(state)}
+ <div class="scope-filters pgsm-pair-filters"><label>Xem theo<select id="pgsmPairGroupBy"><option value="trainer" ${state.groupBy==='trainer'?'selected':''}>Trainer</option><option value="region" ${state.groupBy==='region'?'selected':''}>Khu vực</option></select></label><label>Khu vực<select id="pgsmPairRegion"><option value="">Tất cả khu vực</option>${regions.map(v=>`<option value="${e(v)}" ${state.region===v?'selected':''}>${e(v)}</option>`).join('')}</select></label><label>Trainer<select id="pgsmPairTrainer"><option value="">Tất cả Trainer</option>${choices.map(t=>`<option value="${e(t.id)}" ${state.trainer===t.id?'selected':''}>${e(t.name)}</option>`).join('')}</select></label><label>Kênh<select id="pgsmPairChannel"><option value="">Tất cả kênh</option>${channels.map(c=>`<option value="${e(c)}" ${state.channel===c?'selected':''}>${e(c)}</option>`).join('')}</select></label><label>Tìm nhóm / thành viên<input id="pgsmPairSearch" value="${e(state.search)}" placeholder="Tên nhóm, tên hoặc mã PG"></label></div>
+ <div class="pgsm-pair-summary" role="table" aria-label="Tiến độ nhóm Find Master"><div class="pgsm-pair-summary-head" role="row"><b>${state.groupBy==='trainer'?'Trainer':'Khu vực'}</b><b>Số cặp</b>${PGSM_STAGES_.map(m=>`<b title="${e(m.label)}">${e(m.id.toUpperCase())}</b>`).join('')}<b>Đủ 5 mốc</b></div>${summaryRows.map(entry=>{const sum=PairModel.summary(entry.groups);return `<div class="pgsm-pair-summary-row ${entry.total?'is-total':''}" role="row"><b class="pgsm-pair-summary-label">${e(entry.label||'Chưa xác định')}</b><div class="pgsm-pair-summary-count" role="cell"><strong>${sum.total}</strong><button type="button" data-pair-expand="${e(entry.key)}" aria-label="${state.expanded.has(entry.key)?'Thu gọn':'Xem nhóm'} ${e(entry.label)}" aria-expanded="${state.expanded.has(entry.key)}" ${!sum.total?'disabled':''}>${state.expanded.has(entry.key)?'−':'+'}</button></div>${sum.stages.map((n,i)=>`<div class="pgsm-pair-summary-stage" role="cell" data-label="M${i+1}"><span>${n}/${sum.total}</span><i><em style="width:${sum.total?n/sum.total*100:0}%"></em></i></div>`).join('')}<div class="pgsm-pair-summary-complete" role="cell" data-label="Đủ 5 mốc">${sum.completed}/${sum.total}</div></div>${state.expanded.has(entry.key)?detail(entry):''}`;}).join('')}</div>
+ <p class="pgsm-pair-footnote">${PGSM_STAGES_.map(m=>e(m.label)).join(' &nbsp;|&nbsp; ')}</p><p class="pgsm-pair-footnote">M1–M5 lấy từ kết quả Find Master hiện tại. Dấu ? là chưa đủ kết quả của thành viên. Nhóm 3 được tính là một nhóm trong cột Số cặp.${data.sourceUpdatedAt?' Kết quả cập nhật: '+e(new Date(data.sourceUpdatedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))+'.':''}</p></section>`;
+ host.querySelector('#pgsmPairsReload').onclick=()=>pgsmPairLoad_(state);
+ host.querySelector('#pgsmPairsCreate')?.addEventListener('click',()=>pgsmPairOpenEditor_(state,manage));
+ const change=(id,key,reset)=>host.querySelector('#'+id).onchange=event=>{state[key]=event.target.value;if(reset){state.trainer='';state.channel='';}state.pages.clear();pgsmPairDraw_(state);};
+ change('pgsmPairGroupBy','groupBy');change('pgsmPairRegion','region',true);change('pgsmPairTrainer','trainer');change('pgsmPairChannel','channel');
+ host.querySelector('#pgsmPairSearch').onchange=event=>{state.search=event.target.value;state.pages.clear();pgsmPairDraw_(state);};
+ host.querySelectorAll('[data-pair-expand]').forEach(b=>b.onclick=()=>{const key=b.dataset.pairExpand;state.expanded.has(key)?state.expanded.delete(key):state.expanded.add(key);pgsmPairDraw_(state);});
+ host.querySelectorAll('[data-pair-page]').forEach(b=>b.onclick=()=>{state.pages.set(b.dataset.pairPage,Number(b.dataset.page));pgsmPairDraw_(state);});
+ host.querySelectorAll('[data-pair-edit]').forEach(b=>b.onclick=()=>pgsmPairOpenEditor_(state,b.dataset.pairOwner,b.dataset.pairEdit));
+ host.querySelectorAll('[data-pair-delete]').forEach(b=>b.onclick=async()=>{const trainer=data.trainers.find(t=>t.id===b.dataset.pairOwner&&t.canManage),group=trainer?.groups.find(g=>g.id===b.dataset.pairDelete);if(!group||state.busy)return;if(!await showConfirm('Xóa nhóm '+group.name+'? Kết quả thi cá nhân vẫn được giữ nguyên.'))return;await pgsmPairMutate_(state,'delete',{trainerId:trainer.id,groupId:group.id,expectedVersion:trainer.version,rosterRevision:trainer.rosterRevision});});
+ host.querySelector('[data-pair-cancel]')?.addEventListener('click',()=>{state.editor=null;pgsmPairDraw_(state);});
+ host.querySelector('#pgsmPairManageTrainer')?.addEventListener('change',event=>pgsmPairOpenEditor_(state,event.target.value));
+ host.querySelectorAll('[data-pair-member]').forEach(input=>input.onchange=()=>{input.checked?state.editor.selected.add(input.dataset.pairMember):state.editor.selected.delete(input.dataset.pairMember);pgsmPairDraw_(state);});
+ host.querySelector('[data-pair-save]')?.addEventListener('click',async()=>{const editor=state.editor,trainer=data.trainers.find(t=>t.id===editor?.trainerId&&t.canManage);if(!editor||!trainer||state.busy)return;await pgsmPairMutate_(state,'save',{trainerId:trainer.id,expectedVersion:trainer.version,rosterRevision:trainer.rosterRevision,group:{id:editor.id,members:[...editor.selected]}});});
+}
+function pgsmPairsMount_(camp,root){
+ const owner=pgsmPairOwner_(),key=owner+'|'+camp.month+'|'+camp.id;
+ let state=pgsmPairViews_.get(key);if(!state){state={owner,camp,root,mode:'individual',groupBy:'trainer',region:'',trainer:'',channel:'',search:'',expanded:new Set(),pages:new Map(),data:null,editor:null,error:'',message:'',busy:false,run:0};pgsmPairViews_.set(key,state);}
+ state.root=root;state.camp=camp;state.run++;state.busy=false;
+ const individual=root.querySelector('#pgsmIndividuals'),host=root.querySelector('#pgsmPairHost'),a=root.querySelector('#pgsmViewIndividual'),b=root.querySelector('#pgsmViewPairs');
+ const setMode=mode=>{state.mode=mode;individual.hidden=mode!=='individual';host.hidden=mode!=='pairs';a.setAttribute('aria-pressed',String(mode==='individual'));b.setAttribute('aria-pressed',String(mode==='pairs'));if(mode==='pairs'){pgsmPairDraw_(state);pgsmPairLoad_(state);}};
+ a.onclick=()=>setMode('individual');b.onclick=()=>setMode('pairs');setMode(state.mode);
+}
+document.getElementById('logoutBtn').addEventListener('click',()=>pgsmPairViews_.clear());
 
 </script>
 

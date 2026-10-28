@@ -1,0 +1,155 @@
+{
+  "passed": true,
+  "scope": "Main",
+  "date": "2026-10-28",
+  "backend": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "tests": [
+      "fresh Dashboard authentication and account changes",
+      "Trainer reads own region and writes own PGs only",
+      "campaign/month/roster lock",
+      "unanimous independent milestones and unknown result",
+      "no pass inferred from stars",
+      "automatic name and combined channels",
+      "two members or one triple for odd roster",
+      "one group per PG",
+      "missing or ambiguous members never pass",
+      "stale version and roster rejection",
+      "concurrent insert/update compare-and-swap",
+      "safe transport errors preserve saved groups",
+      "existing KV data never modified",
+      "cross-origin rejected"
+    ]
+  },
+  "browser": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "layout": {
+          "name": "paired-expanded",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        },
+        "create_pair_and_triple": true,
+        "duplicate_member_disabled": true,
+        "unanimous_milestones": true,
+        "trainer_region_scope": true,
+        "own_roster_only": true,
+        "edit_delete": true,
+        "failed_save_preserves_groups": true,
+        "late_response_guard": true,
+        "individual_view_preserved": true
+      },
+      {
+        "width": 768,
+        "passed": true,
+        "layout": {
+          "name": "paired-expanded",
+          "width": 768,
+          "documentWidth": 768,
+          "overflow": []
+        },
+        "create_pair_and_triple": true,
+        "duplicate_member_disabled": true,
+        "unanimous_milestones": true,
+        "trainer_region_scope": true,
+        "own_roster_only": true,
+        "edit_delete": true,
+        "failed_save_preserves_groups": true,
+        "late_response_guard": true,
+        "individual_view_preserved": true
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "layout": {
+          "name": "paired-expanded",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        },
+        "create_pair_and_triple": true,
+        "duplicate_member_disabled": true,
+        "unanimous_milestones": true,
+        "trainer_region_scope": true,
+        "own_roster_only": true,
+        "edit_delete": true,
+        "failed_save_preserves_groups": true,
+        "late_response_guard": true,
+        "individual_view_preserved": true
+      },
+      {
+        "width": 320,
+        "passed": true,
+        "layout": {
+          "name": "paired-expanded",
+          "width": 320,
+          "documentWidth": 320,
+          "overflow": []
+        },
+        "create_pair_and_triple": true,
+        "duplicate_member_disabled": true,
+        "unanimous_milestones": true,
+        "trainer_region_scope": true,
+        "own_roster_only": true,
+        "edit_delete": true,
+        "failed_save_preserves_groups": true,
+        "late_response_guard": true,
+        "individual_view_preserved": true
+      }
+    ]
+  },
+  "live": {
+    "passed": true,
+    "authorized_live_crud_not_exercised": true,
+    "real_records_created": 0,
+    "probes": [
+      {
+        "probe": "no_dashboard_session",
+        "status": 401,
+        "denied": true
+      },
+      {
+        "probe": "forged_session",
+        "status": 401,
+        "denied": true
+      },
+      {
+        "probe": "private_table_anon",
+        "status": 401,
+        "denied": true
+      }
+    ]
+  },
+  "deployed_function": {
+    "name": "pgsm-pairs",
+    "version": 1,
+    "verify_jwt": true,
+    "source_exact": true,
+    "ezbr_sha256": "62a9fbc431d2cce47f9ffd5154cbf18a0a21efeccbfca06021a5fa07d586379b"
+  },
+  "table": {
+    "name": "pgsm_pair_groups",
+    "rls_enabled": true,
+    "anon_select": false,
+    "anon_insert": false,
+    "authenticated_select": false,
+    "authenticated_update": false,
+    "service_role_crud": true,
+    "initial_records": 0,
+    "security_advisor": "INFO rls_enabled_no_policy is intentional: direct roles have no grants; only backend service role accesses this table."
+  },
+  "secrets_changed": false,
+  "existing_functions_changed": false,
+  "individual_master_data_changed": false,
+  "main_base": "1ef34a2c7ccc5404a2ee3d6008ee99aeb6567ce9",
+  "promoted_test_commit": "b03b3c0c35140d3d4913e836bfbaf3cdbf57c42b",
+  "database_schema_changed_during_promotion": false
+}

@@ -1,0 +1,25 @@
+{
+  "scope": "Main",
+  "date": "2026-10-28",
+  "filename": "Dashboard-Chinh-2026-10-28-Find-Master-Bat-Cap.html",
+  "bytes": 2548981,
+  "sha256": "10f2891f41fc811842364eb0aa7a2b2e3af2aa4b0953c92f844c9becc7e13dfa",
+  "git_blob_sha": "b401b285c9f7b46bbe42982c5ddd81779b238f73",
+  "base_main_commit": "1ef34a2c7ccc5404a2ee3d6008ee99aeb6567ce9",
+  "promoted_test_commit": "b03b3c0c35140d3d4913e836bfbaf3cdbf57c42b",
+  "function": {
+    "name": "pgsm-pairs",
+    "version": 1,
+    "verify_jwt": true,
+    "source_exact": true,
+    "ezbr_sha256": "62a9fbc431d2cce47f9ffd5154cbf18a0a21efeccbfca06021a5fa07d586379b"
+  },
+  "secrets_changed": false,
+  "schema_changed": false,
+  "existing_functions_changed": false,
+  "source_zip": {
+    "filename": "Find-Master-Bat-Cap-Chinh-2026-10-28-Full-Source.zip",
+    "bytes": 19841,
+    "sha256": "919b4bf3472966b8517a4e4bfbca3faf7cc994dd846751abff521ea18c9bcd34"
+  }
+}
