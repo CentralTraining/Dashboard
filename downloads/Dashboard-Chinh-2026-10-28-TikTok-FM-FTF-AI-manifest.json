@@ -1,0 +1,67 @@
+{
+  "scope": "Main",
+  "date": "2026-10-28",
+  "filename": "Dashboard-Chinh-2026-10-28-TikTok-FM-FTF-AI.html",
+  "bytes": 2516941,
+  "characters": 2452205,
+  "sha256": "47ee0558be0260d961bcace01b45d0c4ee13ac6f94af9f1d14e311520830b06a",
+  "git_blob_sha": "55b2ea10f1a496381ec8ab06e8b28b60a116545d",
+  "source_test_commit": "626590bc4eceecab93ce60cd5a7a4b73ba95fa2b",
+  "main_changed_files": [
+    "index.ts",
+    "team-overview.ts"
+  ],
+  "preserved_main_files": [
+    "access.ts",
+    "sandboxes.ts",
+    "followers.ts",
+    "owner-route.ts",
+    "api-proxy.ts",
+    "oauth-route.ts",
+    "deno.json"
+  ],
+  "new_functions": [
+    "otraining-media",
+    "otraining-ftf-ai"
+  ],
+  "secrets_changed": false,
+  "database_changed": false,
+  "shared_tiktok_api_changed": false,
+  "callback_changed": false,
+  "targets_changed": false,
+  "functions": [
+    {
+      "name": "trainer-channel",
+      "version": 12,
+      "hash": "e6c848dc1ade649438cd7f93d9a7163372e5eeff4a1741962012224300832a6d",
+      "files": [
+        "index.ts",
+        "team-overview.ts",
+        "access.ts",
+        "sandboxes.ts",
+        "followers.ts",
+        "owner-route.ts",
+        "api-proxy.ts",
+        "oauth-route.ts",
+        "deno.json"
+      ]
+    },
+    {
+      "name": "otraining-media",
+      "version": 1,
+      "hash": "497b349c9e75da4105a3ce5da6d3536ed1cbc6c13f5d2ffbd071867b4c80a9d6",
+      "files": [
+        "index.ts"
+      ]
+    },
+    {
+      "name": "otraining-ftf-ai",
+      "version": 1,
+      "hash": "86a10560e1228f2695f1e02ec6a3c9fd3562f57332b7e89e9317bd23f27697a3",
+      "files": [
+        "index.ts",
+        "access.ts"
+      ]
+    }
+  ]
+}

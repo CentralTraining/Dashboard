@@ -1,0 +1,271 @@
+{
+  "main_backend": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "remote_writes": 0,
+    "fresh_account_authentication": true,
+    "forged_locked_changed_sessions_rejected": true,
+    "team_read_boundary_preserved": true,
+    "only_cached_video_ids_queried": true,
+    "twenty_video_pagination": true,
+    "native_main_and_secondary_tokens_read_without_refresh": true,
+    "no_grant_or_baseline_writes": true,
+    "no_private_data_in_dto": true,
+    "unavailable_video_not_false_zero": true,
+    "stale_snapshot_rejected": true,
+    "expired_and_rate_limited_errors_explicit": true,
+    "existing_proxy_and_callback_preserved": true,
+    "signed_native_owner_guards_preserved": true,
+    "main_source_only_two_files_changed": true
+  },
+  "ui_ftf": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "remote_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "strict_ai_pass": true,
+        "shop_modal_matches_count": true,
+        "other_ftf_metrics_preserved": true,
+        "admin_channel_targets_preserved": true,
+        "failed_and_stale_updates_preserve_data": true,
+        "trainer_region_preserved": true,
+        "manual_file_rule_matches": true,
+        "layout": {
+          "name": "ftf-ai",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        }
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "strict_ai_pass": true,
+        "shop_modal_matches_count": true,
+        "other_ftf_metrics_preserved": true,
+        "admin_channel_targets_preserved": true,
+        "failed_and_stale_updates_preserve_data": true,
+        "trainer_region_preserved": true,
+        "manual_file_rule_matches": true,
+        "layout": {
+          "name": "ftf-ai",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        }
+      }
+    ]
+  },
+  "ui_media": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "remote_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "source_and_ids_saved_together": true,
+        "exact_program_only": true,
+        "failure_and_stale_response_preserve_data": true,
+        "trainer_region_preserved": true,
+        "layout": {
+          "name": "media-fm",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        }
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "source_and_ids_saved_together": true,
+        "exact_program_only": true,
+        "failure_and_stale_response_preserve_data": true,
+        "trainer_region_preserved": true,
+        "layout": {
+          "name": "media-fm",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        }
+      }
+    ]
+  },
+  "ui_hashtag": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "remote_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "height": 1000,
+        "passed": true,
+        "layout": {
+          "name": "hashtag-month",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        },
+        "matchedVideos": 56,
+        "exactMatching": true,
+        "overlappingTagsDeduplicated": true,
+        "apiCaptionPagination": true,
+        "unknownDataExplicit": true,
+        "partialFailuresVisible": true,
+        "watchlistOnlyMockWrites": true,
+        "trainerReadOnlyManagement": true
+      },
+      {
+        "width": 390,
+        "height": 900,
+        "passed": true,
+        "layout": {
+          "name": "hashtag-month",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        },
+        "matchedVideos": 56,
+        "exactMatching": true,
+        "overlappingTagsDeduplicated": true,
+        "apiCaptionPagination": true,
+        "unknownDataExplicit": true,
+        "partialFailuresVisible": true,
+        "watchlistOnlyMockWrites": true,
+        "trainerReadOnlyManagement": true
+      },
+      {
+        "width": 320,
+        "height": 850,
+        "passed": true,
+        "layout": {
+          "name": "hashtag-month",
+          "width": 320,
+          "documentWidth": 320,
+          "overflow": []
+        },
+        "matchedVideos": 56,
+        "exactMatching": true,
+        "overlappingTagsDeduplicated": true,
+        "apiCaptionPagination": true,
+        "unknownDataExplicit": true,
+        "partialFailuresVisible": true,
+        "watchlistOnlyMockWrites": true,
+        "trainerReadOnlyManagement": true
+      }
+    ]
+  },
+  "live_backend": {
+    "passed": true,
+    "checks": [
+      {
+        "case": "Main FM 6/8",
+        "status": 200,
+        "program_name_matches": true,
+        "employee_count": 472,
+        "database_writes": 0
+      },
+      {
+        "case": "Main FTF authorization",
+        "checks": [
+          {
+            "case": "missing_gateway",
+            "status": 401,
+            "no_partner_data_returned": true
+          },
+          {
+            "case": "missing_dashboard",
+            "status": 401,
+            "no_partner_data_returned": true
+          },
+          {
+            "case": "forged_dashboard",
+            "status": 401,
+            "no_partner_data_returned": true
+          }
+        ],
+        "live_authorized_data_not_claimed": true
+      },
+      {
+        "case": "Main TikTok",
+        "checks": [
+          {
+            "action": "overview",
+            "status": 401
+          },
+          {
+            "action": "hashtag_videos",
+            "status": 401
+          }
+        ],
+        "status_route_ok": true,
+        "registered_callback_preserved": true,
+        "invalid_owner_signature_rejected": true
+      }
+    ]
+  },
+  "unchanged_functions": [
+    {
+      "name": "otraining-testonline",
+      "version": 51,
+      "hash": "076266bb2f997f034780c85fd526d95d286195f88434ca20d5dbc0c2754201df"
+    },
+    {
+      "name": "otraining-partnertt-cp2-test",
+      "version": 7,
+      "hash": "1a89cdf3a7202282e01d9c52154b665e3ba4295afd7ae1c17029f0f7568fd6ba"
+    },
+    {
+      "name": "pgsm-fm-preview-test",
+      "version": 7,
+      "hash": "3416cd8297b7b1ccca1ed5d342d1732e90b9a6ee19c3d4dc4ec3692f3a363437"
+    },
+    {
+      "name": "pgsm-fm-report",
+      "version": 7,
+      "hash": "23b6348c08d5baf5b7b6d1223fbc65245a4b520a9f68af2935a5824a41d5e93e"
+    },
+    {
+      "name": "otraining-workshop-noibo",
+      "version": 8,
+      "hash": "1a22a82194801b6c5570a22bee1dba17134121c026d4443b64c1374dd5530687"
+    },
+    {
+      "name": "trainer-channel-test",
+      "version": 17,
+      "hash": "93161cbf3ba9fc811a2fb079fceb786dec033223aaa43a64b24f476f57a8cde6"
+    },
+    {
+      "name": "trainer-channel-api",
+      "version": 2,
+      "hash": "9763cc38afad1923d427d3664dcb5cc4a4146a1aeae53a7f4b62eea105c4e486"
+    },
+    {
+      "name": "otraining-media-test",
+      "version": 1,
+      "hash": "8fe6c1ea98351f297aea83bdf11b4b3731e519f9e80b9f8021af978e5c0a0e01"
+    },
+    {
+      "name": "otraining-ftf-ai-test",
+      "version": 4,
+      "hash": "8dbb28e2f46a30d45e42a042738a968a9a4386b58eaf92da5f81b673276415ef"
+    }
+  ],
+  "existing_otraining_destination": {
+    "productionFunction": "otraining-testonline",
+    "productionVersion": 51,
+    "productionHash": "076266bb2f997f034780c85fd526d95d286195f88434ca20d5dbc0c2754201df",
+    "existingSecretBinding": true,
+    "existingHeaderName": true,
+    "existingMediaDestination": true,
+    "existingProductionMediaSendsConfiguredHeader": true,
+    "promotedMediaUsesSameExactDestination": true,
+    "noSecretValueReadOrChanged": true,
+    "noNewThirdPartyDestination": true,
+    "userProvidedExactDestinationForCampaign": "https://otraining.io.vn/api/media-dashboard/employees",
+    "userProvidedAuthenticatedFtfDestination": "https://otraining.io.vn/api/qrcode/f2f-visits/download-all"
+  }
+}

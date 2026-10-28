@@ -2445,6 +2445,307 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
 @media(prefers-reduced-motion:reduce){nav.tabs button{transition:none!important;}}
 
 </style>
+<style id="tiktok-visual-theme-20261027">
+/* TikTok visual theme: scoped to the Extensions workspace and its dialogs. */
+#channelTool,.channel-overlay{
+  --text:#f3f5fb;--muted:#a3a9b8;--line:#2a2e3a;--bg:#12141c;
+  --green:#25f4ee;--green-dark:#f3f5fb;--green-ok:#69dfb6;--green-ok-bg:#14352e;
+  --amber:#ffd18a;--amber-bg:#3c2d1b;--red:#ff8298;--red-bg:#3b1e2b;
+  --channel-cyan:#25f4ee;--channel-pink:#fe2c55;--channel-teal:#25f4ee;--channel-blue:#829bff;
+  color:var(--text);color-scheme:dark;
+}
+#tab-extensions #channelTool{
+  position:relative;isolation:isolate;padding:18px;border-radius:18px;border:1px solid #272c38;
+  background:radial-gradient(ellipse at 2% 0%,#25f4ee0c,transparent 36%),radial-gradient(ellipse at 98% 0%,#fe2c550c,transparent 32%),#0d0f15;
+  box-shadow:0 12px 34px #0a0e1812;--channel-row:31px;
+}
+#channelTool .channel-heading.channel-compact-heading{margin-bottom:13px;gap:12px;}
+#channelTool .channel-compact-heading h2{
+  display:flex;align-items:center;gap:10px;color:#fff;font-size:23px;line-height:1.25;letter-spacing:-.65px;
+}
+#channelTool .channel-compact-heading h2:before{
+  content:'';display:block;flex:0 0 35px;width:35px;height:35px;border-radius:10px;
+  border:1px solid #363b48;background-color:#11131b;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3Cpath id='n' d='M20 6h4c.3 2.5 1.7 4.3 4.2 4.9v4.3a10.5 10.5 0 0 1-4.2-1.5v9.5a7.1 7.1 0 1 1-7.4-7.1v4.2a3 3 0 1 0 3.4 3V6Z'/%3E%3C/defs%3E%3Cuse href='%23n' fill='%2325f4ee' transform='translate(-1.2 1.2)'/%3E%3Cuse href='%23n' fill='%23fe2c55' transform='translate(1.2 -1.2)'/%3E%3Cuse href='%23n' fill='white'/%3E%3C/svg%3E");
+  background-size:30px;background-repeat:no-repeat;background-position:center;
+}
+#channelTool .channel-compact-heading p{margin-left:45px;color:#9fa8b9;font-size:10px;}
+#channelTool .channel-heading-actions{gap:7px;}
+#channelTool button.secondary,.channel-dialog button.secondary{
+  border:1px solid #3a404e;background:#1a1e28;color:#e9edf6;border-radius:8px;
+  box-shadow:none;transition:background .15s,border-color .15s;
+}
+#channelTool button.secondary:hover,.channel-dialog button.secondary:hover{background:#252a37;border-color:#6a758b;}
+#channelTool #channelSync{
+  background:#fe2c55;border-color:#fe2c55;color:#fff;font-weight:700;
+  box-shadow:0 3px 12px #fe2c551c;
+}
+#channelTool #channelSync:hover:not(:disabled){background:#e9234a;border-color:#e9234a;}
+#channelTool button:disabled,.channel-dialog button:disabled{opacity:.45;cursor:not-allowed;}
+#channelTool :is(button,input,select,summary):focus-visible,.channel-dialog :is(button,input,select,summary,a):focus-visible{
+  outline:2px solid #25f4ee;outline-offset:3px;
+}
+#channelTool .channel-toolbar.scope-filters{
+  background:#171a23;border:1px solid #2a2f3c;border-radius:12px;padding:12px 13px;
+  box-shadow:none;margin:12px 0 8px;
+}
+#channelTool .channel-filter-field>.scope-label{color:#a6afc1;font-size:10px;letter-spacing:.15px;}
+#channelTool .channel-toolbar .channel-filter-fields :is(input,select){
+  color:#f2f5fc;background:#10131c;border:1px solid #343b4b;border-radius:8px;
+  font-size:11px;color-scheme:dark;
+}
+#channelTool .channel-toolbar .channel-filter-fields :is(input,select):hover{border-color:#566477;}
+#channelTool .channel-toolbar .channel-filter-fields :is(input,select):focus-visible{border-color:#25f4ee;box-shadow:0 0 0 2px #25f4ee14;}
+#channelTool .channel-modes{background:#0e1119;border:1px solid #343b4b;border-radius:8px;}
+#channelTool .channel-modes button{background:transparent;color:#9ea8bd;border-radius:5px;}
+#channelTool .channel-modes button:hover{color:#f4f7fc;background:#202633;}
+#channelTool .channel-modes button[aria-pressed=true]{color:#051718;background:#25f4ee;box-shadow:none;font-weight:800;}
+#channelTool .channel-status{color:#9fa9bd;font-size:10px;margin:9px 1px;}
+#channelTool .channel-status:before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#25f4ee;margin-right:7px;vertical-align:1px;}
+#channelTool .channel-status[data-error=true]{color:#ff8298;}
+#channelTool .channel-status[data-error=true]:before{background:#fe2c55;}
+#channelTool .channel-summary-compact{gap:10px;margin:10px 0 13px;}
+#channelTool .channel-stat{
+  position:relative;overflow:hidden;padding:13px 14px;background:#181b25;border:1px solid #2c3140;
+  border-radius:12px;box-shadow:none;
+}
+#channelTool .channel-stat:after{
+  content:'';position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:7px;
+  display:block;background-color:#25f4ee12;background-size:15px;background-position:center;background-repeat:no-repeat;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2325f4ee' d='M7 4v16l13-8Z'/%3E%3C/svg%3E");
+}
+#channelTool .channel-stat:nth-child(2):after{background-color:#fe2c5518;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23ff7290' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='m4 17 6-6 4 3 6-8m-6 0h6v6'/%3E%3C/svg%3E");}
+#channelTool .channel-stat:nth-child(3):after{background-color:#fe2c5518;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ff7290' d='M12 21 3 12A6 6 0 0 1 12 4a6 6 0 0 1 9 8Z'/%3E%3C/svg%3E");}
+#channelTool .channel-stat:nth-child(4):after{background-color:#af98ff17;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23c0adff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M4 19c0-8 5-10 11-10V4l6 7-6 7v-5c-5 0-8 1-11 6Z'/%3E%3C/svg%3E");}
+#channelTool .channel-stat>span{color:#a4aec1;font-size:9px;font-weight:650;letter-spacing:.5px;padding-right:28px;}
+#channelTool .channel-stat strong{color:#fff;font-size:29px;letter-spacing:-.9px;font-weight:800;margin:5px 0 3px;}
+#channelTool .channel-stat:first-child strong{color:#25f4ee;}
+#channelTool .channel-follow-stat>strong{color:#ff6c89;}
+#channelTool .channel-stat strong em{color:#8691a7;font-size:12px;letter-spacing:0;}
+#channelTool .channel-stat small{color:#9ba5b9;font-size:9px;}
+#channelTool .channel-team-average b{color:#f0f4fc;}
+#channelTool .channel-summary-compact .channel-follow-coverage{color:#8490a5;}
+#channelTool .channel-stat-info,#channelTool .channel-chart-help{color:#a2aec2;background:transparent;border-color:transparent;}
+#channelTool .channel-grid-compact{gap:12px;margin:12px 0;}
+#channelTool .channel-card{background:#151820;border:1px solid #2a303d;border-radius:12px;box-shadow:none;padding:14px;}
+#channelTool .channel-card h3{color:#f5f7fc;font-size:14px;font-weight:750;letter-spacing:-.25px;}
+#channelTool .channel-panel-title h3:before{content:'';display:inline-block;width:3px;height:13px;background:#25f4ee;border-radius:3px;margin-right:7px;vertical-align:-1px;}
+#channelTool .channel-interaction-panel .channel-panel-title h3:before{background:#fe2c55;}
+#channelTool .channel-card p,#channelTool .channel-panel-caption{color:#909db2;font-size:9px;}
+#channelTool .channel-posts-head,#channelTool .channel-metrics-head{
+  color:#b6c0d3;background:#202532;border-radius:6px;font-size:9px;font-weight:650;height:30px;
+}
+#channelTool .channel-chart-row,#channelTool .channel-metrics-row{border-bottom:1px solid #252b37;}
+#channelTool .channel-chart-row:hover,#channelTool .channel-metrics-row:not(.channel-metrics-head):hover{background:#ffffff04;}
+#channelTool .channel-chart-name,#channelTool .channel-metric-trainer strong{color:#eef3fc;font-size:11px;font-weight:650;}
+#channelTool .channel-chart-name small,#channelTool .channel-metric-trainer small{color:#8c98ad;font-size:8px;}
+#channelTool .channel-chart-value,#channelTool .channel-metric-number{color:#edf4ff;font-variant-numeric:tabular-nums;}
+#channelTool .channel-chart-value small{color:#919db2;}
+#channelTool .channel-track{height:7px;background:#252d3a;border:0;}
+#channelTool .channel-track>i{background:linear-gradient(90deg,#17a6b1,#25f4ee);border-radius:4px;}
+#channelTool .channel-track.unknown,#channelTool .channel-metric-track.unknown{background:repeating-linear-gradient(135deg,#242a35,#242a35 4px,#303846 4px,#303846 5px);}
+#channelTool .channel-metric-track{background:#252c39;height:3px;border-radius:3px;}
+#channelTool .channel-metric-track.follow:before{background:#626f83;}
+#channelTool .channel-metric-track.follow i{background:#25f4ee;}
+#channelTool .channel-metric-track.view i{background:#829bff;}
+#channelTool .channel-metric-track.like i{background:#ff6c89;}
+#channelTool .channel-metric-track.share i{background:#ba9cff;}
+#channelTool .channel-follow-detail{background:transparent;border:0;color:#eaf4ff;}
+#channelTool .channel-follow-now{color:#f4f8ff;}
+#channelTool .channel-follow-gain.up{color:#25f4ee;}
+#channelTool .channel-follow-gain.down{color:#ff708d;}
+#channelTool .channel-follow-gain.flat,#channelTool .channel-follow-gain.unknown{color:#8996aa;}
+#channelTool .channel-follow-gain:before{color:#68768c;}
+#channelTool .channel-metrics-head>[role=columnheader]:nth-child(3){color:#83f3ec;}
+#channelTool .channel-metrics-head>[role=columnheader]:nth-child(4){color:#a8b8ff;}
+#channelTool .channel-metrics-head>[role=columnheader]:nth-child(5){color:#ff8ca4;}
+#channelTool .channel-metrics-head>[role=columnheader]:nth-child(6){color:#c5b2ff;}
+#channelTool .channel-metric-note{color:#8e9cb3;}
+#channelTool .channel-metric-note summary{font-size:9px;color:#a4b2ca;}
+#channelTool .channel-rhythm-panel{margin-top:12px;}
+#channelTool .channel-timeline{border-bottom:1px solid #343c4d;background:repeating-linear-gradient(0deg,transparent,transparent 34px,#2a324033 34px,#2a324033 35px);}
+#channelTool .channel-day-bar{background:linear-gradient(180deg,#25f4ee,#188fa4);border-radius:4px 4px 0 0;}
+#channelTool .channel-day-bar span{color:#b4fcf9;font-size:9px;}
+#channelTool .channel-day>small{color:#8c9bb2;}
+#channelTool .channel-management{background:#141720;border-color:#2c3341;border-radius:12px;}
+#channelTool .channel-management>summary{color:#d7e1f2;font-size:10px;}
+#channelTool .channel-management>summary:after{color:#25f4ee;}
+#channelTool .channel-management-body .channel-card{background:#171c26;}
+#channelTool .channel-detail-table th{background:#222a38;color:#bdcbe0;}
+#channelTool .channel-detail-table td{color:#e7f0ff;border-color:#2d3544;}
+#channelTool .channel-detail-table a{color:#70ede6;}
+#channelTool .channel-tag{background:#2a303d;color:#b7c3d7;}
+#channelTool .channel-tag.good{background:#143b34;color:#7de5c3;}
+#channelTool .channel-tag.wait{background:#3b2e25;color:#f1c28e;}
+#channelTool .channel-banner{color:#e1eafa;background:#1d2633;border-color:#3e536d;}
+#channelTool .channel-note,#channelTool .channel-empty{color:#95a3b8;}
+.channel-overlay{background:#050712b8;backdrop-filter:blur(6px);}
+.channel-overlay .channel-dialog{color:#edf3ff;background:#171c27;border:1px solid #3b4559;border-radius:16px;box-shadow:0 24px 90px #0009;}
+.channel-overlay .channel-dialog h3{color:#f8faff;}
+.channel-overlay .channel-dialog .channel-close{color:#e5edfc;background:#242d3e;border-color:#424e63;}
+.channel-overlay .channel-dialog :is(input,select){color:#eff5ff;background:#101621;border-color:#43506a;color-scheme:dark;}
+.channel-overlay .channel-dialog :is(p,li,small){color:#b2c0d5;}
+.channel-overlay .channel-dialog a{color:#71eee6;}
+.channel-overlay .channel-dialog :is(th,td){border-color:#354158;color:#dce8fc;background:transparent;}
+.channel-overlay .channel-dialog th{background:#222d3e;color:#bccfe9;}
+.channel-overlay .channel-dialog svg{background:#111721;border-color:#334058;}
+.channel-overlay .channel-dialog svg text{fill:#adbed7;}
+.channel-overlay .channel-dialog svg polyline{stroke:#25f4ee;}
+.channel-overlay .channel-video{border-color:#354158;}
+@media(prefers-reduced-motion:reduce){#channelTool *,.channel-overlay *{transition:none!important;scroll-behavior:auto!important;}}
+.mobile-layout #tab-extensions #channelTool{padding:10px 8px;border-radius:13px;--channel-row:30px;}
+.mobile-layout #channelTool .channel-heading.channel-compact-heading{align-items:flex-start;gap:7px;margin-bottom:10px;}
+.mobile-layout #channelTool .channel-compact-heading h2{font-size:17px!important;gap:7px;letter-spacing:-.5px;}
+.mobile-layout #channelTool .channel-compact-heading h2:before{width:27px;height:27px;flex-basis:27px;background-size:24px;border-radius:8px;}
+.mobile-layout #channelTool .channel-compact-heading p{margin-left:34px;font-size:8px;line-height:1.45;max-width:170px;}
+.mobile-layout #channelTool .channel-heading-actions{gap:4px;}
+.mobile-layout #channelTool .channel-heading-actions button{font-size:8px;padding:6px;border-radius:6px;white-space:nowrap;}
+.mobile-layout #channelTool .channel-toolbar.scope-filters{padding:7px!important;gap:6px!important;border-radius:10px;}
+.mobile-layout #channelTool .channel-filter-field>.scope-label{font-size:8px;}
+.mobile-layout #channelTool .channel-modes{border-radius:7px;}
+.mobile-layout #channelTool .channel-summary-compact{gap:5px;margin:9px 0;}
+.mobile-layout #channelTool .channel-stat{padding:8px 6px;border-radius:9px;}
+.mobile-layout #channelTool .channel-stat:after{display:none;}
+.mobile-layout #channelTool .channel-stat>span{font-size:7px;padding-right:0;letter-spacing:0;}
+.mobile-layout #channelTool .channel-stat strong{font-size:19px;letter-spacing:-.6px;}
+.mobile-layout #channelTool .channel-stat strong em{font-size:8px;}
+.mobile-layout #channelTool .channel-stat small{font-size:7px;}
+.mobile-layout #channelTool .channel-summary-compact .channel-team-average{font-size:6.5px;}
+.mobile-layout #channelTool .channel-summary-compact .channel-follow-coverage{font-size:6px;}
+.mobile-layout #channelTool .channel-card{padding:10px 7px;border-radius:10px;}
+.mobile-layout #channelTool .channel-card h3{font-size:12px;}
+.mobile-layout #channelTool .channel-card p{font-size:8px;}
+.mobile-layout #channelTool .channel-posts-head,.mobile-layout #channelTool .channel-metrics-head{font-size:7px;height:28px;}
+.mobile-layout #channelTool .channel-chart-name,.mobile-layout #channelTool .channel-metric-trainer strong{font-size:9px;}
+.mobile-layout #channelTool .channel-metric-number{font-size:9px;}
+.mobile-layout #channelTool .channel-grid-compact{gap:0;margin:9px 0;}
+.mobile-layout #channelTool .channel-timeline{height:118px;}
+.mobile-layout #channelTool .channel-status{font-size:8px;}
+@media(max-width:370px){
+ .mobile-layout #channelTool .channel-heading.channel-compact-heading{flex-wrap:wrap;}
+ .mobile-layout #channelTool .channel-heading-actions{margin-left:34px;}
+ .mobile-layout #channelTool .channel-stat strong{font-size:16px;}
+ .mobile-layout #channelTool .channel-stat>span{font-size:6px;}
+ .mobile-layout #channelTool .channel-metric-number{font-size:8px;}
+ .mobile-layout #channelTool .channel-metric-trainer strong{font-size:8px;}
+}
+
+/* The dashboard tab selector stays on its original light/green theme. */
+/* Explicit row backgrounds prevent inherited global white table/zebra surfaces. */
+#channelTool .channel-detail-table{
+  background:#181f2d;border:1px solid #354158;border-radius:12px;overflow:hidden;
+}
+#channelTool .table-scroll,.channel-overlay .table-scroll{
+  background:#181f2d;border-color:#354158;color-scheme:dark;scrollbar-color:#53627a #141b27;
+}
+#channelTool .table-scroll::-webkit-scrollbar,.channel-overlay .table-scroll::-webkit-scrollbar{width:8px;height:8px;}
+#channelTool .table-scroll::-webkit-scrollbar-track,.channel-overlay .table-scroll::-webkit-scrollbar-track{background:#141b27;}
+#channelTool .table-scroll::-webkit-scrollbar-thumb,.channel-overlay .table-scroll::-webkit-scrollbar-thumb{background:#53627a;border-radius:8px;}
+#channelTool .channel-detail-table :is(thead,tbody){background:transparent;}
+#channelTool .channel-detail-table tbody tr{background:#181f2d;}
+#channelTool .channel-detail-table tbody tr:nth-child(even){background:#1d2636;}
+#channelTool .channel-detail-table tbody tr:hover{background:#26364c;}
+#channelTool .channel-detail-table td{background:transparent;color:#e7f0ff;}
+#channelTool .channel-detail-table small{color:#a7b8d0;}
+#channelTool .channel-detail-table a{color:#70ede6;}
+#channelTool .channel-detail-table .channel-follower-change.up .channel-follow-detail{color:#25f4ee;}
+#channelTool .channel-detail-table .channel-follower-change.down .channel-follow-detail{color:#ff8298;}
+#channelTool .channel-detail-table .channel-follower-change.flat .channel-follow-detail,
+#channelTool .channel-detail-table .channel-follower-change.unknown .channel-follow-detail{color:#a7b8d0;}
+.channel-overlay .channel-dialog table{background:#182131;border:1px solid #3b4961;}
+.channel-overlay .channel-dialog table :is(thead,tbody){background:transparent;}
+.channel-overlay .channel-dialog table tbody tr{background:#182131;}
+.channel-overlay .channel-dialog table tbody tr:nth-child(even){background:#202c40;}
+.channel-overlay .channel-dialog table tbody tr:hover{background:#293b54;}
+.channel-overlay .channel-dialog table td{background:transparent;}
+</style>
+<style id="channel-hashtag-style-20261027">
+#channelTool .channel-hashtag-panel{margin:12px 0;scroll-margin-top:20px;}
+#channelTool .channel-hashtag-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
+#channelTool .channel-hashtag-heading h3{display:flex;align-items:center;gap:8px;font-size:16px;}
+#channelTool .channel-hashtag-heading h3>span{display:grid;place-items:center;width:26px;height:26px;background:#25f4ee15;border:1px solid #25f4ee35;color:#25f4ee;border-radius:8px;font-size:18px;}
+#channelTool .channel-hashtag-heading p{margin:5px 0 0;max-width:600px;}
+#channelTool .channel-hashtag-heading>button{white-space:nowrap;font-size:10px;}
+#channelTool .channel-hashtag-panel .channel-hashtag-period{padding:8px 10px;background:#172638;border:1px solid #324e6c;border-radius:8px;color:#c6ddf8;font-size:10px;margin:0 0 12px;line-height:1.5;}
+#channelTool .channel-hashtag-period strong{color:#e6f8ff;}
+#channelTool .channel-hashtag-form{padding:11px 12px;border:1px solid #303c50;border-radius:10px;background:#111824;margin:0 0 10px;}
+#channelTool .channel-hashtag-form>label{display:block;font-size:10px;color:#b9c9df;font-weight:700;margin-bottom:6px;}
+#channelTool .channel-hashtag-form>div{display:flex;gap:8px;}
+#channelTool #channelHashtagInput{flex:1;min-width:0;border:1px solid #3a4962;border-radius:8px;background:#0e141f;color:#edf4ff;font-family:inherit;font-size:11px;padding:8px 10px;}
+#channelTool #channelHashtagInput::placeholder{color:#8193ad;}
+#channelTool .channel-hashtag-form button{font-size:10px;white-space:nowrap;}
+#channelTool .channel-hashtag-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 12px;}
+#channelTool .channel-hashtag-tags>span{display:inline-flex;max-width:100%;}
+#channelTool .channel-hashtag-tags button{color:#c2d1e7;background:#202b3b;border:1px solid #3c4a60;border-radius:8px;padding:6px 9px;font-family:inherit;font-weight:600;font-size:10px;line-height:1.4;cursor:pointer;overflow-wrap:anywhere;}
+#channelTool .channel-hashtag-tags>span>button:first-child{border-radius:8px 0 0 8px;}
+#channelTool .channel-hashtag-tags button[aria-pressed=true]{background:#153a40;color:#7cfff5;border-color:#287b84;}
+#channelTool .channel-hashtag-tags button small{padding-left:5px;opacity:.8;}
+#channelTool .channel-hashtag-tags button.channel-hashtag-remove{border-left:0;border-radius:0 8px 8px 0;color:#9eb1cd;padding:4px 7px;font-size:14px;}
+#channelTool .channel-hashtag-tags button.channel-hashtag-remove:hover{background:#442733;color:#ff9eb2;}
+#channelTool .channel-hashtag-status{display:grid;gap:3px;color:#c0cfe3;font-size:10px;line-height:1.5;margin:8px 0;}
+#channelTool .channel-hashtag-status small{color:#8fabc8;font-size:9px;}
+#channelTool .channel-hashtag-error{color:#ffb4c6;background:#3d2532;border:1px solid #6c3a50;padding:9px 10px;font-size:11px;border-radius:8px;margin:8px 0;}
+#channelTool .channel-hashtag-error button{margin-left:10px;font-size:10px;}
+#channelTool .channel-hashtag-errors{font-size:10px;color:#ffcd94;background:#33291f;border:1px solid #59442d;border-radius:8px;padding:8px 10px;margin:9px 0;}
+#channelTool .channel-hashtag-errors summary{cursor:pointer;}
+#channelTool .channel-hashtag-errors li{margin-top:5px;line-height:1.5;}
+#channelTool .channel-hashtag-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:13px 0 9px;}
+#channelTool .channel-hashtag-stats>div{padding:12px 10px;background:#1a2433;border:1px solid #334057;border-radius:9px;min-width:0;}
+#channelTool .channel-hashtag-stats span{display:block;font-size:9px;font-weight:600;color:#aebed6;}
+#channelTool .channel-hashtag-stats strong{display:block;color:#f4f8ff;font-size:23px;font-weight:750;margin-top:5px;font-variant-numeric:tabular-nums;}
+#channelTool .channel-hashtag-stats>div:first-child strong{color:#25f4ee;}
+#channelTool .channel-hashtag-stats>div:nth-child(4) strong{color:#ff7f9b;}
+#channelTool .channel-hashtag-panel .channel-hashtag-note{font-size:9px;line-height:1.6;color:#99aec9;margin:9px 0 16px;}
+#channelTool .channel-hashtag-panel h4{font-size:12px;color:#e5efff;margin:15px 0 8px;}
+#channelTool .channel-hashtag-row{display:grid;grid-template-columns:minmax(150px,1.8fr) repeat(5,minmax(45px,1fr));gap:10px;padding:9px 8px;border-bottom:1px solid #2c374a;align-items:center;font-size:11px;}
+#channelTool .channel-hashtag-head{font-size:9px;font-weight:650;background:#202d40;border-radius:7px;color:#afc2dc;padding:9px 8px;}
+#channelTool .channel-hashtag-row>*:not(:first-child){text-align:right;}
+#channelTool .channel-hashtag-row>div{min-width:0;}
+#channelTool .channel-hashtag-row strong{font-size:10px;font-weight:650;color:#edf4ff;}
+#channelTool .channel-hashtag-row small{display:block;font-size:8px;line-height:1.5;color:#90a8c6;}
+#channelTool .channel-hashtag-row [role=cell]>small{display:none;}
+#channelTool .channel-hashtag-row b{font-size:11px;font-variant-numeric:tabular-nums;color:#e9f4ff;}
+#channelTool .channel-hashtag-video-heading{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:14px;}
+#channelTool .channel-hashtag-video-heading>span{font-size:9px;color:#9fb6d4;overflow-wrap:anywhere;text-align:right;}
+#channelTool .channel-hashtag-video-heading h4 span{font-size:9px;color:#6cece4;margin-left:6px;}
+#channelTool .channel-hashtag-videos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+#channelTool .channel-hashtag-videos>article{min-width:0;padding:12px;background:#141e2c;border:1px solid #31415a;border-radius:10px;}
+#channelTool .channel-hashtag-videos>article>a{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#d5fffa;text-decoration:none;font-size:11px;font-weight:650;line-height:1.6;overflow-wrap:anywhere;}
+#channelTool .channel-hashtag-videos>article>a:hover{text-decoration:underline;}
+#channelTool .channel-hashtag-videos>article>small{display:block;font-size:9px;color:#92abc9;margin:5px 0 7px;line-height:1.6;}
+#channelTool .channel-hashtag-video-tags{display:flex;flex-wrap:wrap;gap:5px;}
+#channelTool .channel-hashtag-video-tags span{color:#6cece4;background:#1b3942;border-radius:5px;font-size:9px;padding:3px 5px;overflow-wrap:anywhere;}
+#channelTool .channel-hashtag-video-metrics{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;padding-top:9px;margin-top:9px;border-top:1px solid #2d3c52;}
+#channelTool .channel-hashtag-video-metrics span{font-size:9px;color:#9db2d0;}
+#channelTool .channel-hashtag-video-metrics b{font-weight:650;color:#e6f4ff;margin-left:4px;}
+#channelTool .channel-hashtag-pagination{display:flex;justify-content:flex-end;gap:9px;align-items:center;font-size:10px;color:#adc5e3;margin:12px 0;}
+#channelTool .channel-hashtag-pagination button{padding:4px 9px;}
+.mobile-layout #channelTool .channel-hashtag-heading{flex-wrap:wrap;gap:8px;}
+.mobile-layout #channelTool .channel-hashtag-panel{scroll-margin-top:110px;}
+.mobile-layout #channelTool .channel-hashtag-heading h3{font-size:13px;}
+.mobile-layout #channelTool .channel-hashtag-heading>button{font-size:9px;}
+.mobile-layout #channelTool .channel-hashtag-form{padding:9px;}
+.mobile-layout #channelTool .channel-hashtag-form>div{flex-wrap:wrap;gap:6px;}
+.mobile-layout #channelTool #channelHashtagInput{flex-basis:100%;font-size:10px;min-height:34px;}
+.mobile-layout #channelTool .channel-hashtag-form button{font-size:9px;}
+.mobile-layout #channelTool .channel-hashtag-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.mobile-layout #channelTool .channel-hashtag-stats>div{padding:9px 7px;}
+.mobile-layout #channelTool .channel-hashtag-stats strong{font-size:19px;}
+.mobile-layout #channelTool .channel-hashtag-stats span{font-size:8px;}
+.mobile-layout #channelTool .channel-hashtag-row:not(.channel-hashtag-head){grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:9px 4px;}
+.mobile-layout #channelTool .channel-hashtag-row>div:first-child{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;align-items:center;}
+.mobile-layout #channelTool .channel-hashtag-head{display:none;}
+.mobile-layout #channelTool .channel-hashtag-row [role=cell]>small{display:block;font-size:7px;}
+.mobile-layout #channelTool .channel-hashtag-row [role=cell]{text-align:left;}
+.mobile-layout #channelTool .channel-hashtag-row strong{font-size:10px;}
+.mobile-layout #channelTool .channel-hashtag-row b{font-size:10px;}
+.mobile-layout #channelTool .channel-hashtag-row small{font-size:7px;}
+.mobile-layout #channelTool .channel-hashtag-videos{grid-template-columns:minmax(0,1fr);}
+.mobile-layout #channelTool .channel-hashtag-video-heading{align-items:flex-start;}
+.mobile-layout #channelTool .channel-hashtag-panel .channel-hashtag-note{font-size:8px;}
+.mobile-layout #channelTool .channel-hashtag-pagination{font-size:8px;gap:6px;}
+
+</style>
 </head>
 <body>
 
@@ -6105,7 +6406,7 @@ function renderDoitacF2FChart(mode){
    Google Sheet thật của người dùng có thêm/bớt/đổi thứ tự cột so với file mẫu gốc (trước đây dùng
    row[14] để lấy Trạng Thái — nếu Sheet thật lỡ có thêm 1 cột ở đâu đó, mọi thứ phía sau bị lệch
    hoàn toàn mà không báo lỗi gì, khiến Shop status luôn đọc sai/rỗng → tiến độ hoàn thành không lên). */
-async function processFtfWorkbook_(wb){
+async function processFtfWorkbook_(wb,options={}){
   // QUAN TRỌNG: cột "Người Train" trong "Tong Hop F2F"/"Chi Tiet Check-in" KHÔNG PHẢI lúc nào cũng là
   // Trainer — có thể là Sale, PG, hoặc người khác tuỳ Shop. KHÔNG dùng cột này để xác định Trainer.
   // Thay vào đó: mỗi Shop được xác định thuộc Trainer/Khu vực nào theo đúng dữ liệu đã map sẵn ở mục
@@ -6117,6 +6418,7 @@ async function processFtfWorkbook_(wb){
   if(ftfCamp){
     targetRowsForMonth = (ftfTargetRows && ftfTargetRows.length) ? ftfTargetRows : ((await dbGet('ftfTargetRows:'+ftfCamp.id)) || []);
   }
+  if(options.isCurrent&&!options.isCurrent())return false;
   // Chuẩn hoá tên Shop để tra khi KHÔNG có Mã Shop (nhiều Shop trong thực tế chưa được gán mã) — bỏ
   // dấu, viết thường, gộp khoảng trắng, để "Shop A" và "shop  a" vẫn khớp nhau.
   const normShopName_ = s => normalizeVN(String(s||'')).toLowerCase().replace(/\s+/g,' ').trim();
@@ -6206,7 +6508,7 @@ async function processFtfWorkbook_(wb){
     const aiVal=String(V2(row,'Trạng thái tư vấn mẫu','Trang thai tu van mau')||'').trim();
     const surveyVal=String(V2(row,'Khảo sát','Khao sat')||'').trim();
     const testPass = testVal.toUpperCase()==='PASS';
-    const aiDone = !!aiVal && aiVal.toUpperCase()!=='CHƯA LÀM'.toUpperCase() && normTrName_(aiVal)!=='CHUA LAM';
+    const aiDone = ftfAiStatus_(aiVal)==='dat';
     const surveyDone = surveyVal.toUpperCase()==='DONE';
     s.testTotal++; if(testPass) s.testPass++;
     s.aiTotal++; if(aiDone) s.aiDone++;
@@ -6223,6 +6525,8 @@ async function processFtfWorkbook_(wb){
   });
 
   let shopArr = Object.values(shopMap);
+  if(!options.aiSnapshot)for(const shop of shopArr){shop.aiPeople=(shop.people||[]).map(p=>({id:p.code||'',name:p.name,status:ftfAiStatus_(p.ai),passed:ftfAiStatus_(p.ai)==='dat'}));shop.aiSource='file';shop.aiUpdatedAt=new Date().toISOString();}
+
   let matchedShop=0, unmatchedShop=0;
   const unmatchedCodes = new Set();
   // Map Khu vực -> Trainer (phương án dự phòng khi Target khớp Shop nhưng trainerId của Target rỗng).
@@ -6266,6 +6570,7 @@ async function processFtfWorkbook_(wb){
   } else {
     nextShops = shopArr;
   }
+  if(options.aiSnapshot)ftfAiApply_(shopArr,options.aiSnapshot,options.campaignId);
   const nextRecords=JSON.parse(JSON.stringify(records));
 
   visibleTrainers().forEach(t=>{
@@ -6283,6 +6588,7 @@ async function processFtfWorkbook_(wb){
     rec.ftfKhaoSatActual = shopsOfTrainer.reduce((sum,s)=>sum+s.surveyDone,0);
     rec.updatedAt = new Date().toISOString();
   });
+  if(options.isCurrent&&!options.isCurrent())return false;
   await saveCampaignData_([['ftfShopList:'+currentMonth,nextShops],['records:'+currentMonth,nextRecords]]);
   ftfShopList=nextShops;records=nextRecords;
   // QUAN TRỌNG: renderKpiCategory('doitac') dựng lại toàn bộ khung Đối tác — kể cả phần tử thông báo
@@ -6341,6 +6647,12 @@ function mediaNameSim_(a,b){
   let common=0; ta.forEach(t=>{ if(tb.has(t)) common++; });
   return common/Math.max(ta.size,tb.size);
 }
+function mediaCampaignType_(camp){
+ return String(document.getElementById('otrMediaCampaignType')?.value||camp?.mediaCampaignType||'noibo');
+}
+function mediaOtrainingUrl_(){
+ return SUPABASE_URL+'/functions/v1/'+(location.pathname.startsWith('/Test/')?'otraining-media-test':'otraining-media');
+}
 async function updateMediaFromOtraining_(){
   const msg=document.getElementById('mediaImportMsg');
   const show=(t,c)=>campaignUpdateMessage_('mediaImportMsg',t,c);
@@ -6351,17 +6663,23 @@ async function updateMediaFromOtraining_(){
   if(!campaignId){ show(isAdmin()?'Hãy nhập ID chiến dịch.':'Admin chưa thiết lập ID chiến dịch cho tháng này.','var(--red)'); if(idInput) idInput.focus(); return; }
   const progInput=document.getElementById('otrMediaProgramId');
   const programId=(progInput&&progInput.value||'').trim() || String((camp&&camp.programId)||''); // Trainer dùng programId đã lưu
-  const stillCurrent=campaignUpdateContext_(camp,'otrMediaCampaignId',mediaScopeKey);
+  const campaignType=mediaCampaignType_(camp);
+  if(!['noibo','fm'].includes(campaignType)){show('Chọn nguồn Truyền thông hợp lệ.','var(--red)');return;}
+  if(campaignType==='fm'&&!/^[1-9]\d*$/.test(programId)){show('Nguồn FM cần nhập Program ID. Chương trình Diện mạo mới - Trải nghiệm mới dùng ID chiến dịch 6, Program ID 8.','var(--red)');return;}
+  if(isAdmin()&&otrEditing_.has(otrEditKey_('medianoibo',camp))){show('Bấm Lưu nguồn và ID trước khi cập nhật dữ liệu.','var(--red)');return;}
+  const sameContext=campaignUpdateContext_(camp,'otrMediaCampaignId',mediaScopeKey);
+  const stillCurrent=()=>sameContext()&&mediaCampaignType_(camp)===campaignType&&String(document.getElementById('otrMediaProgramId')?.value||camp.programId||'').trim()===programId;
   show('⏳ Đang lấy Truyền thông từ otraining...');
   try{
-    const res=await fetch(OTRAINING_FN_URL_,{
+    const res=await fetch(mediaOtrainingUrl_(),{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},
-      body:JSON.stringify({campaignId, type:'media'})
+      body:JSON.stringify({campaignId,programId,campaignType,type:'media'})
     });
     const out=await res.json();
     if(!res.ok||out.error){ throw new Error(out.error||('HTTP '+res.status)); }
     if(!stillCurrent())return;
+    if(out.campaignType!==campaignType||String(out.campaignId)!==campaignId||String(out.programId)!==(programId||'1'))throw Error('Dữ liệu trả về không khớp nguồn, chiến dịch hoặc chương trình đang chọn. Dữ liệu cũ được giữ nguyên.');
     const emps=Array.isArray(out.employees)?out.employees:[];
     if(!emps.length){ show('otraining trả 0 nhân sự. Kiểm tra lại ID chiến dịch.','var(--red)'); return; }
     // Với mỗi nhân sự: tìm program khớp tên chiến dịch (~90%), lấy approved; approved≥1 => hoàn thành.
@@ -6373,7 +6691,7 @@ async function updateMediaFromOtraining_(){
         // Lấy đúng program theo Program ID đã nhập
         progObj=(e.programs||[]).find(p=>String(p.programId||p.program_id||'')===String(programId)) || null;
         // (Edge chỉ trả name/approved/target; nếu không có program_id thì fallback theo thứ tự)
-        if(!progObj){ const idx=Number(programId)-1; if(idx>=0 && e.programs && e.programs[idx]) progObj=e.programs[idx]; }
+        if(!progObj&&campaignType==='noibo'&&(e.programs||[]).every(p=>p.programId==null&&p.program_id==null)){ const idx=Number(programId)-1; if(idx>=0 && e.programs && e.programs[idx]) progObj=e.programs[idx]; }
       } else {
         // Khớp theo tên ~90%
         const best=(e.programs||[]).map(p=>({p,sim:mediaNameSim_(p.name,camp.name)}))
@@ -6409,7 +6727,7 @@ async function updateMediaFromOtraining_(){
     await saveCampaignData_([['mediaResponses:'+(mediaScopeKey||camp.id),nextResponses]]);
     mediaResponses=nextResponses;invalidateMediaCampaignsDataCache_();
     await renderKpiCategory('truyenthong');
-    const srcTxt = programId ? ('Program ID '+programId) : ('khớp tên: "'+(matchedProgName||camp.name)+'"');
+    const srcTxt = (campaignType==='fm'?'FM':'Nội bộ')+' · '+(programId ? ('Program ID '+programId) : ('khớp tên: "'+(matchedProgName||camp.name)+'"'));
     show(`✅ Đã cập nhật: ${uniquePg} PG hoàn thành · ${totalApproved} bài hợp lệ (approved). Nguồn: ${srcTxt}.`,'var(--green-ok)');
   }catch(err){
     show('Lỗi gọi otraining: '+(err&&err.message?err.message:err),'var(--red)');
@@ -7121,13 +7439,14 @@ function renderMediaImportBox(){
   const isDoitacTT = (mediaActiveSubtype==='doitac');
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     ${showSys?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      ${!isDoitacTT?`<select id="otrMediaCampaignType" aria-label="Nguồn truyền thông" style="width:190px;${isAdmin()?'':'display:none;'}"><option value="noibo" ${((campaigns.find(c=>c.id===mediaScopeKey)||{}).mediaCampaignType||'noibo')==='noibo'?'selected':''}>Nguồn: Nội bộ (cũ)</option><option value="fm" ${(campaigns.find(c=>c.id===mediaScopeKey)||{}).mediaCampaignType==='fm'?'selected':''}>Nguồn: FM</option></select>`:''}
       <input type="number" id="otrMediaCampaignId" placeholder="ID chiến dịch (VD 21)" style="width:150px;${isAdmin()?'':'display:none;'}" value="${escapeHtml(String((campaigns.find(c=>c.id===mediaScopeKey)||{}).otrId||''))}">
       <input type="number" id="otrMediaProgramId" placeholder="Program ID (nếu có)" style="width:150px;${isAdmin()?'':'display:none;'}" value="${escapeHtml(String((campaigns.find(c=>c.id===mediaScopeKey)||{}).programId||''))}">
       ${isAdmin()?`<button class="secondary otr-save-btn" data-save="${isDoitacTT?'mediadoitac':'medianoibo'}" type="button" title="Lưu cố định ID cho tháng này">💾 Lưu</button>`:''}
       <button class="primary" id="otrMediaBtn" type="button">↻ Cập nhật Truyền thông từ hệ thống</button>
       <span class="save-msg" id="mediaImportMsg" style="display:none;"></span>
     </div>
-    <div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. <strong>Để trống Program ID</strong> → tự khớp theo tên chiến dịch (~90%). <strong>Nhập Program ID</strong> → lấy đúng chương trình đó. Chỉ tính bài <strong>approved ≥ 1</strong>.</div>
+    <div class="section-desc" style="margin-bottom:8px;">Lấy trực tiếp từ otraining. ${!isDoitacTT?'<strong>Nguồn FM</strong>: Diện mạo mới - Trải nghiệm mới → ID chiến dịch <strong>6</strong>, Program ID <strong>8</strong>. Chọn nguồn rồi bấm <strong>Lưu</strong>. ':''}<strong>Để trống Program ID (nguồn cũ)</strong> → tự khớp theo tên chiến dịch (~90%). <strong>Nhập Program ID</strong> → lấy đúng chương trình đó. Chỉ tính bài <strong>approved ≥ 1</strong>.</div>
     <details><summary style="cursor:pointer;font-size:var(--cap);color:var(--muted);">Nhập thủ công (file / Google Sheet) — chỉ dùng khi cần</summary>`:''}
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;${showSys?'margin-top:10px;':''}">
       <input type="file" id="mediaImportInput" accept=".xlsx,.xls" ${canEdit?'':'disabled'}>
@@ -7548,6 +7867,7 @@ async function openFtfShopDetail_(shop, metric){
   const camp=campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf');
   const campaignId=(camp&&camp.otrId)||'';
   const fail=(msg)=>{ ov.innerHTML=head(`<div class="empty" style="padding:20px 0;color:var(--red);">${escapeHtml(String(msg))}</div>`); bind(); };
+  if(metric==='ai'){await ftfAiDetail_(shop,String(campaignId),ov,head,bind,fail);return;}
   if(!shop.shopIdOtr || !campaignId){ fail('Thiếu shop_id hoặc ID chiến dịch — hãy "Cập nhật FTF từ hệ thống" lại.'); return; }
 
   // ===== THẺ BÀI TEST: dùng endpoint shop-test-scores (Pass/Fail/Chưa làm + Số lần + Điểm cao) =====
@@ -10773,7 +11093,7 @@ const OTR_ID_FIELDS_={
  testonline:['otrCampaignId'], aicheck:['otrAiCampaignId'],
  wsnoibo:['otrWsCampaignId'],ftf:['otrFtfCampaignId'],
  wsdoitac:['otrWsDtCampaignId'],
- medianoibo:['otrMediaCampaignId','otrMediaProgramId'],
+ medianoibo:['otrMediaCampaignId','otrMediaProgramId','otrMediaCampaignType'],
  mediadoitac:['otrMediaCampaignId','otrMediaProgramId']
 };
 function otrCampaignForKind_(kind){
@@ -10801,7 +11121,7 @@ function initOtrSaveButtons_(){
    (OTR_ID_FIELDS_[kind]||[]).forEach((id,i)=>{
      const el=document.getElementById(id);if(!el)return;
      if(saved&&!editing){
-       el.value=String(i===0?camp.otrId:(camp.programId||''));
+       el.value=String(i===0?camp.otrId:i===1?(camp.programId||''):(camp.mediaCampaignType||'noibo'));
      }
      el.disabled=!canEdit||(saved&&!editing);
      el.readOnly=!canEdit||(saved&&!editing);
@@ -10846,16 +11166,21 @@ document.addEventListener('click',async e=>{
  const idVal=String(document.getElementById(fields[0])?.value||'').trim();
  const progVal=fields[1]?String(document.getElementById(fields[1])?.value||'').trim():'';
  if(!idVal){alert('Hãy nhập ID chiến dịch trước khi lưu.');return;}
+ const source=fields[2]?String(document.getElementById(fields[2])?.value||'noibo'):null;
+ if(source&&!['noibo','fm'].includes(source)){alert('Chọn nguồn truyền thông hợp lệ.');return;}
+ if(source==='fm'&&(!/^[1-9]\d*$/.test(idVal)||!/^[1-9]\d*$/.test(progVal))){alert('Nguồn FM cần ID chiến dịch và Program ID hợp lệ.');return;}
  btn.disabled=true;
- const oldId=camp.otrId,oldProgram=camp.programId;
+ const oldId=camp.otrId,oldProgram=camp.programId,oldSource=camp.mediaCampaignType;
  camp.otrId=idVal;
  if(fields[1])camp.programId=progVal;
+ if(source)camp.mediaCampaignType=source;
  try{
    const ok=await dbSet('campaigns',campaigns);
    if(!ok)throw Error('Supabase chưa xác nhận lưu thành công');
    otrEditing_.delete(key);
  }catch(err){
    camp.otrId=oldId;camp.programId=oldProgram;
+   if(fields[2]){if(oldSource===undefined)delete camp.mediaCampaignType;else camp.mediaCampaignType=oldSource;}
    alert('Không lưu được ID: '+(err?.message||err));
  }finally{initOtrSaveButtons_();}
 });
@@ -11165,7 +11490,7 @@ async function updateFtfFromOtraining_(){
   const stillCurrent=campaignUpdateContext_(_ftfCamp,'otrFtfCampaignId');
   show('⏳ Đang lấy FTF từ otraining (ID '+campaignId+')...');
   try{
-    const {data:arr, detail}=await fetchFtfRows_(campaignId, currentMonth);
+    const [{data:arr, detail},aiSnapshot]=await Promise.all([fetchFtfRows_(campaignId,currentMonth),fetchFtfAi_(campaignId)]);
     if(!stillCurrent())return;
     if(!arr.length){
       show('otraining trả 0 dòng tổng hợp (không ghi đè data cũ). Kiểm tra lại ID chiến dịch.','var(--red)');
@@ -11199,7 +11524,7 @@ async function updateFtfFromOtraining_(){
     // Lưu ID chiến dịch.
     const camp=campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf');
     await saveCampaignSourceIfMissing_(camp,campaignId);
-    await processFtfWorkbook_(wb);
+    await processFtfWorkbook_(wb,{aiSnapshot,campaignId,isCurrent:stillCurrent});
   }catch(err){
     show('Lỗi gọi otraining: '+(err&&err.message?err.message:err),'var(--red)');
   }
@@ -19803,6 +20128,209 @@ async function pgsmRenderTrainerChangePanel_(camp,d){
 })();
 
 </script>
+<script id="channel-hashtag-model-20261027">
+// Hashtags remain accent-sensitive; case and full-width forms are normalized.
+const ChannelHashtagModel=(()=>{
+ const normalize=value=>String(value??'').normalize('NFKC').trim().replace(/^#+/u,'').toLocaleLowerCase('vi');
+ function parse(value){
+  const tokens=Array.isArray(value)?value:String(value||'').split(/[\s,;]+/u);
+  const result=[];
+  for(const token of tokens){
+   if(!String(token).trim())continue;
+   const tag=normalize(token);
+   if(!tag||Array.from(tag).length>100||!/^[\p{L}\p{M}\p{N}_]+$/u.test(tag))throw Error('Hashtag chỉ gồm chữ, số và dấu gạch dưới; cách nhau bằng dấu phẩy hoặc khoảng trắng.');
+   if(!result.includes(tag))result.push(tag);
+  }
+  if(result.length>20)throw Error('Theo dõi tối đa 20 hashtag cùng lúc.');
+  return result;
+ }
+ function extract(caption){
+  const text=String(caption||'').normalize('NFKC').replace(/https?:\/\/\S+/giu,'');
+  return [...new Set([...text.matchAll(/#([\p{L}\p{M}\p{N}_]+)/gu)].map(m=>normalize(m[1])))];
+ }
+ function totals(videos){
+  const sum=field=>videos.some(v=>!Number.isFinite(v[field]))?null:videos.reduce((n,v)=>n+v[field],0);
+  return {videos:videos.length,trainers:new Set(videos.map(v=>String(v.trainerId))).size,
+    views:sum('views'),likes:sum('likes'),comments:sum('comments'),shares:sum('shares')};
+ }
+ function report(items,tags,active,period){
+  const watch=parse(tags),unique=new Map();
+  for(const item of items){
+   if(!item.captionKnown||!item.id||!Number.isFinite(Date.parse(item.createdAt)))continue;
+   const day=new Date(Date.parse(item.createdAt)+7*3600000).toISOString().slice(0,10);
+   if(day<period.from||day>period.to)continue;
+   const found=extract([item.caption,item.title].filter(value=>typeof value==='string').join('\n'));
+   const matched=watch.filter(tag=>found.includes(tag));
+   if(matched.length&&!unique.has(String(item.id)))unique.set(String(item.id),{...item,matched,day});
+  }
+  const all=[...unique.values()].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||String(a.id).localeCompare(String(b.id)));
+  const videos=active?all.filter(v=>v.matched.includes(normalize(active))):all;
+  return {videos,totals:totals(videos),tags:watch.map(tag=>({tag,...totals(all.filter(v=>v.matched.includes(tag)))}))};
+ }
+ return {normalize,parse,extract,totals,report};
+})();
+
+</script>
+<script id="channel-hashtag-ui-20261027">
+const CHANNEL_HASHTAG_KEY_='channelHashtagWatchlist:v1';
+let channelHashtags_={owner:'',tags:[],active:'',loaded:false,loading:false,saving:false,busy:false,
+ cache:new Map(),errors:new Map(),error:'',progress:'',run:0,requestContext:'',page:1};
+function channelHashtagReset_(){
+ const run=channelHashtags_.run+1;
+ channelHashtags_={owner:channelOwner_(),tags:[],active:'',loaded:false,loading:false,saving:false,busy:false,
+  cache:new Map(),errors:new Map(),error:'',progress:'',run,requestContext:'',page:1};
+}
+function channelHashtagCurrent_(){
+ const period=ChannelModel.period(channelView_.filters),f=channelView_.filters;
+ const list=(channelView_.data?.trainers||channelInitial_()).filter(t=>(!f.region||t.region===f.region)&&(!f.trainer||String(t.id)===f.trainer));
+ return {period,report:ChannelModel.report(list,period)};
+}
+function channelHashtagCacheKey_(t,period){return JSON.stringify([String(t.id),period.from,period.to,t.syncedAt||'']);}
+function channelHashtagContextKey_(report,period){return JSON.stringify([period.from,period.to,report.rows.map(t=>[String(t.id),t.syncedAt||'',t.known,t.connected])]);}
+function channelHashtagObservedItems_(trainer,direct){
+ if(!trainer.known||!trainer.connected)return [];
+ const snapshot=(trainer.videos||[]).map(video=>({...video,trainerId:String(trainer.id),trainerName:trainer.name,region:trainer.region,handle:trainer.handle,
+   caption:typeof video.title==='string'?video.title:null,captionKnown:typeof video.title==='string',comments:null,
+   snapshotFallback:true,observedAt:trainer.syncedAt||null}));
+ const live=new Map((direct?.items||[]).map(video=>[String(video.id),video]));
+ return snapshot.map(saved=>{
+   const video=live.get(String(saved.id));
+   if(!video?.captionKnown)return saved;
+   const merged={...saved,...video,snapshotFallback:false,observedAt:direct.readAt||null};
+   for(const field of ['views','likes','shares'])if(!Number.isFinite(merged[field])&&Number.isFinite(saved[field])){
+     merged[field]=saved[field];merged.snapshotFallback=true;merged.observedAt=trainer.syncedAt||null;
+   }
+   return merged;
+ });
+}
+function channelHashtagRedraw_(){
+ const root=document.getElementById('channelTool');
+ if(!root?.querySelector('#channelHashtagPanel')||!['admin','trainer'].includes(session?.role))return;
+ const current=channelHashtagCurrent_();channelDrawHashtags_(root,current.report,current.period);
+}
+async function channelHashtagLoad_(){
+ if(channelHashtags_.loading||channelHashtags_.loaded)return;
+ const state=channelHashtags_,owner=channelOwner_();state.loading=true;
+ try{
+  const saved=await dbGetMulti([CHANNEL_HASHTAG_KEY_]);
+  if(state!==channelHashtags_||owner!==channelOwner_())return;
+  if(!Object.prototype.hasOwnProperty.call(saved,CHANNEL_HASHTAG_KEY_))throw Error('Chưa đọc được danh sách hashtag. Hãy thử tải lại.');
+  const value=saved[CHANNEL_HASHTAG_KEY_];
+  if(value!==null&&!Array.isArray(value))throw Error('Danh sách hashtag đã lưu không đúng định dạng.');
+  state.tags=ChannelHashtagModel.parse(value||[]);state.loaded=true;state.error='';
+ }catch(error){if(state===channelHashtags_&&owner===channelOwner_())state.error=error.message;}
+ finally{if(state===channelHashtags_&&owner===channelOwner_()){state.loading=false;channelHashtagRedraw_();}}
+}
+async function channelHashtagSave_(add=[],remove=''){
+ if(!isAdmin()||channelHashtags_.saving||!channelHashtags_.loaded)return;
+ const state=channelHashtags_,owner=channelOwner_();state.saving=true;state.error='';channelHashtagRedraw_();
+ try{
+  const saved=await dbGetMulti([CHANNEL_HASHTAG_KEY_]);
+  if(state!==channelHashtags_||owner!==channelOwner_()||!isAdmin())return;
+  if(!Object.prototype.hasOwnProperty.call(saved,CHANNEL_HASHTAG_KEY_))throw Error('Chưa đọc được danh sách đã lưu; chưa thay đổi hashtag.');
+  const old=saved[CHANNEL_HASHTAG_KEY_];if(old!==null&&!Array.isArray(old))throw Error('Danh sách hashtag đã lưu không đúng định dạng.');
+  const next=ChannelHashtagModel.parse([...ChannelHashtagModel.parse(old||[]).filter(tag=>tag!==remove),...add]);
+  if(!await dbSet(CHANNEL_HASHTAG_KEY_,next))throw Error('Chưa lưu được hashtag. Hãy thử lại.');
+  if(state!==channelHashtags_||owner!==channelOwner_())return;
+  state.tags=next;state.active=add[0]|| (next.includes(state.active)?state.active:'');state.page=1;
+ }catch(error){if(state===channelHashtags_&&owner===channelOwner_())state.error=error.message;}
+ finally{if(state===channelHashtags_&&owner===channelOwner_()){state.saving=false;channelHashtagRedraw_();}}
+}
+async function channelHashtagRefresh_(){
+ if(channelHashtags_.busy||channelView_.busy||!channelHashtags_.tags.length)return;
+ const state=channelHashtags_,owner=channelOwner_(),{report,period}=channelHashtagCurrent_();
+ const context=channelHashtagContextKey_(report,period),run=++state.run;
+ const allowed=()=>state===channelHashtags_&&owner===channelOwner_()&&run===state.run&&currentTabId_()==='extensions'&&channelHashtagContextKey_(channelHashtagCurrent_().report,channelHashtagCurrent_().period)===context;
+ state.busy=true;state.requestContext=context;state.errors.clear();state.error='';state.page=1;
+ const list=report.rows.filter(t=>t.known&&t.connected&&t.sandboxReady!==false&&!t.needsSandboxReconnect);
+ let cursor=0,done=0;
+ state.progress=list.length?'Đang đọc nội dung video từ TikTok…':'Chưa có kênh đã đồng bộ trong phạm vi. Hãy Đồng bộ TikTok trước.';
+ channelHashtagRedraw_();
+ async function worker(){
+  while(cursor<list.length&&allowed()){
+   const t=list[cursor++],items=[];let offset=0,complete=false,readAt=null;
+   try{
+    for(let page=0;page<=1000&&allowed();page++){
+     const out=await channelApi_('hashtag_videos',{trainerId:String(t.id),from:period.from,to:period.to,offset,snapshotAt:t.syncedAt||undefined});
+     if(!allowed())return;
+     if(out.trainerId!==String(t.id)||out.from!==period.from||out.to!==period.to||!Array.isArray(out.videos))throw Error('Dữ liệu hashtag chưa đúng phạm vi đang xem.');
+     const seen=new Set(items.map(v=>String(v.id)));
+     for(const video of out.videos)if(!seen.has(String(video.id))){items.push({...video,trainerId:String(t.id),trainerName:t.name,region:t.region,handle:out.handle||t.handle});seen.add(String(video.id));}
+     readAt=out.readAt||readAt;
+     if(out.complete){complete=true;break;}
+     if(!Number.isSafeInteger(out.nextOffset)||out.nextOffset<=offset)throw Error('TikTok chưa đọc xong trang video. Hãy thử lại.');
+     offset=out.nextOffset;
+    }
+    if(!allowed())return;
+    if(!complete)throw Error('Kênh còn video chưa đọc xong. Hãy chọn khoảng ngày nhỏ hơn rồi thử lại.');
+    state.cache.set(channelHashtagCacheKey_(t,period),{items,complete:true,readAt:readAt||new Date().toISOString()});
+    const unread=items.filter(video=>!video.captionKnown).length;
+    if(unread)state.errors.set(String(t.id),'TikTok chưa trả nội dung mới của '+unread+'/'+items.length+' video trong kỳ. Những video có dữ liệu đã đồng bộ vẫn hiển thị theo mốc lưu, có ghi rõ nguồn.');
+    while(state.cache.size>52)state.cache.delete(state.cache.keys().next().value);
+   }catch(error){if(allowed())state.errors.set(String(t.id),error.message||'Chưa đọc được nội dung video.');}
+   if(allowed()){done++;state.progress='Đã kiểm tra '+done+'/'+list.length+' kênh trong phạm vi.';channelHashtagRedraw_();}
+  }
+ }
+ try{await Promise.all([worker(),worker()]);}
+ finally{if(state===channelHashtags_&&owner===channelOwner_()&&run===state.run){state.busy=false;channelHashtagRedraw_();}}
+}
+function channelDrawHashtags_(root,report,period){
+ const panel=root.querySelector('#channelHashtagPanel');if(!panel)return;
+ if(channelHashtags_.owner!==channelOwner_())channelHashtagReset_();
+ const state=channelHashtags_,e=channelEscape_,num=channelNumber_,compact=channelMetricCompact_;
+ const context=channelHashtagContextKey_(report,period);
+ if(state.requestContext&&state.requestContext!==context){state.run++;state.busy=false;state.errors.clear();state.progress='Bộ lọc đã thay đổi. Bấm Cập nhật hashtag để đọc kỳ mới.';}
+ state.requestContext=context;
+ const entries=report.rows.map(t=>{const cache=state.cache.get(channelHashtagCacheKey_(t,period));return {t,cache,items:channelHashtagObservedItems_(t,cache)};});
+ const items=entries.flatMap(entry=>entry.items),known=items.filter(v=>v.captionKnown).length;
+ const expected=report.rows.filter(t=>t.known&&t.connected).reduce((n,t)=>n+t.videos.length,0);
+ const checked=entries.filter(({cache})=>cache?.complete).length;
+ const ready=known>0||(expected===0&&report.rows.length>0&&report.rows.every(t=>t.known&&t.connected));
+ const stats=ChannelHashtagModel.report(items,state.tags,state.active,period),v=stats.totals;
+ const metrics=[['Video khớp',v.videos],['Trainer tham gia',v.trainers],['Lượt xem',v.views],['Lượt thích',v.likes],['Bình luận',v.comments],['Chia sẻ',v.shares]];
+ const readTimes=entries.map(({cache})=>cache?.readAt).filter(Boolean).sort();
+ const coverage='Đã có nội dung '+known+'/'+expected+' video đã đồng bộ · đã đọc lại '+checked+'/'+report.rows.length+' kênh';
+ const stored=items.filter(video=>video.captionKnown&&video.snapshotFallback).length;
+ const sourceLabel=stored?stored+' video dùng mốc đồng bộ; dữ liệu gốc được giữ nguyên.':'Các video đã đọc dùng nội dung và chỉ số TikTok vừa trả về.';
+ const observedTimes=items.map(video=>video.observedAt).filter(Boolean).sort();
+ const totalPages=Math.max(1,Math.ceil(stats.videos.length/10));state.page=Math.max(1,Math.min(state.page,totalPages));
+ const videos=stats.videos.slice((state.page-1)*10,state.page*10);
+ panel.innerHTML=`<div class="channel-hashtag-heading"><div><h3><span aria-hidden="true">#</span> Tracking hashtag</h3><p>Trong các kênh Trainer đã kết nối · Dùng cùng bộ lọc thời gian, khu vực và Trainer phía trên</p></div><button type="button" class="secondary" id="channelHashtagRefresh" ${state.busy||channelView_.busy||!state.tags.length?'disabled':''}>${state.busy?'Đang cập nhật…':'↻ Cập nhật hashtag'}</button></div>
+  <p class="channel-hashtag-period">Kỳ đang theo dõi: <strong>${e(period.from.split('-').reverse().join('/'))} – ${e(period.to.split('-').reverse().join('/'))}</strong> · Theo ngày đăng video</p>
+  ${isAdmin()?`<form id="channelHashtagForm" class="channel-hashtag-form"><label for="channelHashtagInput">Hashtag theo dõi</label><div><input id="channelHashtagInput" type="text" maxlength="2200" placeholder="Nhập #hashtag, cách nhau bằng dấu phẩy" autocomplete="off" ${!state.loaded||state.saving?'disabled':''}><button type="submit" class="secondary" ${!state.loaded||state.saving?'disabled':''}>${state.saving?'Đang lưu…':'＋ Thêm hashtag'}</button></div></form>`:''}
+  ${state.loading?'<p class="channel-note">Đang tải danh sách hashtag…</p>':''}
+  ${state.error?`<div class="channel-hashtag-error" role="alert">${e(state.error)}${!state.loaded?'<button type="button" class="secondary" id="channelHashtagRetry">Tải lại</button>':''}</div>`:''}
+  <div class="channel-hashtag-tags" aria-label="Chọn hashtag">${state.tags.length?`<button type="button" data-channel-hashtag="" aria-pressed="${!state.active}">Tất cả hashtag</button>`:''}${stats.tags.map(tag=>`<span><button type="button" data-channel-hashtag="${e(tag.tag)}" aria-pressed="${state.active===tag.tag}">#${e(tag.tag)} <small>${ready?num(tag.videos):'—'}</small></button>${isAdmin()?`<button type="button" class="channel-hashtag-remove" data-channel-hashtag-remove="${e(tag.tag)}" aria-label="Bỏ theo dõi hashtag ${e(tag.tag)}" ${state.saving?'disabled':''}>×</button>`:''}</span>`).join('')}</div>
+  ${!state.tags.length?`<div class="channel-empty">${state.loaded?(isAdmin()?'Thêm hashtag để theo dõi video và tương tác của đội ngũ.':'Admin chưa thêm hashtag để theo dõi.'):'Chưa tải được danh sách hashtag.'}</div>`:`
+  <div class="channel-hashtag-status" role="status" aria-live="polite"><span>${e(state.progress|| (ready?coverage:'Bấm Cập nhật hashtag để đọc nội dung video trong kỳ.'))}</span>${state.progress&&ready?`<small>${e(coverage)}</small>`:''}${ready?`<small>${e(sourceLabel)}${observedTimes.length?' Mốc gần nhất: '+e(channelFollowerDate_(observedTimes.at(-1))):''}</small>`:''}${readTimes.length?`<small>Lần đọc lại gần nhất: ${e(channelFollowerDate_(readTimes.at(-1)))}</small>`:''}</div>
+  ${state.errors.size?`<details class="channel-hashtag-errors"><summary>${state.errors.size} kênh còn thiếu dữ liệu trong lượt này</summary><ul>${[...state.errors].map(([id,message])=>`<li>${e(report.rows.find(t=>String(t.id)===id)?.name||'Kênh')}: ${e(message)}</li>`).join('')}</ul></details>`:''}
+  <div class="channel-hashtag-stats">${metrics.map(([label,value])=>`<div><span>${label}</span><strong title="${ready?num(value):'Chưa đọc dữ liệu'}">${ready?compact(value):'—'}</strong></div>`).join('')}</div>
+  <p class="channel-hashtag-note">Hashtag được đối chiếu trong cả tiêu đề và caption. Tổng tính các video khớp trong kỳ, theo dữ liệu mới hoặc mốc đồng bộ được ghi rõ. Một video có nhiều hashtag chỉ tính một lần; các lượt tương tác không phải số tăng riêng trong kỳ.</p>
+  <h4>Theo Trainer</h4><div class="channel-hashtag-trainers" role="table" aria-label="Chỉ số hashtag theo Trainer"><div class="channel-hashtag-row channel-hashtag-head" role="row"><span>Trainer</span><span>Video</span><span>View</span><span>Like</span><span>Bình luận</span><span>Share</span></div>${entries.map(({t,cache})=>{
+   const own=stats.videos.filter(video=>video.trainerId===String(t.id)),total=ChannelHashtagModel.totals(own),observed=channelHashtagObservedItems_(t,cache);
+   const read=observed.filter(video=>video.captionKnown).length,hasStored=observed.some(video=>video.snapshotFallback);
+   const usable=t.known&&t.connected&&(read>0||t.videos.length===0);
+   return `<div class="channel-hashtag-row" role="row"><div><strong>${e(channelShort_(t.name))}</strong><small>${e(t.region)} · ${usable?read+'/'+t.videos.length+' video · '+(hasStored?'Mốc đồng bộ':'Đọc trực tiếp'):'Chưa có dữ liệu'}</small></div>${[['Video',total.videos],['View',total.views],['Like',total.likes],['Bình luận',total.comments],['Share',total.shares]].map(([label,value])=>`<div role="cell" title="${usable?num(value):'Chưa đọc dữ liệu'}"><small>${label}</small><b>${usable?compact(value):'—'}</b></div>`).join('')}</div>`;
+  }).join('')||'<div class="channel-empty">Chưa có Trainer trong phạm vi đang xem.</div>'}</div>
+  <div class="channel-hashtag-video-heading"><h4>Video khớp hashtag <span>${ready?num(stats.videos.length):'—'}</span></h4><span>${e(state.active?'#'+state.active:'Tất cả hashtag đang theo dõi')}</span></div>
+  <div class="channel-hashtag-videos">${videos.map(video=>`<article><a href="https://www.tiktok.com/@${encodeURIComponent(video.handle||'')}/video/${encodeURIComponent(video.id)}" target="_blank" rel="noopener noreferrer">${e(video.title||video.caption||'Video TikTok')}</a><small>${e(video.trainerName)} · ${e(new Date(video.createdAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))}</small><small>${video.snapshotFallback?'Theo mốc đồng bộ':'Đọc trực tiếp từ TikTok'}${video.observedAt?' · '+e(channelFollowerDate_(video.observedAt)):''}</small><div class="channel-hashtag-video-tags">${video.matched.map(tag=>`<span>#${e(tag)}</span>`).join('')}</div><div class="channel-hashtag-video-metrics">${[['View',video.views],['Like',video.likes],['Bình luận',video.comments],['Share',video.shares]].map(([label,value])=>`<span>${label} <b title="${num(value)}">${compact(value)}</b></span>`).join('')}</div></article>`).join('')||`<div class="channel-empty">${ready?'Chưa tìm thấy video khớp hashtag trong nội dung của các kênh đã chọn, trong kỳ '+e(period.from.split('-').reverse().join('/'))+' – '+e(period.to.split('-').reverse().join('/'))+'.':'Chưa cập nhật dữ liệu hashtag trong kỳ này.'}</div>`}</div>
+  ${stats.videos.length>10?`<div class="channel-hashtag-pagination"><span>${(state.page-1)*10+1}–${Math.min(state.page*10,stats.videos.length)} / ${stats.videos.length} video</span><button type="button" class="secondary" data-channel-hashtag-page="${state.page-1}" ${state.page===1?'disabled':''}>‹</button><span>${state.page}/${totalPages}</span><button type="button" class="secondary" data-channel-hashtag-page="${state.page+1}" ${state.page===totalPages?'disabled':''}>›</button></div>`:''}
+  <p class="channel-hashtag-note">Phạm vi: video công khai đã đồng bộ của các kênh đang chọn và nội dung TikTok API trả về; không tìm kiếm toàn TikTok. Các kênh chưa đọc được không bị coi là đã hoàn tất.</p>`}`;
+ panel.querySelector('#channelHashtagRefresh')?.addEventListener('click',channelHashtagRefresh_);
+ panel.querySelector('#channelHashtagRetry')?.addEventListener('click',()=>{state.error='';channelHashtagLoad_();});
+ panel.querySelector('#channelHashtagForm')?.addEventListener('submit',async event=>{
+  event.preventDefault();if(!isAdmin())return;
+  try{const tags=ChannelHashtagModel.parse(panel.querySelector('#channelHashtagInput').value);if(!tags.length)throw Error('Nhập ít nhất một hashtag.');await channelHashtagSave_(tags);}
+  catch(error){state.error=error.message;channelHashtagRedraw_();}
+ });
+ panel.querySelectorAll('[data-channel-hashtag]').forEach(button=>button.onclick=()=>{state.active=button.dataset.channelHashtag;state.page=1;channelHashtagRedraw_();});
+ panel.querySelectorAll('[data-channel-hashtag-remove]').forEach(button=>button.onclick=()=>channelHashtagSave_([],button.dataset.channelHashtagRemove));
+ panel.querySelectorAll('[data-channel-hashtag-page]').forEach(button=>button.onclick=()=>{state.page=Number(button.dataset.channelHashtagPage);channelHashtagRedraw_();});
+ if(!state.loaded&&!state.loading&&!state.error)channelHashtagLoad_();
+}
+document.getElementById('logoutBtn').addEventListener('click',channelHashtagReset_);
+
+</script>
 <script id="trainer-channel-20261024-script">
 /* Date ranges use Vietnam calendar days. TikTok engagement is the latest total
    on videos PUBLISHED in that range, not engagement gained during that range. */
@@ -19937,6 +20465,7 @@ function channelDraw_(){
  </section>${channelMetricsCard_(report,period)}</div>
  <section class="channel-card channel-rhythm-panel"><h3>Nhịp đăng video</h3><p>${period.days>35?'Theo từng nhóm 7 ngày':'Theo ngày'} · Giờ Việt Nam</p>${channelTimeline_(report)}
  </section>
+ <section class="channel-card channel-hashtag-panel" id="channelHashtagPanel" aria-label="Tracking hashtag TikTok"></section>
  <details class="channel-management" id="channelManagement" ${channelView_.managementOpen?'open':''}><summary><span>Quản lý kênh · ${selected.length} Trainer</span></summary><div class="channel-management-body"><div class="channel-management-tools">${isAdmin()?'<button type="button" class="secondary" data-channel-follow-baseline>Mốc follower 01/10</button><button type="button" class="secondary" data-channel-sandbox-setup>Thiết lập Sandbox</button>':''}<button type="button" class="secondary" data-channel-follow-help>Hướng dẫn follower</button></div> <section class="channel-card"><div class="channel-heading"><div><h3>Kênh của từng Trainer</h3><p>Số liệu chỉ tính video công khai; bấm Trainer để xem video</p></div>${isAdmin()?'<button type="button" class="secondary" id="channelAssign">＋ Gán trang TikTok</button>':''}</div>
  <table class="channel-detail-table" aria-label="Tiến độ xây kênh TikTok"><thead><tr><th>Trainer</th><th>Trang TikTok</th><th>Video / Target</th><th>♥ Like</th><th>↗ Share</th><th>Follower gần nhất</th><th>Tăng từ ${e(FollowerModel.window(period).label.slice(0,5))}</th><th>Kết nối</th></tr></thead><tbody>${report.rows.map(t=>`<tr><td><button type="button" class="secondary" data-channel-videos="${e(t.id)}" title="${e(t.name)}">${e(channelShort_(t.name))}</button><small>${e(t.region)}</small></td><td>${t.handle?`<a href="https://www.tiktok.com/@${e(t.handle)}" target="_blank" rel="noopener noreferrer">@${e(t.handle)}</a>`:'Chưa gán'}<small class="channel-sandbox-label">${e(channelSandboxLabel_(t.sandboxId))}</small></td><td>${t.known?num(t.actual):'—'} / ${num(t.target)}<small>${t.pct===null?'Chưa đồng bộ':num(t.pct)+'%'}</small></td><td>${num(t.likes)}</td><td>${num(t.shares)}</td>${channelFollowerCells_(t,period)}<td><span class="channel-tag ${t.known?'good':'wait'}">${t.needsSandboxReconnect?'Cần kết nối '+e(channelSandboxLabel_(t.sandboxId)):t.known?'Đã đồng bộ':t.connected?'Đã kết nối':t.handle?'Chờ kết nối':'Chưa gán'}</span>${isAdmin()||String(t.id)===String(session.trainerId)?`<button type="button" class="secondary" data-channel-connect="${e(t.id)}" ${!t.handle||t.sandboxReady===false||!channelView_.configured?'disabled':''} title="Đăng nhập đúng tài khoản TikTok đã gán">${t.connected?'Kết nối lại':'Kết nối'}</button>`:''}${t.connected&&!t.followers?.authorized&&(isAdmin()||String(t.id)===String(session.trainerId))?`<button type="button" class="secondary" data-channel-follow-connect="${e(t.id)}" ${t.sandboxReady===false?'disabled':''}>Cấp quyền follow</button>`:''}<small>${t.syncedAt?e(new Date(t.syncedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})):''}</small></td></tr>`).join('')||'<tr><td colspan="8">Chưa có Trainer trong phạm vi.</td></tr>'}</tbody></table></section>
  <p class="channel-note">Tuần: thứ Hai – Chủ nhật. Target tháng/khoảng ngày = 3 × số ngày theo dõi / 7, làm tròn lên. Like/share là tổng hiện tại của các video đăng trong kỳ, không phải lượt tương tác tăng riêng trong kỳ. Tự đồng bộ khi mở trang và mỗi 15 phút khi đang xem; TikTok có thể cập nhật số liệu chậm.</p>
@@ -19949,6 +20478,7 @@ function channelDraw_(){
  root.querySelectorAll('[data-channel-videos]').forEach(b=>b.onclick=()=>channelVideos_(report.rows.find(t=>t.id===b.dataset.channelVideos)));
  channelBindFollowers_(root,report.rows,period);
  channelBindCompact_(root);
+ channelDrawHashtags_(root,report,period);
  root.querySelector('[data-channel-sandbox-setup]')?.addEventListener('click',channelSandboxSetup_);
 }
 async function channelChangePeriod_(){channelView_.data=null;channelDraw_();channelMessage_('Đang tải số liệu theo kỳ đã chọn…');try{await channelLoad_();}catch(error){channelMessage_(error.message,true);}}
@@ -20118,6 +20648,69 @@ function channelAssign_(){
   schedule();
 })();
 
+</script><style id="ftf-ai-detail-style-20261028">#ftfShopDetailOverlay .ftf-ai-people-table{width:100%!important;min-width:0!important;table-layout:fixed}#ftfShopDetailOverlay .ftf-ai-people-table th,#ftfShopDetailOverlay .ftf-ai-people-table td{white-space:normal!important;overflow-wrap:anywhere;padding:8px 5px!important}#ftfShopDetailOverlay .table-scroll:has(>.ftf-ai-people-table):before{display:none!important}#ftfShopDetailOverlay .ftf-ai-people-table .pill{white-space:normal;max-width:100%;box-sizing:border-box}.mobile-layout #ftfShopDetailOverlay .ftf-ai-people-table{font-size:10px}</style>
+<script id="ftf-ai-status-20261028">
+function ftfAiStatus_(value){
+ const s=String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').trim().toLowerCase().replace(/[\s-]+/g,'_');
+ return s==='dat'?'dat':s==='chua_dat'?'chua_dat':!s||s==='chua_lam'||s==='—'?'chua_lam':'unknown';
+}
+function ftfAiUrl_(){return SUPABASE_URL+'/functions/v1/'+(location.pathname.startsWith('/Test/')?'otraining-ftf-ai-test':'otraining-ftf-ai');}
+async function fetchFtfAi_(campaignId,shopId){
+ const owner=JSON.stringify([session?.userId,session?.role,session?.region]),month=currentMonth,tokenRequest=workshopNoiboToken_();
+ const authTitle=document.querySelector('#wsnbAuthOverlay h3');if(authTitle)authTitle.textContent='Xác thực dữ liệu FTF';
+ const token=await tokenRequest;
+ if(owner!==JSON.stringify([session?.userId,session?.role,session?.region])||month!==currentMonth)throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy cập nhật FTF lại.');
+ const res=await fetch(ftfAiUrl_(),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},body:JSON.stringify({type:'ftfai',month,dashboardToken:token,campaignId:String(campaignId),...(shopId?{shopId:String(shopId)}:{})}),signal:AbortSignal.timeout(55000)});
+ let out;try{out=await res.json();}catch{throw Error('Chưa đọc được Tư vấn mẫu AI. Dữ liệu đã lưu được giữ nguyên.');}
+ if(res.status===401)sessionStorage.removeItem('workshop_private_session');
+ if(!res.ok||!out.ok)throw Error(out.error||'Chưa lấy được Tư vấn mẫu AI.');
+ if(out.campaignId!==String(campaignId)||out.source!=='simulationStatusMap'||!Array.isArray(out.shops)||!Number.isFinite(Date.parse(out.readAt)))throw Error('Nguồn Tư vấn mẫu AI chưa khớp chiến dịch. Dữ liệu đã lưu được giữ nguyên.');
+ for(const shop of out.shops){
+  if(!shop?.shopId||!Array.isArray(shop.people)||shop.people.some(p=>!p?.id||!['dat','chua_dat','chua_lam','unknown'].includes(p.status)))throw Error('Danh sách Tư vấn mẫu AI chưa hợp lệ.');
+  const ids=shop.people.map(p=>String(p.id));if(new Set(ids).size!==ids.length)throw Error('Danh sách Tư vấn mẫu AI còn trùng người trong shop.');
+ }
+ if(shopId&&(out.shops.length!==1||String(out.shops[0].shopId)!==String(shopId)))throw Error('Danh sách Tư vấn mẫu AI chưa đúng shop.');
+ return out;
+}
+function ftfAiApply_(shops,snapshot,campaignId){
+ if(!snapshot||snapshot.campaignId!==String(campaignId)||snapshot.source!=='simulationStatusMap'||!Array.isArray(snapshot.shops))throw Error('Thiếu nguồn Tư vấn mẫu AI hợp lệ.');
+ const byId=new Map(),byCode=new Map();
+ for(const row of snapshot.shops){
+  const sid=String(row.shopId);if(byId.has(sid))throw Error('Nguồn AI bị trùng shop.');byId.set(sid,row);
+  const code=String(row.shopCode||'').trim();if(code)byCode.set(code,byCode.has(code)?null:row);
+ }
+ for(const shop of shops){
+  const row=byId.get(String(shop.shopIdOtr||''))||(!shop.shopIdOtr?byCode.get(String(shop.shopCode||'').trim()):null);
+  if(!row)throw Error('Nguồn tổng hợp và Tư vấn AI chưa khớp đủ shop. Hãy cập nhật lại; dữ liệu cũ được giữ nguyên.');
+  shop.aiPeople=row.people.map(p=>({id:String(p.id),name:String(p.name||'').trim(),status:p.status,passed:p.status==='dat'}));
+  shop.aiTotal=shop.aiPeople.length;shop.aiDone=shop.aiPeople.filter(p=>p.status==='dat').length;
+  shop.aiFailed=shop.aiPeople.filter(p=>p.status==='chua_dat').length;
+  shop.aiNotStarted=shop.aiPeople.filter(p=>p.status==='chua_lam').length;
+  shop.aiSource='simulationStatusMap';shop.aiCampaignId=String(campaignId);shop.aiUpdatedAt=snapshot.readAt;
+ }
+}
+async function ftfAiDetail_(shop,campaignId,ov,head,bind,fail){
+ const owner=JSON.stringify([session?.userId,session?.role,session?.region]),month=currentMonth;
+ const current=()=>ov.isConnected&&currentMonth===month&&owner===JSON.stringify([session?.userId,session?.role,session?.region])&&String(campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf')?.otrId||'')===String(campaignId);
+ let people,readAt;
+ try{
+  if(Array.isArray(shop.aiPeople)&&(shop.aiSource==='file'||shop.aiCampaignId===String(campaignId))){people=shop.aiPeople;readAt=shop.aiUpdatedAt;}
+  else{
+   if(!shop.shopIdOtr||!campaignId)throw Error('Hãy Cập nhật FTF từ hệ thống để lấy trạng thái tư vấn mẫu theo đúng shop.');
+   const out=await fetchFtfAi_(campaignId,shop.shopIdOtr);if(!current())return;
+   people=out.shops[0].people;readAt=out.readAt;
+  }
+ }catch(error){if(current())fail(error.message||error);return;}
+ if(!current())return;
+ const counts={dat:0,chua_dat:0,chua_lam:0,unknown:0};for(const p of people)counts[p.status in counts?p.status:'unknown']++;
+ const label={dat:'Đạt',chua_dat:'Chưa đạt',chua_lam:'Chưa làm',unknown:'Chưa xác định'};
+ const rows=people.map((p,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(p.name||'Chưa có tên')}</strong></td><td style="text-align:center"><span class="pill ${p.status==='dat'?'pill-ok':'pill-warn'}" style="${p.status==='chua_lam'?'color:var(--muted);background:#EEF2F0;':''}">${label[p.status]||label.unknown}</span></td></tr>`).join('');
+ const summary=`<p class="section-desc">Chỉ trạng thái <strong>Đạt</strong> được tính hoàn thành. Chưa đạt là đã làm nhưng chưa đạt yêu cầu.</p><div style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;font-weight:700"><span style="color:var(--green-ok)">Đạt: ${counts.dat}</span><span style="color:var(--orange,#b45309)">Chưa đạt: ${counts.chua_dat}</span><span style="color:var(--muted)">Chưa làm: ${counts.chua_lam}</span>${counts.unknown?'<span>Chưa xác định: '+counts.unknown+'</span>':''}</div>`;
+ ov.innerHTML=head(summary+`<div class="table-scroll"><table class="ftf-ai-people-table"><thead><tr><th style="width:8%">STT</th><th style="width:54%">Tên đối tác</th><th style="text-align:center;width:38%">Trạng thái tư vấn mẫu</th></tr></thead><tbody>${rows||'<tr><td colspan="3" class="empty">Shop chưa có người tham gia trong dữ liệu nguồn.</td></tr>'}</tbody></table></div><p class="section-desc">${readAt?'Dữ liệu lúc '+escapeHtml(new Date(readAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))+'. ':''}Bấm Cập nhật FTF từ hệ thống để làm mới số liệu toàn bảng.</p>`,`${counts.dat}/${people.length} đạt`);
+ bind();
+}
+
 </script>
+
 </body>
 </html>
