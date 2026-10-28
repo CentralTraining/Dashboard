@@ -1,0 +1,37 @@
+{
+  "scope": "Main",
+  "date": "2026-10-28",
+  "filename": "Dashboard-Chinh-2026-10-28-FTF-Xuat-Excel-2-Sheet.html",
+  "bytes": 2558454,
+  "characters": 2492697,
+  "sha256": "4eb27af4e03918f035e886b05f3484edfb31ab1c04dc49c781fc6afb6a505e78",
+  "git_blob_sha": "67d424cf0e7315fde0063c727e3e7eb98bdcf65d",
+  "base_commit": "eefe7c5f54805fdabae4bd8bce97904bb898f0e7",
+  "function": "otraining-ftf-export",
+  "main_changed": true,
+  "existing_functions_changed": false,
+  "schema_changed": false,
+  "secrets_changed": false,
+  "data_changed": false,
+  "feature_test_commit": "920f4d791899cef05d5ffaa59d9cfb52eb8566aa",
+  "feature_source_identical_to_test": true,
+  "main_existing_features_preserved": true,
+  "deployment": {
+    "source_exact": true,
+    "name": "otraining-ftf-export",
+    "version": 1,
+    "verify_jwt": true,
+    "ezbr_sha256": "45f6599f34ddd4bb4466d216834b1021be80359427f2b94f368f5860b6622ce3",
+    "existing_functions_unchanged": true,
+    "existing_function_count": 15
+  },
+  "source_zip": {
+    "filename": "FTF-Xuat-Excel-2-Sheet-Chinh-2026-10-28-Full-Source.zip",
+    "bytes": 14107,
+    "sha256": "930c9e7f998ceb4483393c0020c4c77b6000db6893d8e681b67a512abe3b602e"
+  },
+  "artifacts": {
+    "README.md": "5f908a29a52e2ba026e55a37306d5efb1f513fa9aeddd7f818b248817e023901",
+    "verification.json": "452e846f546fcceb4b9f218fdb4edf3479ed5c6f00f42122bf69adbe4f8155fe"
+  }
+}

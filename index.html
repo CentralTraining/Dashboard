@@ -7761,11 +7761,7 @@ function renderFtfShopListBox(){
   }
 
   // Áp bộ lọc: Trainer, Trạng thái (Đã Training = Done hay chưa), Shop chưa đủ Test/Khảo sát
-  if(ftfShopFilterTrainer_) list = list.filter(s=>s.trainerId===ftfShopFilterTrainer_);
-  if(ftfShopFilterStatus_==='done') list = list.filter(s=>s.status==='DONE');
-  else if(ftfShopFilterStatus_==='chua') list = list.filter(s=>s.status!=='DONE');
-  if(ftfShopFilterChannel_) list = list.filter(s=>channelGroup(s.channel)===ftfShopFilterChannel_);
-  if(ftfShopFilterIncomplete_) list = list.filter(s=> s.testPass<s.testTotal || s.surveyDone<s.surveyTotal);
+  list = ftfExportFilter_(list);
 
   const totalItems = list.length;
   const totalPages = Math.max(1, Math.ceil(totalItems/FTF_SHOP_PAGE_SIZE));
@@ -7777,7 +7773,7 @@ function renderFtfShopListBox(){
   const trainerOptions = tList.slice().sort((a,b)=>a.name.localeCompare(b.name,'vi'))
     .map(t=>`<option value="${t.id}" ${ftfShopFilterTrainer_===t.id?'selected':''}>${t.name}</option>`).join('');
 
-  let html = `<div class="scope-filters" style="margin-bottom:12px;display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;">
+  let html = `<div class="ftf-export-toolbar"><button type="button" class="secondary" id="ftfShopExportExcelBtn" ${ftfExcelExportBusy_||!list.length?'disabled':''}>${ftfExcelExportBusy_?'Đang xuất…':'⇩ Xuất Excel (2 sheet)'}</button><span id="ftfShopExportMsg" role="status">Xuất tất cả shop khớp bộ lọc, không giới hạn trang đang mở.</span></div><div class="scope-filters" style="margin-bottom:12px;display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;">
     <select id="ftfShopFilterTrainerSel" style="flex:0 0 auto;"><option value="">Tất cả Trainer</option>${trainerOptions}</select>
     <select id="ftfShopFilterChannelSel" style="flex:0 0 auto;">
       <option value="" ${ftfShopFilterChannel_===''?'selected':''}>Tất cả kênh</option>
@@ -7838,6 +7834,7 @@ function renderFtfShopListBox(){
     renderFtfShopPagination_(totalItems);
   }
 
+  box.querySelector('#ftfShopExportExcelBtn')?.addEventListener('click',exportFtfShopExcel_);
   const trainerSel = document.getElementById('ftfShopFilterTrainerSel');
   if(trainerSel) trainerSel.addEventListener('change', ()=>{ ftfShopFilterTrainer_=trainerSel.value; ftfShopListPage_=1; renderFtfShopListBox(); });
   const statusSel = document.getElementById('ftfShopFilterStatusSel');
@@ -20953,6 +20950,43 @@ function pgsmPairsMount_(camp,root){
 document.getElementById('logoutBtn').addEventListener('click',()=>pgsmPairViews_.clear());
 
 </script>
+<style id="ftf-export-style-20261028">.ftf-export-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0 0 12px;}.ftf-export-toolbar button{flex-shrink:0;}.ftf-export-toolbar span{font-size:11px;color:var(--muted);line-height:1.6;min-width:0;max-width:100%;overflow-wrap:anywhere;}@media(max-width:700px){.ftf-export-toolbar{gap:6px;}.ftf-export-toolbar button{font-size:11px!important;}.ftf-export-toolbar span{font-size:10px;width:100%;}}</style><script id="ftf-export-script-20261028">
+let ftfExcelExportBusy_=false;
+function ftfExportFilter_(list){
+ if(ftfShopFilterTrainer_)list=list.filter(s=>s.trainerId===ftfShopFilterTrainer_);
+ if(ftfShopFilterStatus_==='done')list=list.filter(s=>s.status==='DONE');else if(ftfShopFilterStatus_==='chua')list=list.filter(s=>s.status!=='DONE');
+ if(ftfShopFilterChannel_)list=list.filter(s=>channelGroup(s.channel)===ftfShopFilterChannel_);
+ if(ftfShopFilterIncomplete_)list=list.filter(s=>s.testPass<s.testTotal||s.surveyDone<s.surveyTotal);return list;
+}
+function ftfExportVisibleShops_(){
+ const trainers=isTrainer()?config.trainers.filter(t=>t.id===session.trainerId):visibleTrainers(),ids=new Set(trainers.map(t=>t.id));
+ return ftfExportFilter_((ftfShopList||[]).filter(s=>s.trainerId&&ids.has(s.trainerId)));
+}
+function ftfExportMessage_(message,error=false){const el=document.getElementById('ftfShopExportMsg');if(el){el.textContent=message;el.style.color=error?'var(--red)':'var(--green-dark)';}}
+async function exportFtfShopExcel_(){
+ if(ftfExcelExportBusy_)return;const shops=ftfExportVisibleShops_(),month=currentMonth,camp=campaigns.find(c=>c.month===month&&c.group==='doitac'&&campaignSubtype(c)==='ftf');
+ if(!shops.length)return ftfExportMessage_('Không có shop khớp bộ lọc để xuất.',true);if(!camp?.otrId)return ftfExportMessage_('Admin chưa cấu hình ID chiến dịch FTF cho tháng đang xem.',true);
+ const owner=JSON.stringify([session?.userId,session?.role,session?.region,session?.trainerId]),shopIds=shops.map(s=>String(s.id)),filter=JSON.stringify([ftfShopFilterTrainer_,ftfShopFilterStatus_,ftfShopFilterChannel_,ftfShopFilterIncomplete_]);
+ const same=()=>month===currentMonth&&owner===JSON.stringify([session?.userId,session?.role,session?.region,session?.trainerId])&&String(campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf')?.id||'')===String(camp.id)&&String(campaigns.find(c=>c.id===camp.id)?.otrId||'')===String(camp.otrId);
+ const current=()=>same()&&filter===JSON.stringify([ftfShopFilterTrainer_,ftfShopFilterStatus_,ftfShopFilterChannel_,ftfShopFilterIncomplete_])&&JSON.stringify(ftfExportVisibleShops_().map(s=>String(s.id)))===JSON.stringify(shopIds);
+ ftfExcelExportBusy_=true;const b=document.getElementById('ftfShopExportExcelBtn');if(b){b.disabled=true;b.textContent='Đang xuất…';}ftfExportMessage_('Đang lấy dữ liệu tổng hợp và học viên thực tế…');
+ try{
+  const auth=workshopNoiboToken_(),title=document.querySelector('#wsnbAuthOverlay h3');if(title)title.textContent='Xác thực xuất Excel FTF';const token=await auth;if(!current())return;
+  const fn=location.pathname.startsWith('/Test/')?'otraining-ftf-export-test':'otraining-ftf-export';
+  const response=await fetch(SUPABASE_URL+'/functions/v1/'+fn,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},body:JSON.stringify({type:'ftfexport',dashboardToken:token,campaignKey:String(camp.id),month,shopIds}),signal:AbortSignal.timeout(65000)});
+  let out;try{out=await response.json();}catch{throw Error('Chưa nhận được dữ liệu Excel hợp lệ. Chưa tạo file.');}if(response.status===401)sessionStorage.removeItem('workshop_private_session');if(!response.ok||!out.ok)throw Error(out.error||'Không lấy được dữ liệu xuất Excel FTF.');
+  if(!current())return;
+  if(out.campaignKey!==String(camp.id)||out.month!==month||String(out.campaignId)!==String(camp.otrId)||out.source!=='otraining-f2f-download-all'||out.shopCount!==shopIds.length||!Array.isArray(out.sheets)||out.sheets.length!==2)throw Error('Dữ liệu xuất chưa khớp chiến dịch hoặc số shop đang chọn.');
+  if(typeof XLSX==='undefined')throw Error('Thư viện Excel chưa sẵn sàng. Hãy tải lại trang.');const wb=XLSX.utils.book_new(),expected=[['Tong Hop F2F',15],['Chi Tiet Check-in',14]];
+  out.sheets.forEach((sheet,i)=>{if(sheet.name!==expected[i][0]||!Array.isArray(sheet.columns)||sheet.columns.length!==expected[i][1]||!Array.isArray(sheet.rows)||sheet.rows.some(r=>!Array.isArray(r)||r.length!==sheet.columns.length||r.some(v=>v!==null&&!['string','number'].includes(typeof v))))throw Error('Cấu trúc hai sheet Excel chưa hợp lệ.');
+   const ws=XLSX.utils.aoa_to_sheet([sheet.columns,...sheet.rows]);ws['!cols']=(i===0?[14,48,20,18,22,23,36,15,22,29,21,29,15,15,18]:[32,14,20,18,22,23,48,29,29,30,25,18,18,18]).map(wch=>({wch}));ws['!rows']=[{hpt:27}];ws['!autofilter']={ref:XLSX.utils.encode_range({r:0,c:0},{r:sheet.rows.length,c:sheet.columns.length-1})};XLSX.utils.book_append_sheet(wb,ws,sheet.name);
+  });
+  wb.Props={Title:'Báo cáo FTF Đối tác',Subject:camp.name+' · '+month,Author:'Training Central'};if(!current())return;XLSX.writeFile(wb,'BaoCao_FTF_'+String(camp.otrId).replace(/[^A-Za-z0-9_-]/g,'')+'_'+month+'.xlsx');
+  const warning=out.warnings?.missingNames?' · '+out.warnings.missingNames+' lượt chưa có tên trong nguồn, hiển thị bằng ID.':'';ftfExportMessage_('Đã xuất '+out.shopCount+' shop và '+out.attendeeCount+' học viên · 2 sheet theo bộ lọc.'+warning);
+ }catch(error){if(same())ftfExportMessage_(error.message||'Chưa xuất được Excel FTF.',true);}
+ finally{ftfExcelExportBusy_=false;const button=document.getElementById('ftfShopExportExcelBtn');if(button){button.disabled=!ftfExportVisibleShops_().length;button.textContent='⇩ Xuất Excel (2 sheet)';}if(same()&&!current())ftfExportMessage_('Bộ lọc hoặc danh sách shop đã thay đổi. Hãy bấm xuất lại theo bảng hiện tại.',true);}
+}
 
+</script>
 </body>
 </html>

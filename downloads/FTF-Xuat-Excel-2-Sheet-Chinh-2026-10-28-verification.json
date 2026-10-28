@@ -1,0 +1,127 @@
+{
+  "promotion": {
+    "scope": "Main",
+    "feature_source_identical_to_test": true,
+    "existing_main_html_baseline_verified": true,
+    "callback_urls_preserved": true,
+    "unrelated_pairing_workflow_preserved": true,
+    "data_writes": 0,
+    "diff_lines": 77
+  },
+  "ui": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "actual_xlsx_download_and_readback": true,
+        "exact_two_sheet_headers": true,
+        "pagination_and_all_filters": true,
+        "own_trainer_scope": true,
+        "leading_zero_text_fields": true,
+        "number_counts_and_scores": true,
+        "literal_formula_like_name_safe": true,
+        "missing_score_blank": true,
+        "errors_and_stale_requests_download_nothing": true,
+        "read_only": true,
+        "layout": {
+          "name": "ftf-export",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        }
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "actual_xlsx_download_and_readback": true,
+        "exact_two_sheet_headers": true,
+        "pagination_and_all_filters": true,
+        "own_trainer_scope": true,
+        "leading_zero_text_fields": true,
+        "number_counts_and_scores": true,
+        "literal_formula_like_name_safe": true,
+        "missing_score_blank": true,
+        "errors_and_stale_requests_download_nothing": true,
+        "read_only": true,
+        "layout": {
+          "name": "ftf-export",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        }
+      },
+      {
+        "width": 320,
+        "passed": true,
+        "actual_xlsx_download_and_readback": true,
+        "exact_two_sheet_headers": true,
+        "pagination_and_all_filters": true,
+        "own_trainer_scope": true,
+        "leading_zero_text_fields": true,
+        "number_counts_and_scores": true,
+        "literal_formula_like_name_safe": true,
+        "missing_score_blank": true,
+        "errors_and_stale_requests_download_nothing": true,
+        "read_only": true,
+        "layout": {
+          "name": "ftf-export",
+          "width": 320,
+          "documentWidth": 320,
+          "overflow": []
+        }
+      }
+    ]
+  },
+  "live": {
+    "passed": true,
+    "endpoint": "otraining-ftf-export",
+    "private_upstream_not_probed": true,
+    "real_data_writes": 0,
+    "cases": [
+      {
+        "case": "missing_dashboard_session",
+        "status": 401,
+        "no_records_returned": true
+      },
+      {
+        "case": "forged_dashboard_session",
+        "status": 401,
+        "no_records_returned": true
+      }
+    ]
+  },
+  "deployment": {
+    "source_exact": true,
+    "name": "otraining-ftf-export",
+    "version": 1,
+    "verify_jwt": true,
+    "ezbr_sha256": "45f6599f34ddd4bb4466d216834b1021be80359427f2b94f368f5860b6622ce3",
+    "existing_functions_unchanged": true,
+    "existing_function_count": 15
+  },
+  "backend": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "tests": [
+      "one read-only source request for both sheets",
+      "exact 15/14 headers and source field mapping",
+      "Vietnam date/time and planned time range",
+      "actual learner IDs/names only; no synthetic count rows",
+      "strict separate AI/test status maps",
+      "survey and satisfaction score kept; missing score blank",
+      "duplicate shop-user pairs deduplicated; cross-shop visits retained",
+      "fresh Dashboard session and own-Trainer Target authorization",
+      "peer and outside region shops rejected before upstream",
+      "fresh post-fetch permission check",
+      "missing maps/campaign/shop mismatch and network errors explicit",
+      "no key, credential or unauthorized records returned",
+      "existing Dashboard KV read-only"
+    ]
+  },
+  "scope": "Main",
+  "date": "2026-10-28"
+}
