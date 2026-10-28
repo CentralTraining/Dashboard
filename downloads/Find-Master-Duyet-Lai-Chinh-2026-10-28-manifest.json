@@ -1,0 +1,15 @@
+{
+  "scope": "Main",
+  "date": "2026-10-28",
+  "filename": "Dashboard-Chinh-2026-10-28-Find-Master-Duyet-Lai.html",
+  "bytes": 2552314,
+  "characters": 2486782,
+  "sha256": "4fee42668f430bfca26883dff3774c683560dfa73f988e0a94b9489e5ee66365",
+  "git_blob_sha": "4f716d3f51205f0100a44e990c887cd489d045fe",
+  "base_test_commit": "b03b3c0c35140d3d4913e836bfbaf3cdbf57c42b",
+  "backend_changed": false,
+  "secrets_changed": false,
+  "change": "Complete the request status after a previously applied Master change; distinguish absent PG from wrong Trainer; preserve genuine ownership checks.",
+  "base_main_commit": "d0c701edf8e1ff25c592c441a614a594b5dc3637",
+  "promoted_test_commit": "27a0bc155e55eee5c52fcd03da9bb1395b4fb159"
+}

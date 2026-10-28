@@ -18821,19 +18821,57 @@ async function pgsmSubmitChange_(camp,action,pg,reason=''){
  if(!await dbSet(pgsmRequestKey_(camp,session?.trainerId),queue)){alert('Không gửi được yêu cầu. Vui lòng thử lại.');return false;}
  alert('Đã gửi yêu cầu '+(action==='add'?'THÊM':'LOẠI BỎ')+' PGs '+code+' đến Admin. Danh sách chính thức chưa thay đổi.');return true;
 }
+function pgsmReviewApplied_(d,item){
+ if(!Array.isArray(d.approvedRequestIds)||!d.approvedRequestIds.includes(item.id))return false;
+ const code=pgsmCode_({code:item.code});if(!code||item.pg?.code&&pgsmCode_(item.pg)!==code)return false;
+ const rows=(d.registered||[]).filter(p=>pgsmCode_(p)===code);
+ const added=new Set((d.manualAdd||[]).map(code=>pgsmCode_({code}))),removed=new Set((d.manualRemove||[]).map(code=>pgsmCode_({code})));
+ if(item.action==='remove')return !!item.requester?.trainerId&&String(item.pg?.trainerId||'')===String(item.requester.trainerId)&&!rows.length&&removed.has(code)&&!added.has(code);
+ if(item.action==='add')return !!item.pg?.trainerId&&rows.length===1&&String(rows[0].trainerId||'')===String(item.pg.trainerId)&&added.has(code)&&!removed.has(code);
+ return false;
+}
+async function pgsmCommitReview_(camp,requestKey,master,queue){
+ const base='pgsMasterRequests:'+camp.id;
+ if(!isAdmin()||!(requestKey===base||String(requestKey).startsWith(base+':')))return false;
+ const now=new Date().toISOString(),rows=[...(master?[{key:pgsmKey_(camp),value:master,updated_at:now}]:[]),{key:requestKey,value:queue,updated_at:now}];
+ if(!SUPABASE_URL){
+   const prior=rows.map(r=>localStorage.getItem(r.key));
+   try{rows.forEach(r=>localStorage.setItem(r.key,JSON.stringify(r.value)));}
+   catch{rows.forEach((r,i)=>{try{prior[i]===null?localStorage.removeItem(r.key):localStorage.setItem(r.key,prior[i]);}catch{}});return false;}
+ }else{
+   try{
+     // One multi-row upsert is one PostgREST/Postgres transaction: Master and queue commit together.
+     const response=await fetch(SUPABASE_URL+'/rest/v1/'+SUPABASE_TABLE,{method:'POST',headers:{...SUPA_HEADERS_,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows),signal:AbortSignal.timeout(25000)});
+     if(!response.ok)return false;
+   }catch{return false;}
+ }
+ if(master)pgsmCache_.set(camp.id,master);
+ if(typeof invalidateHomeSnapshot_==='function')invalidateHomeSnapshot_();
+ return true;
+}
 async function pgsmReviewChange_(camp,requestId,approve){
  if(!isAdmin())return;
  const combined=await pgsmRequests_(camp);
- const item=combined.find(r=>r.id===requestId);
- if(!item||item.status!=='pending'){alert('Yêu cầu không còn ở trạng thái chờ.');return;}
- const requestKey=pgsmRequestKey_(camp,item.requester?.trainerId);
- const queue=await dbGet(requestKey)||[];
+ const summary=combined.find(r=>r.id===requestId);
+ if(!summary||summary.status!=='pending'){alert('Yêu cầu không còn ở trạng thái chờ. Hãy tải lại danh sách.');return;}
+ const requestKey=pgsmRequestKey_(camp,summary.requester?.trainerId);
+ const queue=await dbGet(requestKey);
+ if(!Array.isArray(queue))return alert('Không đọc được lịch sử yêu cầu. Chưa thực hiện duyệt, hãy tải lại danh sách.');
  const storedItem=queue.find(r=>r.id===requestId);
- if(!storedItem||storedItem.status!=='pending')return alert('Yêu cầu đã được xử lý bởi phiên khác.');
- // Xác nhận rõ đối tượng để tránh thay đổi ngoài ý muốn.
+ if(!storedItem||storedItem.status!=='pending')return alert('Yêu cầu đã được xử lý bởi phiên khác. Hãy tải lại danh sách.');
+ const item={...storedItem,code:pgsmCode_({code:storedItem.code})};
+ if(!item.code||!['add','remove'].includes(item.action))return alert('Mã PGs hoặc thao tác trong yêu cầu không hợp lệ.');
  if(!confirm((approve?'Duyệt':'Từ chối')+' yêu cầu '+(item.action==='add'?'THÊM':'LOẠI BỎ')+' PGs '+item.code+' ('+(item.pg?.name||'')+')?'))return;
- if(approve){
-   if(item.action==='remove'&&String(item.pg?.trainerId||'')!==String(item.requester?.trainerId||''))return alert('Từ chối duyệt: yêu cầu loại PGs không thuộc Trainer gửi yêu cầu.');
+ const fresh=await dbGet(pgsmKey_(camp));
+ if(!fresh||typeof fresh!=='object'||Array.isArray(fresh)||!Array.isArray(fresh.registered))return alert('Không đọc được danh sách Master đã lưu. Chưa thực hiện duyệt, hãy tải lại danh sách.');
+ const current=pgsmInit_(JSON.parse(JSON.stringify(fresh)));
+ const applied=Array.isArray(current.approvedRequestIds)&&current.approvedRequestIds.includes(item.id);
+ if(applied){
+   // Finish a previously applied change without deleting/adding the PG for a second time.
+   if(!approve)return alert('Yêu cầu này đã được áp dụng vào danh sách Master. Không thể từ chối lại; bấm Duyệt để hoàn tất trạng thái.');
+   if(!pgsmReviewApplied_(current,item))return alert('Yêu cầu có xác nhận đã áp dụng nhưng danh sách Master hiện không khớp. Cần đối soát, chưa thực hiện lại thay đổi.');
+ }else if(approve){
+   if(item.action==='remove'&&(!item.requester?.trainerId||String(item.pg?.trainerId||'')!==String(item.requester.trainerId)))return alert('Từ chối duyệt: yêu cầu loại PGs không thuộc Trainer gửi yêu cầu.');
    const pg=(pgs||[]).find(p=>String(p.brand||'').toUpperCase()==='OPPO'&&pgsmCode_(p)===item.code);
    const requestPg=item.pg||{};
    if(item.action==='add'){
@@ -18842,27 +18880,27 @@ async function pgsmReviewChange_(camp,requestId,approve){
      if(!pgsmNorm_(requestPg.region)||pgsmNorm_(requestPg.region)!==pgsmNorm_(item.requester?.region)||!trainer||pgsmNorm_(trainer.region)!==pgsmNorm_(requestPg.region))return alert('Khu vực hoặc Trainer phụ trách trong yêu cầu không hợp lệ.');
      if(pg&&pgsmNorm_(pgsmRegion_(pg))!==pgsmNorm_(requestPg.region))return alert('PGs trong DATA thuộc khu vực khác. Không thể duyệt ghi đè.');
    }
-   const current=await pgsmData_(camp,true);
-   if(item.action==='remove'){const member=(current.registered||[]).find(x=>pgsmCode_(x)===item.code);if(!member||String(member.trainerId||'')!==String(item.requester?.trainerId||''))return alert('Không được duyệt loại PGs: Trainer gửi yêu cầu không trực tiếp phụ trách mã PGs này.');}
-   if(!Array.isArray(current.approvedRequestIds))current.approvedRequestIds=[];
-   if(!current.approvedRequestIds.includes(item.id)){
-     const added=new Set(current.manualAdd.map(x=>String(x).toUpperCase()));
-     const removed=new Set(current.manualRemove.map(x=>String(x).toUpperCase()));
-     if(item.action==='add'){added.add(item.code);removed.delete(item.code);}
-     else {added.delete(item.code);removed.add(item.code);}
-     current.manualAdd=[...added];current.manualRemove=[...removed];
-     const oldRegistered=Array.isArray(current.registered)?current.registered:[];
-     if(item.action==='add'){
-       const next=pg?pgsmPgRecord_(pg):{...requestPg,code:item.code};
-       if(!pg){current.manualPgRecords=current.manualPgRecords||{};current.manualPgRecords[item.code]=next;}
-       current.registered=oldRegistered.some(r=>r.code===item.code)?oldRegistered:[...oldRegistered,next];
-     }else current.registered=oldRegistered.filter(r=>r.code!==item.code);
-     current.approvedRequestIds.push(item.id);
-     if(!await pgsmPersist_(camp,current)){alert('Chưa lưu được danh sách PGs chính thức. Yêu cầu vẫn chờ duyệt.');return;}
+   if(item.action==='remove'){
+     const members=(current.registered||[]).filter(x=>pgsmCode_(x)===item.code);
+     if(!members.length)return alert('PGs không còn trong danh sách Master, nhưng yêu cầu chưa có xác nhận đã áp dụng. Cần đối soát trước khi duyệt.');
+     if(members.length!==1||String(members[0].trainerId||'')!==String(item.requester?.trainerId||''))return alert('Không được duyệt loại PGs: Trainer gửi yêu cầu không trực tiếp phụ trách mã PGs này.');
    }
+   if(!Array.isArray(current.approvedRequestIds))current.approvedRequestIds=[];
+   const added=new Set(current.manualAdd.map(code=>pgsmCode_({code}))),removed=new Set(current.manualRemove.map(code=>pgsmCode_({code})));
+   if(item.action==='add'){added.add(item.code);removed.delete(item.code);}else{added.delete(item.code);removed.add(item.code);}
+   current.manualAdd=[...added];current.manualRemove=[...removed];
+   const oldRegistered=Array.isArray(current.registered)?current.registered:[];
+   if(item.action==='add'){
+     const next=pg?pgsmPgRecord_(pg):{...requestPg,code:item.code};
+     if(!pg){current.manualPgRecords=current.manualPgRecords||{};current.manualPgRecords[item.code]=next;}
+     current.registered=oldRegistered.some(r=>pgsmCode_(r)===item.code)?oldRegistered:[...oldRegistered,next];
+   }else current.registered=oldRegistered.filter(r=>pgsmCode_(r)!==item.code);
+   current.approvedRequestIds.push(item.id);
  }
  storedItem.status=approve?'approved':'rejected';storedItem.reviewedAt=new Date().toISOString();storedItem.reviewer=pgsmWho_();
- if(!await dbSet(requestKey,queue)){alert('Danh sách PGs đã lưu nhưng chưa cập nhật được trạng thái duyệt. Mở lại trang để xử lý tiếp.');return;}
+ if(!await pgsmCommitReview_(camp,requestKey,approve&&!applied?current:null,queue)){
+   alert('Chưa xác nhận được kết quả lưu. Hãy tải lại danh sách để kiểm tra trước khi duyệt tiếp; không thực hiện lại thay đổi khi đã được áp dụng.');return;
+ }
  await renderPgsMasterTarget_(camp);
 }
 function pgsmPager_(total,page,size,attr,label){

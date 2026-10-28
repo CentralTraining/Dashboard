@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "synthetic_data_only": true,
+  "unit": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "cases": [
+      "one atomic multi-row upsert for Master and request status",
+      "already-applied legacy removal completes queue only",
+      "HTTP failure commits neither record",
+      "transport failure commits neither record",
+      "lost response after commit does not repeat mutation",
+      "already-applied request cannot be rejected",
+      "conflicting applied state blocked",
+      "wrong Trainer blocked",
+      "missing PG without applied receipt explicit",
+      "ordinary rejection",
+      "ordinary addition",
+      "addition recovery does not duplicate PG",
+      "non-admin blocked",
+      "other requests and individual results preserved"
+    ]
+  },
+  "browser": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "legacy_completion_does_not_mutate_master": true,
+        "atomic_normal_approval": true,
+        "failure_preserves_both_records": true,
+        "other_keys_untouched": true
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "legacy_completion_does_not_mutate_master": true,
+        "atomic_normal_approval": true,
+        "failure_preserves_both_records": true,
+        "other_keys_untouched": true
+      }
+    ]
+  },
+  "backend_changed": false,
+  "schema_changed": false,
+  "secrets_changed": false,
+  "old_legacy_cases_reconciled": 2,
+  "master_roster_changed_during_reconciliation": false,
+  "other_requests_changed_during_reconciliation": false,
+  "approval_status_and_master_single_request": true,
+  "live_new_approval_not_exercised": true
+}
