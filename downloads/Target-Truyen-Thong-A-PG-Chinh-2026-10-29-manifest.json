@@ -1,0 +1,30 @@
+{
+  "scope": "Main",
+  "date": "2026-10-29",
+  "filename": "Dashboard-Chinh-2026-10-29-Target-Truyen-Thong-A-PG.html",
+  "bytes": 2588108,
+  "characters": 2521321,
+  "sha256": "6e05e58cb432d6b69942e7bd338b767622aa889de03cbc86bf40d9b61f6e7462",
+  "git_blob_sha": "837abf7655b02d32b276bcd9764b098ccc3aa35b",
+  "base_commit": "f8b6b1e941b794f683d0bf90fde2ccc6f34b667f",
+  "location": "Cài đặt > Target",
+  "wrong_campaign_list_change_removed": true,
+  "manual_target_handler_unchanged": true,
+  "main_changed": true,
+  "backend_changed": false,
+  "schema_changed": false,
+  "secrets_changed": false,
+  "real_data_changed": false,
+  "feature_test_commit": "27b761af239877862283d8bc3f96ce491a8a0718",
+  "html_identical_to_test": true,
+  "test_changed": false,
+  "source_zip": {
+    "filename": "Target-Truyen-Thong-A-PG-Chinh-2026-10-29-Full-Source.zip",
+    "bytes": 9782,
+    "sha256": "c24ca56e655f1998f0a748b288c3e37eb24bcd99a8d362e8b78453a2af8615ac"
+  },
+  "artifacts": {
+    "README.md": "99b7dbee2b5f9fc0dc70d788e7e662ca6a2e4365aca9e1e752ae044c93116b47",
+    "verification.json": "21ed40cff2b93d81fc46ee8f8426bda2fc319cc9097ed681a7d6ef963bf092f4"
+  }
+}
