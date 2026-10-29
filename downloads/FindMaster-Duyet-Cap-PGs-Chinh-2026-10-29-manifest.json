@@ -1,0 +1,38 @@
+{
+  "scope": "Main",
+  "date": "2026-10-29",
+  "filename": "Dashboard-Chinh-2026-10-29-FindMaster-Duyet-Cap-PGs.html",
+  "bytes": 2572658,
+  "characters": 2506404,
+  "sha256": "1561a72e58c9487aea385ba34da5e5eadcdc4cfa0b32fb8d809639ff02d610f2",
+  "git_blob_sha": "17fe8f0383ded60295007b8a98326d15f2b8d003",
+  "base_commit": "6e3ed4bbb5e3a499ae3b43f2713b62a711cc8417",
+  "feature_test_commit": "63b92ddee4745bcc746459aab7706e9c6c9788ad",
+  "function": "pgsm-pairs",
+  "environment": "main",
+  "feature_blocks_identical_to_test": true,
+  "unrelated_main_html_unchanged": true,
+  "legacy_groups_changed": false,
+  "test_workflows_changed": false,
+  "schema_changed": false,
+  "secrets_changed": false,
+  "deployment": {
+    "name": "pgsm-pairs",
+    "version": 2,
+    "ezbr_sha256": "1038f86e23177e4c46d733e76161632c38d69090d475d8c655f0e78865a080c4",
+    "verify_jwt": true,
+    "source_exact": true,
+    "all_other_functions_unchanged": true,
+    "legacy_and_test_workflows_unchanged": true,
+    "main_workflow_rows_created": 0
+  },
+  "source_zip": {
+    "filename": "FindMaster-Duyet-Cap-PGs-Chinh-2026-10-29-Full-Source.zip",
+    "bytes": 25083,
+    "sha256": "6eb05f808af617ad462bdc5d90a1b38207792cb895d9fb8f23570f72434ce635"
+  },
+  "artifacts": {
+    "README.md": "513e0d81a6bd23b46cf8833cc64a110a2d25bcc67bbb26b75b6e0516d2bab033",
+    "verification.json": "4694c9f56075d65dae08fa0533a194f8a7f54c8dc43c7e0ee0fdad687c0c9aef"
+  }
+}

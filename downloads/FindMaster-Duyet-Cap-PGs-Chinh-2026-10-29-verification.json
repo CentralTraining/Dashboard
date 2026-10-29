@@ -1,0 +1,136 @@
+{
+  "scope": "Main",
+  "date": "2026-10-29",
+  "passed": true,
+  "backend": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "tests": [
+      "legacy groups preserved without auto approval",
+      "Trainer own writes and region-limited reads/export",
+      "submit full list only",
+      "pending and final lists locked",
+      "Admin-only final/return with required reason",
+      "version conflict prevents stale changes",
+      "roster changes invalidate pending/final status",
+      "milestone sync does not invalidate final",
+      "missing or failed transport preserves saved data",
+      "locked account and month rejected",
+      "Main namespace isolated from Test and legacy",
+      "Excel last column is pair name",
+      "all members exported across channel filter",
+      "code, employee code and shop ID remain strings"
+    ]
+  },
+  "browser": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "layout": {
+          "name": "pairs-final",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        },
+        "trainer_draft_submit_admin_final_return": true,
+        "pending_and_final_edits_locked": true,
+        "real_xlsx_download_read_back": true,
+        "leading_zero_codes_and_shop_ids_preserved": true,
+        "all_pair_members_exported": true,
+        "last_column_pair_name": true,
+        "failed_save_preserves_data": true,
+        "legacy_unchanged": true
+      },
+      {
+        "width": 768,
+        "passed": true,
+        "layout": {
+          "name": "pairs-final",
+          "width": 768,
+          "documentWidth": 768,
+          "overflow": []
+        },
+        "trainer_draft_submit_admin_final_return": true,
+        "pending_and_final_edits_locked": true,
+        "real_xlsx_download_read_back": true,
+        "leading_zero_codes_and_shop_ids_preserved": true,
+        "all_pair_members_exported": true,
+        "last_column_pair_name": true,
+        "failed_save_preserves_data": true,
+        "legacy_unchanged": true
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "layout": {
+          "name": "pairs-final",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        },
+        "trainer_draft_submit_admin_final_return": true,
+        "pending_and_final_edits_locked": true,
+        "real_xlsx_download_read_back": true,
+        "leading_zero_codes_and_shop_ids_preserved": true,
+        "all_pair_members_exported": true,
+        "last_column_pair_name": true,
+        "failed_save_preserves_data": true,
+        "legacy_unchanged": true
+      },
+      {
+        "width": 320,
+        "passed": true,
+        "layout": {
+          "name": "pairs-final",
+          "width": 320,
+          "documentWidth": 320,
+          "overflow": []
+        },
+        "trainer_draft_submit_admin_final_return": true,
+        "pending_and_final_edits_locked": true,
+        "real_xlsx_download_read_back": true,
+        "leading_zero_codes_and_shop_ids_preserved": true,
+        "all_pair_members_exported": true,
+        "last_column_pair_name": true,
+        "failed_save_preserves_data": true,
+        "legacy_unchanged": true
+      }
+    ]
+  },
+  "live": {
+    "passed": true,
+    "endpoint": "pgsm-pairs",
+    "real_data_writes": 0,
+    "cases": [
+      {
+        "case": "missing_session",
+        "status": 401,
+        "no_records_returned": true
+      },
+      {
+        "case": "forged_session",
+        "status": 401,
+        "no_records_returned": true
+      }
+    ]
+  },
+  "deployment": {
+    "name": "pgsm-pairs",
+    "version": 2,
+    "ezbr_sha256": "1038f86e23177e4c46d733e76161632c38d69090d475d8c655f0e78865a080c4",
+    "verify_jwt": true,
+    "source_exact": true,
+    "all_other_functions_unchanged": true,
+    "legacy_and_test_workflows_unchanged": true,
+    "main_workflow_rows_created": 0
+  },
+  "feature_blocks_identical_to_test": true,
+  "unrelated_main_html_unchanged": true,
+  "schema_changed": false,
+  "secrets_changed": false
+}
