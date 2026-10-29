@@ -1,0 +1,36 @@
+{
+  "scope": "Chinh",
+  "date": "2026-10-29",
+  "filename": "Dashboard-Chinh-2026-10-29-Truyen-Thong-Xuat-Excel-2-Sheet.html",
+  "bytes": 2596349,
+  "characters": 2529215,
+  "sha256": "08692967a2ba1e7846c19ca59f85082fe8206f6b9b998ca4c4f1ca9c07ea6667",
+  "git_blob_sha": "b5eda9fe3930937e359214da5b252098d1a17d1c",
+  "base_commit": "c736cb7607ec8f30594eee235e2d30eaad0fd2a8",
+  "function": "otraining-media-export",
+  "main_changed": true,
+  "existing_functions_changed": false,
+  "schema_changed": false,
+  "secrets_changed": false,
+  "business_data_changed": false,
+  "source_test_commit": "3bb7fed1dfcdc62f4d2218278dc707d27f2fe7b2",
+  "test_changed": false,
+  "deployment": {
+    "slug": "otraining-media-export",
+    "version": 1,
+    "verify_jwt": true,
+    "ezbr_sha256": "b305768ae5c03dd72fdd4e0ea34c8cd5cabc27bc13a32e29bfd69ba60670a16f",
+    "files_exact": true,
+    "source_matches_test": true,
+    "existing_functions_unchanged": true
+  },
+  "source_zip": {
+    "filename": "Truyen-Thong-Xuat-Excel-2-Sheet-Chinh-2026-10-29-Full-Source.zip",
+    "bytes": 13980,
+    "sha256": "1d1a950f0d5ce3a84a070b5b9279ba3f562c9519e1e2e72c2966f0ff222f60dc"
+  },
+  "artifacts": {
+    "README.md": "8f3199713786e8b2cf283c24af71760926557e584ef617a5a84cceb49b50140a",
+    "verification.json": "15946d3b3aa53fee6bbdbe0c5d47c8edaa7a9235c354dd0be879c6480dfe303f"
+  }
+}

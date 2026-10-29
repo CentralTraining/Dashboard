@@ -1,0 +1,122 @@
+{
+  "backend": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "tests": [
+      "exact two source export sheet layouts and field mapping",
+      "source counters, submitted, approved, target, percentage preserved",
+      "selected program only; accepted and rejected links retained",
+      "missing metrics blank; source zero preserved",
+      "leading-zero employee codes stay strings",
+      "one read-only upstream request",
+      "server-authenticated current Dashboard account and campaign/month roster",
+      "Trainer regional scope and all filters checked on server",
+      "fresh permissions/source/roster rechecked after upstream",
+      "malformed, partial, missing link/program source fails explicitly",
+      "no business data writes or private/credential output"
+    ]
+  },
+  "ui": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "actual_xlsx_download_and_readback": true,
+        "exact_two_sheets": true,
+        "completed_and_incomplete_pgs_in_report": true,
+        "original_incomplete_export_retained": true,
+        "all_filters_and_pages": true,
+        "server_regional_scope": true,
+        "leading_zero_codes_text": true,
+        "numeric_counts_and_zero": true,
+        "literal_formula_like_name_safe": true,
+        "missing_metrics_blank": true,
+        "errors_and_stale_requests_download_nothing": true,
+        "read_only": true,
+        "layout": {
+          "name": "media-report-export",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        }
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "actual_xlsx_download_and_readback": true,
+        "exact_two_sheets": true,
+        "completed_and_incomplete_pgs_in_report": true,
+        "original_incomplete_export_retained": true,
+        "all_filters_and_pages": true,
+        "server_regional_scope": true,
+        "leading_zero_codes_text": true,
+        "numeric_counts_and_zero": true,
+        "literal_formula_like_name_safe": true,
+        "missing_metrics_blank": true,
+        "errors_and_stale_requests_download_nothing": true,
+        "read_only": true,
+        "layout": {
+          "name": "media-report-export",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        }
+      },
+      {
+        "width": 320,
+        "passed": true,
+        "actual_xlsx_download_and_readback": true,
+        "exact_two_sheets": true,
+        "completed_and_incomplete_pgs_in_report": true,
+        "original_incomplete_export_retained": true,
+        "all_filters_and_pages": true,
+        "server_regional_scope": true,
+        "leading_zero_codes_text": true,
+        "numeric_counts_and_zero": true,
+        "literal_formula_like_name_safe": true,
+        "missing_metrics_blank": true,
+        "errors_and_stale_requests_download_nothing": true,
+        "read_only": true,
+        "layout": {
+          "name": "media-report-export",
+          "width": 320,
+          "documentWidth": 320,
+          "overflow": []
+        }
+      }
+    ]
+  },
+  "live": {
+    "passed": true,
+    "endpoint": "otraining-media-export",
+    "private_upstream_not_probed": true,
+    "real_data_writes": 0,
+    "cases": [
+      {
+        "case": "missing_dashboard_session",
+        "status": 401,
+        "no_records_returned": true
+      },
+      {
+        "case": "forged_dashboard_session",
+        "status": 401,
+        "no_records_returned": true
+      }
+    ]
+  },
+  "deployment": {
+    "slug": "otraining-media-export",
+    "version": 1,
+    "verify_jwt": true,
+    "ezbr_sha256": "b305768ae5c03dd72fdd4e0ea34c8cd5cabc27bc13a32e29bfd69ba60670a16f",
+    "files_exact": true,
+    "source_matches_test": true,
+    "existing_functions_unchanged": true
+  },
+  "scope": "Chinh",
+  "date": "2026-10-29"
+}
