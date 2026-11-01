@@ -17959,7 +17959,7 @@ function syncMobileRecordHeading_(table,type,layout){
  let heading=table._mobileRecordHeading;
  if(!heading?.isConnected){heading=document.createElement('div');heading.className='mobile-record-heading';heading.setAttribute('aria-hidden','true');table.before(heading);table._mobileRecordHeading=heading;}
  heading.hidden=!layout?.length;if(!layout?.length)return;
- const labels={code:'Mã PG',codepg:'Mã PG',codepgs:'Mã PG',manv:'Mã NV',hovaten:'Họ tên',hoten:'Họ tên',solanhoanthanh:'Số lần',sokhaosat:'Khảo sát',sophone:'S.O Phone',mochoanthanhshop:'Mốc',hoanthanhtargetshop:'% Target',ketqualuyentv:'Luyện TV',trangthaiai:'Trạng thái AI',ketquacheckshop:'Check shop',tenworkshop:'Workshop',xuatexcel:'Excel'};
+ const labels={code:'Mã PG',codepg:'Mã PG',codepgs:'Mã PG',manv:'Mã NV',hovaten:'Họ tên',hoten:'Họ tên',solanhoanthanh:'Số lần',sokhaosat:'Khảo sát',sophone:'S.O Phone',mochoanthanhshop:'Mốc',hoanthanhtargetshop:'% Target',ketqualuyentv:'Luyện TV',trangthaiai:'Trạng thái AI',ketquacheckshop:'Check shop',tenworkshop:'Workshop',xuatexcel:'Excel',thamnienthang:'Thâm niên'};
  const spec=layout.map(slot=>({...slot,full:type.headers[slot.index]||'Thao tác',label:labels[type.keys[slot.index]]||type.headers[slot.index]||'Thao tác'})),signature=JSON.stringify(spec);
  if(heading.dataset.signature===signature)return;heading.dataset.signature=signature;
  heading.replaceChildren(...spec.map(slot=>{const cell=document.createElement('span');cell.textContent=slot.label;cell.title=slot.full;cell.style.gridColumn=slot.start+' / span '+slot.span;return cell;}));
@@ -17988,6 +17988,7 @@ function syncCompactPgRows_(table){
   add(control);
   const resultKeys=['ketqua','sokhaosat','thamgia','hoanthanhtargetshop','solanhoanthanh','training','hr','sloppo'];
   add(resultKeys.map(key=>items.find(x=>x.key===key&&x!==name)).find(Boolean)||items.find(x=>x.key==='trangthai'));
+  if(table.id==='pgsmProgressTable')add(items.find(x=>x.cell.classList.contains('pgsm-col-seniority')));
   if(inline.length<4)add(items.find(x=>x!==name&&x!==control&&x.cell.querySelector('button')&&x.cell.querySelectorAll('button').length===1));
   if(inline.length<4)add(items.find(x=>['code','codepg','codepgs','mapg','mapgs','manv','staffid','codeshop','storeid','idshop'].includes(x.key)&&x!==name));
   if(inline.length<3)add(items.find(x=>x!==name&&!['code','codepg','codepgs','mapg','mapgs','manv','staffid','codeshop','storeid','idshop','stt','ngayvao','thamnien'].includes(x.key)&&!x.cell.querySelector('input,select,button')&&/^[+-]?\d/.test(x.cell.textContent.trim())));
@@ -17999,7 +18000,7 @@ function syncCompactPgRows_(table){
   inline.sort((a,b)=>order(a)-order(b));
   if(layout)inline.splice(0,inline.length,...layout.map(slot=>items[slot.index]).filter(Boolean));
   items.forEach(x=>{if(!inline.includes(x))delete x.cell.dataset.mobileInline;});
-  if(!layout){const weight=x=>table.closest('#wsnbPeopleData')?(x===name?14:5):soList?(x===name?9:({sophone:4,hoanthanhtargetshop:5,mochoanthanhshop:6}[x.key]||3)):x===name?10:x.cell.querySelector('select')?5:3,total=inline.reduce((n,x)=>n+weight(x),0);let column=1,remaining=24;
+  if(!layout){const weight=x=>table.id==='pgsmProgressTable'&&x.cell.classList.contains('pgsm-col-seniority')?4:table.closest('#wsnbPeopleData')?(x===name?14:5):soList?(x===name?9:({sophone:4,hoanthanhtargetshop:5,mochoanthanhshop:6}[x.key]||3)):x===name?10:x.cell.querySelector('select')?5:3,total=inline.reduce((n,x)=>n+weight(x),0);let column=1,remaining=24;
    layout=inline.map((item,i)=>{const span=i===inline.length-1?remaining:Math.max(1,Math.min(remaining-(inline.length-i-1),Math.round(weight(item)/total*24))),slot={index:items.indexOf(item),start:column,span};column+=span;remaining-=span;return slot;});}
   layout.forEach(slot=>{const item=items[slot.index];if(!item)return;item.cell.dataset.mobileInline='1';item.cell.style.setProperty('--pg-inline-start',slot.start);item.cell.style.setProperty('--pg-inline-span',slot.span);});
   name.cell.classList.add('mobile-pg-name-cell');name.cell.dataset.mobileDetailTitle=name.cell.dataset.shopFull||name.cell.textContent.trim();
@@ -19493,10 +19494,17 @@ async function pgsmProgressChanges_(camp){
  if(!keys.every(key=>Object.prototype.hasOwnProperty.call(bundle||{},key)))throw Error('request_history_unavailable');
  return keys.flatMap(key=>Array.isArray(bundle[key])?bundle[key]:[]).filter(r=>r&&pgsmCanSeeRegion_(r.pg?.region||r.requester?.region||''));
 }
+// Display-only HR flag: never writes or synthesizes a Trainer removal request.
+function pgsmHrInactiveStatus_(row){
+ const current=findPgByCode_(pgs,row.code),status=String(current?.status??'').trim();
+ return status&&pgsmNorm_(status)!=='danglam'?status:'';
+}
+function pgsmProgressIsRemoved_(row){return row._pgsmChange?.action==='remove'||!!row._pgsmHrInactiveStatus;}
+function pgsmProgressRowClass_(row){return pgsmProgressIsRemoved_(row)?'pgsm-change-remove':row._pgsmChange?'pgsm-change-'+row._pgsmChange.action:'';}
 function pgsmProgressRows_(d,requests){
  const key=r=>pgsmCode_(r)+'|'+pgsmNorm_(r.region);
  const rows=new Map();
- const record=(r,inTarget,change=null)=>({...r,code:pgsmCode_(r),channel:pgsmRecordChannel_(r),_pgsmInTarget:inTarget,_pgsmChange:change});
+ const record=(r,inTarget,change=null)=>({...r,code:pgsmCode_(r),channel:pgsmRecordChannel_(r),_pgsmInTarget:inTarget,_pgsmChange:change,_pgsmHrInactiveStatus:pgsmHrInactiveStatus_(r)});
  (d.registered||[]).filter(r=>pgsmCanSeeRegion_(r.region)).forEach(r=>rows.set(key(r),record(r,true)));
  const approved=new Set(d.approvedRequestIds||[]),removed=new Set((d.manualRemove||[]).map(code=>pgsmCode_({code})));
  const history=(requests||[]).filter(r=>{
@@ -19526,7 +19534,8 @@ function pgsmProgressRows_(d,requests){
 }
 function pgsmChangeLabel_(row){
  const change=row._pgsmChange;
- return change?(change.action==='remove'?'Loại':'Thêm')+(change.pending?' · Chờ duyệt':''):'Trong danh sách';
+ const label=change?(change.action==='remove'?'Loại':'Thêm')+(change.pending?' · Chờ duyệt':''):(row._pgsmHrInactiveStatus?'':'Trong danh sách');
+ return [label,row._pgsmHrInactiveStatus?'HR: '+row._pgsmHrInactiveStatus:''].filter(Boolean).join(' · ');
 }
 let pgsmExcelJsPromise_;
 function pgsmLoadExcelJs_(){
@@ -19551,8 +19560,8 @@ async function pgsmWriteProgressExcel_(records,sourceRows,filename){
  records.forEach((data,index)=>{
    const row=sheet.addRow(data),change=sourceRows[index]._pgsmChange;
    row.alignment={vertical:'middle',wrapText:true};
-   if(change){
-     const color=change.action==='remove'?{fill:'FFFFEBEE',font:'FFB91C1C'}:{fill:'FFE8F5E9',font:'FF166534'};
+   if(change||sourceRows[index]._pgsmHrInactiveStatus){
+     const color=pgsmProgressIsRemoved_(sourceRows[index])?{fill:'FFFFEBEE',font:'FFB91C1C'}:{fill:'FFE8F5E9',font:'FF166534'};
      row.eachCell({includeEmpty:true},cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:color.fill}};});
      ['Mã PGs','Họ tên','Trạng thái'].forEach(key=>{row.getCell(key).font={bold:true,color:{argb:color.font}};});
      row.height=60;
@@ -19568,6 +19577,14 @@ async function pgsmWriteProgressExcel_(records,sourceRows,filename){
  const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();
  setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
+// Read-only join to the HR roster for the month currently displayed.
+function pgsmSeniorityMonths_(row){
+ const current=findPgByCode_(pgs,row.code);
+ const value=current?current.seniority:row.seniority;
+ if(value===null||value===undefined||String(value).trim()===''||!['number','string'].includes(typeof value))return null;
+ const months=Number(value);return Number.isFinite(months)&&months>=0?months:null;
+}
+function pgsmSeniorityText_(row){const months=pgsmSeniorityMonths_(row);return months===null?'—':months.toLocaleString('vi-VN')+' tháng';}
 async function pgsmDrawProgress_(camp){
  const el=document.getElementById('pgsmProgressContent');if(!el||!camp)return;
  const d=await pgsmData_(camp,true);
@@ -19606,13 +19623,13 @@ async function pgsmDrawProgress_(camp){
   <label>Khu vực<select id="pgsmProgressRegion"><option value="">Tất cả khu vực</option>${regions.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}</select></label>
   <label>Trainer<select id="pgsmProgressTrainer"><option value="">Tất cả Trainer</option>${trainerIds.map(id=>`<option value="${escapeHtml(id)}">${escapeHtml(trainerOf(id)?.name||rows.find(r=>String(r.trainerId)===id)?.trainerName||id)}</option>`).join('')}</select></label>
   <label>Kênh<select id="pgsmProgressChannel"><option value="">Tất cả kênh</option></select></label>
-  <label>Trạng thái<select id="pgsmProgressStatus"><option value="">Tất cả trạng thái</option><option value="current">Trong danh sách</option><option value="add">Thêm</option><option value="remove">Loại</option><option value="pending">Chờ duyệt</option></select></label>
+  <label>Trạng thái<select id="pgsmProgressStatus"><option value="">Tất cả trạng thái</option><option value="current">Trong danh sách</option><option value="add">Thêm</option><option value="remove">Loại / HR khác Đang làm</option><option value="hr">HR khác Đang làm</option><option value="pending">Chờ duyệt</option></select></label>
   <label>Tên / Code PGs<input id="pgsmProgressPgSearch" placeholder="Tìm mã hoặc tên PGs"></label>
   <label>Tên shop<input id="pgsmProgressShop" placeholder="Tìm shop"></label>
   <button type="button" class="secondary" id="pgsmExportProgress" title="Xuất Excel tiến độ PGs theo bộ lọc">⬇ Xuất Excel</button>
  </div>
- <p class="section-desc">Thêm: màu xanh · Loại: màu đỏ, kèm lý do Trainer. Yêu cầu chờ duyệt được ghi rõ; tổng tiến độ chỉ tính danh sách chính thức.</p>
- <div class="table-scroll" id="pgsmProgressTableWrap"><table id="pgsmProgressTable" aria-label="Danh sách PGs Master và tiến độ từng mốc"><colgroup>${[3,6,isTrainer()?11:12,isTrainer()?10:11,6,isTrainer()?9:10,4,isTrainer()?11:12,...PGSM_STAGES_.map(()=>isTrainer()?5.6:6),6,...(isTrainer()?[6]:[])].map(width=>`<col style="width:${width}%">`).join('')}</colgroup><thead><tr><th scope="col">STT</th><th scope="col">Mã PGs</th><th scope="col">Họ tên</th><th scope="col">Shop</th><th scope="col">Khu vực</th><th scope="col">Trainer</th><th scope="col">Kênh</th><th scope="col">Trạng thái</th>${PGSM_STAGES_.map(m=>`<th scope="col" class="pgsm-col-step" title="${escapeHtml(m.label)}">${escapeHtml(m.id.toUpperCase())}<span class="pgsm-stage-name">${escapeHtml(m.label.replace(/^M\d\s*·\s*/,''))}</span><small class="pgsm-stage-target">Target: ${Number(d.thresholds[m.id]||0)}</small></th>`).join('')}<th scope="col">Kết quả</th>${isTrainer()?'<th scope="col">Thao tác</th>':''}</tr></thead><tbody id="pgsmProgressRows"></tbody></table></div>
+ <p class="section-desc">Thêm: màu xanh · Loại hoặc HR khác Đang làm: màu đỏ. Dòng HR ghi rõ trạng thái theo DATA nhân sự của tháng đang xem; yêu cầu của Trainer vẫn có lý do và trạng thái duyệt riêng. Dấu đỏ HR là cảnh báo; tổng tiến độ căn cứ danh sách Master đã chốt.</p>
+ <div class="table-scroll" id="pgsmProgressTableWrap"><table id="pgsmProgressTable" aria-label="Danh sách PGs Master và tiến độ từng mốc"><colgroup>${[3,5,isTrainer()?10:11,6,isTrainer()?9:10,6,isTrainer()?8:9,4,isTrainer()?9:10,...PGSM_STAGES_.map(()=>isTrainer()?5.6:6),6,...(isTrainer()?[6]:[])].map(width=>`<col style="width:${width}%">`).join('')}</colgroup><thead><tr><th scope="col">STT</th><th scope="col">Mã PGs</th><th scope="col">Họ tên</th><th scope="col" class="pgsm-col-seniority">Thâm niên<span class="pgsm-stage-target">(tháng)</span></th><th scope="col">Shop</th><th scope="col">Khu vực</th><th scope="col">Trainer</th><th scope="col">Kênh</th><th scope="col">Trạng thái</th>${PGSM_STAGES_.map(m=>`<th scope="col" class="pgsm-col-step" title="${escapeHtml(m.label)}">${escapeHtml(m.id.toUpperCase())}<span class="pgsm-stage-name">${escapeHtml(m.label.replace(/^M\d\s*·\s*/,''))}</span><small class="pgsm-stage-target">Target: ${Number(d.thresholds[m.id]||0)}</small></th>`).join('')}<th scope="col">Kết quả</th>${isTrainer()?'<th scope="col">Thao tác</th>':''}</tr></thead><tbody id="pgsmProgressRows"></tbody></table></div>
  <div id="pgsmProgressPagination"></div>
  </div><div id="pgsmTrainerChanges"></div></div>`;
  const $=id=>el.querySelector('#'+id);
@@ -19663,7 +19680,7 @@ async function pgsmDrawProgress_(camp){
  const filtered=()=>rows.filter(r=>(!regionSel.value||pgsmNorm_(regionOf(r))===pgsmNorm_(regionSel.value))
    &&(!trainerSel.value||String(r.trainerId)===trainerSel.value)
    &&(!channelSel.value||pgsmNorm_(r.channel)===pgsmNorm_(channelSel.value))
-   &&(!statusSel.value||(statusSel.value==='pending'?!!r._pgsmChange?.pending:statusSel.value==='current'?!r._pgsmChange:r._pgsmChange?.action===statusSel.value))
+   &&(!statusSel.value||(statusSel.value==='pending'?!!r._pgsmChange?.pending:statusSel.value==='hr'?!!r._pgsmHrInactiveStatus:statusSel.value==='remove'?pgsmProgressIsRemoved_(r):statusSel.value==='current'?!r._pgsmChange&&!r._pgsmHrInactiveStatus:r._pgsmChange?.action===statusSel.value))
    &&(!pgInput.value||pgsmNorm_(r.name).includes(pgsmNorm_(pgInput.value))||pgsmNorm_(r.code).includes(pgsmNorm_(pgInput.value)))
    &&(!shopInput.value||pgsmNorm_(r.shop).includes(pgsmNorm_(shopInput.value))||pgsmNorm_(r.shopId).includes(pgsmNorm_(shopInput.value))));
  function draw(){
@@ -19671,7 +19688,7 @@ async function pgsmDrawProgress_(camp){
    const start=(page-1)*pageSize;
    $('pgsmProgressRows').innerHTML=subset.slice(start,start+pageSize).map((r,i)=>{
      const n=achieved(r);
-     return `<tr class="${r._pgsmChange?'pgsm-change-'+r._pgsmChange.action:''}"><td class="pgsm-col-number" data-label="STT">${start+i+1}</td><td class="pgsm-col-code" data-label="Mã PGs">${escapeHtml(r.code)}</td><td class="pgsm-person-name pgsm-col-person" data-label="Họ tên">${escapeHtml(r.name)}</td><td class="pgsm-col-shop" data-label="Shop"><span class="pgsm-shop-name" title="${escapeHtml(r.shop)}">${escapeHtml(r.shop)}</span></td><td class="pgsm-col-region" data-label="Khu vực">${escapeHtml(r.region)}</td><td class="pgsm-col-trainer" data-label="Trainer">${escapeHtml(r.trainerName)}</td><td class="pgsm-col-channel" data-label="Kênh">${escapeHtml(r.channel||'—')}</td><td class="pgsm-col-change" data-label="Trạng thái"><span class="pgsm-change-label">${escapeHtml(pgsmChangeLabel_(r))}</span>${r._pgsmChange?`<span class="pgsm-change-reason">Lý do: ${escapeHtml(r._pgsmChange.reason)}</span>`:''}</td>${PGSM_STAGES_.map(m=>{
+     return `<tr class="${pgsmProgressRowClass_(r)}"><td class="pgsm-col-number" data-label="STT">${start+i+1}</td><td class="pgsm-col-code" data-label="Mã PGs">${escapeHtml(r.code)}</td><td class="pgsm-person-name pgsm-col-person" data-label="Họ tên">${escapeHtml(r.name)}</td><td class="pgsm-col-seniority" data-label="Thâm niên (tháng)">${escapeHtml(pgsmSeniorityText_(r))}</td><td class="pgsm-col-shop" data-label="Shop"><span class="pgsm-shop-name" title="${escapeHtml(r.shop)}">${escapeHtml(r.shop)}</span></td><td class="pgsm-col-region" data-label="Khu vực">${escapeHtml(r.region)}</td><td class="pgsm-col-trainer" data-label="Trainer">${escapeHtml(r.trainerName)}</td><td class="pgsm-col-channel" data-label="Kênh">${escapeHtml(r.channel||'—')}</td><td class="pgsm-col-change" data-label="Trạng thái"><span class="pgsm-change-label">${escapeHtml(pgsmChangeLabel_(r))}</span>${r._pgsmChange?`<span class="pgsm-change-reason">Lý do: ${escapeHtml(r._pgsmChange.reason)}</span>`:''}</td>${PGSM_STAGES_.map(m=>{
        const st=stageStatus(r,m);
        if(!st.fromSystem){
          return `<td class="pgsm-score-cell" data-label="${escapeHtml(m.label)}"><span class="pgsm-fm-status pgsm-fm-unknown">Chưa có dữ liệu</span></td>`;
@@ -19679,7 +19696,7 @@ async function pgsmDrawProgress_(camp){
        const stars=st.stars===null?'—':String(st.stars);
        return `<td class="pgsm-score-cell" data-label="${escapeHtml(m.label)}"><div class="pgsm-fm-stage"><span class="pgsm-fm-stars" title="Số sao từ OTraining">★ ${escapeHtml(stars)}</span><span class="pgsm-fm-status ${st.done?'pgsm-fm-pass':st.known?'pgsm-fm-fail':'pgsm-fm-unknown'}">${st.done?'✓ Đạt':st.known?'Chưa đạt':'Chưa có kết quả'}</span></div></td>`;
      }).join('')}<td class="pgsm-col-result" data-label="Kết quả"><span class="pgsm-result-badge ${n===5?'pgsm-result-done':''}">${n===5?'🏆 Đạt Master':`${n}/5 mốc`}</span></td>${isTrainer()?`<td class="pgsm-col-action" data-label="Thao tác">${r._pgsmInTarget&&String(r.trainerId||'')===String(session?.trainerId||'')?`<button type="button" class="secondary" data-pgsm-progress-remove="${escapeHtml(r.code)}">Loại PGs</button>`:'—'}</td>`:''}</tr>`;
-   }).join('')||`<tr><td class="pgsm-empty" colspan="${isTrainer()?15:14}">Không có PGs phù hợp bộ lọc</td></tr>`;
+   }).join('')||`<tr><td class="pgsm-empty" colspan="${isTrainer()?16:15}">Không có PGs phù hợp bộ lọc</td></tr>`;
    pager.innerHTML=pgsmPager_(subset.length,page,pageSize,'data-pgsm-progress-page','PGs');
    summary();
  }
@@ -19699,7 +19716,7 @@ async function pgsmDrawProgress_(camp){
    // Xuất toàn bộ PGs trong bộ lọc, kể cả 0 mốc; kiểm tra lại quyền tại lúc tải file.
    const sourceRows=filtered().filter(r=>pgsmCanSeeRegion_(r.region));
    const exportRows=sourceRows.map((r,i)=>{
-     const record={'STT':i+1,'Mã PGs':r.code,'Họ tên':r.name,'ID Shop':r.shopId||'','Tên shop':r.shop,'Khu vực':r.region,'Trainer':r.trainerName,'Kênh':r.channel||'',
+     const record={'STT':i+1,'Mã PGs':r.code,'Họ tên':r.name,'Thâm niên (tháng)':pgsmSeniorityMonths_(r)??'','ID Shop':r.shopId||'','Tên shop':r.shop,'Khu vực':r.region,'Trainer':r.trainerName,'Kênh':r.channel||'',
        'Trạng thái':pgsmChangeLabel_(r)+(r._pgsmChange?'\nLý do: '+r._pgsmChange.reason:'')};
      PGSM_STAGES_.forEach(m=>{
        const st=stageStatus(r,m);
@@ -20835,6 +20852,15 @@ async function ftfAiDetail_(shop,campaignId,ov,head,bind,fail){
 @media(max-width:1100px){.pgsm-pair-filters{grid-template-columns:repeat(3,minmax(0,1fr));}.pgsm-pair-heading>div:last-child{max-width:60%;}}
 @media(max-width:700px){.pgsm-pair-heading>div:last-child{max-width:100%;}.pgsm-pair-workflow-row{grid-template-columns:minmax(0,1fr);}.pgsm-pair-workflow-actions{justify-content:flex-start;}.pgsm-pair-workflow-flow{font-size:9px;}.pgsm-pair-workflow{padding:10px;}.pgsm-pair-workflow-list{max-height:480px;}.pgsm-pair-state{font-size:9px;}}
 
+.pgsm-pair-group.is-invalid{border-color:#efb1b5;background:#fff2f3;box-shadow:inset 3px 0 #be2632;}
+.pgsm-pair-group.is-invalid .pgsm-pair-group-name>b,.pgsm-pair-group-members>span.is-invalid{color:#a61d29;}
+.pgsm-pair-group-members>span.is-invalid{background:#ffe4e7;border:1px solid #efb1b5;border-radius:6px;padding:5px 7px;}
+.pgsm-pair-group-members em{display:block;font-size:10px;font-style:normal;line-height:1.5;margin-top:4px;overflow-wrap:anywhere;}
+.pgsm-pair-eligibility-warning{grid-column:1/-1;background:#ffe4e7;border:1px solid #efb1b5;border-radius:7px;padding:9px 11px;margin:0;font-size:11px;line-height:1.6;color:#9d1927;overflow-wrap:anywhere;}
+.pgsm-pair-candidates>label.is-invalid{opacity:1;background:#fff0f2;border-color:#efb1b5;color:#a61d29;}
+.pgsm-pair-candidates .pgsm-pair-member-issue{color:#a61d29!important;line-height:1.5;white-space:normal;overflow-wrap:anywhere;}
+@media(max-width:700px){.pgsm-pair-eligibility-warning{font-size:10px;padding:8px;}.pgsm-pair-group-members em{font-size:9px;}}
+
 </style>
 <script id="pgsm-pairs-model-20261028">
 const PairModel=(()=>{
@@ -20844,39 +20870,52 @@ const PairModel=(()=>{
  const flag=v=>v===true||v===1||v==='1'||v==='true'||v==='TRUE'?true:v===false||v===0||v==='0'||v==='false'||v==='FALSE'?false:null;
  const firstName=v=>String(v||'').trim().split(/\s+/).at(-1)||'Chưa có tên';
  const states={draft:'Nháp',pending:'Chờ Admin duyệt',approved:'Đã duyệt final',returned:'Trả lại chỉnh sửa',stale:'Danh sách PG đã thay đổi'};
- function roster(registered,meta,trainer){
+ const personKey=v=>code(v).replace(/^0+(?=\d+$)/,'');
+ const eligibleRoster=roster=>(roster||[]).filter(p=>p.eligible!==false);
+ function roster(registered,meta,trainer,hr,removed=[]){
   const map=new Map(),ambiguous=new Set(),counts=new Map();
+  const hrIndex=new Map(),removedCodes=new Set((removed||[]).map(personKey));
+  for(const p of Array.isArray(hr)?hr:[]){if(String(p.brand||'').toUpperCase()!=='OPPO')continue;const id=personKey(p.code);if(!id)continue;if(!hrIndex.has(id))hrIndex.set(id,[]);hrIndex.get(id).push(p);}
   for(const p of registered||[]){const id=code(p.code);if(id)counts.set(id,(counts.get(id)||0)+1);}
   for(const p of registered||[]){
    if(String(p.trainerId)!==String(trainer.id)||p.region&&norm(p.region)!==norm(trainer.region))continue;
    const id=code(p.code);if(!id||counts.get(id)!==1)continue;if(map.has(id)){ambiguous.add(id);continue;}
    const source=meta?.[id],fromSystem=source?.source==='OTRAINING FM';
    const progress=Object.fromEntries(stages.map(s=>{const value=fromSystem?flag(source.done?.[s]):null;return [s,{done:value===true,known:value!==null}];}));
+   const matches=hrIndex.get(personKey(id))||[],hrStatus=String(matches[0]?.status??'').trim();let issue='',eligibilityReason='';
+   if(removedCodes.has(personKey(id))){eligibilityReason='removed';issue='Đã bị loại khỏi danh sách Find Master.';}
+   else if(!Array.isArray(hr)){eligibilityReason='hr_unavailable';issue='Chưa có dữ liệu HR của tháng để kiểm tra.';}
+   else if(!matches.length){eligibilityReason='hr_missing';issue='Chưa tìm thấy PG trong dữ liệu HR của tháng.';}
+   else if(new Set(matches.map(p=>norm(p.status))).size>1){eligibilityReason='hr_conflict';issue='Trùng mã HR với trạng thái khác nhau; cần kiểm tra trước khi ghép.';}
+   else if(!hrStatus){eligibilityReason='hr_unknown';issue='HR chưa có trạng thái làm việc để kiểm tra.';}
+   else if(norm(hrStatus)!=='danglam'){eligibilityReason='hr_inactive';issue='HR: '+hrStatus+' — cần trạng thái Đang làm để bắt cặp.';}
    // The existing Dashboard HR import explicitly matches Ma NV to Code.
-   map.set(id,{code:id,employeeCode:code(p.employeeCode||p.employee_code||id),name:String(p.name||'').trim(),shopId:String(p.shopId??p.storeId??'').trim(),shop:String(p.shop||p.shopName||'').trim(),province:String(p.province||'').trim(),channel:String(p.channel||'').trim(),trainerId:String(trainer.id),region:String(trainer.region||p.region||''),progress});
+   map.set(id,{code:id,employeeCode:code(p.employeeCode||p.employee_code||id),name:String(p.name||'').trim(),shopId:String(p.shopId??p.storeId??'').trim(),shop:String(p.shop||p.shopName||'').trim(),province:String(p.province||'').trim(),channel:String(p.channel||'').trim(),trainerId:String(trainer.id),region:String(trainer.region||p.region||''),progress,hrStatus,eligible:!issue,eligibilityReason,issue});
   }
   ambiguous.forEach(id=>map.delete(id));return [...map.values()].sort((a,b)=>a.code.localeCompare(b.code));
  }
  function group(raw,roster,ownerId){
-  const byCode=new Map(roster.map(p=>[p.code,p])),members=(Array.isArray(raw.members)?raw.members:[]).map(id=>byCode.get(code(id))||{code:code(id),employeeCode:code(id),name:'PG không còn trong danh sách',channel:'',shopId:'',shop:'',province:'',missing:true,progress:{}});
-  const valid=[2,3].includes(members.length)&&(members.length!==3||roster.length%2===1)&&new Set(members.map(p=>p.code)).size===members.length&&members.every(p=>!p.missing&&p.trainerId===String(ownerId));
+  const byCode=new Map(roster.map(p=>[p.code,p])),members=(Array.isArray(raw.members)?raw.members:[]).map(id=>byCode.get(code(id))||{code:code(id),employeeCode:code(id),name:'PG không còn trong danh sách',channel:'',shopId:'',shop:'',province:'',missing:true,eligible:false,issue:'PG đã bị loại khỏi Find Master hoặc không còn do Trainer này phụ trách.',progress:{}});
+  const valid=[2,3].includes(members.length)&&(members.length!==3||eligibleRoster(roster).length%2===1)&&new Set(members.map(p=>p.code)).size===members.length&&members.every(p=>!p.missing&&p.eligible!==false&&p.trainerId===String(ownerId));
   const progress=Object.fromEntries(stages.map(s=>{const passed=members.filter(p=>p.progress?.[s]?.done===true).length,known=members.filter(p=>p.progress?.[s]?.known===true).length;return [s,{done:valid&&passed===members.length,passed,known,total:members.length}];}));
-  return {...raw,members,valid,name:members.map(p=>firstName(p.name)).join(' - '),channels:[...new Set(members.map(p=>p.channel).filter(Boolean))],progress,completed:stages.filter(s=>progress[s].done).length};
+  return {...raw,members,valid,issues:members.filter(p=>p.missing||p.eligible===false).map(p=>p.code+' · '+p.issue),name:members.map(p=>firstName(p.name)).join(' - '),channels:[...new Set(members.map(p=>p.channel).filter(Boolean))],progress,completed:stages.filter(s=>progress[s].done).length};
  }
  function validate(members,roster,groups,editingId){
   if(!Array.isArray(members)||![2,3].includes(members.length))return 'Mỗi nhóm cần đúng 2 PG, hoặc 3 PG khi danh sách của Trainer có số lẻ.';
   const codes=members.map(code);if(codes.some(x=>!x)||new Set(codes).size!==codes.length)return 'Không được chọn trùng PG trong nhóm.';
-  const available=new Set(roster.map(p=>p.code));if(codes.some(c=>!available.has(c)))return 'Chỉ được ghép PG trong danh sách Master do Trainer này phụ trách.';
+  const available=new Set(roster.map(p=>p.code));if(codes.some(c=>!available.has(c)))return 'PG đã bị loại khỏi Find Master hoặc không còn do Trainer này phụ trách. Hãy bỏ chọn và ghép lại.';
+  const blocked=codes.map(c=>roster.find(p=>p.code===c)).find(p=>p.eligible===false);if(blocked)return 'Không thể ghép PG '+blocked.code+': '+blocked.issue;
   if(groups.some(g=>g.id!==editingId&&(g.members||[]).some(c=>codes.includes(code(c)))))return 'Một PG chỉ được thuộc một nhóm trong chiến dịch. Hãy tải lại danh sách.';
-  if(codes.length===3&&(roster.length%2===0||groups.some(g=>g.id!==editingId&&g.members?.length===3)))return 'Chỉ tạo một nhóm 3 khi tổng PG của Trainer là số lẻ.';
+  if(codes.length===3&&(eligibleRoster(roster).length%2===0||groups.some(g=>g.id!==editingId&&g.members?.length===3)))return 'Chỉ tạo một nhóm 3 khi tổng PG hợp lệ của Trainer là số lẻ.';
   return '';
  }
  function complete(roster,groups){
-  if(roster.length<2)return 'Trainer cần ít nhất 2 PG trong danh sách Master đã chốt.';
+  const expected=eligibleRoster(roster);
+  if(expected.length<2)return 'Trainer cần ít nhất 2 PG Master hợp lệ với HR Đang làm để bắt cặp.';
   if(!groups.length)return 'Chưa có nhóm để gửi Admin duyệt.';
   const codes=groups.flatMap(g=>g.members.map(p=>p.code));
-  if(groups.some(g=>!g.valid)||new Set(groups.map(g=>g.id)).size!==groups.length||new Set(codes).size!==codes.length||groups.filter(g=>g.members.length===3).length>1)return 'Danh sách nhóm có PG trùng, thiếu hoặc không còn hợp lệ. Hãy ghép lại trước khi gửi.';
-  if(codes.length!==roster.length||roster.some(p=>!codes.includes(p.code)))return 'Cần ghép đủ tất cả PG của Trainer trước khi gửi Admin duyệt.';
+  if(groups.some(g=>!g.valid)||new Set(groups.map(g=>g.id)).size!==groups.length||new Set(codes).size!==codes.length||groups.filter(g=>g.members.length===3).length>1)return 'Có nhóm chứa PG đã loại, HR khác Đang làm, trùng hoặc thiếu thành viên. Hãy ghép lại trước khi gửi/duyệt.';
+  if(codes.length!==expected.length||expected.some(p=>!codes.includes(p.code)))return 'Cần ghép đủ tất cả PG hợp lệ của Trainer trước khi gửi Admin duyệt.';
   return '';
  }
  function summary(groups){return {total:groups.length,stages:stages.map(s=>groups.filter(g=>g.progress[s].done).length),completed:groups.filter(g=>g.completed===5).length,invalid:groups.filter(g=>!g.valid).length};}
@@ -20885,13 +20924,14 @@ const PairModel=(()=>{
  }
  const exportColumns=['STT','Code PG','Mã NV','Họ tên PG','Mã shop','Tên shop','Khu vực','Tỉnh/TP','Kênh','Trainer','Trạng thái duyệt','Tên cặp'];
  function exportRows(groups){let n=0;return groups.flatMap(g=>g.members.map(p=>[String(++n),p.code,p.employeeCode||'',p.name,p.shopId||'',p.shop||'',p.region||g.owner.region,p.province||'',p.channel||'',g.owner.name,states[g.owner.effectiveState]||'Nháp',g.name]));}
- return {stages,code,norm,flag,firstName,states,roster,group,validate,complete,summary,select,exportColumns,exportRows};
+ return {stages,code,norm,flag,firstName,states,personKey,eligibleRoster,roster,group,validate,complete,summary,select,exportColumns,exportRows};
 })();
 
 </script>
 <script id="pgsm-pairs-ui-20261028">
 const pgsmPairViews_=new Map();
 const pgsmPairOwner_=()=>JSON.stringify([session?.userId,session?.role,session?.trainerId,session?.region]);
+const pgsmPairEligibleCount_=trainer=>trainer.eligibleCount??PairModel.eligibleRoster(trainer.roster).length;
 function pgsmPairCurrent_(state){return state.root?.isConnected&&state.owner===pgsmPairOwner_()&&currentMonth===state.camp.month&&String(document.getElementById('pgsmProgressCampaign')?.value||'')===String(state.camp.id);}
 async function pgsmPairCall_(state,action,extra={}){
  const tokenPromise=workshopNoiboToken_(),title=document.querySelector('#wsnbAuthOverlay h3');if(title)title.textContent='Xác thực nhóm Find Master';
@@ -20929,22 +20969,23 @@ function pgsmPairBadge_(progress){
 }
 function pgsmPairDetail_(trainer,group){
  const e=escapeHtml;
- return `<article class="pgsm-pair-group" data-pair-group="${e(group.id)}"><div class="pgsm-pair-group-name"><b>${e(group.name)}</b><small>${e(trainer.name)} · ${group.members.length} PG${group.valid?'':' · Cần ghép lại'}</small><span class="pgsm-pair-state is-${e(trainer.effectiveState)}">${e(PairModel.states[trainer.effectiveState]||'Nháp')}</span></div><div class="pgsm-pair-group-channels"><span>Kênh</span><b>${e(group.channels.join(' · ')||'Chưa gán kênh')}</b></div><div class="pgsm-pair-group-members">${group.members.map(p=>`<span title="${e(p.code+' · '+(p.shopId||'')+' · '+(p.shop||''))}">${e(p.name)} <small>(${e(p.code)})</small></span>`).join('')}</div><div class="pgsm-pair-five">${PGSM_STAGES_.map(m=>`<div><small title="${e(m.label)}">${e(m.id.toUpperCase())}</small>${pgsmPairBadge_(group.progress[m.id])}</div>`).join('')}</div><div class="pgsm-pair-group-result"><b>${group.completed===5?'🏆 Đủ 5 mốc':group.completed+'/5 mốc'}</b>${trainer.canManage?`<div><button type="button" class="secondary" data-pair-edit="${e(group.id)}" data-pair-owner="${e(trainer.id)}">Sửa</button><button type="button" class="secondary" data-pair-delete="${e(group.id)}" data-pair-owner="${e(trainer.id)}">Xóa</button></div>`:''}</div></article>`;
+ return `<article class="pgsm-pair-group ${group.valid?'':'is-invalid'}" data-pair-group="${e(group.id)}"><div class="pgsm-pair-group-name"><b>${e(group.name)}</b><small>${e(trainer.name)} · ${group.members.length} PG${group.valid?'':' · Cần ghép lại'}</small><span class="pgsm-pair-state is-${e(trainer.effectiveState)}">${e(PairModel.states[trainer.effectiveState]||'Nháp')}</span></div><div class="pgsm-pair-group-channels"><span>Kênh</span><b>${e(group.channels.join(' · ')||'Chưa gán kênh')}</b></div><div class="pgsm-pair-group-members">${group.members.map(p=>`<span class="${p.missing||p.eligible===false?'is-invalid':''}" title="${e(p.code+' · '+(p.shopId||'')+' · '+(p.shop||''))}">${e(p.name)} <small>(${e(p.code)})</small>${p.issue?`<em>${e(p.issue)}</em>`:''}</span>`).join('')}</div>${!group.valid?`<p class="pgsm-pair-eligibility-warning" role="status">Cặp không hợp lệ. ${(group.issues||[]).map(e).join(' · ')||'Kiểm tra số lượng hoặc thành viên bị trùng.'} Cần chỉnh lại trước khi gửi hoặc duyệt final.</p>`:''}<div class="pgsm-pair-five">${PGSM_STAGES_.map(m=>`<div><small title="${e(m.label)}">${e(m.id.toUpperCase())}</small>${pgsmPairBadge_(group.progress[m.id])}</div>`).join('')}</div><div class="pgsm-pair-group-result"><b>${group.completed===5?'🏆 Đủ 5 mốc':group.completed+'/5 mốc'}</b>${trainer.canManage?`<div><button type="button" class="secondary" data-pair-edit="${e(group.id)}" data-pair-owner="${e(trainer.id)}">Sửa</button><button type="button" class="secondary" data-pair-delete="${e(group.id)}" data-pair-owner="${e(trainer.id)}">Xóa</button></div>`:''}</div></article>`;
 }
 function pgsmPairEditor_(state){
  const editor=state.editor;if(!editor)return '';
  const e=escapeHtml,trainer=state.data.trainers.find(t=>t.id===editor.trainerId);if(!trainer?.canManage)return '';
  const raw=trainer.groups.map(g=>({id:g.id,members:g.members.map(p=>p.code)}));
  const used=new Map(raw.filter(g=>g.id!==editor.id).flatMap(g=>g.members.map(code=>[code,g.id])));
- const max=trainer.roster.length%2===1&&!raw.some(g=>g.id!==editor.id&&g.members.length===3)?3:2;
- const selected=[...editor.selected].map(code=>trainer.roster.find(p=>p.code===code)).filter(Boolean),name=selected.map(p=>PairModel.firstName(p.name)).join(' - ');
+ const max=pgsmPairEligibleCount_(trainer)%2===1&&!raw.some(g=>g.id!==editor.id&&g.members.length===3)?3:2;
+ const candidates=[...trainer.roster,...(trainer.groups.find(g=>g.id===editor.id)?.members||[]).filter(p=>!trainer.roster.some(r=>r.code===p.code))];
+ const selected=[...editor.selected].map(code=>candidates.find(p=>p.code===code)).filter(Boolean),name=selected.map(p=>PairModel.firstName(p.name)).join(' - ');
  const validation=PairModel.validate([...editor.selected],trainer.roster,raw,editor.id);
- return `<section class="pgsm-pair-editor" aria-label="Ghép nhóm PGs"><div class="pgsm-pair-editor-head"><div><h4>${editor.editing?'Chỉnh sửa nhóm':'Tạo nhóm Find Master'}</h4><p>Chọn 2 PG${max===3?' hoặc 3 PG vì danh sách của Trainer có số lẻ':''}. Mỗi PG chỉ thuộc một nhóm.</p></div><button type="button" class="secondary" data-pair-cancel ${state.busy?'disabled':''}>Đóng</button></div>${state.data.role==='admin'?`<label>Trainer phụ trách<select id="pgsmPairManageTrainer" ${editor.editing||state.busy?'disabled':''}>${state.data.trainers.filter(t=>t.canManage).map(t=>`<option value="${e(t.id)}" ${t.id===trainer.id?'selected':''}>${e(t.name)} · ${t.roster.length} PG</option>`).join('')}</select></label>`:`<p class="pgsm-pair-owner">${e(trainer.name)} · ${e(trainer.region)}</p>`}<div class="pgsm-pair-builder"><div class="pgsm-pair-candidates">${trainer.roster.map(p=>`<label class="${used.has(p.code)?'is-used':''}"><input type="checkbox" data-pair-member="${e(p.code)}" ${editor.selected.has(p.code)?'checked':''} ${state.busy||used.has(p.code)||!editor.selected.has(p.code)&&editor.selected.size>=max?'disabled':''}><span><b>${e(p.name)}</b><small>${e(p.code)} · ${e(p.channel||'Chưa gán kênh')}${used.has(p.code)?' · Đã có nhóm':''}</small></span></label>`).join('')||'<p>Chưa có PG Master được chốt cho Trainer này.</p>'}</div><div class="pgsm-pair-preview"><small>Tên nhóm tự tạo</small><strong>${e(name||'Chọn thành viên')}</strong><p>${editor.selected.size} thành viên đã chọn</p>${validation?`<p class="pgsm-pair-form-note">${e(validation)}</p>`:'<p class="pgsm-pair-form-ok">Đủ thành viên để lưu nhóm.</p>'}<button type="button" class="primary" data-pair-save ${state.busy||validation?'disabled':''}>${state.busy?'Đang lưu…':'Lưu nhóm nháp'}</button></div></div></section>`;
+ return `<section class="pgsm-pair-editor" aria-label="Ghép nhóm PGs"><div class="pgsm-pair-editor-head"><div><h4>${editor.editing?'Chỉnh sửa nhóm':'Tạo nhóm Find Master'}</h4><p>Chọn 2 PG${max===3?' hoặc 3 PG vì danh sách hợp lệ của Trainer có số lẻ':''}. Mỗi PG chỉ thuộc một nhóm; thành viên phải còn trong Find Master và HR Đang làm.</p></div><button type="button" class="secondary" data-pair-cancel ${state.busy?'disabled':''}>Đóng</button></div>${state.data.role==='admin'?`<label>Trainer phụ trách<select id="pgsmPairManageTrainer" ${editor.editing||state.busy?'disabled':''}>${state.data.trainers.filter(t=>t.canManage).map(t=>`<option value="${e(t.id)}" ${t.id===trainer.id?'selected':''}>${e(t.name)} · ${pgsmPairEligibleCount_(t)} PG hợp lệ</option>`).join('')}</select></label>`:`<p class="pgsm-pair-owner">${e(trainer.name)} · ${e(trainer.region)} · ${pgsmPairEligibleCount_(trainer)} PG hợp lệ</p>`}<div class="pgsm-pair-builder"><div class="pgsm-pair-candidates">${candidates.map(p=>`<label class="${used.has(p.code)?'is-used ':''}${p.missing||p.eligible===false?'is-invalid':''}"><input type="checkbox" data-pair-member="${e(p.code)}" ${editor.selected.has(p.code)?'checked':''} ${state.busy||!editor.selected.has(p.code)&&(used.has(p.code)||p.missing||p.eligible===false||editor.selected.size>=max)?'disabled':''}><span><b>${e(p.name)}</b><small>${e(p.code)} · ${e(p.channel||'Chưa gán kênh')}${used.has(p.code)?' · Đã có nhóm':''}</small>${p.issue?`<small class="pgsm-pair-member-issue">${e(p.issue)}${editor.selected.has(p.code)?' Bỏ chọn PG này để ghép lại.':''}</small>`:''}</span></label>`).join('')||'<p>Chưa có PG Master được chốt cho Trainer này.</p>'}</div><div class="pgsm-pair-preview"><small>Tên nhóm tự tạo</small><strong>${e(name||'Chọn thành viên')}</strong><p>${editor.selected.size} thành viên đã chọn</p>${validation?`<p class="pgsm-pair-form-note">${e(validation)}</p>`:'<p class="pgsm-pair-form-ok">Đủ thành viên hợp lệ để lưu nhóm.</p>'}<button type="button" class="primary" data-pair-save ${state.busy||validation?'disabled':''}>${state.busy?'Đang lưu…':'Lưu nhóm nháp'}</button></div></div></section>`;
 }
 function pgsmPairWorkflowPanel_(state){
  const e=escapeHtml,data=state.data;
  const list=data.role==='trainer'?data.trainers.filter(t=>t.id===data.ownTrainerId):data.trainers.filter(t=>(t.groups.length||t.state!=='draft')&&(!state.region||PairModel.norm(t.region)===PairModel.norm(state.region))&&(!state.trainer||t.id===state.trainer)&&(!state.status||t.effectiveState===state.status));
- const row=t=>{const assigned=new Set(t.groups.flatMap(g=>g.members.filter(p=>!p.missing).map(p=>p.code))).size;return `<div class="pgsm-pair-workflow-row"><div><b>${e(t.name)}</b><small>${e(t.region)} · ${t.groups.length} cặp · ${assigned}/${t.roster.length} PG đã ghép</small></div><div><span class="pgsm-pair-state is-${e(t.effectiveState)}">${e(PairModel.states[t.effectiveState])}</span>${t.submittedAt?`<small>Gửi ${e(new Date(t.submittedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))}</small>`:''}${t.reviewedAt?`<small>Xử lý ${e(new Date(t.reviewedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))}</small>`:''}</div><div class="pgsm-pair-workflow-actions">${t.canManage?`<button type="button" class="primary" data-pair-submit="${e(t.id)}" ${state.busy||!t.canSubmit?'disabled':''}>Lưu & gửi Admin duyệt</button>`:''}${t.canApprove?`<button type="button" class="primary" data-pair-approve="${e(t.id)}" ${state.busy?'disabled':''}>✓ Duyệt final</button>`:''}${t.canReturn?`<button type="button" class="secondary" data-pair-return="${e(t.id)}" ${state.busy?'disabled':''}>Trả lại chỉnh sửa</button>`:''}</div>${t.canManage&&t.completionError?`<p class="pgsm-pair-workflow-note">${e(t.completionError)}</p>`:''}${t.returnNote?`<p class="pgsm-pair-workflow-note"><b>Phản hồi Admin:</b> ${e(t.returnNote)}</p>`:''}${['pending','approved'].includes(t.state)?`<p class="pgsm-pair-workflow-note">${t.stale?'Danh sách PG đã thay đổi. Cần Admin trả lại để ghép và gửi duyệt lại.':t.state==='pending'?'Đã gửi duyệt; Trainer chưa thể sửa nhóm trong lúc chờ.':'Danh sách đã chốt final. Muốn thay thành viên, cần Admin trả lại trước.'}</p>`:''}</div>`;};
+ const row=t=>{const assigned=new Set(t.groups.flatMap(g=>g.members.filter(p=>!p.missing&&p.eligible!==false).map(p=>p.code))).size;return `<div class="pgsm-pair-workflow-row"><div><b>${e(t.name)}</b><small>${e(t.region)} · ${t.groups.length} cặp · ${assigned}/${pgsmPairEligibleCount_(t)} PG đã ghép</small></div><div><span class="pgsm-pair-state is-${e(t.effectiveState)}">${e(PairModel.states[t.effectiveState])}</span>${t.submittedAt?`<small>Gửi ${e(new Date(t.submittedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))}</small>`:''}${t.reviewedAt?`<small>Xử lý ${e(new Date(t.reviewedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))}</small>`:''}</div><div class="pgsm-pair-workflow-actions">${t.canManage?`<button type="button" class="primary" data-pair-submit="${e(t.id)}" ${state.busy||!t.canSubmit?'disabled':''}>Lưu & gửi Admin duyệt</button>`:''}${t.canApprove?`<button type="button" class="primary" data-pair-approve="${e(t.id)}" ${state.busy?'disabled':''}>✓ Duyệt final</button>`:''}${t.canReturn?`<button type="button" class="secondary" data-pair-return="${e(t.id)}" ${state.busy?'disabled':''}>Trả lại chỉnh sửa</button>`:''}</div>${t.canManage&&t.completionError?`<p class="pgsm-pair-workflow-note">${e(t.completionError)}</p>`:''}${t.returnNote?`<p class="pgsm-pair-workflow-note"><b>Phản hồi Admin:</b> ${e(t.returnNote)}</p>`:''}${['pending','approved'].includes(t.state)?`<p class="pgsm-pair-workflow-note">${t.stale?'Danh sách PG đã thay đổi. Cần Admin trả lại để ghép và gửi duyệt lại.':t.state==='pending'?'Đã gửi duyệt; Trainer chưa thể sửa nhóm trong lúc chờ.':'Danh sách đã chốt final. Muốn thay thành viên, cần Admin trả lại trước.'}</p>`:''}</div>`;};
  const content=`<p class="pgsm-pair-workflow-flow">1. Lưu nhóm nháp <span>→</span> 2. Lưu & gửi Admin duyệt <span>→</span> 3. Admin duyệt final</p><div class="pgsm-pair-workflow-list">${list.map(row).join('')||'<p class="pgsm-pair-workflow-note">Chưa có danh sách cặp được lưu/gửi trong bộ lọc này.</p>'}</div>`;
  if(data.role==='trainer')return `<section class="pgsm-pair-workflow"><h4>Danh sách cặp của tôi</h4>${content}</section>`;
  const pending=list.filter(t=>t.state==='pending').length,open=state.reviewOpen===null?pending>0:state.reviewOpen;return `<details class="pgsm-pair-workflow" ${open?'open':''}><summary>Admin duyệt final <span>${pending} danh sách chờ duyệt</span></summary>${content}</details>`;
@@ -20978,8 +21019,8 @@ function pgsmPairDraw_(state){
  const regions=[...new Set(data.trainers.map(t=>t.region))].filter(Boolean),channels=[...new Set(allGroups.flatMap(g=>g.channels))].sort((a,b)=>a.localeCompare(b,'vi'));
  const choices=data.trainers.filter(t=>!state.region||PairModel.norm(t.region)===PairModel.norm(state.region));
  const manageable=data.trainers.filter(t=>t.canManage&&(!state.region||PairModel.norm(t.region)===PairModel.norm(state.region)));
- const manage=data.role==='trainer'?manageable.find(t=>t.id===data.ownTrainerId)?.id:state.trainer?manageable.find(t=>t.id===state.trainer)?.id:manageable.find(t=>t.roster.length>=2)?.id,canManage=!!manage;
- const unpaired=trainers.reduce((sum,t)=>{const assigned=new Set(t.groups.flatMap(g=>g.members.filter(p=>!p.missing).map(p=>p.code)));return sum+t.roster.filter(p=>!assigned.has(p.code)).length;},0);
+ const manage=data.role==='trainer'?manageable.find(t=>t.id===data.ownTrainerId)?.id:state.trainer?manageable.find(t=>t.id===state.trainer)?.id:manageable.find(t=>pgsmPairEligibleCount_(t)>=2)?.id,canManage=!!manage;
+ const unpaired=trainers.reduce((sum,t)=>{const assigned=new Set(t.groups.flatMap(g=>g.members.filter(p=>!p.missing&&p.eligible!==false).map(p=>p.code)));return sum+PairModel.eligibleRoster(t.roster).filter(p=>!assigned.has(p.code)).length;},0);
  const stats=PairModel.summary(groups);
  const detail=entry=>{
   const page=Math.min(state.pages.get(entry.key)||1,Math.max(1,Math.ceil(entry.groups.length/8)));state.pages.set(entry.key,page);
@@ -20987,8 +21028,8 @@ function pgsmPairDraw_(state){
  };
  host.innerHTML=`<section class="form-card pgsm-pair-card"><div class="pgsm-pair-heading"><div><h3>Bắt cặp thi đua Find Master</h3><p>Một mốc của nhóm chỉ Đạt khi cả 2 hoặc 3 thành viên cùng đạt mốc đó.</p></div><div><button type="button" class="secondary" id="pgsmPairsExport" ${state.busy?'disabled':''}>⇩ Xuất Excel</button><button type="button" class="secondary" id="pgsmPairsReload" ${state.busy?'disabled':''}>↻ Tải lại</button>${canManage?`<button type="button" class="primary" id="pgsmPairsCreate" ${state.busy||!manage?'disabled':''}>＋ Tạo nhóm</button>`:''}</div></div>
  ${state.error?`<p class="pgsm-pair-error" role="alert">${e(state.error)}</p>`:''}${state.message?`<p class="pgsm-pair-success" role="status">${e(state.message)}</p>`:''}
- <div class="pgsm-pair-overview"><div><span>Số cặp trong bộ lọc</span><b>${stats.total}</b></div><div><span>Nhóm đủ 5 mốc</span><b>${stats.completed}</b></div><div><span>PG chưa ghép trong phạm vi</span><b>${unpaired}</b></div></div>
- ${data.monthLocked?'<p class="pgsm-pair-notice">Tháng đã khóa. Có thể xem tiến độ, chưa thể sửa nhóm.</p>':''}${stats.invalid?`<p class="pgsm-pair-notice">${stats.invalid} nhóm cần ghép lại do danh sách thành viên thay đổi. Các nhóm này chưa được tính đạt mốc.</p>`:''}
+ <div class="pgsm-pair-overview"><div><span>Số cặp trong bộ lọc</span><b>${stats.total}</b></div><div><span>Nhóm đủ 5 mốc</span><b>${stats.completed}</b></div><div><span>PG hợp lệ chưa ghép trong phạm vi</span><b>${unpaired}</b></div></div>
+ ${data.monthLocked?'<p class="pgsm-pair-notice">Tháng đã khóa. Có thể xem tiến độ, chưa thể sửa nhóm.</p>':''}${stats.invalid?`<p class="pgsm-pair-notice">${stats.invalid} nhóm cần ghép lại do thành viên bị loại, HR chưa hợp lệ hoặc danh sách thay đổi. Các nhóm này chưa được tính đạt mốc.</p>`:''}
  ${pgsmPairWorkflowPanel_(state)}${pgsmPairEditor_(state)}
  <div class="scope-filters pgsm-pair-filters"><label>Xem theo<select id="pgsmPairGroupBy"><option value="trainer" ${state.groupBy==='trainer'?'selected':''}>Trainer</option><option value="region" ${state.groupBy==='region'?'selected':''}>Khu vực</option></select></label><label>Khu vực<select id="pgsmPairRegion"><option value="">Tất cả khu vực</option>${regions.map(v=>`<option value="${e(v)}" ${state.region===v?'selected':''}>${e(v)}</option>`).join('')}</select></label><label>Trainer<select id="pgsmPairTrainer"><option value="">Tất cả Trainer</option>${choices.map(t=>`<option value="${e(t.id)}" ${state.trainer===t.id?'selected':''}>${e(t.name)}</option>`).join('')}</select></label><label>Trạng thái<select id="pgsmPairStatus"><option value="">Tất cả trạng thái</option>${Object.entries(PairModel.states).map(([key,label])=>`<option value="${e(key)}" ${state.status===key?'selected':''}>${e(label)}</option>`).join('')}</select></label><label>Kênh<select id="pgsmPairChannel"><option value="">Tất cả kênh</option>${channels.map(c=>`<option value="${e(c)}" ${state.channel===c?'selected':''}>${e(c)}</option>`).join('')}</select></label><label>Tìm nhóm / thành viên<input id="pgsmPairSearch" value="${e(state.search)}" placeholder="Tên nhóm, tên hoặc mã PG"></label></div>
  <div class="pgsm-pair-summary" role="table" aria-label="Tiến độ nhóm Find Master"><div class="pgsm-pair-summary-head" role="row"><b>${state.groupBy==='trainer'?'Trainer':'Khu vực'}</b><b>Số cặp</b>${PGSM_STAGES_.map(m=>`<b title="${e(m.label)}">${e(m.id.toUpperCase())}</b>`).join('')}<b>Đủ 5 mốc</b></div>${summaryRows.map(entry=>{const sum=PairModel.summary(entry.groups);return `<div class="pgsm-pair-summary-row ${entry.total?'is-total':''}" role="row"><b class="pgsm-pair-summary-label">${e(entry.label||'Chưa xác định')}</b><div class="pgsm-pair-summary-count" role="cell"><strong>${sum.total}</strong><button type="button" data-pair-expand="${e(entry.key)}" aria-label="${state.expanded.has(entry.key)?'Thu gọn':'Xem nhóm'} ${e(entry.label)}" aria-expanded="${state.expanded.has(entry.key)}" ${!sum.total?'disabled':''}>${state.expanded.has(entry.key)?'−':'+'}</button></div>${sum.stages.map((n,i)=>`<div class="pgsm-pair-summary-stage" role="cell" data-label="M${i+1}"><span>${n}/${sum.total}</span><i><em style="width:${sum.total?n/sum.total*100:0}%"></em></i></div>`).join('')}<div class="pgsm-pair-summary-complete" role="cell" data-label="Đủ 5 mốc">${sum.completed}/${sum.total}</div></div>${state.expanded.has(entry.key)?detail(entry):''}`;}).join('')}</div>
@@ -21009,8 +21050,8 @@ function pgsmPairDraw_(state){
  host.querySelectorAll('[data-pair-member]').forEach(input=>input.onchange=()=>{input.checked?state.editor.selected.add(input.dataset.pairMember):state.editor.selected.delete(input.dataset.pairMember);pgsmPairDraw_(state);});
  host.querySelector('[data-pair-save]')?.addEventListener('click',async()=>{const editor=state.editor,trainer=data.trainers.find(t=>t.id===editor?.trainerId&&t.canManage);if(!editor||!trainer||state.busy)return;await pgsmPairMutate_(state,'save',{trainerId:trainer.id,expectedVersion:trainer.version,sourceRevision:trainer.sourceRevision,rosterRevision:trainer.rosterRevision,group:{id:editor.id,members:[...editor.selected]}});});
  const payload=trainer=>({trainerId:trainer.id,expectedVersion:trainer.version,sourceRevision:trainer.sourceRevision,rosterRevision:trainer.rosterRevision});
- host.querySelectorAll('[data-pair-submit]').forEach(b=>b.onclick=async()=>{const t=data.trainers.find(t=>t.id===b.dataset.pairSubmit&&t.canSubmit);if(!t||state.busy)return;if(!await showConfirm('Gửi danh sách '+t.groups.length+' cặp / '+t.roster.length+' PG của '+t.name+' cho Admin duyệt final? Nhóm sẽ khóa chỉnh sửa trong lúc chờ.'))return;await pgsmPairMutate_(state,'submit',payload(t));});
- host.querySelectorAll('[data-pair-approve]').forEach(b=>b.onclick=async()=>{const t=data.trainers.find(t=>t.id===b.dataset.pairApprove&&t.canApprove);if(!t||state.busy)return;if(!await showConfirm('Duyệt final '+t.groups.length+' cặp / '+t.roster.length+' PG của '+t.name+'?'))return;await pgsmPairMutate_(state,'approve',payload(t));});
+ host.querySelectorAll('[data-pair-submit]').forEach(b=>b.onclick=async()=>{const t=data.trainers.find(t=>t.id===b.dataset.pairSubmit&&t.canSubmit);if(!t||state.busy)return;if(!await showConfirm('Gửi danh sách '+t.groups.length+' cặp / '+pgsmPairEligibleCount_(t)+' PG của '+t.name+' cho Admin duyệt final? Nhóm sẽ khóa chỉnh sửa trong lúc chờ.'))return;await pgsmPairMutate_(state,'submit',payload(t));});
+ host.querySelectorAll('[data-pair-approve]').forEach(b=>b.onclick=async()=>{const t=data.trainers.find(t=>t.id===b.dataset.pairApprove&&t.canApprove);if(!t||state.busy)return;if(!await showConfirm('Duyệt final '+t.groups.length+' cặp / '+pgsmPairEligibleCount_(t)+' PG của '+t.name+'?'))return;await pgsmPairMutate_(state,'approve',payload(t));});
  host.querySelectorAll('[data-pair-return]').forEach(b=>b.onclick=async()=>{const t=data.trainers.find(t=>t.id===b.dataset.pairReturn&&t.canReturn);if(!t||state.busy)return;const note=await pgsmPairReturnNote_(t);if(note&&pgsmPairCurrent_(state))await pgsmPairMutate_(state,'return',{...payload(t),note});});
 
 }
@@ -21198,6 +21239,6 @@ async function exportMediaReportExcel_(){
  finally{mediaReportExportBusy_=false;const b=document.getElementById('mediaReportExportBtn');if(b){b.disabled=!isAdmin()&&!isTrainer();b.textContent='⇩ Xuất Excel truyền thông (2 sheet)';}if(same()&&!current())mediaReportExportMessage_('Bộ lọc hoặc danh sách PG vừa thay đổi. Hãy bấm xuất lại theo bảng hiện tại.',true);}
 }
 
-</script>
+</script><style id="fm-seniority-20261101">#pgsmProgressTable .pgsm-col-seniority{text-align:center;font-variant-numeric:tabular-nums;}#pgsmProgressTable th.pgsm-col-seniority{overflow-wrap:normal;}</style><style id="fm-hr-status-20261101">.mobile-layout #pgsmProgressTable tr.pgsm-change-remove>td.mobile-pg-name-cell{color:#b91c1c!important;}</style>
 </body>
 </html>

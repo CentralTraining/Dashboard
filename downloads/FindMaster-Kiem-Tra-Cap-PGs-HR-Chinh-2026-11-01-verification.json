@@ -1,0 +1,211 @@
+{
+  "backend": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "tests": [
+      "legacy groups preserved without auto approval",
+      "Trainer own writes and region-limited reads/export",
+      "submit full list only",
+      "pending and final lists locked",
+      "Admin-only final/return with required reason",
+      "version conflict prevents stale changes",
+      "roster changes invalidate pending/final status",
+      "milestone sync does not invalidate final",
+      "missing or failed transport preserves saved data",
+      "locked account and month rejected",
+      "Main namespace isolated from Test and legacy",
+      "Excel last column is pair name",
+      "all members exported across channel filter",
+      "code, employee code and shop ID remain strings"
+    ]
+  },
+  "eligibility": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "tests": [
+      "healthy v2 roster digest and final approval preserved",
+      "known non-active HR statuses rejected on server",
+      "explicit Master removal and absent member invalidate saved group",
+      "missing/blank/conflicting HR produces explicit validation error",
+      "invalid saved group cannot submit or approve final",
+      "eligible-only parity and complete grouping can be repaired",
+      "returned invalid group can be edited/deleted",
+      "fresh HR checked before save and approval",
+      "code normalization preserves leading-zero pair codes",
+      "read view does not mutate any saved workflow",
+      "HR, Master, Target and legacy unchanged"
+    ]
+  },
+  "ui": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "layout": {
+          "name": "pairs-final",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        },
+        "trainer_draft_submit_admin_final_return": true,
+        "pending_and_final_edits_locked": true,
+        "real_xlsx_download_read_back": true,
+        "leading_zero_codes_and_shop_ids_preserved": true,
+        "all_pair_members_exported": true,
+        "last_column_pair_name": true,
+        "failed_save_preserves_data": true,
+        "legacy_unchanged": true
+      },
+      {
+        "width": 768,
+        "passed": true,
+        "layout": {
+          "name": "pairs-final",
+          "width": 768,
+          "documentWidth": 768,
+          "overflow": []
+        },
+        "trainer_draft_submit_admin_final_return": true,
+        "pending_and_final_edits_locked": true,
+        "real_xlsx_download_read_back": true,
+        "leading_zero_codes_and_shop_ids_preserved": true,
+        "all_pair_members_exported": true,
+        "last_column_pair_name": true,
+        "failed_save_preserves_data": true,
+        "legacy_unchanged": true
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "layout": {
+          "name": "pairs-final",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        },
+        "trainer_draft_submit_admin_final_return": true,
+        "pending_and_final_edits_locked": true,
+        "real_xlsx_download_read_back": true,
+        "leading_zero_codes_and_shop_ids_preserved": true,
+        "all_pair_members_exported": true,
+        "last_column_pair_name": true,
+        "failed_save_preserves_data": true,
+        "legacy_unchanged": true
+      },
+      {
+        "width": 320,
+        "passed": true,
+        "layout": {
+          "name": "pairs-final",
+          "width": 320,
+          "documentWidth": 320,
+          "overflow": []
+        },
+        "trainer_draft_submit_admin_final_return": true,
+        "pending_and_final_edits_locked": true,
+        "real_xlsx_download_read_back": true,
+        "leading_zero_codes_and_shop_ids_preserved": true,
+        "all_pair_members_exported": true,
+        "last_column_pair_name": true,
+        "failed_save_preserves_data": true,
+        "legacy_unchanged": true
+      }
+    ]
+  },
+  "hr-ui": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "results": [
+      {
+        "width": 1440,
+        "passed": true,
+        "layout": {
+          "name": "pair-hr-editor",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        },
+        "invalid_saved_group_and_member_red": true,
+        "invalid_candidates_disabled": true,
+        "selected_invalid_or_removed_member_can_be_unchecked": true,
+        "eligible_parity_repair_and_submit": true,
+        "hr_changed_during_edit_blocks_save": true,
+        "hr_changed_after_submit_blocks_final": true,
+        "admin_return_still_available": true,
+        "legacy_and_existing_kv_unchanged": true
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "layout": {
+          "name": "pair-hr-editor",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        },
+        "invalid_saved_group_and_member_red": true,
+        "invalid_candidates_disabled": true,
+        "selected_invalid_or_removed_member_can_be_unchecked": true,
+        "eligible_parity_repair_and_submit": true,
+        "hr_changed_during_edit_blocks_save": true,
+        "hr_changed_after_submit_blocks_final": true,
+        "admin_return_still_available": true,
+        "legacy_and_existing_kv_unchanged": true
+      },
+      {
+        "width": 320,
+        "passed": true,
+        "layout": {
+          "name": "pair-hr-editor",
+          "width": 320,
+          "documentWidth": 320,
+          "overflow": []
+        },
+        "invalid_saved_group_and_member_red": true,
+        "invalid_candidates_disabled": true,
+        "selected_invalid_or_removed_member_can_be_unchecked": true,
+        "eligible_parity_repair_and_submit": true,
+        "hr_changed_during_edit_blocks_save": true,
+        "hr_changed_after_submit_blocks_final": true,
+        "admin_return_still_available": true,
+        "legacy_and_existing_kv_unchanged": true
+      }
+    ]
+  },
+  "live": {
+    "passed": true,
+    "endpoint": "pgsm-pairs",
+    "real_data_writes": 0,
+    "private_data_not_exported": true,
+    "cases": [
+      {
+        "case": "missing_dashboard_session",
+        "status": 401,
+        "no_records_returned": true
+      },
+      {
+        "case": "forged_dashboard_session",
+        "status": 401,
+        "no_records_returned": true
+      }
+    ]
+  },
+  "deployment": {
+    "slug": "pgsm-pairs",
+    "version": 3,
+    "verify_jwt": true,
+    "ezbr_sha256": "0f3e22c6b12b467aba02933d91fea6062be89de7c7c7332ae1020f4ab80d11d9",
+    "files_exact": true,
+    "environment": "main",
+    "other_functions_unchanged": true,
+    "stored_workflows_legacy_and_sources_unchanged": true
+  },
+  "scope": "Main",
+  "date": "2026-11-01"
+}

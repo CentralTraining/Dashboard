@@ -1,0 +1,36 @@
+{
+  "scope": "Main",
+  "date": "2026-11-01",
+  "filename": "Dashboard-Chinh-2026-11-01-FindMaster-Kiem-Tra-Cap-PGs-HR.html",
+  "base_commit": "ae468a424ff61c07a623e84c8c3601dd5b6bdbbc",
+  "feature_test_commit": "a0c64d8c456e70628bbccec94b9db0c1f69f7cfc",
+  "bytes": 2603084,
+  "characters": 2535675,
+  "sha256": "5e8ddea76126421bfc2dd56721950c7837bbce2e751258a087feecd0015f729d",
+  "git_blob_sha": "e709aacad7bbe6a12715eda43547470ad0a19b29",
+  "function": "pgsm-pairs",
+  "environment": "main",
+  "html_identical_to_test": true,
+  "schema_changed": false,
+  "secrets_changed": false,
+  "business_data_changed": false,
+  "deployment": {
+    "slug": "pgsm-pairs",
+    "version": 3,
+    "verify_jwt": true,
+    "ezbr_sha256": "0f3e22c6b12b467aba02933d91fea6062be89de7c7c7332ae1020f4ab80d11d9",
+    "files_exact": true,
+    "environment": "main",
+    "other_functions_unchanged": true,
+    "stored_workflows_legacy_and_sources_unchanged": true
+  },
+  "source_zip": {
+    "filename": "FindMaster-Kiem-Tra-Cap-PGs-HR-Chinh-2026-11-01-Full-Source.zip",
+    "bytes": 28085,
+    "sha256": "fdc100082683e2a496719565661894f3bdf9ea88c065394b1fbaaf5f8cd4057d"
+  },
+  "artifacts": {
+    "README.md": "9ae8de42b327c85e8abdefa66e45adfc8a1c39a8c4ed5b02b03a23faab894147",
+    "verification.json": "350fd1aade98099997e178f25028742ecc4985cc1569649c862cd4bd373e595f"
+  }
+}
