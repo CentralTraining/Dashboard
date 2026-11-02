@@ -1,0 +1,205 @@
+{
+  "backend": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "remote_writes": 0,
+    "simulation_map_only": true,
+    "survey_map_only": true,
+    "survey_counts_match_deduplicated_shop_attendees": true,
+    "missing_survey_is_explicit_and_ai_backward_compatible": true,
+    "unknown_survey_is_not_completed": true,
+    "passed_failed_not_started_unknown_distinct": true,
+    "shop_user_deduplication": true,
+    "cross_shop_attribution_preserved": true,
+    "region_filter": true,
+    "campaign_and_shop_validation": true,
+    "missing_map_and_transport_failures_explicit": true,
+    "no_private_credentials_in_dto": true,
+    "fresh_dashboard_session_required": true,
+    "forged_locked_changed_accounts_rejected": true,
+    "trainer_scope_filtered_by_admin_target": true,
+    "outside_shop_rejected": true,
+    "configured_campaign_and_month_required": true
+  },
+  "ui": {
+    "passed": true,
+    "synthetic_data_only": true,
+    "remote_writes": 0,
+    "results": [
+      {
+        "width": 390,
+        "passed": true,
+        "strict_ai_pass": true,
+        "shop_modal_matches_count": true,
+        "survey_count_uses_real_campaign_attendees": true,
+        "survey_modal_matches_counter": true,
+        "legacy_counter_not_used": true,
+        "missing_unknown_survey_aborts_write": true,
+        "hr_and_test_counters_preserved": true,
+        "admin_channel_targets_preserved": true,
+        "failed_and_stale_updates_preserve_data": true,
+        "trainer_region_preserved": true,
+        "manual_file_rule_matches": true,
+        "layout": {
+          "name": "ftf-ai",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        }
+      }
+    ]
+  },
+  "live": {
+    "passed": true,
+    "endpoint": "otraining-ftf-ai",
+    "real_data_writes": 0,
+    "checks": [
+      {
+        "case": "missing_dashboard_session",
+        "status": 401,
+        "no_records_returned": true
+      },
+      {
+        "case": "forged_dashboard_session",
+        "status": 401,
+        "no_records_returned": true
+      }
+    ]
+  },
+  "deployment": {
+    "slug": "otraining-ftf-ai",
+    "version": 2,
+    "verify_jwt": true,
+    "ezbr_sha256": "f57975e6669eb26af08d1be32a84538e4c004d7bf3330452f14415d4e9ac1109",
+    "files_exact": true,
+    "existing_auth_source_unchanged": true,
+    "other_functions_unchanged": true,
+    "test_function_unchanged": true
+  },
+  "scope": "Main",
+  "date": "2026-11-02",
+  "html_identical_to_test": true,
+  "test_verification": {
+    "backend": {
+      "passed": true,
+      "synthetic_data_only": true,
+      "remote_writes": 0,
+      "simulation_map_only": true,
+      "survey_map_only": true,
+      "survey_counts_match_deduplicated_shop_attendees": true,
+      "missing_survey_is_explicit_and_ai_backward_compatible": true,
+      "unknown_survey_is_not_completed": true,
+      "passed_failed_not_started_unknown_distinct": true,
+      "shop_user_deduplication": true,
+      "cross_shop_attribution_preserved": true,
+      "region_filter": true,
+      "campaign_and_shop_validation": true,
+      "missing_map_and_transport_failures_explicit": true,
+      "no_private_credentials_in_dto": true,
+      "fresh_dashboard_session_required": true,
+      "forged_locked_changed_accounts_rejected": true,
+      "trainer_scope_filtered_by_admin_target": true,
+      "outside_shop_rejected": true,
+      "configured_campaign_and_month_required": true
+    },
+    "ui": {
+      "passed": true,
+      "synthetic_data_only": true,
+      "remote_writes": 0,
+      "results": [
+        {
+          "width": 1440,
+          "passed": true,
+          "strict_ai_pass": true,
+          "shop_modal_matches_count": true,
+          "survey_count_uses_real_campaign_attendees": true,
+          "survey_modal_matches_counter": true,
+          "legacy_counter_not_used": true,
+          "missing_unknown_survey_aborts_write": true,
+          "hr_and_test_counters_preserved": true,
+          "admin_channel_targets_preserved": true,
+          "failed_and_stale_updates_preserve_data": true,
+          "trainer_region_preserved": true,
+          "manual_file_rule_matches": true,
+          "layout": {
+            "name": "ftf-ai",
+            "width": 1440,
+            "documentWidth": 1425,
+            "overflow": []
+          }
+        },
+        {
+          "width": 390,
+          "passed": true,
+          "strict_ai_pass": true,
+          "shop_modal_matches_count": true,
+          "survey_count_uses_real_campaign_attendees": true,
+          "survey_modal_matches_counter": true,
+          "legacy_counter_not_used": true,
+          "missing_unknown_survey_aborts_write": true,
+          "hr_and_test_counters_preserved": true,
+          "admin_channel_targets_preserved": true,
+          "failed_and_stale_updates_preserve_data": true,
+          "trainer_region_preserved": true,
+          "manual_file_rule_matches": true,
+          "layout": {
+            "name": "ftf-ai",
+            "width": 390,
+            "documentWidth": 390,
+            "overflow": []
+          }
+        },
+        {
+          "width": 320,
+          "passed": true,
+          "strict_ai_pass": true,
+          "shop_modal_matches_count": true,
+          "survey_count_uses_real_campaign_attendees": true,
+          "survey_modal_matches_counter": true,
+          "legacy_counter_not_used": true,
+          "missing_unknown_survey_aborts_write": true,
+          "hr_and_test_counters_preserved": true,
+          "admin_channel_targets_preserved": true,
+          "failed_and_stale_updates_preserve_data": true,
+          "trainer_region_preserved": true,
+          "manual_file_rule_matches": true,
+          "layout": {
+            "name": "ftf-ai",
+            "width": 320,
+            "documentWidth": 320,
+            "overflow": []
+          }
+        }
+      ]
+    },
+    "live": {
+      "passed": true,
+      "endpoint": "otraining-ftf-ai-test",
+      "real_data_writes": 0,
+      "checks": [
+        {
+          "case": "missing_dashboard_session",
+          "status": 401,
+          "no_records_returned": true
+        },
+        {
+          "case": "forged_dashboard_session",
+          "status": 401,
+          "no_records_returned": true
+        }
+      ]
+    },
+    "deployment": {
+      "slug": "otraining-ftf-ai-test",
+      "version": 5,
+      "verify_jwt": true,
+      "ezbr_sha256": "b0940ced81204433baf0de1a0a38ec48085d3219f4f04f82c067b01a0da14ce9",
+      "files_exact": true,
+      "auth_source_unchanged": true,
+      "other_functions_unchanged": true,
+      "main_function_unchanged": true
+    },
+    "scope": "Test",
+    "date": "2026-11-02"
+  }
+}

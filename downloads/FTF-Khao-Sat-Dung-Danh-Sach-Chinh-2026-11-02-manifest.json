@@ -1,0 +1,38 @@
+{
+  "scope": "Main",
+  "date": "2026-11-02",
+  "filename": "Dashboard-Chinh-2026-11-02-FTF-Khao-Sat-Dung-Danh-Sach.html",
+  "base_commit": "b57df6996875fc3fe736000bd6b8111f92fc02fc",
+  "feature_test_commit": "92459713944cd27b7d84623b3d95c9b837d5fe63",
+  "feature_test_pages_run": 41418868318,
+  "bytes": 2612898,
+  "characters": 2545145,
+  "sha256": "a6fab0ab9abc990c855b24742989c0cfcaf5b69f2e3a63ba8be369e6d2f5be1f",
+  "git_blob_sha": "acd1b2842fa7bb07b06f0976d35ad6ac70535ffc",
+  "html_identical_to_test": true,
+  "function": "otraining-ftf-ai",
+  "schema_changed": false,
+  "secrets_changed": false,
+  "source_zip_delivery": "private_download",
+  "deployment": {
+    "slug": "otraining-ftf-ai",
+    "version": 2,
+    "verify_jwt": true,
+    "ezbr_sha256": "f57975e6669eb26af08d1be32a84538e4c004d7bf3330452f14415d4e9ac1109",
+    "files_exact": true,
+    "existing_auth_source_unchanged": true,
+    "other_functions_unchanged": true,
+    "test_function_unchanged": true
+  },
+  "source_zip": {
+    "filename": "FTF-Khao-Sat-Dung-Danh-Sach-Chinh-2026-11-02-Full-Source.zip",
+    "bytes": 12154,
+    "sha256": "e334adacd927a30aa44114848fa8c7c380659763269e0877d776b841f7a2a530",
+    "delivery": "private_download",
+    "publicly_published": false
+  },
+  "artifacts": {
+    "README.md": "427e6e927aea1bb620f0b47bdc56c6dd520cbe5a3c31ba77653fafffa8cb5f96",
+    "verification.json": "4fb7723617db05ea621c2d9e6b102fc275ad4874e1205db105c18d8b48add386"
+  }
+}

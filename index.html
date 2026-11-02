@@ -6544,7 +6544,7 @@ async function processFtfWorkbook_(wb,options={}){
   });
 
   let shopArr = Object.values(shopMap);
-  if(!options.aiSnapshot)for(const shop of shopArr){shop.aiPeople=(shop.people||[]).map(p=>({id:p.code||'',name:p.name,status:ftfAiStatus_(p.ai),passed:ftfAiStatus_(p.ai)==='dat'}));shop.aiSource='file';shop.aiUpdatedAt=new Date().toISOString();}
+  if(!options.aiSnapshot)for(const shop of shopArr){shop.aiPeople=(shop.people||[]).map(p=>({id:p.code||'',name:p.name,status:ftfAiStatus_(p.ai),passed:ftfAiStatus_(p.ai)==='dat'}));shop.aiSource='file';shop.aiUpdatedAt=new Date().toISOString();shop.surveyPeople=(shop.people||[]).map(p=>({id:p.code||'',name:p.name,status:p.surveyDone?'done':'not_done',done:!!p.surveyDone}));shop.surveySource='file';shop.surveyUpdatedAt=shop.aiUpdatedAt;}
 
   let matchedShop=0, unmatchedShop=0;
   const unmatchedCodes = new Set();
@@ -6589,7 +6589,7 @@ async function processFtfWorkbook_(wb,options={}){
   } else {
     nextShops = shopArr;
   }
-  if(options.aiSnapshot)ftfAiApply_(shopArr,options.aiSnapshot,options.campaignId);
+  if(options.aiSnapshot){ftfAiApply_(shopArr,options.aiSnapshot,options.campaignId);ftfSurveyApply_(shopArr,options.aiSnapshot,options.campaignId);}
   const nextRecords=JSON.parse(JSON.stringify(records));
 
   visibleTrainers().forEach(t=>{
@@ -7886,6 +7886,7 @@ async function openFtfShopDetail_(shop, metric){
   const campaignId=(camp&&camp.otrId)||'';
   const fail=(msg)=>{ ov.innerHTML=head(`<div class="empty" style="padding:20px 0;color:var(--red);">${escapeHtml(String(msg))}</div>`); bind(); };
   if(metric==='ai'){await ftfAiDetail_(shop,String(campaignId),ov,head,bind,fail);return;}
+  if(metric==='survey'){await ftfSurveyDetail_(shop,String(campaignId),ov,head,bind,fail);return;}
   if(!shop.shopIdOtr || !campaignId){ fail('Thiếu shop_id hoặc ID chiến dịch — hãy "Cập nhật FTF từ hệ thống" lại.'); return; }
 
   // ===== THẺ BÀI TEST: dùng endpoint shop-test-scores (Pass/Fail/Chưa làm + Số lần + Điểm cao) =====
@@ -11514,22 +11515,21 @@ async function updateFtfFromOtraining_(){
       show('otraining trả 0 dòng tổng hợp (không ghi đè data cũ). Kiểm tra lại ID chiến dịch.','var(--red)');
       return;
     }
-    // Dựng sheet "Chi Tiet Check-in" GIẢ từ số đếm theo shop (để processFtfWorkbook_ đếm đúng SL Shop/HR/Test/Khảo sát).
-    // Danh sách NGƯỜI THẬT được lấy riêng (lazy-load) khi bấm vào ô số -> gọi endpoint attendees theo shop_id.
+    // Preserve existing HR/Test counters. Survey totals/details come only from the authenticated campaign snapshot.
+    // Do not turn the legacy per-shop survey counter into individual completed survey records.
     const detailRows=[];
     arr.forEach(s=>{
       const code=s['Mã Shop'], shop=s['Tên Shop'], kenh=s['Kênh'], vung=s['Vùng'], kv=s['Khu vực'];
       const hr=Number(s['_checked_in']||s['Số Đã Train']||0);
       const nTest=Number(s['_test_takers']||0);
-      const nSurvey=Number(s['_survey']||0);
-      const n=Math.max(hr,nTest,nSurvey);
+      const n=Math.max(hr,nTest);
       for(let i=0;i<n;i++){
         detailRows.push({
           'Chiến dịch':campaignId,'Mã Shop':code,'Kênh':kenh,'Vùng':vung,'Khu vực':kv,'Tỉnh':'',
           'Shop':shop,'Sale Quản lý':'','Người Train':s['Người Train']||'','Mã NV':'','Tên học viên':'HV '+(i+1),
           'Trạng thái tư vấn mẫu':'Chưa làm',
           'Test online': i<nTest ? 'Pass' : 'Chưa làm',
-          'Khảo sát': i<nSurvey ? 'Done' : 'Chưa',
+          'Khảo sát': 'Chưa',
           'Điểm Hài lòng':''
         });
       }
@@ -20764,6 +20764,7 @@ async function fetchFtfAi_(campaignId,shopId){
  let out;try{out=await res.json();}catch{throw Error('Chưa đọc được Tư vấn mẫu AI. Dữ liệu đã lưu được giữ nguyên.');}
  if(res.status===401)sessionStorage.removeItem('workshop_private_session');
  if(!res.ok||!out.ok)throw Error(out.error||'Chưa lấy được Tư vấn mẫu AI.');
+ if(out.month&&out.month!==month)throw Error('Nguồn FTF chưa khớp tháng đang xem.');
  if(out.campaignId!==String(campaignId)||out.source!=='simulationStatusMap'||!Array.isArray(out.shops)||!Number.isFinite(Date.parse(out.readAt)))throw Error('Nguồn Tư vấn mẫu AI chưa khớp chiến dịch. Dữ liệu đã lưu được giữ nguyên.');
  for(const shop of out.shops){
   if(!shop?.shopId||!Array.isArray(shop.people)||shop.people.some(p=>!p?.id||!['dat','chua_dat','chua_lam','unknown'].includes(p.status)))throw Error('Danh sách Tư vấn mẫu AI chưa hợp lệ.');
@@ -20772,6 +20773,46 @@ async function fetchFtfAi_(campaignId,shopId){
  if(shopId&&(out.shops.length!==1||String(out.shops[0].shopId)!==String(shopId)))throw Error('Danh sách Tư vấn mẫu AI chưa đúng shop.');
  return out;
 }
+function ftfSurveyApply_(shops,snapshot,campaignId){
+ if(!snapshot||snapshot.campaignId!==String(campaignId)||snapshot.month!==currentMonth||snapshot.surveySource!=='surveyMap'||!Array.isArray(snapshot.shops))throw Error('Thiếu nguồn khảo sát theo đúng chiến dịch/tháng. Dữ liệu cũ được giữ nguyên.');
+ const byId=new Map(),byCode=new Map();
+ for(const row of snapshot.shops){
+  const sid=String(row.shopId);if(byId.has(sid))throw Error('Nguồn khảo sát bị trùng shop.');byId.set(sid,row);
+  const code=String(row.shopCode||'').trim();if(code)byCode.set(code,byCode.has(code)?null:row);
+ }
+ for(const shop of shops){
+  const row=byId.get(String(shop.shopIdOtr||''))||(!shop.shopIdOtr?byCode.get(String(shop.shopCode||'').trim()):null);
+  if(!row||shop.shopCode&&row.shopCode&&String(shop.shopCode).trim()!==String(row.shopCode).trim()||!Array.isArray(row.people))throw Error('Nguồn tổng hợp và khảo sát chưa khớp đủ shop. Dữ liệu cũ được giữ nguyên.');
+  const ids=row.people.map(p=>String(p.id||''));
+  if(ids.some(id=>!id)||new Set(ids).size!==ids.length||row.people.some(p=>!['done','not_done'].includes(p.surveyStatus)))throw Error('Khảo sát thiếu trạng thái rõ ràng hoặc còn trùng người trong shop. Dữ liệu cũ được giữ nguyên.');
+  const total=row.people.length,done=row.people.filter(p=>p.surveyStatus==='done').length;
+  if(row.surveyTotal!==total||row.surveyDone!==done||row.surveyUnknown!==0)throw Error('Số khảo sát chưa khớp danh sách người check-in. Dữ liệu cũ được giữ nguyên.');
+  shop.surveyPeople=row.people.map(p=>({id:String(p.id),name:String(p.name||'').trim(),status:p.surveyStatus,done:p.surveyStatus==='done'}));
+  shop.surveyTotal=total;shop.surveyDone=done;shop.surveySource='surveyMap';shop.surveyCampaignId=String(campaignId);shop.surveyUpdatedAt=snapshot.readAt;
+ }
+}
+async function ftfSurveyDetail_(shop,campaignId,ov,head,bind,fail){
+ const owner=JSON.stringify([session?.userId,session?.role,session?.region]),month=currentMonth;
+ const current=()=>ov.isConnected&&currentMonth===month&&owner===JSON.stringify([session?.userId,session?.role,session?.region])&&String(campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf')?.otrId||'')===String(campaignId);
+ let people,readAt;
+ try{
+  if(Array.isArray(shop.surveyPeople)&&(shop.surveySource==='file'||shop.surveySource==='surveyMap'&&shop.surveyCampaignId===String(campaignId))){people=shop.surveyPeople;readAt=shop.surveyUpdatedAt;}
+  else{
+   if(!shop.shopIdOtr||!campaignId)throw Error('Hãy Cập nhật FTF từ hệ thống để đọc khảo sát theo đúng shop/chiến dịch.');
+   const out=await fetchFtfAi_(campaignId,shop.shopIdOtr);if(!current())return;
+   if(out.surveySource!=='surveyMap'||out.month!==month)throw Error('Nguồn chưa trả trạng thái khảo sát đúng tháng.');
+   people=out.shops[0].people.map(p=>({id:String(p.id),name:String(p.name||''),status:p.surveyStatus,done:p.surveyStatus==='done'}));readAt=out.readAt;
+  }
+ }catch(error){if(current())fail(error.message||error);return;}
+ if(!current())return;
+ const done=people.filter(p=>p.status==='done').length,unknown=people.filter(p=>!['done','not_done'].includes(p.status)).length;
+ const label=p=>p.status==='done'?'Đã khảo sát':p.status==='not_done'?'Chưa khảo sát':'Chưa xác định';
+ const rows=people.map((p,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(p.name||'Chưa có tên')}</strong></td><td style="text-align:center"><span class="pill ${p.status==='done'?'pill-ok':'pill-warn'}">${label(p)}</span></td></tr>`).join('');
+ const summary=`<p class="section-desc">Khảo sát của người check-in theo đúng shop và chiến dịch. Mỗi người được tính một lần trong từng shop.</p><div style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;font-weight:700"><span style="color:var(--green-ok)">Đã khảo sát: ${done}</span><span style="color:var(--muted)">Chưa khảo sát: ${people.length-done-unknown}</span>${unknown?'<span>Chưa xác định: '+unknown+'</span>':''}</div>`;
+ ov.innerHTML=head(summary+`<div class="table-scroll"><table class="ftf-ai-people-table"><thead><tr><th style="width:8%">STT</th><th style="width:54%">Tên đối tác</th><th style="width:38%;text-align:center">Khảo sát</th></tr></thead><tbody>${rows||'<tr><td colspan="3" class="empty">Shop chưa có người check-in.</td></tr>'}</tbody></table></div><p class="section-desc">${readAt?'Dữ liệu lúc '+escapeHtml(new Date(readAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}))+'. ':''}Bấm Cập nhật FTF từ hệ thống để làm mới số liệu toàn bảng.</p>`,`${done}/${people.length} đã khảo sát`);
+ bind();
+}
+
 function ftfAiApply_(shops,snapshot,campaignId){
  if(!snapshot||snapshot.campaignId!==String(campaignId)||snapshot.source!=='simulationStatusMap'||!Array.isArray(snapshot.shops))throw Error('Thiếu nguồn Tư vấn mẫu AI hợp lệ.');
  const byId=new Map(),byCode=new Map();
