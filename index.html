@@ -2746,6 +2746,27 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
 .mobile-layout #channelTool .channel-hashtag-pagination{font-size:8px;gap:6px;}
 
 </style>
+<style id="so-multi-milestone-20261102">
+#sotab-list .so-filter-fields{grid-template-columns:1.3fr 1fr 1.1fr .65fr;}
+#soListFilterMilestone{min-width:0;margin:0 0 16px;padding:9px 12px 11px;border:1px solid var(--line);border-radius:12px;background:#fff;}
+#soListFilterMilestone legend{padding:0 6px;font-size:var(--cap);font-weight:750;color:var(--green-dark);}
+#soListFilterMilestone .so-list-milestone-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px;}
+#soListMilestoneSelection{min-width:0;color:var(--muted);font-size:var(--cap);overflow-wrap:anywhere;}
+#soListMilestoneClear{flex:none;min-height:28px;padding:4px 10px;font-size:11px;}
+#soListFilterMilestone .so-list-milestone-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;}
+#soListFilterMilestone .so-list-milestone-options label{display:flex;align-items:center;gap:8px;min-width:0;margin:0;padding:8px 10px;min-height:36px;border:1px solid #DAE8E0;border-radius:8px;background:#F8FBF9;color:var(--green-dark);font-size:var(--cap);font-weight:650;cursor:pointer;box-sizing:border-box;}
+#soListFilterMilestone .so-list-milestone-options label:has(input:checked){background:#E4F4EC;border-color:#158656;}
+#soListFilterMilestone .so-list-milestone-options input[type="checkbox"]{appearance:auto;flex:0 0 16px;width:16px!important;height:16px!important;min-height:16px!important;min-width:16px!important;margin:0;padding:0;accent-color:var(--green-dark);cursor:pointer;}
+#soListFilterMilestone .so-list-milestone-options input:focus-visible{outline:2px solid #0B8152;outline-offset:3px;}
+#soListFilterMilestone .so-list-milestone-options span{min-width:0;line-height:1.4;overflow-wrap:anywhere;}
+#soListMilestoneHelp{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.5;}
+@media(max-width:1000px){#soListFilterMilestone .so-list-milestone-options{grid-template-columns:repeat(3,minmax(0,1fr));}}
+.mobile-layout #soListFilterMilestone{padding:7px 8px 9px;margin-bottom:10px;}
+.mobile-layout #soListFilterMilestone .so-list-milestone-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;}
+.mobile-layout #soListFilterMilestone .so-list-milestone-options label{padding:6px;gap:5px;font-size:10px;min-height:40px;}
+.mobile-layout #soListFilterMilestone legend,.mobile-layout #soListMilestoneSelection{font-size:11px;}
+.mobile-layout #soListMilestoneHelp{font-size:10px;}
+</style>
 </head>
 <body>
 
@@ -3179,17 +3200,15 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
             <option value="3">3 ★</option><option value="4">4 ★</option><option value="5">5 ★</option>
             </select>
           </label>
-          <label class="so-filter-field"><span class="scope-label">Mốc hoàn thành</span>
-            <select id="soListFilterMilestone">
-              <option value="">Tất cả mốc</option>
-              <option value="moc 1">Mốc 1</option><option value="moc 2">Mốc 2</option><option value="moc 3">Mốc 3</option>
-              <option value="chua dat">Chưa đạt</option><option value="khong co">Không có</option>
-              <option value="__unmatched__">Chưa có dữ liệu Shop</option>
-            </select>
-          </label>
         </div>
         <span class="scope-label so-filter-count" id="soListRowCount"></span>
       </div>
+      <fieldset id="soListFilterMilestone" class="so-list-milestones" aria-describedby="soListMilestoneHelp">
+        <legend>PGs đạt mốc</legend>
+        <div class="so-list-milestone-tools"><span id="soListMilestoneSelection" aria-live="polite">Tất cả mốc</span><button type="button" class="secondary" id="soListMilestoneClear" disabled>Xóa chọn</button></div>
+        <div class="so-list-milestone-options"><label><input type="checkbox" value="moc 1" data-label="Mốc 1"><span>Mốc 1</span></label><label><input type="checkbox" value="moc 2" data-label="Mốc 2"><span>Mốc 2</span></label><label><input type="checkbox" value="moc 3" data-label="Mốc 3"><span>Mốc 3</span></label><label><input type="checkbox" value="chua dat" data-label="Chưa đạt"><span>Chưa đạt</span></label><label><input type="checkbox" value="khong co" data-label="Không có mốc"><span>Không có mốc</span></label><label><input type="checkbox" value="__unmatched__" data-label="Chưa có dữ liệu Shop"><span>Chưa có dữ liệu Shop</span></label></div>
+        <p id="soListMilestoneHelp">Chọn nhiều nhóm để xem chung danh sách. Không chọn ô nào: hiển thị tất cả mốc.</p>
+      </fieldset>
       <table>
         <thead><tr><th>Code PG</th><th>Tên PG</th><th>Khu vực</th><th>Trainer</th><th>Shop</th><th>Sao</th><th>S.O Phone</th><th>% Hoàn thành target<br>(Shop)</th><th>Mốc hoàn thành<br>(Shop)</th><th>Tổng S.O</th><th></th></tr></thead>
         <tbody id="soListBody"></tbody>
@@ -17596,21 +17615,30 @@ function renderSoKpiRow_(){
     <div class="kpi-card"><div class="label">S.O Accessories TB/PG</div><div class="value">${avg(e=>e.accessories)}</div><div class="frac">sản phẩm/PG</div></div>
   `;
 }
+function soListMilestones_(){
+  return Array.from(document.querySelectorAll('#soListFilterMilestone input[type="checkbox"]:checked'),input=>input.value);
+}
+function syncSoListMilestones_(){
+  const selected=Array.from(document.querySelectorAll('#soListFilterMilestone input[type="checkbox"]:checked'));
+  document.getElementById('soListMilestoneSelection').textContent=selected.length?'Đang chọn: '+selected.map(input=>input.dataset.label).join(', '):'Tất cả mốc';
+  document.getElementById('soListMilestoneClear').disabled=!selected.length;
+}
 function renderSoListTab_(){
   populateSoListFilters_();
+  syncSoListMilestones_();
   renderSoKpiRow_();
   const term = soListSearchTerm.trim().toLowerCase();
   const regionVal = document.getElementById('soListFilterRegion').value;
   const trainerVal = document.getElementById('soListFilterTrainer').value;
   const starVal = document.getElementById('soListFilterStar').value;
-  const milestoneVal = document.getElementById('soListFilterMilestone').value;
+  const milestoneValues=soListMilestones_();
   const shopIndex=soShopProgressIndex_();
   let list = soJoinedList_();
   if(term) list = list.filter(e=> (e.code||'').toLowerCase().includes(term) || (e.name||'').toLowerCase().includes(term));
   if(regionVal) list = list.filter(e=> e.region===regionVal);
   if(trainerVal) list = list.filter(e=> e.trainerId===trainerVal);
   if(starVal) list = list.filter(e=> e.star===Number(starVal));
-  if(milestoneVal) list = list.filter(e=>soShopMatchesMilestone_(e,shopIndex,milestoneVal));
+  if(milestoneValues.length) list = list.filter(e=>milestoneValues.some(stage=>soShopMatchesMilestone_(e,shopIndex,stage)));
   list.sort((a,b)=> (b.phone+b.iot+b.accessories) - (a.phone+a.iot+a.accessories));
   document.getElementById('soListRowCount').textContent = `${list.length} PG Đang làm`;
   const body = document.getElementById('soListBody');
@@ -17661,7 +17689,11 @@ document.getElementById('soListSearchInput').addEventListener('input', (e)=>{ so
 document.getElementById('soListFilterRegion').addEventListener('change', ()=>{ soListCurrentPage=1; renderSoListTab_(); });
 document.getElementById('soListFilterTrainer').addEventListener('change', ()=>{ soListCurrentPage=1; renderSoListTab_(); });
 document.getElementById('soListFilterStar').addEventListener('change', ()=>{ soListCurrentPage=1; renderSoListTab_(); });
-document.getElementById('soListFilterMilestone').addEventListener('change', ()=>{ soListCurrentPage=1; renderSoListTab_(); });
+document.getElementById('soListFilterMilestone').addEventListener('change', e=>{ if(!e.target.matches('input[type="checkbox"]'))return; soListCurrentPage=1; renderSoListTab_(); });
+document.getElementById('soListMilestoneClear').addEventListener('click', ()=>{
+  document.querySelectorAll('#soListFilterMilestone input[type="checkbox"]').forEach(input=>input.checked=false);
+  soListCurrentPage=1;renderSoListTab_();
+});
 
 /* ============ THỐNG KÊ S.O Phone trung bình ============ */
 const SO_CHART_COLORS = ['#016C38','#2E9E5B','#6FBF3E','#E8C023','#E8862A','#C0392B','#2F6FB0','#9B59B6'];
@@ -19585,6 +19617,10 @@ function pgsmSeniorityMonths_(row){
  const months=Number(value);return Number.isFinite(months)&&months>=0?months:null;
 }
 function pgsmSeniorityText_(row){const months=pgsmSeniorityMonths_(row);return months===null?'—':months.toLocaleString('vi-VN')+' tháng';}
+// Only the displayed progress target changes; saved Master membership and review history remain intact.
+function pgsmProgressCountsInTarget_(row,removedCodes){
+ return !!row._pgsmInTarget&&!row._pgsmHrInactiveStatus&&!removedCodes.has(pgsmCode_(row));
+}
 async function pgsmDrawProgress_(camp){
  const el=document.getElementById('pgsmProgressContent');if(!el||!camp)return;
  const d=await pgsmData_(camp,true);
@@ -19595,6 +19631,8 @@ async function pgsmDrawProgress_(camp){
    el.querySelector('#pgsmRetryHistory').addEventListener('click',()=>pgsmDrawProgress_(camp));return;
  }
  const rows=pgsmProgressRows_(d,changes);
+ const removedCodes=new Set((d.manualRemove||[]).map(code=>pgsmCode_({code})));
+ const progressTargetRows=rows.filter(row=>pgsmProgressCountsInTarget_(row,removedCodes));
  // Tiến độ chỉ đọc các cờ m*_done từ OTraining, không có bộ nhớ nháp nhập tay.
  const stageStatus=(r,m)=>pgsmStageStatus_(r.code,m.id,d.systemMeta,null,d.thresholds);
  const achieved=r=>PGSM_STAGES_.filter(m=>stageStatus(r,m).done).length;
@@ -19606,8 +19644,8 @@ async function pgsmDrawProgress_(camp){
  <div class="scope-filters" style="margin:10px 0 12px;flex-wrap:wrap">
   <span class="scope-label">Xem theo:</span><select id="pgsmProgressGroupBy"><option value="region">Khu vực</option><option value="trainer">Trainer</option></select>
  </div>
- <div class="pgsm-summary-scroll"><table aria-label="Thống kê tiến độ PGs Master theo Trainer hoặc khu vực"><colgroup><col style="width:3%"><col style="width:14%"><col style="width:7%">${PGSM_STAGES_.map(()=>'<col style="width:12.6%">').join('')}<col style="width:13%"></colgroup><thead><tr><th>STT</th><th id="pgsmProgressGroupHeading">Khu vực</th><th>Tổng PGs</th>${PGSM_STAGES_.map(m=>`<th>${escapeHtml(m.label)}</th>`).join('')}<th>Đủ 5 mốc</th></tr></thead><tbody id="pgsmProgressSummaryRows"></tbody></table></div>
- <p class="pgsm-summary-footer">Tổng MIỀN TRUNG = tổng PGs đăng ký thuộc phạm vi Admin; Trainer chỉ xem tổng khu vực được phép quản lý. Mỗi thanh: PGs đạt / Tổng PGs · Tỷ lệ hoàn thành. Kết quả Đạt chỉ lấy từ cờ M1–M5_done của OTraining.</p>
+ <div class="pgsm-summary-scroll"><table aria-label="Thống kê tiến độ PGs Master theo Trainer hoặc khu vực"><colgroup><col style="width:3%"><col style="width:14%"><col style="width:7%">${PGSM_STAGES_.map(()=>'<col style="width:12.6%">').join('')}<col style="width:13%"></colgroup><thead><tr><th>STT</th><th id="pgsmProgressGroupHeading">Khu vực</th><th>Target PGs</th>${PGSM_STAGES_.map(m=>`<th>${escapeHtml(m.label)}</th>`).join('')}<th>Đủ 5 mốc</th></tr></thead><tbody id="pgsmProgressSummaryRows"></tbody></table></div>
+ <p class="pgsm-summary-footer">Target chỉ tính PGs còn hiệu lực trong danh sách Master: Đang làm hoặc Trong danh sách; PGs Off/HR khác Đang làm và PGs đã loại không được tính. Yêu cầu thêm/loại đang chờ duyệt chưa thay đổi danh sách chính thức. Admin xem tổng MIỀN TRUNG; Trainer chỉ xem khu vực được quản lý. Mỗi thanh: PGs đạt / Target PGs · Tỷ lệ hoàn thành; kết quả đạt lấy từ OTraining.</p>
  <section class="pgsm-system-card" id="pgsmSystemSection">
    <div class="pgsm-system-top"><div><b style="color:var(--green-dark);font-size:17px">↻ Import tiến độ PGs Master</b><div class="section-desc">Cập nhật kết quả từ OTraining theo Campaign ID. Chỉ đối chiếu PGs có trong danh sách Master đã chốt.</div></div></div>
    <div class="pgsm-system-tools">
@@ -19628,7 +19666,7 @@ async function pgsmDrawProgress_(camp){
   <label>Tên shop<input id="pgsmProgressShop" placeholder="Tìm shop"></label>
   <button type="button" class="secondary" id="pgsmExportProgress" title="Xuất Excel tiến độ PGs theo bộ lọc">⬇ Xuất Excel</button>
  </div>
- <p class="section-desc">Thêm: màu xanh · Loại hoặc HR khác Đang làm: màu đỏ. Dòng HR ghi rõ trạng thái theo DATA nhân sự của tháng đang xem; yêu cầu của Trainer vẫn có lý do và trạng thái duyệt riêng. Dấu đỏ HR là cảnh báo; tổng tiến độ căn cứ danh sách Master đã chốt.</p>
+ <p class="section-desc">Thêm: màu xanh · Loại hoặc HR khác Đang làm: màu đỏ. Dòng HR ghi rõ trạng thái theo DATA nhân sự của tháng đang xem; yêu cầu của Trainer vẫn có lý do và trạng thái duyệt riêng. PGs có HR khác Đang làm hoặc đã loại vẫn hiển thị để đối soát nhưng không được tính vào Target và số đạt trong bảng tổng theo khu vực/Trainer.</p>
  <div class="table-scroll" id="pgsmProgressTableWrap"><table id="pgsmProgressTable" aria-label="Danh sách PGs Master và tiến độ từng mốc"><colgroup>${[3,5,isTrainer()?10:11,6,isTrainer()?9:10,6,isTrainer()?8:9,4,isTrainer()?9:10,...PGSM_STAGES_.map(()=>isTrainer()?5.6:6),6,...(isTrainer()?[6]:[])].map(width=>`<col style="width:${width}%">`).join('')}</colgroup><thead><tr><th scope="col">STT</th><th scope="col">Mã PGs</th><th scope="col">Họ tên</th><th scope="col" class="pgsm-col-seniority">Thâm niên<span class="pgsm-stage-target">(tháng)</span></th><th scope="col">Shop</th><th scope="col">Khu vực</th><th scope="col">Trainer</th><th scope="col">Kênh</th><th scope="col">Trạng thái</th>${PGSM_STAGES_.map(m=>`<th scope="col" class="pgsm-col-step" title="${escapeHtml(m.label)}">${escapeHtml(m.id.toUpperCase())}<span class="pgsm-stage-name">${escapeHtml(m.label.replace(/^M\d\s*·\s*/,''))}</span><small class="pgsm-stage-target">Target: ${Number(d.thresholds[m.id]||0)}</small></th>`).join('')}<th scope="col">Kết quả</th>${isTrainer()?'<th scope="col">Thao tác</th>':''}</tr></thead><tbody id="pgsmProgressRows"></tbody></table></div>
  <div id="pgsmProgressPagination"></div>
  </div><div id="pgsmTrainerChanges"></div></div>`;
@@ -19640,7 +19678,7 @@ async function pgsmDrawProgress_(camp){
  const pageSize=6;let page=1;
  function summary(){
    const grouped=new Map();
-   for(const r of rows.filter(r=>r._pgsmInTarget)){
+   for(const r of progressTargetRows){
      const id=groupBy.value==='region'?regionOf(r):String(r.trainerId||'');
      const label=groupBy.value==='region'?regionOf(r):(r.trainerName||trainerOf(r.trainerId)?.name||'Chưa gán Trainer');
      const key=id||'__none__';
@@ -19661,7 +19699,7 @@ async function pgsmDrawProgress_(camp){
    }
    const sumRow=total.total?`<tr class="pgsm-total-row"><td>Σ</td><td>${escapeHtml(total.label)}</td><td><b>${total.total}</b></td>${total.stages.map(n=>`<td>${pgsmProgressBar_(n,total.total)}</td>`).join('')}<td>${pgsmProgressBar_(total.done,total.total)}</td></tr>`:'';
    const detailRows=summaryRows.map((g,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(g.label||'Chưa xác định')}</td><td><b>${g.total}</b></td>${g.stages.map(n=>`<td>${pgsmProgressBar_(n,g.total)}</td>`).join('')}<td>${pgsmProgressBar_(g.done,g.total)}</td></tr>`).join('');
-   $('pgsmProgressSummaryRows').innerHTML=sumRow+detailRows||'<tr><td colspan="9">Chưa có PGs Master</td></tr>';
+   $('pgsmProgressSummaryRows').innerHTML=sumRow+detailRows||'<tr><td colspan="9">Chưa có PGs Master còn hiệu lực để tính tiến độ.</td></tr>';
  }
  function fillTrainer(){
    const prev=trainerSel.value;

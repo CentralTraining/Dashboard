@@ -1,0 +1,22 @@
+{
+  "scope": "Main",
+  "date": "2026-11-02",
+  "filename": "Dashboard-Chinh-2026-11-02-SO-Loc-Nhieu-Moc-PGs.html",
+  "base_commit": "f477d614baf3f1c81d1a4e6fea40b8c72143e75d",
+  "feature_test_commit": "79965908e27d8462652982d030f7c8e87cc87f45",
+  "feature_test_pages_run": 41381085633,
+  "bytes": 2607785,
+  "characters": 2540261,
+  "sha256": "ce5d81ca5aafc8c6d57e88c491a33f902a37abf7394cb48096c8d15e4e3387c6",
+  "git_blob_sha": "05cd476a6e7ed34dbf95b6d20b2d056b9e927f33",
+  "html_identical_to_test": true,
+  "find_master_target_feature_included": true,
+  "backend_changed": false,
+  "schema_changed": false,
+  "secrets_changed": false,
+  "business_data_changed": false,
+  "artifacts": {
+    "README.md": "97a0c4557e30370ee528504462ef9edf25e4edbf1f3fb079b5a9ba855f768dc4",
+    "verification.json": "a2c1523425249a96767fc10401c8b22a3865c4b7a0270ebbfc5418f2af539a99"
+  }
+}

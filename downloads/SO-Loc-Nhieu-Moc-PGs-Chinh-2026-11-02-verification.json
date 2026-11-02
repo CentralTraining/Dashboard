@@ -1,0 +1,120 @@
+{
+  "scope": "Main",
+  "date": "2026-11-02",
+  "passed": true,
+  "html_identical_to_test": true,
+  "html_sha256": "ce5d81ca5aafc8c6d57e88c491a33f902a37abf7394cb48096c8d15e4e3387c6",
+  "test": {
+    "scope": "Test",
+    "date": "2026-11-02",
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "backend_changed": false,
+    "checks": [
+      {
+        "width": 1440,
+        "passed": true,
+        "multiple_group_union": true,
+        "no_duplicate_pgs": true,
+        "checkbox_and_keyboard": true,
+        "clear_restores_all": true,
+        "pagination_resets": true,
+        "other_filters_combine": true,
+        "missing_shop_and_no_milestone": true,
+        "selected_groups_persist": true,
+        "previous_month_source_preserved": true,
+        "trainer_scope": true,
+        "original_cards_and_statistics_preserved": true,
+        "read_only": true,
+        "layout": {
+          "name": "so-multiple-milestones",
+          "width": 1440,
+          "documentWidth": 1425,
+          "overflow": []
+        }
+      },
+      {
+        "width": 390,
+        "passed": true,
+        "multiple_group_union": true,
+        "no_duplicate_pgs": true,
+        "checkbox_and_keyboard": true,
+        "clear_restores_all": true,
+        "pagination_resets": true,
+        "other_filters_combine": true,
+        "missing_shop_and_no_milestone": true,
+        "selected_groups_persist": true,
+        "previous_month_source_preserved": true,
+        "trainer_scope": true,
+        "original_cards_and_statistics_preserved": true,
+        "read_only": true,
+        "layout": {
+          "name": "so-multiple-milestones",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        }
+      },
+      {
+        "width": 320,
+        "passed": true,
+        "multiple_group_union": true,
+        "no_duplicate_pgs": true,
+        "checkbox_and_keyboard": true,
+        "clear_restores_all": true,
+        "pagination_resets": true,
+        "other_filters_combine": true,
+        "missing_shop_and_no_milestone": true,
+        "selected_groups_persist": true,
+        "previous_month_source_preserved": true,
+        "trainer_scope": true,
+        "original_cards_and_statistics_preserved": true,
+        "read_only": true,
+        "layout": {
+          "name": "so-multiple-milestones",
+          "width": 320,
+          "documentWidth": 320,
+          "overflow": []
+        }
+      }
+    ],
+    "html_sha256": "ce5d81ca5aafc8c6d57e88c491a33f902a37abf7394cb48096c8d15e4e3387c6",
+    "find_master_code_unchanged": true
+  },
+  "route_main": {
+    "scope": "Dashboard",
+    "date": "2026-11-02",
+    "passed": true,
+    "synthetic_data_only": true,
+    "real_data_writes": 0,
+    "backend_changed": false,
+    "checks": [
+      {
+        "width": 390,
+        "passed": true,
+        "multiple_group_union": true,
+        "no_duplicate_pgs": true,
+        "checkbox_and_keyboard": true,
+        "clear_restores_all": true,
+        "pagination_resets": true,
+        "other_filters_combine": true,
+        "missing_shop_and_no_milestone": true,
+        "selected_groups_persist": true,
+        "previous_month_source_preserved": true,
+        "trainer_scope": true,
+        "original_cards_and_statistics_preserved": true,
+        "read_only": true,
+        "layout": {
+          "name": "so-multiple-milestones",
+          "width": 390,
+          "documentWidth": 390,
+          "overflow": []
+        }
+      }
+    ]
+  },
+  "no_backend_changes": true,
+  "no_real_data_writes": true,
+  "find_master_target_feature_included": true
+}
