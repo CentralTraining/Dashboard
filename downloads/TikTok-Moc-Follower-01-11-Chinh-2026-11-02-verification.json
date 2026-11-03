@@ -1,0 +1,112 @@
+{
+  "scope": "Main",
+  "date": "2026-11-02",
+  "checks": {
+    "model": {
+      "passed": true,
+      "october_unchanged": true,
+      "november_manual_fallback": true,
+      "api_first_observation_has_priority": true,
+      "vietnam_midnight": true,
+      "zero_and_negative_growth_valid": true,
+      "other_month_not_relabelled": true,
+      "source_required": true,
+      "inputs_immutable": true
+    },
+    "backend": {
+      "passed": true,
+      "synthetic_only": true,
+      "admin_only": true,
+      "fresh_account_auth_preserved": true,
+      "main_namespace_only": true,
+      "test_records_never_read_or_written": true,
+      "signed_native_owner_guards_preserved": true,
+      "live_channel_records_never_written": true,
+      "october_baseline_preserved": true,
+      "zero_valid": true,
+      "observed_api_zero_locked": true,
+      "source_attribution_server_owned": true,
+      "revision_and_cas_conflicts_rejected": true,
+      "rename_same_id_supported": true,
+      "different_account_baseline_rejected": true,
+      "team_read_scope_preserved": true,
+      "second_sandbox_supported": true,
+      "legacy_grant_refresh_preserves_baseline": true,
+      "errors_preserve_data": true,
+      "shared_api_proxy_callback_unchanged": true,
+      "no_private_data_in_dto": true,
+      "no_tiktok_requests": true
+    },
+    "regression": {
+      "passed": true,
+      "synthetic_data_only": true,
+      "remote_writes": 0,
+      "fresh_account_authentication": true,
+      "forged_locked_changed_sessions_rejected": true,
+      "team_read_boundary_preserved": true,
+      "only_cached_video_ids_queried": true,
+      "twenty_video_pagination": true,
+      "native_main_and_secondary_tokens_read_without_refresh": true,
+      "no_grant_or_baseline_writes": true,
+      "no_private_data_in_dto": true,
+      "unavailable_video_not_false_zero": true,
+      "stale_snapshot_rejected": true,
+      "expired_and_rate_limited_errors_explicit": true,
+      "existing_proxy_and_callback_preserved": true,
+      "signed_native_owner_guards_preserved": true,
+      "native_owner_oauth_proxy_files_unchanged": true
+    },
+    "ui": [
+      {
+        "width": 390,
+        "passed": true,
+        "manual_zero_and_positive_saved": true,
+        "visible_growth_updated": true,
+        "october_and_api_history_preserved": true,
+        "api_zero_readonly": true,
+        "errors_preserve_input_and_data": true,
+        "source_label_visible": true,
+        "trainer_no_write_control": true,
+        "no_overflow": true,
+        "no_kv_writes": true
+      }
+    ],
+    "live": [
+      {
+        "action": "monthly_follower_baseline_info",
+        "forged_session": false,
+        "status": 401,
+        "no_private_data": true
+      },
+      {
+        "action": "monthly_follower_baseline_info",
+        "forged_session": true,
+        "status": 401,
+        "no_private_data": true
+      },
+      {
+        "action": "set_monthly_follower_baseline",
+        "forged_session": false,
+        "status": 401,
+        "no_private_data": true
+      },
+      {
+        "action": "set_monthly_follower_baseline",
+        "forged_session": true,
+        "status": 401,
+        "no_private_data": true
+      }
+    ],
+    "deployment": {
+      "scope": "Main",
+      "function": "trainer-channel",
+      "version": 13,
+      "sha256": "a63b2e04d2c5d717463430978b24ef379f5309e77d2aa83561ee85076f80e22b",
+      "full_source_exact": true,
+      "native_owner_oauth_auth_proxy_files_unchanged": true,
+      "test_function_unchanged": true,
+      "no_automated_baseline_write": true,
+      "no_schema_secrets_or_kpi_changes": true
+    }
+  }
+}

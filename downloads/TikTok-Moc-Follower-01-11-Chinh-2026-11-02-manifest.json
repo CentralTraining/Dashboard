@@ -1,0 +1,41 @@
+{
+  "scope": "Main",
+  "date": "2026-11-02",
+  "filename": "Dashboard-Chinh-2026-11-02-TikTok-Moc-Follower-01-11.html",
+  "bytes": 2618316,
+  "sha256": "85b38a824ed9d45378bc4e41c03eb2b941ba95238b9f38b8dbba47ebcc0579bd",
+  "blob_sha": "6ac0299345decd1eb6b3a8ce9c49ad099c2b2d8c",
+  "function": {
+    "scope": "Main",
+    "function": "trainer-channel",
+    "version": 13,
+    "sha256": "a63b2e04d2c5d717463430978b24ef379f5309e77d2aa83561ee85076f80e22b",
+    "full_source_exact": true,
+    "native_owner_oauth_auth_proxy_files_unchanged": true,
+    "test_function_unchanged": true,
+    "no_automated_baseline_write": true,
+    "no_schema_secrets_or_kpi_changes": true
+  },
+  "function_files": {
+    "access.ts": "0b674819b330e99fba0f55bff2740f4730814c5e7b0f1a9ef188264e5817b72d",
+    "api-proxy.ts": "5d775d9353ce5ed369467ac9987d61af0cddb3329f2febe4f55b3c254b5d2ebb",
+    "deno.json": "7f85a404ccda69833d972ff83a60db9305536d340f561a5b02f0c136f583a5fa",
+    "followers.ts": "cebbb2aafd1d501275ef4cb269c59784fdefaee739101ae32338c6ab2205bc49",
+    "index.ts": "bdaf59c9085d619aff3a44e0dcbf6387644e758139f71929de2da4037711843a",
+    "month-baseline.ts": "2acc3b1b163ad9cca90145735a79a00c3ebd583a7399b43fe4b06fcb6189b412",
+    "oauth-route.ts": "c0af9723823b2af115c3f587cd82c325ac1bad97ab3fd3906441ff51563cdbc8",
+    "owner-route.ts": "af4b8042e5768b7f9d5f8022e8020fdfa8d3d5b98e08bffd671ad6c89ead71df",
+    "sandboxes.ts": "0d00de545ecd8fbbf135d8b82618695159acf1ec3641e6661bcffc39e8b97cc0",
+    "team-overview.ts": "bdfa75a3fe1e133ceec14bc94ebe69db2c2c34bb84d4605a2414f80c1bd59886"
+  },
+  "artifacts": {
+    "README.md": "877540d07bbfe6b404545b8498eb965de4a3c46cedae0c04b4d6200f8fa5efff",
+    "verification.json": "4b9e2538e9563154f39ea0f3ff17532f996aeba967080848fc3bddc6bbaea1f2"
+  },
+  "private_source_archive": {
+    "filename": "TikTok-Moc-Follower-01-11-Chinh-2026-11-02-Full-Source.zip",
+    "bytes": 25713,
+    "sha256": "e7acd841e3b14ef36e56c60ce8209662c9b087e37c2c1624676737a304e58c1e",
+    "delivery": "private_workspace_only"
+  }
+}
