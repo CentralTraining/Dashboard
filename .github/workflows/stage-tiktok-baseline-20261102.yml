@@ -1,0 +1,34 @@
+name: Stage verified TikTok baseline HTML
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/stage-tiktok-baseline-20261102.yml]
+permissions:
+  contents: write
+jobs:
+  stage:
+    if: github.repository == 'CentralTraining/Dashboard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify public Test artifact and stage the exact Git blob
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,hashlib,json,os,urllib.request
+          source='https://centraltraining.github.io/Test/downloads/Dashboard-Test-2026-11-02-TikTok-Moc-Follower-01-11.html'
+          req=urllib.request.Request(source,headers={'Cache-Control':'no-cache'})
+          with urllib.request.urlopen(req,timeout=35) as r:
+              html=r.read()
+          expected='85b38a824ed9d45378bc4e41c03eb2b941ba95238b9f38b8dbba47ebcc0579bd'
+          assert hashlib.sha256(html).hexdigest()==expected,'Source checksum mismatch'
+          blob_sha=hashlib.sha1(b'blob '+str(len(html)).encode()+b'\0'+html).hexdigest()
+          assert blob_sha=='6ac0299345decd1eb6b3a8ce9c49ad099c2b2d8c'
+          body=json.dumps({'encoding':'base64','content':base64.b64encode(html).decode('ascii')}).encode()
+          req=urllib.request.Request('https://api.github.com/repos/CentralTraining/Dashboard/git/blobs',data=body,method='POST',headers={'Accept':'application/vnd.github+json','Authorization':'Bearer '+os.environ['GH_TOKEN'],'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'})
+          with urllib.request.urlopen(req,timeout=60) as r:
+              result=json.load(r)
+          assert result.get('sha')==blob_sha,'Staged blob checksum mismatch'
+          print(json.dumps({'verified_sha256':expected,'staged_blob_sha':blob_sha,'bytes':len(html),'no_branch_or_business_data_changed':True}))
+          PY
