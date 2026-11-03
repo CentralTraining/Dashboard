@@ -11975,7 +11975,10 @@ async function renderFrequencyNoiboBody_(subtype){
 async function renderFrequencyNoiboCampaign_(container,camp,subtype){
   const label=campaignSubtypeLabel('noibo',subtype);
   const x=campaignFrequencyX_(camp);
-  const updateMonthlySummary=campaignsForGroupMonth('noibo').find(c=>campaignSubtype(c)===subtype)?.id===camp.id;
+  const scopeMonth=currentMonth,scopeOwner=frequencyTargetOwner_();
+  try{await loadFrequencyTargetScopes_(camp.month);}catch(e){if(container.isConnected&&frequencyCampaignViewMatches_(camp))container.innerHTML='<p role="alert" style="color:var(--red)">'+escapeHtml(e.message)+'</p>';return;}
+  if(scopeMonth!==currentMonth||scopeOwner!==frequencyTargetOwner_()||!container.isConnected||!frequencyCampaignViewMatches_(camp))return;
+  const updateMonthlySummary=frequencyTargetScope_(camp).mode==='all'&&campaignsForGroupMonth('noibo').find(c=>campaignSubtype(c)===subtype)?.id===camp.id;
   const trainers=visibleTrainers();
 
   // ===== TEST ONLINE =====
@@ -11983,7 +11986,7 @@ async function renderFrequencyNoiboCampaign_(container,camp,subtype){
     const progress=await loadFrequencyProgress_(camp);
     if(!container.isConnected||!frequencyCampaignViewMatches_(camp))return;
     const trainerRows=trainers.map(t=>{
-      const list=activePgsOfTrainer_(t.id);
+      const list=frequencyTargetPgs_(camp,t.id);
       let qualified=0;
       list.forEach(p=>{ if(Number(progress[frequencyPgKey_(p)]||0)>=x) qualified++; });
       const totalPgs=list.length;
@@ -12004,7 +12007,7 @@ async function renderFrequencyNoiboCampaign_(container,camp,subtype){
     const sTarget=scoped.reduce((a,r)=>a+r.targetPgs,0), sQualified=scoped.reduce((a,r)=>a+r.qualified,0);
     const qp=sTarget?Math.round(sQualified/sTarget*1000)/10:0;
 
-    let html=`<div class="campaign-context">Chiến dịch: <strong>${escapeHtml(camp.name)}</strong> — ${monthLabel(currentMonth)} · Chuẩn đạt: <strong>${x} lần / PG</strong></div>`;
+    let html=`<div class="campaign-context">Chiến dịch: <strong>${escapeHtml(camp.name)}</strong> — ${monthLabel(currentMonth)} · ${frequencyTargetNotice_(camp)} · Chuẩn đạt: <strong>${x} lần / PG</strong></div>`;
     html+=`<div class="kpi-row"><div class="kpi-card"><div class="label">PG đạt chuẩn ${x} lần</div><div class="value ${statusClass(qp).status}">${qp}%</div><div class="frac">${sQualified} / ${sTarget} PG</div></div></div>`;
     html+=`<h3 class="kpi-section-title">Tiến độ ${label} — chỉ PG đủ ${x} lần mới tính hoàn thành</h3>`;
     html+=`<table class="mobile-frequency-progress"><thead><tr><th>Trainer</th><th>Khu vực</th><th>PG đạt chuẩn</th></tr></thead><tbody>`;
@@ -12014,7 +12017,7 @@ async function renderFrequencyNoiboCampaign_(container,camp,subtype){
     });
     html+=`</tbody></table>`;
 
-    const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||(trainerOf(p.trainerId)&&trainerOf(p.trainerId).region===session.region)));
+    const activePgs=frequencyTargetPgs_(camp);
     html+=`<h3 class="kpi-section-title">Danh sách PGs chưa hoàn thành Test Online</h3><p class="section-desc">Chỉ hiển thị PG có <strong>Lần đạt điểm max &lt; ${x}</strong>. Dữ liệu lấy theo <strong>Mã NV</strong>; khi đạt ≥ ${x} lần, PG tự chuyển trạng thái Đạt.</p>`;
     if(isAdmin()||isTrainer()){
       html+=`<div class="form-card" style="max-width:none;margin:0 0 14px;">
@@ -12090,7 +12093,7 @@ async function renderFrequencyNoiboCampaign_(container,camp,subtype){
   const aiCheck=await loadAiCheckProgress_(camp);
   if(!container.isConnected||!frequencyCampaignViewMatches_(camp))return;
   const trainerRows=trainers.map(t=>{
-    const list=activePgsOfTrainer_(t.id);
+    const list=frequencyTargetPgs_(camp,t.id);
     let aiQualified=0,checkQualified=0,bothQualified=0;
     list.forEach(p=>{
       const d=aiCheck[frequencyPgKey_(p)]||{};
@@ -12127,7 +12130,7 @@ async function renderFrequencyNoiboCampaign_(container,camp,subtype){
   const aiPct=aiTargetTotal?Math.round(aiDoneTotal/aiTargetTotal*1000)/10:0;
   const checkPct=checkTargetTotal?Math.round(checkDoneTotal/checkTargetTotal*1000)/10:0;
 
-  let html=`<div class="campaign-context">Chiến dịch: <strong>${escapeHtml(camp.name)}</strong> — ${monthLabel(currentMonth)} · Tư vấn AI đạt khi <strong>Kết quả Luyện TV ≥ ${aiThreshold}</strong> · Check shop đạt khi <strong>Kết quả Check = Pass</strong></div>`;
+  let html=`<div class="campaign-context">Chiến dịch: <strong>${escapeHtml(camp.name)}</strong> — ${monthLabel(currentMonth)} · ${frequencyTargetNotice_(camp)} · Tư vấn AI đạt khi <strong>Kết quả Luyện TV ≥ ${aiThreshold}</strong> · Check shop đạt khi <strong>Kết quả Check = Pass</strong></div>`;
   html+=`<div class="kpi-row cols-2">
     <div class="kpi-card"><div class="label">Tư vấn AI — PG đạt chuẩn ${aiThreshold} lần</div><div class="value ${statusClass(aiPct).status}">${aiPct}%</div><div class="frac">${aiDoneTotal} / ${aiTargetTotal} PG</div></div>
     <div class="kpi-card"><div class="label">Check shop — PG đạt Pass</div><div class="value ${statusClass(checkPct).status}">${checkPct}%</div><div class="frac">${checkDoneTotal} / ${checkTargetTotal} PG</div></div>
@@ -12140,7 +12143,7 @@ async function renderFrequencyNoiboCampaign_(container,camp,subtype){
   });
   html+=`</tbody></table>`;
 
-  const activePgs=pgs.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm'&&(!isTrainer()||(trainerOf(p.trainerId)&&trainerOf(p.trainerId).region===session.region)));
+  const activePgs=frequencyTargetPgs_(camp);
   html+=`<h3 class="kpi-section-title">Danh sách PGs — Tư vấn AI & Check shop</h3>
     <p class="section-desc">Tư vấn AI lấy từ cột <strong>Kết quả Luyện TV</strong> (ví dụ 3/7 → 3 lần đạt). PG đạt khi ≥ ${aiThreshold}. Check shop lấy từ cột <strong>Kết quả Check</strong>; giá trị <strong>Pass</strong> được tính Đạt.</p>`;
   if(isAdmin()){
@@ -15776,6 +15779,127 @@ function renderPendingTargetModal_(){
    Mỗi chiến dịch có 1 biến X (số lần mỗi PG Đang làm phải hoàn thành).
    Target = số PG Đang làm của Trainer. X chỉ là ngưỡng số lần/PG.
    Tiến độ đạt chuẩn = chỉ đếm PG có số lần hoàn thành >= X. */
+/* Campaign Target roster — Test 03/11/2026. Raw completion imports remain unchanged. */
+const frequencyTargetScopes_=new Map(),frequencyTargetDrafts_=new Map();
+let frequencyTargetAuthPending_=null,frequencyTargetSaveBusy_=false;
+const frequencyTargetOwner_=()=>JSON.stringify([session?.userId,session?.role,session?.trainerId,session?.region]);
+const frequencyTargetKey_=month=>frequencyTargetOwner_()+':'+month;
+const frequencyTargetCode_=v=>String(v??'').normalize('NFC').trim().replace(/^'+/,'').replace(/^(\d+)\.0+$/,'$1').toUpperCase();
+async function frequencyTargetToken_(){
+ if(frequencyTargetAuthPending_)return frequencyTargetAuthPending_;
+ frequencyTargetAuthPending_=(async()=>{const pending=workshopNoiboToken_(),title=document.querySelector('#wsnbAuthOverlay h3');if(title)title.textContent='Xác thực Target chiến dịch';return await pending;})();
+ try{return await frequencyTargetAuthPending_;}finally{frequencyTargetAuthPending_=null;}
+}
+async function frequencyTargetApi_(payload){
+ const owner=frequencyTargetOwner_(),token=await frequencyTargetToken_();if(owner!==frequencyTargetOwner_())throw Error('Tài khoản đã thay đổi. Hãy mở lại Target.');
+ const fn=location.pathname.startsWith('/Test/')?'campaign-target-roster-test':'campaign-target-roster';
+ const res=await fetch(SUPABASE_URL+'/functions/v1/'+fn,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},body:JSON.stringify({...payload,dashboardToken:token}),signal:AbortSignal.timeout(payload.action==='preview_sheet'?45000:25000)});
+ let out;try{out=await res.json();}catch{throw Error('Chưa nhận được danh sách Target hợp lệ. Dữ liệu cũ được giữ nguyên.');}
+ if(res.status===401)sessionStorage.removeItem('workshop_private_session');
+ if(!res.ok||!out.ok)throw Error(out.error||'Chưa đọc/lưu được Target.');
+ if(owner!==frequencyTargetOwner_())throw Error('Tài khoản đã thay đổi. Hãy mở lại Target.');
+ if(out.month!==payload.month||payload.campaignId&&out.campaignId!==payload.campaignId)throw Error('Phản hồi Target không khớp tháng hoặc chiến dịch.');
+ return out;
+}
+async function loadFrequencyTargetScopes_(month=currentMonth,force=false){
+ const key=frequencyTargetKey_(month),old=frequencyTargetScopes_.get(key);
+ if(!force&&old?.data&&Date.now()-old.at<30000)return old.data;
+ if(old?.pending)return old.pending;
+ if(!campaigns.some(c=>c.month===month&&isFrequencyNoiboCampaign_(c))){frequencyTargetScopes_.set(key,{data:{},at:Date.now()});return {};}
+ const state={pending:null};frequencyTargetScopes_.set(key,state);
+ state.pending=frequencyTargetApi_({action:'read',month}).then(out=>{
+  if(!out.scopes||typeof out.scopes!=='object'||Array.isArray(out.scopes))throw Error('Chưa đọc được phạm vi Target.');
+  for(const s of Object.values(out.scopes))if(!['all','list'].includes(s.mode)||!Array.isArray(s.codes)||!Number.isInteger(s.version))throw Error('Phạm vi Target trả về chưa hợp lệ.');
+  state.data=out.scopes;state.at=Date.now();state.pending=null;return state.data;
+ }).catch(e=>{frequencyTargetScopes_.delete(key);throw e;});
+ return state.pending;
+}
+function frequencyTargetScope_(camp,draft=false){
+ const state=frequencyTargetScopes_.get(frequencyTargetKey_(camp.month));
+ if(!state?.data)throw Error('Chưa tải được phạm vi Target. Hãy tải lại để tránh tính nhầm PG.');
+ const saved=state.data[camp.id]||{mode:'all',codes:[],version:0,roster:[],source:null};
+ return draft?(frequencyTargetDrafts_.get(frequencyTargetKey_(camp.month)+':'+camp.id)||saved):saved;
+}
+function frequencyTargetPgs_(camp,trainerId=null,draft=false){
+ const scope=frequencyTargetScope_(camp,draft),codes=scope.mode==='list'?new Set(scope.codes):null,seen=new Set(),identities=new Map();
+ for(const p of pgs){const c=frequencyTargetCode_(p.code||p.id);if(!identities.has(c))identities.set(c,new Set());identities.get(c).add(JSON.stringify([p.name,p.trainerId,p.brand,p.status]));}
+ return pgs.filter(p=>{
+  const c=frequencyTargetCode_(p.code||p.id),t=trainerOf(p.trainerId);
+  if(identities.get(c).size!==1||p.brand!=='OPPO'||p.status!=='Đang làm'||!c||!t||!t.region||(trainerId!==null&&p.trainerId!==trainerId)||(isTrainer()&&t.region!==session.region)||codes&&!codes.has(c)||seen.has(c))return false;
+  seen.add(c);return true;
+ }).map(p=>({...p,region:trainerOf(p.trainerId).region}));
+}
+function frequencyTargetNotice_(camp){const s=frequencyTargetScope_(camp);return s.mode==='list'?'Target theo danh sách đã nhập · Chỉ tính PG OPPO Đang làm trong danh sách.':'Target tất cả PG OPPO Đang làm.';}
+function frequencyTargetDraft_(camp){const key=frequencyTargetKey_(camp.month)+':'+camp.id;if(!frequencyTargetDrafts_.has(key))frequencyTargetDrafts_.set(key,{...frequencyTargetScope_(camp),codes:[...frequencyTargetScope_(camp).codes]});return frequencyTargetDrafts_.get(key);}
+function renderFrequencyTargetControl_(camp,ctx){
+ const draft=frequencyTargetDraft_(camp),locked=!!camp.targetLocked||monthLocked,editable=isAdmin()&&!locked;
+ const box=document.createElement('div');box.id='frequencyTargetRosterControl';box.className='frequency-target-control';box.dataset.campaignId=camp.id;
+ box.innerHTML=`<div class="frequency-target-choice"><label for="frequencyTargetMode">Phạm vi Target</label><select id="frequencyTargetMode" ${editable?'':'disabled'}><option value="all" ${draft.mode==='all'?'selected':''}>Tất cả PGs</option><option value="list" ${draft.mode==='list'?'selected':''}>Theo danh sách</option></select>${isAdmin()?'<button type="button" class="secondary" id="frequencyTargetReloadBtn">Tải lại Target</button>':''}${draft.mode==='list'&&isAdmin()?`<button type="button" class="secondary" id="frequencyTargetImportBtn" ${editable?'':'disabled'}>Import Target từ Google Sheet</button>`:''}</div><p class="section-desc">${draft.mode==='list'?`Chỉ PG OPPO Đang làm trong danh sách được tính Target và tiến độ. ${draft.codes.length?`Danh sách: <strong>${draft.codes.length}</strong> PG · Đang tính Target: <strong>${frequencyTargetPgs_(camp,null,true).length}</strong> PG.`:'Chưa có danh sách; hãy import trước khi lưu.'}`:'Tính tất cả PG OPPO Đang làm, theo Trainer và khu vực trong dữ liệu nhân sự.'} ${draft.pendingImport?'<strong>Đã xem trước; bấm Lưu Target để áp dụng.</strong>':''}</p>${draft.source?`<p class="section-desc">Sheet: <strong>${escapeHtml(draft.source.sheet)}</strong> · <a href="${escapeHtml(draft.source.url)}" target="_blank" rel="noopener noreferrer">Mở nguồn</a></p>`:''}${locked?'<p class="section-desc">Target đã chốt. Bấm Sửa Target để đổi phạm vi hoặc cập nhật danh sách.</p>':''}<p id="frequencyTargetRosterMessage" role="status"></p>`;
+ ctx.appendChild(box);
+ box.querySelector('#frequencyTargetMode').onchange=e=>{draft.x=document.getElementById('frequencyTargetXInput')?.value;draft.mode=e.target.value;renderTargetTable();};
+ box.querySelector('#frequencyTargetReloadBtn')?.addEventListener('click',async e=>{e.target.disabled=true;try{await loadFrequencyTargetScopes_(camp.month,true);frequencyTargetDrafts_.delete(frequencyTargetKey_(camp.month)+':'+camp.id);invalidateHomeSnapshot_();await renderTargetTable();}catch(err){frequencyTargetMessage_(err.message,true);if(e.target.isConnected)e.target.disabled=false;}});
+ box.querySelector('#frequencyTargetImportBtn')?.addEventListener('click',()=>openFrequencyTargetImport_(camp));
+ const save=document.getElementById('saveTargetBtn');if(save)save.disabled=!editable||(draft.mode==='list'&&!draft.codes.length)||frequencyTargetSaveBusy_;
+}
+function frequencyTargetMessage_(text,error=false){const el=document.getElementById('frequencyTargetRosterMessage')||document.getElementById('targetSaveMsg');if(el){el.style.display='block';el.style.color=error?'var(--red)':'var(--green-ok)';el.textContent=text;}}
+async function saveFrequencyTarget_(camp){
+ if(frequencyTargetSaveBusy_||!isAdmin()||camp.targetLocked||monthLocked)return;
+ const month=currentMonth,owner=frequencyTargetOwner_(),button=document.getElementById('saveTargetBtn'),same=()=>month===currentMonth&&owner===frequencyTargetOwner_()&&document.getElementById('targetCampaignSelect')?.value===camp.id;
+ frequencyTargetSaveBusy_=true;if(button)button.disabled=true;
+ try{
+  const d=frequencyTargetDraft_(camp),x=Number(document.getElementById('frequencyTargetXInput')?.value);
+  if(!Number.isSafeInteger(x)||x<1)throw Error('X lần/PG cần là số nguyên từ 1 trở lên.');
+  if(d.mode==='list'&&!d.codes.length)throw Error('Hãy import và xem trước danh sách trước khi lưu.');
+  const out=await frequencyTargetApi_({action:'save',month,campaignId:String(camp.id),version:d.version,mode:d.mode,...(d.pendingImport?{rows:d.rows,source:d.source,fingerprint:d.fingerprint}:{})});
+  const state=frequencyTargetScopes_.get(frequencyTargetKey_(month));if(state?.data){state.data[camp.id]=out.scope;state.at=Date.now();}
+  frequencyTargetDrafts_.delete(frequencyTargetKey_(month)+':'+camp.id);
+  invalidateHomeSnapshot_();
+  if(!same())return;
+  const next=campaigns.map(c=>c.id===camp.id?{...c,frequencyX:x,targetLocked:true}:c);
+  if(!await dbSet('campaigns',next)){await renderTargetTable();throw Error('Đã lưu phạm vi Target, nhưng chưa lưu được ngưỡng X và chốt Target. Hãy bấm Lưu Target lại.');}
+  camp.frequencyX=x;camp.targetLocked=true;
+  await renderTargetTable();frequencyTargetMessage_('Đã lưu Target '+(out.scope.mode==='list'?'theo danh sách':'tất cả PGs')+' và chốt chiến dịch.');
+  renderKpiAll();
+ }catch(e){if(same())frequencyTargetMessage_(e.message||'Chưa lưu được Target.',true);}
+ finally{frequencyTargetSaveBusy_=false;if(button?.isConnected)button.disabled=false;}
+}
+function openFrequencyTargetImport_(camp){
+ if(!isAdmin()||camp.targetLocked||monthLocked||document.getElementById('frequencyTargetImportOverlay'))return;
+ const month=currentMonth,owner=frequencyTargetOwner_(),draft=frequencyTargetDraft_(camp),ov=document.createElement('div');ov.id='frequencyTargetImportOverlay';ov.className='frequency-target-overlay';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','frequencyTargetImportTitle');
+ ov.innerHTML=`<div class="frequency-target-modal"><h3 id="frequencyTargetImportTitle">Import Target theo danh sách PGs</h3><p class="section-desc">${escapeHtml(camp.name)} · ${monthLabel(month)}. Sheet cần cột <strong>Code / Mã PG</strong> (hoặc Mã NV) và <strong>Họ tên / Tên PGs</strong>. Trainer và khu vực lấy từ nhân sự của tháng chiến dịch.</p><label for="frequencyTargetSheetUrl">Link Google Sheet</label><input id="frequencyTargetSheetUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/…/edit"><label for="frequencyTargetSheetName">Tên sheet (tab)</label><input id="frequencyTargetSheetName" placeholder="Ví dụ: Target PGs"><p class="section-desc">Dùng Sheet đã chia sẻ quyền xem bằng liên kết. Hệ thống đọc đúng tên tab bạn nhập.</p><p id="frequencyTargetImportError" role="alert"></p><div id="frequencyTargetImportPreview"></div><div class="frequency-target-actions"><button type="button" class="secondary" id="frequencyTargetPreviewBtn">Lấy dữ liệu & Xem trước</button><button type="button" class="primary" id="frequencyTargetUseBtn" disabled>Dùng danh sách này</button><button type="button" class="secondary" id="frequencyTargetImportClose">Hủy</button></div></div>`;
+ draft.x=document.getElementById('frequencyTargetXInput')?.value;document.body.appendChild(ov);const url=ov.querySelector('#frequencyTargetSheetUrl'),tab=ov.querySelector('#frequencyTargetSheetName'),error=ov.querySelector('#frequencyTargetImportError'),preview=ov.querySelector('#frequencyTargetImportPreview'),use=ov.querySelector('#frequencyTargetUseBtn'),fetchButton=ov.querySelector('#frequencyTargetPreviewBtn');
+ url.value=draft.source?.url||'';tab.value=draft.source?.sheet||'';let candidate=null,busy=false;
+ const same=()=>ov.isConnected&&currentMonth===month&&owner===frequencyTargetOwner_()&&!camp.targetLocked&&!monthLocked&&document.getElementById('targetCampaignSelect')?.value===camp.id;
+ const reset=()=>{candidate=null;use.disabled=true;preview.replaceChildren();error.textContent='';};url.oninput=tab.oninput=reset;
+ const close=()=>{ov.remove();document.getElementById('frequencyTargetImportBtn')?.focus();};ov.querySelector('#frequencyTargetImportClose').onclick=close;
+ ov.addEventListener('keydown',e=>{if(e.key==='Escape')close();if(e.key==='Tab'){const controls=[...ov.querySelectorAll('input,button')].filter(el=>!el.disabled),first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
+ fetchButton.onclick=async()=>{
+  if(busy||!same())return;busy=true;reset();fetchButton.disabled=true;url.disabled=tab.disabled=true;error.style.color='var(--muted)';error.textContent='Đang đọc Sheet và đối chiếu với nhân sự…';
+  try{
+   let parsed;try{parsed=new URL(url.value.trim());}catch{throw Error('Link Google Sheet chưa hợp lệ.');}
+   const id=parseGoogleSheetId_(parsed.href),sheet=tab.value.normalize('NFC');if(parsed.protocol!=='https:'||parsed.hostname!=='docs.google.com'||!id||!sheet.trim())throw Error('Nhập link Google Sheet và đúng tên một sheet.');
+   const out=await frequencyTargetApi_({action:'preview_sheet',month,campaignId:String(camp.id),version:draft.version,source:{url:parsed.href,sheet}});if(!same())return;
+   const rows=out.rows;if(!Array.isArray(rows)||!out.source?.gid||typeof out.source.sheet!=='string')throw Error('Chưa xác minh được đúng tab Google Sheet; chưa thay đổi Target.');
+   url.value=out.source.url;tab.value=out.source.sheet;
+   const p=out.preview;if(!p||!Array.isArray(p.roster)||!Array.isArray(p.issues)||!Array.isArray(p.allocations))throw Error('Kết quả đối chiếu chưa hợp lệ.');
+   candidate={...draft,mode:'list',codes:p.roster.map(r=>r.code),roster:p.roster,rows,source:out.source,fingerprint:out.fingerprint,pendingImport:true};
+   preview.innerHTML=`<p class="section-desc">Tab đã xác minh: <strong>${escapeHtml(out.source.sheet)}</strong> · ${rows.length-1} dòng dữ liệu.</p><div class="frequency-target-summary"><strong>${p.eligible} PG tính Target</strong><span>${p.unique} PG khớp · ${p.duplicates.length} dòng lặp được gộp · ${p.excluded.length} PG không Đang làm · ${p.issues.length} lỗi</span></div><div class="table-scroll"><table><thead><tr><th>Trainer</th><th>Khu vực</th><th>Target PG</th></tr></thead><tbody>${p.allocations.map(t=>`<tr><td>${escapeHtml(t.trainerName)}</td><td>${escapeHtml(t.region)}</td><td>${t.count}</td></tr>`).join('')}</tbody></table></div>${(p.eligiblePgs||[]).length?`<details ${p.eligible<=50?'open':''} id="frequencyTargetMatchedPgs"><summary>Danh sách PG tính Target (${p.eligible})</summary><div class="table-scroll"><table><thead><tr><th>Code</th><th>Họ tên</th><th>Trainer</th><th>Khu vực</th><th>Shop</th></tr></thead><tbody>${p.eligiblePgs.slice(0,150).map(r=>`<tr><td>${escapeHtml(r.code)}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.trainerName)}</td><td>${escapeHtml(r.region)}</td><td>${escapeHtml(r.shopId)} · ${escapeHtml(r.shopName)}</td></tr>`).join('')}</tbody></table></div>${p.eligible>150?'<p>Hiển thị 150 PG đầu để xem trước.</p>':''}</details>`:''}${p.issues.length||p.excluded.length?`<details open><summary>Các dòng cần lưu ý</summary><div class="table-scroll"><table><thead><tr><th>Dòng</th><th>Mã PG</th><th>Họ tên</th><th>Kết quả</th></tr></thead><tbody>${[...p.issues,...p.excluded].slice(0,150).map(r=>`<tr><td>${r.line||'—'}</td><td>${escapeHtml(r.code)}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.reason)}</td></tr>`).join('')}</tbody></table></div>${p.issues.length+p.excluded.length>150?'<p>Hiển thị 150 dòng đầu. Hãy sửa Sheet rồi xem trước lại.</p>':''}</details>`:''}`;
+   error.style.color=p.issues.length?'var(--red)':'var(--green-ok)';error.textContent=p.issues.length?'Danh sách còn lỗi; sửa Sheet và lấy dữ liệu lại. Chưa thay đổi Target.':'Đối chiếu xong. Chọn Dùng danh sách này, rồi Lưu Target để áp dụng.';use.disabled=!!p.issues.length||!p.eligible;
+  }catch(e){if(ov.isConnected){error.style.color='var(--red)';error.textContent=e.message||'Chưa import được danh sách. Target cũ được giữ nguyên.';}}
+  finally{busy=false;if(ov.isConnected){fetchButton.disabled=false;url.disabled=tab.disabled=false;}}
+ };
+ use.onclick=()=>{if(!candidate||use.disabled||!same())return;frequencyTargetDrafts_.set(frequencyTargetKey_(month)+':'+camp.id,candidate);close();renderTargetTable();};url.focus();
+}
+async function frequencyTargetReportCounts_(){
+ await loadFrequencyTargetScopes_(currentMonth);const out={};
+ for(const camp of campaignsForGroupMonth('noibo').filter(isFrequencyNoiboCampaign_)){
+  const sub=campaignSubtype(camp);if(out[sub])continue;
+  const progress=sub==='testonline'?await loadFrequencyProgress_(camp):await loadAiCheckProgress_(camp),x=campaignFrequencyX_(camp);out[sub]={};
+  for(const t of visibleTrainers()){const list=frequencyTargetPgs_(camp,t.id);out[sub][t.id]={target:list.length,actual:list.filter(p=>sub==='testonline'?Number(progress[frequencyPgKey_(p)]||0)>=x:Number(progress[frequencyPgKey_(p)]?.aiCount||0)>=x).length};}
+ }
+ return out;
+}
+
 function isFrequencyNoiboCampaign_(camp){
   if(!camp || camp.group!=='noibo') return false;
   const sub=campaignSubtype(camp);
@@ -15829,9 +15953,20 @@ async function renderTargetTable(){
   if(isPartnerTrainingTargetCampaign_(camp)){
     await loadPartnerTrainingTargets_(camp);
   }
+  if(isFrequencyNoiboCampaign_(camp)){
+    const scopeMonth=currentMonth,scopeOwner=frequencyTargetOwner_();
+    try{await loadFrequencyTargetScopes_(camp.month);}catch(e){
+      if(scopeMonth!==currentMonth||scopeOwner!==frequencyTargetOwner_()||document.getElementById('targetCampaignSelect')?.value!==camp.id)return;
+      ctx.innerHTML='<p role="alert" style="color:var(--red)">'+escapeHtml(e.message)+'</p><button type="button" class="secondary" id="frequencyTargetRetry">Tải lại Target</button>';
+      document.getElementById('frequencyTargetRetry').onclick=()=>renderTargetTable();body.replaceChildren();theadEl.replaceChildren();
+      document.getElementById('saveTargetBtn').style.display='none';document.getElementById('editTargetBtn').style.display='none';return;
+    }
+    if(scopeMonth!==currentMonth||scopeOwner!==frequencyTargetOwner_()||document.getElementById('targetCampaignSelect')?.value!==camp.id)return;
+  }
   const locked = !!camp.targetLocked;
+  document.getElementById('saveTargetBtn').disabled=false;
   ctx.innerHTML = `Đang set Target cho chiến dịch: <strong>${camp.name}</strong> — Nhóm: ${CAMPAIGN_GROUP_LABELS[camp.group]} · ${campaignSubtypeLabel(camp.group, sub)} — Tháng: ${monthLabel(camp.month)}` +
-    (isFrequencyNoiboCampaign_(camp) ? `<span style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;padding:5px 9px;background:${locked?'var(--bg)':'#fff'};border:1px solid var(--line);border-radius:8px;opacity:${locked?'.55':'1'};"><strong>X lần/PG:</strong><input id="frequencyTargetXInput" type="number" min="1" step="1" value="${campaignFrequencyX_(camp)}" style="width:64px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;" ${(!isAdmin()||locked)?'disabled':''}><span style="font-size:8pt;color:var(--muted);">${sub==='tuvanai_checkshop'?'Tư vấn AI đạt khi Kết quả Luyện TV ≥ X lần · Target = số PG Đang làm':'Target = số PG Đang làm · X chỉ là ngưỡng đạt/PG'}</span></span>` : '') +
+    (isFrequencyNoiboCampaign_(camp) ? `<span style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;padding:5px 9px;background:${locked?'var(--bg)':'#fff'};border:1px solid var(--line);border-radius:8px;opacity:${locked?'.55':'1'};"><strong>X lần/PG:</strong><input id="frequencyTargetXInput" type="number" min="1" step="1" value="${escapeHtml(String(frequencyTargetDraft_(camp).x??campaignFrequencyX_(camp)))}" style="width:64px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;" ${(!isAdmin()||locked)?'disabled':''}><span style="font-size:8pt;color:var(--muted);">${sub==='tuvanai_checkshop'?'Tư vấn AI đạt khi Kết quả Luyện TV ≥ X lần · Target theo phạm vi đã chọn':'Target = số PG trong phạm vi đã chọn · X chỉ là ngưỡng đạt/PG'}</span></span>` : '') +
     (isPartnerTrainingTargetCampaign_(camp) ? `<span style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;padding:5px 9px;background:${locked?'var(--bg)':'#fff'};border:1px solid var(--line);border-radius:8px;opacity:${locked?'.55':'1'};"><strong>Điểm TB khảo sát X:</strong><input id="partnerSurveyTargetXInput" type="number" min="0" max="10" step="0.1" value="${Number(camp.partnerSurveyTargetX??0)}" style="width:70px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;" ${(isAdmin()&&!locked)?'':'disabled'}><span style="font-size:8pt;color:var(--muted);">Áp dụng cho tất cả Khu vực</span></span>` : '');
 
 
@@ -15840,6 +15975,8 @@ async function renderTargetTable(){
     helper.innerHTML=`<span><strong>Target theo PG đang làm</strong><small>A = số bài trên 1 PG · Target mỗi Trainer = A × số PG OPPO Đang làm do Trainer phụ trách.</small></span>${isAdmin()?`<button type="button" class="secondary" id="mediaTargetAOpenBtn" ${locked?'disabled':''}>Nhập A — Số bài/PG</button>`:''}${locked&&isAdmin()?'<small>Target đã chốt. Bấm “Sửa Target” để nhập A hoặc chỉnh tay.</small>':''}`;
     ctx.appendChild(helper);helper.querySelector('#mediaTargetAOpenBtn')?.addEventListener('click',()=>mediaTargetAModalOpen_(String(camp.id)));
   }
+
+  if(isFrequencyNoiboCampaign_(camp))renderFrequencyTargetControl_(camp,ctx);
 
   const viewModeBox = document.getElementById('targetDoitacViewModeBox');
   const summaryBox = document.getElementById('targetDoitacSummaryBox');
@@ -15875,7 +16012,7 @@ async function renderTargetTable(){
   } else {
     theadEl.innerHTML = '<tr><th>Trainer</th><th>Khu vực</th>' + metricsForGroup.map(m=>
       m.key==='pgMoi' ? `<th>${m.label} — Target<br><span style="font-weight:400;text-transform:none;font-size:8pt;">(= Số PGs mới tuyển trong tháng × 2)</span></th>` :
-      (autoActivePgTarget ? (sub==='tuvanai_checkshop' && m.key==='checkShopNb' ? `<th>${m.label} — Target<br><span style="font-weight:400;text-transform:none;font-size:8pt;">(= Số PG Đang làm)</span></th>` : `<th>${m.label} — Target<br><span style="font-weight:400;text-transform:none;font-size:8pt;">(= Số PG Đang làm; mỗi PG cần ≥ X lần để đạt)</span></th>`) : `<th>${m.label} — Target</th>`)
+      (autoActivePgTarget ? (sub==='tuvanai_checkshop' && m.key==='checkShopNb' ? `<th>${m.label} — Target<br><span style="font-weight:400;text-transform:none;font-size:8pt;">(= Số PG Đang làm trong phạm vi đã chọn)</span></th>` : `<th>${m.label} — Target<br><span style="font-weight:400;text-transform:none;font-size:8pt;">(= Số PG trong phạm vi đã chọn; mỗi PG cần ≥ X lần để đạt)</span></th>`) : `<th>${m.label} — Target</th>`)
     ).join('') + '</tr>';
   }
 
@@ -15951,15 +16088,15 @@ async function renderTargetTable(){
     } else {
       cells = metricsForGroup.map(m=>{
         if(autoActivePgTarget){
-          const activeCount = activePgsOfTrainer_(t.id).length;
+          const activeCount = frequencyTargetPgs_(camp,t.id,true).length;
           const x = campaignFrequencyX_(camp);
           // Target Test Online / Tư vấn AI / Check shop LUÔN là số PG trạng thái Đang làm.
           // X chỉ là điều kiện đạt của từng PG, tuyệt đối không nhân X vào Target, kể cả Target đã khoá trước đó.
           const totalTarget = activeCount;
-          if(Number(rec[m.key+'Target']||0) !== totalTarget) rec[m.key+'Target'] = totalTarget;
+          // Derived campaign-scoped Target; do not overwrite Main's shared monthly records.
           const dimStyle = locked ? 'opacity:.5;background:var(--bg);' : '';
           if(sub==='tuvanai_checkshop' && m.key==='checkShopNb'){
-            return `<td style="${dimStyle}"><strong>${totalTarget} PG</strong><div style="font-size:8pt;color:var(--muted);font-weight:600;">Theo PG trạng thái Đang làm</div></td>`;
+            return `<td style="${dimStyle}"><strong>${totalTarget} PG</strong><div style="font-size:8pt;color:var(--muted);font-weight:600;">${frequencyTargetDraft_(camp).mode==='list'?'Theo danh sách · PG Đang làm':'Theo PG trạng thái Đang làm'}</div></td>`;
           }
           return `<td style="${dimStyle}"><strong>${totalTarget} PG</strong><div style="font-size:8pt;color:var(--green-dark);font-weight:600;">Chuẩn đạt: mỗi PG ≥ ${x} lần</div></td>`;
         }
@@ -15982,7 +16119,7 @@ async function renderTargetTable(){
     }
     return `<tr><td><strong>${t.name}</strong></td><td>${t.region||'—'}</td>${cells}</tr>`;
   }).join('');
-  if(camp.group!=='truyenthong')await dbSet('records:'+currentMonth, records);
+  if(camp.group!=='truyenthong'&&!autoActivePgTarget)await dbSet('records:'+currentMonth, records);
 
 
   if(sub==='ftf'){
@@ -16009,17 +16146,9 @@ document.getElementById('editTargetBtn').addEventListener('click', async ()=>{
   if(!isAdmin()) return;
   const camp = campaigns.find(c=>c.id===document.getElementById('targetCampaignSelect').value);
   if(!camp) return;
+  const beforeLocked=camp.targetLocked;
   camp.targetLocked = false;
-  if(isFrequencyNoiboCampaign_(camp)){
-    const sub = campaignSubtype(camp);
-    const metricKeys = sub==='testonline' ? ['testOnline'] : ['tuVanAINb','checkShopNb'];
-    config.trainers.forEach(t=>{
-      const cnt = activePgsOfTrainer_(t.id).length;
-      metricKeys.forEach(k=>{ trainerRecord(t.id)[k+'Target'] = cnt; });
-    });
-    await dbSet('records:'+currentMonth, records);
-  }
-  await dbSet('campaigns', campaigns);
+  if(!await dbSet('campaigns', campaigns)){camp.targetLocked=beforeLocked;frequencyTargetMessage_('Chưa mở khóa được Target. Vui lòng thử lại.',true);return;}
   renderTargetTable();
 });
 document.getElementById('saveTargetBtn').addEventListener('click', async ()=>{
@@ -16027,6 +16156,7 @@ document.getElementById('saveTargetBtn').addEventListener('click', async ()=>{
   const campId = document.getElementById('targetCampaignSelect').value;
   const camp = campaigns.find(c=>c.id===campId);
   if(!camp) return;
+  if(isFrequencyNoiboCampaign_(camp)){await saveFrequencyTarget_(camp);return;}
   if(camp.group==='truyenthong'){
     // Chiến dịch Truyền thông: lưu Target RIÊNG theo đúng chiến dịch (mediaTargets:<campaignId>),
     // để trang Tiến độ KPI ▸ Truyền thông đọc đúng theo từng chiến dịch nhỏ (VD: WAVE 1, WAVE 2...).
@@ -16448,6 +16578,7 @@ function trainerAvatarSvg_(trainerId, size){
    B (200%+0%)/2=100% nhìn như đã xong hết — phải tính (100%+0%)/2=50% mới đúng bản chất còn dở dang. */
 function capPct100_(p){ return p===null ? null : Math.min(100, p); }
 async function computeTrainerCategoryProgress_(trainerId, homeCtx=null){
+  if(!homeCtx)await loadFrequencyTargetScopes_(currentMonth);
   const rec = trainerRecord(trainerId);
 
   /* ===== NỘI BỘ ===== */
@@ -16473,7 +16604,7 @@ async function computeTrainerCategoryProgress_(trainerId, homeCtx=null){
   if(testOnlineCamp){
     const progress = homeCtx?.frequency?.[testOnlineCamp.id] ?? await loadFrequencyProgress_(testOnlineCamp);
     const x = campaignFrequencyX_(testOnlineCamp);
-    const list = homeCtx?.activePgsByTrainer?.[trainerId] || activePgsOfTrainer_(trainerId);
+    const list = frequencyTargetPgs_(testOnlineCamp,trainerId);
     if(list.length>0){
       let qualified=0;
       list.forEach(p=>{ if(Number(progress[frequencyPgKey_(p)]||0)>=x) qualified++; });
@@ -16489,7 +16620,7 @@ async function computeTrainerCategoryProgress_(trainerId, homeCtx=null){
   if(aiCheckCamp){
     const aiCheck = homeCtx?.ai?.[aiCheckCamp.id] ?? await loadAiCheckProgress_(aiCheckCamp);
     const aiThreshold = campaignFrequencyX_(aiCheckCamp);
-    const list = homeCtx?.activePgsByTrainer?.[trainerId] || activePgsOfTrainer_(trainerId);
+    const list = frequencyTargetPgs_(aiCheckCamp,trainerId);
     if(list.length>0){
       let aiQualified=0, checkQualified=0;
       list.forEach(p=>{
@@ -16801,6 +16932,9 @@ async function getHomeSnapshot_(){
   homeSnapshot_=snap;
   snap.pending=(async()=>{
     const begun=performance.now();
+    const rosterMonth=currentMonth,rosterOwner=frequencyTargetOwner_();
+    await loadFrequencyTargetScopes_(rosterMonth);
+    if(rosterMonth!==currentMonth||rosterOwner!==frequencyTargetOwner_())throw Error("Phiên hoặc tháng đã thay đổi. Hãy tải lại Home.");
     const allTrainers=homeTrainerList_();
     const mediaCamps=campaigns.filter(c=>c.group==='truyenthong'&&c.month===currentMonth);
     const mediaInternal=mediaCamps.filter(c=>campaignSubtype(c)==='noibo');
@@ -18546,6 +18680,8 @@ async function exportMonthlyReport_(){
     addSheet('9. OnOff + Sao',aoa9);
 
     // ---- Sheet 10: Tiến độ KPI (Trainer + Khu vực) ----
+    const frequencyScopedCounts=await frequencyTargetReportCounts_();
+    if(month!==currentMonth)throw Error('Tháng đã thay đổi. Hãy xuất báo cáo lại.');
     const aoa10=[['TIẾN ĐỘ KPI — '+monthLabel(month)],[]];
     aoa10.push(['Trainer','Khu vực','Coaching 0-1★ (A/T)','Coaching PG mới (A/T)','Test Online (A/T)','Tư vấn AI (A/T)']);
     visibleTrainers().forEach(t=>{
@@ -18554,8 +18690,8 @@ async function exportMonthlyReport_(){
       aoa10.push([t.name, t.region||'',
         AT(rec.pg01Actual,rec.pg01Target),
         AT(rec.pgMoiActual,rec.pgMoiTarget),
-        AT(rec.testOnlineActual,rec.testOnlineTarget),
-        AT(rec.tuVanAINbActual,rec.tuVanAINbTarget)]);
+        AT(frequencyScopedCounts.testonline?.[t.id]?.actual,frequencyScopedCounts.testonline?.[t.id]?.target),
+        AT(frequencyScopedCounts.tuvanai_checkshop?.[t.id]?.actual,frequencyScopedCounts.tuvanai_checkshop?.[t.id]?.target)]);
     });
     aoa10.push([]);
     aoa10.push(['FTF Đối tác (theo Trainer) — Shop / HR / Bài Test / Khảo sát, mỗi ô A/T']);
@@ -21358,5 +21494,8 @@ async function exportMediaReportExcel_(){
 }
 
 </script><style id="fm-seniority-20261101">#pgsmProgressTable .pgsm-col-seniority{text-align:center;font-variant-numeric:tabular-nums;}#pgsmProgressTable th.pgsm-col-seniority{overflow-wrap:normal;}</style><style id="fm-hr-status-20261101">.mobile-layout #pgsmProgressTable tr.pgsm-change-remove>td.mobile-pg-name-cell{color:#b91c1c!important;}</style>
+<style id="frequency-target-roster-20261103">.frequency-target-control{margin-top:14px;padding:14px 16px;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--text);}
+.frequency-target-choice{display:flex;align-items:center;flex-wrap:wrap;gap:10px;}.frequency-target-choice label{font-weight:700;}.frequency-target-choice select{width:210px;max-width:100%;}.frequency-target-control p{margin:8px 0 0;line-height:1.6;}.frequency-target-overlay{position:fixed;inset:0;z-index:245;background:rgba(8,35,26,.48);display:flex;align-items:center;justify-content:center;padding:16px;}.frequency-target-modal{width:min(850px,100%);max-height:90dvh;overflow:auto;box-sizing:border-box;padding:24px;border-radius:18px;background:#fff;box-shadow:0 18px 70px #10251a33;}.frequency-target-modal h3{margin:0 0 10px;}.frequency-target-modal>label{display:block;font-weight:700;margin:14px 0 6px;}.frequency-target-modal>input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:9px;min-height:40px;font:inherit;background:#fff;color:var(--text);}.frequency-target-modal>input:focus{outline:2px solid #00945c55;border-color:var(--green);}.frequency-target-modal table{font-size:12px;}.frequency-target-modal td{overflow-wrap:anywhere;}.frequency-target-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}.frequency-target-summary{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#eaf5ef;padding:12px;border-radius:10px;margin:12px 0;}.frequency-target-summary span{font-size:12px;}.frequency-target-modal details{margin-top:12px;}.frequency-target-modal summary{cursor:pointer;font-weight:700;}@media(max-width:600px){.frequency-target-modal{padding:16px;max-height:94dvh;}.frequency-target-overlay{padding:10px;}.frequency-target-choice{align-items:stretch;}.frequency-target-choice label{width:100%;}.frequency-target-choice select,.frequency-target-choice button{width:100%;}.frequency-target-actions button{flex:1 1 100%;}.frequency-target-modal th,.frequency-target-modal td{padding:8px;}.frequency-target-summary{gap:5px;}}
+</style>
 </body>
 </html>

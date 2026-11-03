@@ -2,6 +2,8 @@
 
 import json
 import math
+import os
+import base64
 import re
 import unicodedata
 from datetime import datetime
@@ -127,12 +129,85 @@ class SupabaseKpiSource:
             raise KpiSourceError('invalid_source_json') from None
 
     def snapshot(self, month):
-        base = self.read(['config', 'campaigns'])
-        data = {r['key']: r['value'] for r in base}
-        if not isinstance(data.get('config'), dict) or not isinstance(data.get('campaigns'), list):
-            raise KpiSourceError('missing_dashboard_configuration')
-        rows = self.read(required_keys(month, data['campaigns']))
-        return KpiSnapshot(rows, month)
+        for attempt in range(2):
+            base = self.read(['config', 'campaigns'])
+            data = {r['key']: r['value'] for r in base}
+            if not isinstance(data.get('config'), dict) or not isinstance(data.get('campaigns'), list):
+                raise KpiSourceError('missing_dashboard_configuration')
+            rows = self.read(required_keys(month, data['campaigns']))
+            campaigns = next((r['value'] for r in rows if r['key'] == 'campaigns'), [])
+            frequency = [c for c in campaigns if c.get('month') == month and c.get('group') == 'noibo'
+                         and campaign_subtype(c) in ('testonline', 'tuvanai_checkshop')]
+            if not frequency:
+                return KpiSnapshot(rows, month)
+            report = self.read_frequency_metrics(month)
+            updated = {r['key']: r.get('updated_at') for r in rows}
+            if any(updated.get(k) != v for k, v in report['sourceVersions'].items()):
+                if attempt == 0:
+                    continue
+                raise KpiSourceError('target_sources_changed_during_report')
+            if any(str(c['id']) not in report['metrics'] for c in frequency):
+                raise KpiSourceError('missing_campaign_target_metrics')
+            rows.append({'key': 'frequencyTargetMetrics:' + month, 'value': report['metrics']})
+            return KpiSnapshot(rows, month)
+
+    def read_frequency_metrics(self, month):
+        payload = {'month': month}
+        if self.config.get('dashboard_token'):
+            payload['dashboardToken'] = self.config['dashboard_token']
+        else:
+            payload['reportToken'] = self.github_report_token()
+        try:
+            response = requests.post(self.config['url'] + '/functions/v1/campaign-target-report',
+                                     json=payload, headers={'apikey': self.config['anon_key'], 'Authorization': 'Bearer ' + self.public_gateway_key()},
+                                     timeout=40, allow_redirects=False)
+            if not response.ok:
+                raise KpiSourceError('target_report_http_' + str(response.status_code))
+            report = response.json()
+        except requests.RequestException:
+            raise KpiSourceError('target_report_connection_failed') from None
+        except ValueError:
+            raise KpiSourceError('invalid_target_report_json') from None
+        if (not isinstance(report, dict) or report.get('ok') is not True or report.get('month') != month
+                or report.get('environment') != 'main' or not isinstance(report.get('metrics'), dict)
+                or not isinstance(report.get('sourceVersions'), dict)):
+            raise KpiSourceError('invalid_target_report_response')
+        return report
+
+    def public_gateway_key(self):
+        candidates = [self.config['anon_key']]
+        html = Path(__file__).resolve().parents[2] / 'index.html'
+        if html.is_file():
+            candidates += re.findall(r"const OTRAINING_ANON_KEY_\s*=\s*'([^']+)'", html.read_text())
+        project = urlparse(self.config['url']).hostname.split('.')[0]
+        for token in candidates:
+            try:
+                part = token.split('.')[1]
+                value = json.loads(base64.urlsafe_b64decode(part + '=' * (-len(part) % 4)))
+                if value.get('role') == 'anon' and value.get('ref') == project:
+                    return token
+            except (ValueError, IndexError, TypeError):
+                continue
+        raise KpiSourceError('compatible_public_gateway_key_missing')
+
+    def github_report_token(self):
+        url = os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL', '')
+        request_token = os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN', '')
+        parsed = urlparse(url)
+        if (parsed.scheme != 'https' or not (parsed.hostname or '').endswith('.actions.githubusercontent.com')
+                or not request_token or parsed.username or parsed.password or parsed.port):
+            raise KpiSourceError('private_target_report_authorization_required')
+        try:
+            response = requests.get(url, params={'audience': self.config['url'] + '/functions/v1/campaign-target-report'},
+                                    headers={'Authorization': 'Bearer ' + request_token}, timeout=20, allow_redirects=False)
+            if not response.ok:
+                raise KpiSourceError('target_report_identity_unavailable')
+            token = response.json().get('value')
+            if not isinstance(token, str) or len(token.split('.')) != 3:
+                raise KpiSourceError('invalid_target_report_identity')
+            return token
+        except (requests.RequestException, ValueError):
+            raise KpiSourceError('target_report_identity_unavailable') from None
 
 
 class KpiSnapshot:
@@ -206,6 +281,19 @@ class KpiSnapshot:
                 result.extend([metric('wsnb:buoi:' + cid, 'WS nội bộ — Số buổi', actual_sessions, target_sessions, unit='buổi', **base),
                                metric('wsnb:hv:' + cid, 'WS nội bộ — Học viên', actual_students, target_students, unit='HV', **base)])
             elif subtype in ('testonline', 'tuvanai_checkshop'):
+                scoped = self.data.get('frequencyTargetMetrics:' + self.month)
+                if scoped is not None:
+                    cell = scoped.get(str(cid), {}).get('trainers', {}).get(str(tid))
+                    if (not isinstance(cell, dict) or any(not isinstance(cell.get(k), (int, float))
+                            or not math.isfinite(cell[k]) or cell[k] < 0
+                            for k in ('target', 'testActual', 'aiActual', 'checkActual'))):
+                        raise KpiSourceError('invalid_trainer_target_metrics')
+                    if subtype == 'testonline':
+                        result.append(metric('test:' + cid, 'Test Online', cell['testActual'], cell['target'], unit='PG', **base))
+                    else:
+                        result.extend([metric('ai:' + cid, 'Tư vấn AI', cell['aiActual'], cell['target'], unit='PG', **base),
+                                       metric('check:' + cid, 'Check shop', cell['checkActual'], cell['target'], unit='PG', **base)])
+                    continue
                 active = [p for p in self.list_value('pgs:' + self.month)
                           if p.get('trainerId') == tid and p.get('brand') == 'OPPO' and p.get('status') == 'Đang làm']
                 x = max(1, jsround(number(c.get('frequencyX')) or 1))
@@ -447,3 +535,4 @@ def format_team_report(reports, dashboard_url):
         lines.append('ĐT gồm FTF cá nhân và WS khu vực.')
     lines.extend(['', '🔗 Chi tiết dashboard', dashboard_url])
     return '\n'.join(lines)
+

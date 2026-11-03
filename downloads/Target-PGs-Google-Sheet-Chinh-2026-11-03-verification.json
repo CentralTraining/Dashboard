@@ -1,0 +1,56 @@
+{
+  "environment": "Main",
+  "passed": true,
+  "html_sha256": "73dbcf653e1a60893d7e5054a241207d69e3fec4aaf019427cd2289db11d620a",
+  "ui_widths": [
+    1440,
+    768,
+    390,
+    320
+  ],
+  "backend_checks": [
+    "server_auth_and_revoked_user",
+    "admin_only_write",
+    "region_scoped_read",
+    "code_and_name_validation",
+    "code_precedence",
+    "duplicate_merge_and_conflicts",
+    "off_exclusion",
+    "trainer_region_from_hr",
+    "preview_no_writes",
+    "stale_hr_fingerprint",
+    "version_conflict",
+    "campaign_month_lock",
+    "empty_list_rejected",
+    "main_test_isolation",
+    "unavailable_read_fails_closed",
+    "raw_results_unchanged",
+    "preview_sheet_admin_only",
+    "locked_preview_does_not_fetch_google",
+    "verified_gid_preview_no_writes"
+  ],
+  "report_checks": {
+    "passed": true,
+    "synthetic_only": true,
+    "scope_counts_match_frontend": true,
+    "off_excluded": true,
+    "all_campaign_preserved": true,
+    "ai_and_check_independent": true,
+    "duplicates_and_ambiguous_codes": true,
+    "oidc_signature_verified": true,
+    "exact_audience_repo_branch_workflow_required": true,
+    "expired_fork_wrong_workflow_tampered_tokens_rejected": true,
+    "no_github_api_credentials_sent_to_supabase": true,
+    "no_public_roster_or_counts_route": true
+  },
+  "ollie_python_tests": 89,
+  "real_roster_revalidation": {
+    "rosters": 2,
+    "members_each": 25,
+    "issues": 0
+  },
+  "no_delivery_trigger_changed": true,
+  "deployment_sends_no_messages": true,
+  "no_secret_or_ledger_changes": true,
+  "live_scheduled_oidc_run_not_triggered": true
+}

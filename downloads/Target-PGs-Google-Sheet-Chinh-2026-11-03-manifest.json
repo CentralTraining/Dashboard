@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-03",
+  "environment": "Main",
+  "html": {
+    "filename": "Dashboard-Chinh-2026-11-03-Target-Google-Sheet-Dung-Tab.html",
+    "bytes": 2640216,
+    "sha256": "73dbcf653e1a60893d7e5054a241207d69e3fec4aaf019427cd2289db11d620a",
+    "blob": "b41b09df0bc52bdf4574d201aebc69969ab1db64"
+  },
+  "backend": {
+    "campaign-target-roster": {
+      "verify_jwt": true,
+      "version": 1,
+      "files": {
+        "access.ts": "af5c369e9837d85a0630893ebc26168138310d628eb0afcc6b0369de06e342f1",
+        "index.ts": "7867221b724ea691fcc67898de9b0d7f3105b06a84d3183310ec053542b8381e",
+        "model.js": "fd88d73a28f2a9dc684da36479edb65769835b8431cb3d20b5a27e303abdbc0d",
+        "sheets.js": "105880078cbeceba48e1820103f494efc64e339660cb57520a95f7b9333a95f6"
+      }
+    },
+    "campaign-target-report": {
+      "verify_jwt": true,
+      "version": 1,
+      "files": {
+        "access.ts": "af5c369e9837d85a0630893ebc26168138310d628eb0afcc6b0369de06e342f1",
+        "index.ts": "d62f87907a54204cc1b747eeae85f6cd1f9e4f12306a8ca821cc2ffb1c243fbe",
+        "model.js": "fd88d73a28f2a9dc684da36479edb65769835b8431cb3d20b5a27e303abdbc0d",
+        "report-auth.ts": "05b45464fcf39330f9a8e9ae5e6069ff8c89f784082f333578c6b07298a02603",
+        "report-metrics.js": "3adaae5dee39370410de9e1fffd62464d2259c69bd4fdf6372d7ff8b8ca04020"
+      }
+    }
+  },
+  "migrated_rosters": 2,
+  "roster_sizes": [
+    25,
+    25
+  ],
+  "messages_sent_by_deployment": 0
+}

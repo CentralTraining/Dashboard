@@ -1,7 +1,8 @@
 import copy
 import unittest
+from unittest.mock import Mock, patch
 
-from kpi import KpiSnapshot, KpiSourceError, average, metric, format_trainer_report, format_team_report, numeric_cluster, short_name
+from kpi import KpiSnapshot, KpiSourceError, SupabaseKpiSource, average, metric, format_trainer_report, format_team_report, numeric_cluster, short_name
 
 
 def rows(data):
@@ -137,5 +138,54 @@ class KpiChecks(unittest.TestCase):
         self.assertNotIn('đã đạt', text)
 
 
+class TargetRosterChecks(unittest.TestCase):
+    def setUp(self):
+        self.data = fixture()
+        for cid, sub in [('test', 'testonline'), ('ai', 'tuvanai_checkshop')]:
+            self.data['campaigns'].append({'id': cid, 'name': cid, 'group': 'noibo', 'subtype': sub, 'month': '2026-10'})
+        self.data['pgs:2026-10'] = [{'code': str(i), 'name': 'PG ' + str(i), 'brand': 'OPPO',
+                                    'status': 'Đang làm', 'trainerId': 'a'} for i in range(1, 5)]
+        self.data['frequencyProgress:test'] = {str(i): 99 for i in range(1, 5)}
+        self.data['aiCheckProgress:ai'] = {str(i): {'aiCount': 99, 'checkPass': True} for i in range(1, 5)}
+        self.metrics = {cid: {'mode': 'list', 'trainers': {
+            'a': {'target': 1, 'testActual': 1, 'aiActual': 0, 'checkActual': 1},
+            'b': {'target': 0, 'testActual': 0, 'aiActual': 0, 'checkActual': 0}}} for cid in ['test', 'ai']}
+        self.source = SupabaseKpiSource({'url': 'https://fixture.supabase.co', 'table': 'kv_store', 'anon_key': 'SYNTHETIC_PUBLIC_KEY'})
+        self.source.read = lambda keys: [r for r in rows(self.data) if r['key'] in keys]
+        self.versions = {k: '2026-10-12T01:00:00Z' for k in ['config', 'campaigns', 'pgs:2026-10', 'frequencyProgress:test', 'aiCheckProgress:ai']}
+
+    def response(self):
+        return {'ok': True, 'month': '2026-10', 'environment': 'main', 'metrics': self.metrics, 'sourceVersions': self.versions}
+
+    def test_private_scope_counts_override_raw_all_pg_results(self):
+        self.source.read_frequency_metrics = Mock(return_value=self.response())
+        s = self.source.snapshot('2026-10')
+        values = {m['key']: (m['actual'], m['target']) for m in s.internal_other(s.trainers[0])}
+        self.assertEqual(values['test:test'], (1, 1))
+        self.assertEqual(values['ai:ai'], (0, 1))
+        self.assertEqual(values['check:ai'], (1, 1))
+
+    def test_missing_or_stale_private_metrics_stop_reporting(self):
+        self.versions['config'] = 'changed'
+        self.source.read_frequency_metrics = Mock(return_value=self.response())
+        with self.assertRaisesRegex(KpiSourceError, 'target_sources_changed'):
+            self.source.snapshot('2026-10')
+        self.assertEqual(self.source.read_frequency_metrics.call_count, 2)
+
+    def test_no_authorization_does_not_fall_back_to_all_pgs(self):
+        with patch.dict('os.environ', {}, clear=True), self.assertRaisesRegex(KpiSourceError, 'private_target_report_authorization_required'):
+            self.source.snapshot('2026-10')
+
+    def test_authenticated_report_uses_existing_actions_identity(self):
+        response = Mock(ok=True)
+        response.json.return_value = self.response()
+        with patch.object(self.source, 'github_report_token', return_value='SYNTHETIC_OIDC'), patch.object(self.source, 'public_gateway_key', return_value='PUBLIC_GATEWAY'), patch('kpi.requests.post', return_value=response) as post:
+            self.assertEqual(self.source.snapshot('2026-10').internal_other({'id': 'a'})[0]['target'], 1)
+        self.assertEqual(post.call_args.args[0], 'https://fixture.supabase.co/functions/v1/campaign-target-report')
+        self.assertEqual(post.call_args.kwargs['json']['reportToken'], 'SYNTHETIC_OIDC')
+        self.assertNotIn('githubToken', post.call_args.kwargs['headers'])
+
+
 if __name__ == '__main__':
     unittest.main()
+

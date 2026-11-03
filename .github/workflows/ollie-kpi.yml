@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # Short-lived, audience-bound authentication for private Target metrics.
 
 concurrency:
   group: ollie-kpi-daily
