@@ -81,10 +81,49 @@ class KpiChecks(unittest.TestCase):
         # A finished campaign cannot hide another incomplete campaign in the average.
         self.assertEqual(average(m), 65)
 
-    def test_missing_data_stops_reporting_instead_of_fabricating_zero(self):
+    def test_missing_coaching_is_explicitly_unknown_not_fabricated_zero(self):
         del self.data['surveyResponses:2026-10']
-        with self.assertRaisesRegex(KpiSourceError, 'missing_coaching_source'):
-            KpiSnapshot(rows(self.data), '2026-10').trainer_report(self.a)
+        report = KpiSnapshot(rows(self.data), '2026-10').trainer_report(self.a)
+        missing = report['groups']['noibo'][0]
+        self.assertTrue(missing['unavailable'])
+        self.assertIsNone(missing['actual'])
+        self.assertIsNone(report['percentages']['noibo'])
+        self.assertIn('Chưa có dữ liệu tháng này', format_trainer_report(report, 'https://example.invalid/'))
+
+    def test_missing_ftf_preserves_workshop_and_marks_partner_percentage_unknown(self):
+        del self.data['ftfShopList:2026-10']
+        report = KpiSnapshot(rows(self.data), '2026-10').trainer_report(self.a)
+        self.assertIsNone(report['ftf_percentage'])
+        self.assertIsNone(report['percentages']['doitac'])
+        workshop = [m for m in report['groups']['doitac'] if m.get('subtype') == 'workshop']
+        self.assertEqual((workshop[0]['actual'], workshop[0]['target']), (1, 4))
+        missing = report['groups']['doitac'][0]
+        for key in ('actual', 'target', 'pct', 'remaining'):
+            self.assertIsNone(missing[key])
+        text = format_team_report([report], 'https://example.invalid/')
+        self.assertIn('ĐT\u00a0—', text)
+        self.assertIn('Chưa có dữ liệu tháng này: FTF', text)
+        self.assertNotIn('Các target được giao đã đạt', text)
+
+    def test_missing_media_does_not_hide_valid_campaign_or_claim_completion(self):
+        del self.data['mediaResponses:nb']
+        report = KpiSnapshot(rows(self.data), '2026-10').trainer_report(self.a)
+        media = report['groups']['truyenthong']
+        self.assertTrue(media[0]['unavailable'])
+        self.assertEqual((media[1]['actual'], media[1]['target']), (3, 10))
+        self.assertIsNone(report['percentages']['truyenthong'])
+        self.data['campaigns'] = [self.data['campaigns'][3]]
+        report = KpiSnapshot(rows(self.data), '2026-10').trainer_report(self.a)
+        text = format_trainer_report(report, 'https://example.invalid/')
+        self.assertIn('Chưa đủ dữ liệu để kết luận', text)
+        self.assertNotIn('Đã đạt', text)
+
+    def test_missing_workshop_keeps_ftf_and_declares_unknown(self):
+        del self.data['partnerTrainingActuals:ws']
+        report = KpiSnapshot(rows(self.data), '2026-10').trainer_report(self.a)
+        self.assertIsNone(report['workshop_percentage'])
+        self.assertEqual(report['groups']['doitac'][0]['actual'], 1)
+        self.assertIsNone(report['percentages']['doitac'])
 
     def test_format_has_three_groups_remaining_shared_scope_and_dashboard_link(self):
         text = format_trainer_report(self.s.trainer_report(self.a), 'https://example.invalid/dashboard/')

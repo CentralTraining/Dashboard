@@ -57,8 +57,17 @@ def metric(key, label, actual, target, **extra):
 
 
 def average(metrics):
+    if any(m.get('unavailable') for m in metrics):
+        return None
     values = [min(100, m['pct']) for m in metrics if m['pct'] is not None]
     return jsround(sum(values) / len(values)) if values else None
+
+
+def unavailable_metric(campaign, reason):
+    # Absence of an imported source is unknown, never a fabricated zero.
+    return {'key': 'unavailable:' + str(campaign['id']), 'label': campaign['name'],
+            'actual': None, 'target': None, 'pct': None, 'remaining': None,
+            'unavailable': True, 'reason': reason, **campaign_fields(campaign)}
 
 
 def campaign_subtype(c):
@@ -239,7 +248,7 @@ class KpiSnapshot:
             return []
         necessary = ['onoffRoster', f'pgs:{month}', f'surveyResponses:{month}', f'surveyResponsesNew:{month}']
         if any(k not in self.data for k in necessary):
-            raise KpiSourceError('missing_coaching_source')
+            return [unavailable_metric(c, 'missing_coaching_source') for c in campaigns]
         roster = self.list_value('onoffRoster'); pgs = self.list_value(f'pgs:{month}')
         pgs_by_code = {str(p.get('code')): p for p in reversed(pgs) if p.get('code')}
         def in_month(r):
@@ -315,7 +324,8 @@ class KpiSnapshot:
         if not campaigns: return []
         tid = trainer['id']; rec = self.records.get(tid, {})
         key = f'ftfShopList:{self.month}'
-        if key not in self.data: raise KpiSourceError('missing_ftf_source')
+        if key not in self.data:
+            return [unavailable_metric(c, 'missing_ftf_source') for c in campaigns]
         shops = [s for s in self.list_value(key) if s.get('trainerId') == tid]
         definitions = [('ftfShop', 'Shop', None), ('ftfHr', 'Học viên', 'hrActual'),
                        ('ftfBaiTest', 'Pass test', 'testPass'), ('ftfTuVanAI', 'Tư vấn AI', 'aiDone'),
@@ -343,7 +353,9 @@ class KpiSnapshot:
         for c in self.campaigns:
             if c.get('group') != 'doitac' or campaign_subtype(c) != 'workshop': continue
             cid = c['id']; tk = 'partnerTrainingTargets:' + cid; ak = 'partnerTrainingActuals:' + cid
-            if tk not in self.data or ak not in self.data: raise KpiSourceError('missing_workshop_source')
+            if tk not in self.data or ak not in self.data:
+                result.append(unavailable_metric(c, 'missing_workshop_source'))
+                continue
             t = find_region(self.dict_value(tk)); a = find_region(self.dict_value(ak))
             base = {'shared_region': trainer.get('region'), **campaign_fields(c)}
             result.extend([metric('ws:buoi:' + cid, 'WS đối tác — Số buổi', a.get('sessions'), t.get('sessions'), unit='buổi', **base),
@@ -366,7 +378,9 @@ class KpiSnapshot:
             cid = c['id']; subtype = campaign_subtype(c); targets = self.dict_value('mediaTargets:' + cid)
             if subtype == 'doitac':
                 necessary = ['shopTrainerMap', 'partnerList', 'mediaDoitacEmps:' + cid, 'mediaTargets:' + cid]
-                if any(k not in self.data for k in necessary): raise KpiSourceError('missing_partner_media_source')
+                if any(k not in self.data for k in necessary):
+                    result.append(unavailable_metric(c, 'missing_partner_media_source'))
+                    continue
                 actual = 0
                 for e in self.list_value('mediaDoitacEmps:' + cid):
                     if number(e.get('approved')) < 1: continue
@@ -375,7 +389,9 @@ class KpiSnapshot:
                 target = targets.get(tid, 0)
                 label = 'Đối tác'
             else:
-                if 'mediaResponses:' + cid not in self.data: raise KpiSourceError('missing_internal_media_source')
+                if 'mediaResponses:' + cid not in self.data:
+                    result.append(unavailable_metric(c, 'missing_internal_media_source'))
+                    continue
                 actual = sum(1 for r in self.list_value('mediaResponses:' + cid) if r.get('trainerId') == tid)
                 target = targets[tid] if tid in targets else rec.get('ttTarget', 0)
                 label = 'Nội bộ'
@@ -463,7 +479,12 @@ def percent_cluster(value):
 
 
 def assigned_metrics(report, group):
-    return [m for m in report['groups'][group] if m['target'] > 0 and m['pct'] is not None]
+    return [m for m in report['groups'][group]
+            if not m.get('unavailable') and m['target'] > 0 and m['pct'] is not None]
+
+
+def unavailable_metrics(report):
+    return [m for metrics in report['groups'].values() for m in metrics if m.get('unavailable')]
 
 
 def focus_metrics(report):
@@ -495,13 +516,17 @@ def format_trainer_report(report, dashboard_url):
         lines.extend(['', label])
         metrics = assigned_metrics(report, key)
         lines.extend(f'• {metric_label(m)}: {numeric_cluster(m)}' for m in metrics)
-        if not metrics: lines.append('• Chưa có target')
+        missing = [m for m in report['groups'][key] if m.get('unavailable')]
+        lines.extend(f'• {fit_label(m["campaign_name"], 38)}: Chưa có dữ liệu tháng này.' for m in missing)
+        if not metrics and not missing: lines.append('• Chưa có target')
     focus = focus_metrics(report)
     lines.extend(['', '🎯 Cần tập trung'])
     if focus:
         for m in focus:
             remaining = shown(m['remaining']) + '\u00a0' + m.get('unit', 'lượt')
             lines.append(f'• {focus_label(m)}: còn {remaining}')
+    elif unavailable_metrics(report):
+        lines.append('Chưa đủ dữ liệu để kết luận hoàn thành KPI.')
     else: lines.append('Đã đạt các target được giao.' if any(assigned_metrics(report, k) for k, _ in labels) else 'Chưa có target được giao.')
     if any(m.get('shared_region') for k, _ in labels for m in assigned_metrics(report, k)):
         lines.append('* WS đối tác dùng số liệu khu vực.')
@@ -520,6 +545,10 @@ def format_team_report(reports, dashboard_url):
         values = [alias + '\u00a0' + percent_cluster(r['percentages'][key])
                   for alias, key in [('NB', 'noibo'), ('ĐT', 'doitac'), ('TT', 'truyenthong')]]
         lines.append(f"{short_name(r['name'])}: {' | '.join(values)}")
+    missing_names = sorted({m['campaign_name'] for r in reports for m in unavailable_metrics(r)})
+    if missing_names:
+        lines.extend(['', '⚠ Chưa có dữ liệu tháng này: ' + '; '.join(missing_names) + '.',
+                      'Nhóm KPI thiếu dữ liệu hiển thị —, chưa kết luận hoàn thành.'])
     focus_groups = {}
     for r in reports:
         labels = tuple(focus_label(m) for m in focus_metrics(r))
@@ -527,7 +556,8 @@ def format_team_report(reports, dashboard_url):
     lines.extend(['', '🎯 Cần tập trung'])
     if not focus_groups:
         has_targets = any(assigned_metrics(r, k) for r in reports for k in ('noibo', 'doitac', 'truyenthong'))
-        lines.append('Các target được giao đã đạt.' if has_targets else 'Chưa có target được giao.')
+        lines.append('Chưa đủ dữ liệu để kết luận hoàn thành KPI.' if missing_names else
+                     'Các target được giao đã đạt.' if has_targets else 'Chưa có target được giao.')
     for labels, names in focus_groups.items():
         audience = f'Cả {len(reports)} Trainer' if len(names) == len(reports) else ', '.join(names)
         lines.append(f"• {audience}: {'; '.join(labels)}")
