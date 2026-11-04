@@ -14657,88 +14657,44 @@ function nextMonthOf_(monthStr){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 function duplicateCampaign_(campaignId){
-  const camp = campaigns.find(c=>c.id===campaignId);
-  if(!camp) return;
-  const modal = document.getElementById('duplicateCampaignModal');
-  document.getElementById('duplicateCampaignHint').textContent = `Nhân bản chiến dịch "${camp.name}" (${monthLabel(camp.month)}). Sau khi nhân bản, vào "Sửa" để đổi lại tên nếu cần.`;
-  document.getElementById('duplicateCampaignMonthInput').value = nextMonthOf_(camp.month);
-  document.getElementById('duplicateCampaignCopyTargetCheck').checked = true;
-  modal.style.display='flex';
-
-  const okBtn = document.getElementById('duplicateCampaignOk');
-  const cancelBtn = document.getElementById('duplicateCampaignCancel');
-  const cleanup = ()=>{
-    modal.style.display='none';
-    okBtn.removeEventListener('click', onOk);
-    cancelBtn.removeEventListener('click', onCancel);
-  };
-  const onCancel = ()=>cleanup();
-  const onOk = async ()=>{
-    const newMonth = document.getElementById('duplicateCampaignMonthInput').value || camp.month;
-    const copyTarget = document.getElementById('duplicateCampaignCopyTargetCheck').checked;
-    cleanup();
-
-    const newCampaign = { id: uid('cp'), name: camp.name + ' (Bản sao)', month: newMonth, group: camp.group, subtype: campaignSubtype(camp), frequencyX: Number(camp.frequencyX||1) };
-    campaigns.push(newCampaign);
-    await dbSet('campaigns', campaigns);
-
-    if(copyTarget){
-      const sub = campaignSubtype(camp);
-      const metricsForGroup = metricsOf(camp.group, sub);
-
-      if(isFrequencyNoiboCampaign_(camp)){
-    // Test Online / Tư vấn AI & Check shop: lưu snapshot Target = số PG Đang làm; X là ngưỡng đạt/PG.
-    const xInp = document.getElementById('frequencyTargetXInput');
-    const sub = campaignSubtype(camp);
-    camp.frequencyX = Math.max(1, Math.round(Number(xInp && xInp.value)||1));
-    const metricKeys = sub==='testonline' ? ['testOnline'] : ['tuVanAINb','checkShopNb'];
-    config.trainers.forEach(t=>{
-      const cnt = activePgsOfTrainer_(t.id).length;
-      metricKeys.forEach(k=>{ trainerRecord(t.id)[k+'Target'] = cnt; });
-    });
-    await dbSet('records:'+currentMonth, records);
-  } else if(camp.group==='truyenthong'){
-        // Truyền thông: Target lưu RIÊNG theo từng chiến dịch (mediaTargets:<campaignId>) — copy đúng key đó
-        const srcTargets = (await dbGet('mediaTargets:'+camp.id)) || {};
-        await dbSet('mediaTargets:'+newCampaign.id, srcTargets);
-        invalidateMediaCampaignsDataCache_();
-      } else {
-        // Lấy Target hiện có từ tháng gốc: nếu tháng gốc = tháng đang mở sẵn trong bộ nhớ thì dùng luôn,
-        // ngược lại phải tải riêng dữ liệu records của tháng gốc.
-        const sourceRecords = camp.month===currentMonth ? records : ((await dbGet('records:'+camp.month)) || {});
-        const targetRecords = newMonth===currentMonth ? records : ((await dbGet('records:'+newMonth)) || {});
-        config.trainers.forEach(t=>{
-          const srcRec = sourceRecords[t.id];
-          if(!srcRec) return;
-          if(!targetRecords[t.id]) targetRecords[t.id] = emptyRecord();
-          if(sub==='ftf'){
-            // FTF: copy cả 2 cột K.A/MWG rồi tự tính lại field tổng, không copy field tổng trực tiếp
-            metricsForGroup.forEach(m=>{
-              targetRecords[t.id][m.key+'Target_KA'] = srcRec[m.key+'Target_KA']||0;
-              targetRecords[t.id][m.key+'Target_MWG'] = srcRec[m.key+'Target_MWG']||0;
-              targetRecords[t.id][m.key+'Target'] = Math.round((srcRec[m.key+'Target_KA']||0)+(srcRec[m.key+'Target_MWG']||0));
-            });
-          } else {
-            metricsForGroup.forEach(m=>{
-              targetRecords[t.id][m.key+'Target'] = srcRec[m.key+'Target']||0;
-            });
-          }
-        });
-        if(newMonth===currentMonth){ records = targetRecords; await dbSet('records:'+currentMonth, records); }
-        else { await dbSet('records:'+newMonth, targetRecords); }
-      }
-    }
-
-    const msg=document.getElementById('campaignSaveMsg');
-    msg.style.display='block'; msg.style.color='var(--green-ok)';
-    msg.textContent=`Đã nhân bản chiến dịch sang ${monthLabel(newMonth)}${copyTarget?' (đã sao chép Target)':''}. Bấm "Sửa" để đổi lại tên nếu cần.`;
-    setTimeout(()=>{msg.style.display='none';},3000);
-    renderCampaignList();
-    if(newMonth===currentMonth) renderTargetPanel();
-  };
-  okBtn.addEventListener('click', onOk);
-  cancelBtn.addEventListener('click', onCancel);
+ if(!isAdmin())return;
+ const camp=campaigns.find(c=>c.id===campaignId);if(!camp)return;
+ const modal=document.getElementById('duplicateCampaignModal'),monthInput=document.getElementById('duplicateCampaignMonthInput'),copyInput=document.getElementById('duplicateCampaignCopyTargetCheck'),ok=document.getElementById('duplicateCampaignOk'),cancel=document.getElementById('duplicateCampaignCancel'),status=document.getElementById('duplicateCampaignStatus');
+ const owner=JSON.stringify([session?.userId,session?.role,session?.trainerId,session?.region]),viewMonth=currentMonth,newId=uid('cp');let busy=false;
+ const current=()=>isAdmin()&&owner===JSON.stringify([session?.userId,session?.role,session?.trainerId,session?.region])&&viewMonth===currentMonth&&campaigns.some(c=>c.id===campaignId);
+ document.getElementById('duplicateCampaignHint').textContent=`Giữ tên và cấu hình của “${camp.name}” từ ${monthLabel(camp.month)}. Find Master giữ danh sách, cặp PGs và tích lũy 5 mốc đã đạt; HR tháng mới tiếp tục kiểm tra PG đang làm.`;
+ monthInput.value=nextMonthOf_(camp.month);copyInput.checked=true;status.textContent='';status.style.color='var(--muted)';ok.disabled=false;cancel.disabled=false;monthInput.disabled=false;copyInput.disabled=false;modal.style.display='flex';
+ const cleanup=()=>{modal.style.display='none';ok.removeEventListener('click',onOk);cancel.removeEventListener('click',onCancel);};
+ const onCancel=()=>{if(!busy)cleanup();};
+ async function call(action,extra={}){
+  const token=await workshopNoiboToken_();if(!current())throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy mở lại hộp nhân bản.');
+  const fn=location.pathname.startsWith('/Test/')?'campaign-clone-test':'campaign-clone';
+  const response=await fetch(SUPABASE_URL+'/functions/v1/'+fn,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+OTRAINING_ANON_KEY_},body:JSON.stringify({action,campaignId:camp.id,newCampaignId:newId,month:monthInput.value,copy:copyInput.checked,dashboardToken:token,...extra}),signal:AbortSignal.timeout(45000)});
+  let out;try{out=await response.json();}catch{throw Error('Chưa xác nhận kết quả. Hãy tải lại danh sách để kiểm tra trước khi thử lại.');}
+  if(response.status===401)sessionStorage.removeItem('workshop_private_session');
+  if(!response.ok||!out.ok)throw Error(out.error||'Chưa nhân bản được chiến dịch. Dữ liệu cũ được giữ nguyên.');return out;
+ }
+ const onOk=async()=>{
+  if(busy||!current())return;
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(monthInput.value)||monthInput.value===camp.month){status.textContent='Chọn tháng khác với tháng nguồn.';status.style.color='var(--red)';return;}
+  busy=true;ok.disabled=cancel.disabled=monthInput.disabled=copyInput.disabled=true;status.style.color='var(--muted)';status.textContent='Đang kiểm tra Target, cấu hình và danh sách…';
+  try{
+   const preview=await call('preview');if(!current())throw Error('Tháng hoặc tài khoản đã thay đổi. Chưa nhân bản.');
+   status.textContent='Đang lưu chiến dịch và dữ liệu kế thừa…';
+   const out=preview.alreadySaved?preview:await call('clone',{fingerprint:preview.fingerprint});
+   if(!out.saved||out.campaign?.id!==newId)throw Error('Chưa nhận được xác nhận đúng chiến dịch. Hãy tải lại để kiểm tra.');
+   if(!current()){cleanup();return;}
+   const fresh=await dbGet('campaigns');campaigns=Array.isArray(fresh)?fresh:campaigns.filter(c=>c.id!==newId).concat(out.campaign);
+   if(typeof frequencyTargetScopes_!=='undefined')frequencyTargetScopes_.clear();if(typeof pgsmCache_!=='undefined')pgsmCache_.delete(newId);
+   cleanup();renderCampaignList();populateTargetCampaignSelect();
+   const msg=document.getElementById('campaignSaveMsg');msg.style.display='block';msg.style.color='var(--green-ok)';
+   msg.textContent=`Đã nhân bản “${out.campaign.name}” sang ${monthLabel(out.campaign.month)}${copyInput.checked?' — đã giữ Target và cấu hình'+(out.summary?.master?', danh sách PGs, '+out.summary.groups+' cặp và tiến độ tích lũy Find Master':''):''}.`;
+  }catch(e){status.textContent=e.message||'Không nhân bản được. Dữ liệu cũ được giữ nguyên.';status.style.color='var(--red)';}
+  finally{busy=false;ok.disabled=cancel.disabled=monthInput.disabled=copyInput.disabled=false;}
+ };
+ ok.addEventListener('click',onOk);cancel.addEventListener('click',onCancel);
 }
+
 function startEditCampaign(id){
   const c = campaigns.find(x=>x.id===id); if(!c) return;
   editingCampaignId = id;
@@ -18521,8 +18477,9 @@ new MutationObserver(muts=>{
     <input type="month" id="duplicateCampaignMonthInput" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:var(--body);margin-bottom:10px;">
     <label style="font-size:var(--cap);color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:16px;">
       <input type="checkbox" id="duplicateCampaignCopyTargetCheck" checked style="width:16px;height:16px;">
-      Sao chép luôn Target hiện tại của từng Trainer sang tháng mới (khỏi phải set lại từ đầu)
+      Giữ Target, cấu hình và danh sách đã cài đặt. Find Master giữ cặp PGs và tiến độ tích lũy.
     </label>
+    <p id="duplicateCampaignStatus" role="status" aria-live="polite" style="font-size:var(--cap);line-height:1.6;overflow-wrap:anywhere;"></p>
     <div class="modal-actions">
       <button class="secondary" id="duplicateCampaignCancel">Hủy</button>
       <button class="primary" id="duplicateCampaignOk">Nhân bản</button>
@@ -19554,6 +19511,12 @@ function pgsmBooleanDone_(value){
  if(value===0||value==='0'||value==='false'||value==='FALSE')return false;
  return null; // API không cung cấp trạng thái, không suy đoán là Đạt
 }
+function pgsmIsContinuation_(d,systemId){return d.continuation?.cumulative===true&&String(d.continuation.systemCampaignId||'')===String(systemId);}
+function pgsmAccumulatedDone_(d,code,stage,flag,systemId){
+ const previous=d.systemMeta?.[code];
+ const keep=pgsmIsContinuation_(d,systemId)&&previous?.source==='OTRAINING FM';
+ return keep&&pgsmBooleanDone_(previous.done?.[stage])===true?true:flag;
+}
 function pgsmStageStatus_(code,stage,sourceMeta,actuals,thresholds){
  const meta=sourceMeta?.[String(code||'').trim().toUpperCase()];
  if(meta?.source==='OTRAINING FM'){
@@ -19624,15 +19587,17 @@ async function pgsmImportFmReport_(camp,confirmedId,onMessage){
    const done={},stars={};
    for(const st of PGSM_STAGES_){
      const flag=pgsmBooleanDone_(line[st.id+'_done']);
-     done[st.id]=flag;
+     done[st.id]=pgsmAccumulatedDone_(d,code,st.id,flag,confirmedId);
      if(flag===null)missingFields.add(st.id);
      else{flagUpdates++;updatedFields.add(st.id);}
      const rawStars=line[st.id+'_stars'];
      const score=rawStars===null||rawStars===undefined||String(rawStars).trim()===''?null:Number(rawStars);
      stars[st.id]=score!==null&&Number.isFinite(score)&&score>=0?score:null;
+     const priorStar=sourceMeta[code]?.source==='OTRAINING FM'?sourceMeta[code]?.stars?.[st.id]:null;
+     if(pgsmIsContinuation_(d,confirmedId)&&typeof priorStar==='number'&&Number.isFinite(priorStar))stars[st.id]=stars[st.id]===null?priorStar:Math.max(priorStar,stars[st.id]);
      // Giữ bộ đếm đúng đơn vị (nếu API có) cho tham khảo, KHÔNG quyết định Đạt.
      const metric=pgsmMetricFromFm_(line,st.id);
-     if(metric){actual[st.id]=metric.value;metricFields.add(st.id);}
+     if(metric){actual[st.id]=pgsmIsContinuation_(d,confirmedId)&&Number.isFinite(Number(actual[st.id]))?Math.max(Number(actual[st.id]),metric.value):metric.value;metricFields.add(st.id);}
    }
    nextActuals[code]=actual;
    sourceMeta[code]={stars,done,rank:line.rank??null,source:'OTRAINING FM',updatedAt:new Date().toISOString()};

@@ -1,0 +1,98 @@
+{
+  "environment": "main",
+  "date": "2026-11-04",
+  "backend": {
+    "passed": true,
+    "syntheticOnly": true,
+    "postgresEngine": "PGlite 0.3.14",
+    "realBusinessWrites": 0,
+    "tests": [
+      "Admin authentication; Trainer/forged/anon denied",
+      "actual PostgreSQL atomic rollback on late error",
+      "same request idempotent retry",
+      "source fingerprint conflict and destination lock",
+      "Master roster thresholds cumulative actuals/source flags preserved",
+      "approved pairs copied with original review provenance",
+      "Test pair namespace unchanged",
+      "monthly actuals preserved, never copied from prior month",
+      "frequency X + private scope import preserved",
+      "media A and per-campaign targets preserved",
+      "copy opt-out supported"
+    ]
+  },
+  "cumulative": {
+    "passed": true,
+    "syntheticOnly": true,
+    "cumulativePassesPreserved": true,
+    "newPassesAccepted": true,
+    "unknownNotFabricated": true,
+    "starsAndCountersRetained": true,
+    "changedSourceNotMerged": true,
+    "existingCampaignUnchanged": true,
+    "offMemberRemainsInvalid": true
+  },
+  "browser": {
+    "passed": true,
+    "syntheticOnly": true,
+    "realWrites": 0,
+    "viewports": [
+      {
+        "width": 1440,
+        "modalFits": true,
+        "defaultNextMonth": true,
+        "copyDefault": true,
+        "cumulative": true,
+        "sourceUnchanged": true,
+        "failedSavePreservesSource": true,
+        "busyPreventsDoubleClick": true,
+        "noSeparateBrowserWrites": true,
+        "trainerDenied": true
+      },
+      {
+        "width": 768,
+        "modalFits": true,
+        "defaultNextMonth": true,
+        "copyDefault": true,
+        "cumulative": true,
+        "sourceUnchanged": true,
+        "failedSavePreservesSource": true,
+        "busyPreventsDoubleClick": true,
+        "noSeparateBrowserWrites": true,
+        "trainerDenied": true
+      },
+      {
+        "width": 390,
+        "modalFits": true,
+        "defaultNextMonth": true,
+        "copyDefault": true,
+        "cumulative": true,
+        "sourceUnchanged": true,
+        "failedSavePreservesSource": true,
+        "busyPreventsDoubleClick": true,
+        "noSeparateBrowserWrites": true,
+        "trainerDenied": true
+      },
+      {
+        "width": 320,
+        "modalFits": true,
+        "defaultNextMonth": true,
+        "copyDefault": true,
+        "cumulative": true,
+        "sourceUnchanged": true,
+        "failedSavePreservesSource": true,
+        "busyPreventsDoubleClick": true,
+        "noSeparateBrowserWrites": true,
+        "trainerDenied": true
+      }
+    ]
+  },
+  "source_exact": true,
+  "existing_functions_unchanged": true,
+  "rpc": {
+    "security_invoker": true,
+    "anon_execute": false,
+    "authenticated_execute": false,
+    "service_execute": true
+  },
+  "real_business_clones": 0
+}

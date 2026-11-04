@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-04",
+  "environment": "main",
+  "html": "Dashboard-Chinh-2026-11-04-Nhan-Ban-Chien-Dich-Lien-Tuc.html",
+  "bytes": 2641190,
+  "sha256": "c7cbe93000a3fdc07992708e05f517545aedb6387553039d4cd5d2b47cda2695",
+  "git_blob": "072348547728b5dd170ade7cd92028273bd4e104",
+  "same_html_as_test": true,
+  "backend": {
+    "function": "campaign-clone",
+    "version": 1,
+    "verify_jwt": true,
+    "rpc": "clone_campaign_main_v1"
+  }
+}
