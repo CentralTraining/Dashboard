@@ -2978,7 +2978,7 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
         <div class="chart-wrap pg-chart-view" id="pgChartWrap-trainer" style="height:320px;display:none;"><canvas id="chartTrainer"></canvas></div>
         <div class="chart-wrap pg-chart-view" id="pgChartWrap-channel" style="height:320px;display:none;"><canvas id="chartChannel"></canvas></div>
         <div class="chart-wrap pg-chart-view" id="pgChartWrap-seniority" style="height:320px;display:none;"><canvas id="chartSeniority"></canvas></div>
-        <div class="chart-wrap pg-chart-view" id="pgChartWrap-star" style="height:320px;display:none;"><canvas id="chartStar"></canvas></div>
+        <div class="chart-wrap pg-chart-view" id="pgChartWrap-star" style="height:320px;display:none;overflow-x:auto;overflow-y:hidden;" data-mobile-scroll tabindex="0" aria-label="Biểu đồ phân bổ PGs theo sao; cuộn ngang để xem đủ khu vực"><div id="pgStarChartInner" style="position:relative;height:100%;"><canvas id="chartStar" role="img"></canvas></div></div>
         <div class="chart-wrap pg-chart-view" id="pgChartWrap-shopsize" style="height:320px;display:none;"><canvas id="chartShopSize"></canvas></div>
         <div id="starOver2RatioWrap" style="display:none;font-size:var(--cap);color:var(--muted);margin-top:8px;"><span id="starOver2Ratio"></span></div>
       </div>
@@ -8974,6 +8974,13 @@ function renderStarByRegionChart(){
   // Tổng số PGs của mỗi cột (từng khu vực + Tổng)
   const columnTotals = labelsWithTotal.map((_,colIdx)=> rawCounts.reduce((s,row)=>s+row[colIdx],0));
 
+  // Compute the >=2-star rate from active people, before rounding chart segments.
+  const over2Rates = labelsWithTotal.map((_,colIdx)=>{
+    const people = colIdx===finalRegions.length ? list : list.filter(p=>trainerOf(p.trainerId)?.region===finalRegions[colIdx]);
+    const count = people.filter(p=>Number(p.star)>=2).length;
+    return people.length ? new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(count/people.length*100)+'%' : '—';
+  });
+
   // Chuẩn hóa về % để mọi cột cao bằng nhau (100%) — cân đối, không bị cột Tổng lấn át
   const datasets = starLevels.map((s,i)=>({
     label: s+' sao',
@@ -8984,6 +8991,8 @@ function renderStarByRegionChart(){
 
   if(chartStarInstance) chartStarInstance.destroy();
   const ctx = document.getElementById('chartStar');
+  document.getElementById('pgStarChartInner').style.minWidth = (labelsWithTotal.length*120)+'px';
+  ctx.setAttribute('aria-label',list.length ? 'Phân bổ PGs theo sao. '+labelsWithTotal.map((label,i)=>label+': PGs từ 2 sao trở lên '+over2Rates[i]).join('; ') : 'Không có PGs Đang làm trong phạm vi đang chọn.');
   if(!list.length){ return; }
   chartStarInstance = new Chart(ctx, {
     type:'bar',
@@ -9006,7 +9015,7 @@ function renderStarByRegionChart(){
         }
       },
       scales:{
-        x:{ stacked:true, ticks:{ font:{size:9} }, grid:{display:false} },
+        x:{ stacked:true, ticks:{ font:{size:10,weight:'600'}, color:'#476254', autoSkip:false, minRotation:0, maxRotation:0, callback:function(value){ return [this.getLabelForValue(value),'PGs ≥ 2 sao: '+over2Rates[value]]; } }, grid:{display:false} },
         y:{ stacked:true, min:0, max:100, ticks:{ stepSize:20, font:{size:9}, callback:v=>v+'%' }, grid:{color:'#EDF1EF'} }
       }
     }
@@ -18319,7 +18328,7 @@ function syncMobileDashboardDensity_(){
  if(panels&&!document.getElementById('mobileHomeChartTabs')){const tabs=document.createElement('div');tabs.id='mobileHomeChartTabs';tabs.className='mobile-home-chart-tabs';tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Chọn biểu đồ tổng quan');const names=[['homePanelProgress','KPI'],['homePanelRegion','Khu vực'],['homePanelAttention','Cần chú ý']];panels.dataset.mobileChart=names[0][0];names.forEach(([id,label],index)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-controls',id);button.setAttribute('aria-pressed',String(index===0));button.addEventListener('click',()=>{panels.dataset.mobileChart=id;tabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));});tabs.append(button);});panels.before(tabs);}
 
 
- document.querySelectorAll('.main-content canvas').forEach(canvas=>{const frame=canvas.parentElement;if(!frame||(!frame.matches('.chart-wrap')&&frame.childElementCount!==1))return;frame.classList.add('mobile-chart-frame');const chart=typeof Chart!=='undefined'?Chart.getChart(canvas):null;syncMobileChartOptions_(chart);const height=chart?.options.indexAxis==='y'?Math.min(330,Math.max(190,(chart.data.labels?.length||0)*18+55)):220;frame.style.setProperty('--mobile-chart-height',height+'px');});
+ document.querySelectorAll('.main-content canvas').forEach(canvas=>{if(canvas.id==='chartStar')return;const frame=canvas.parentElement;if(!frame||(!frame.matches('.chart-wrap')&&frame.childElementCount!==1))return;frame.classList.add('mobile-chart-frame');const chart=typeof Chart!=='undefined'?Chart.getChart(canvas):null;syncMobileChartOptions_(chart);const height=chart?.options.indexAxis==='y'?Math.min(330,Math.max(190,(chart.data.labels?.length||0)*18+55)):220;frame.style.setProperty('--mobile-chart-height',height+'px');});
  document.querySelectorAll('.ftf-summary-row').forEach(row=>{row.dataset.mobileChannel=row.querySelector('.label')?.textContent.match(/—\s*(K\.A|MWG)/)?.[1]||'';});
  document.querySelectorAll('.kpi-card .label,.hsc-lbl').forEach(label=>{if(!label.title)label.title=label.textContent.trim();});
  document.querySelectorAll('.pgsm-summary-scroll tbody tr').forEach(row=>Array.from(row.cells).forEach((cell,i)=>{cell.dataset.mobileSummaryLabel=i===2?'PGs':i===8?'Master':i>=3&&i<=7?'M'+(i-2):'';}));

@@ -1,0 +1,112 @@
+{
+  "status": "passed",
+  "source": {
+    "bytes": 2644952,
+    "sha256": "04a0419df4081162e2d528cb981301e5ff61cf7916e088869bcaa5c6eaf7744b",
+    "blob": "4d3f322b15759b94c56a6b27b4659ff3e05ac844",
+    "scripts_byte_exact_test": true,
+    "test_source_commit": "19de08913b6dad57a6533642d5dd8377afcc8190",
+    "main_parent_commit": "61a16424e6e724fa9fe9a833fcaf7ffb4546903a",
+    "site_specific_changes": "Five logo asset URLs point to Dashboard assets"
+  },
+  "main_browser_inspections": [
+    {
+      "width": 1440,
+      "passed": true,
+      "main_url_verified": true,
+      "seven_column_notes": true,
+      "regional_percentages_verified": true,
+      "total": "60% (9/15)",
+      "region_filter_verified": true,
+      "off_excluded": true,
+      "logo_decoded": true,
+      "no_overflow": true,
+      "backend_requests": "mocked",
+      "real_data_writes": 0
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "main_url_verified": true,
+      "seven_column_notes": true,
+      "regional_percentages_verified": true,
+      "total": "60% (9/15)",
+      "region_filter_verified": true,
+      "off_excluded": true,
+      "logo_decoded": true,
+      "no_overflow": true,
+      "backend_requests": "mocked",
+      "real_data_writes": 0
+    }
+  ],
+  "test_browser_inspections": [
+    {
+      "width": 1440,
+      "passed": true,
+      "region_percentages": [
+        "71,4%",
+        "0%",
+        "100%",
+        "66,7%",
+        "60%",
+        "100%"
+      ],
+      "total": "65,2% (15/23)",
+      "off_and_other_brands_excluded": true,
+      "region_trainer_sale_filters": true,
+      "trainer_overview_scope_preserved": true,
+      "all_labels_visible": true,
+      "mobile_horizontal_scroll": false,
+      "other_chart_modes_preserved": true,
+      "empty_data_has_no_stale_chart": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "region_percentages": [
+        "71,4%",
+        "0%",
+        "100%",
+        "66,7%",
+        "60%",
+        "100%"
+      ],
+      "total": "65,2% (15/23)",
+      "off_and_other_brands_excluded": true,
+      "region_trainer_sale_filters": true,
+      "trainer_overview_scope_preserved": true,
+      "all_labels_visible": true,
+      "mobile_horizontal_scroll": true,
+      "other_chart_modes_preserved": true,
+      "empty_data_has_no_stale_chart": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    },
+    {
+      "width": 320,
+      "passed": true,
+      "region_percentages": [
+        "71,4%",
+        "0%",
+        "100%",
+        "66,7%",
+        "60%",
+        "100%"
+      ],
+      "total": "65,2% (15/23)",
+      "off_and_other_brands_excluded": true,
+      "region_trainer_sale_filters": true,
+      "trainer_overview_scope_preserved": true,
+      "all_labels_visible": true,
+      "mobile_horizontal_scroll": true,
+      "other_chart_modes_preserved": true,
+      "empty_data_has_no_stale_chart": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    }
+  ],
+  "synthetic_data_only": true,
+  "real_data_writes": 0
+}
