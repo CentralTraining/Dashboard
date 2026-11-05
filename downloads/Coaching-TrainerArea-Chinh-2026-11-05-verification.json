@@ -1,0 +1,97 @@
+{
+  "status": "passed",
+  "source": {
+    "bytes": 2645437,
+    "sha256": "1cf4f31f33ce09f9f0a193ad497815ada5c4e3cca51d75e8c0ab2c178f5c5bc2",
+    "blob": "ffbb6301984390e0308e2b18d6d19162dd934408",
+    "scripts_byte_exact_test": true,
+    "test_source_commit": "b098fbbe441eccb9492d744c15698afbe38cc8a4",
+    "main_parent_commit": "59254a01622fee89a44a838f669625d69386f0d2",
+    "site_specific_changes": "Five logo asset URLs point to Dashboard assets"
+  },
+  "rules": {
+    "status": "passed",
+    "six_areas_accepted_without_central_region": true,
+    "normalization_exact_matching": true,
+    "legacy_mapping_byte_equivalent": true,
+    "month_and_status_filters_unchanged": true,
+    "sixty_minute_boundary_and_types_unchanged": true,
+    "trainer_region_guard_preserved": true,
+    "october_and_november_verified": true,
+    "real_data_writes": 0
+  },
+  "main_browser_inspections": [
+    {
+      "width": 1440,
+      "passed": true,
+      "main_url_verified": true,
+      "update_button_uses_exact_sheet": true,
+      "area_rows_imported": true,
+      "month_status_and_dedup_preserved": true,
+      "new_pg_name_matching_preserved": true,
+      "targets_unchanged": true,
+      "one_atomic_three_key_write": true,
+      "trainer_other_region_data_preserved": true,
+      "failed_save_preserves_memory_and_storage": true,
+      "locked_month_blocks_fetch": true,
+      "no_page_errors": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "main_url_verified": true,
+      "update_button_uses_exact_sheet": true,
+      "area_rows_imported": true,
+      "month_status_and_dedup_preserved": true,
+      "new_pg_name_matching_preserved": true,
+      "targets_unchanged": true,
+      "one_atomic_three_key_write": true,
+      "trainer_other_region_data_preserved": true,
+      "failed_save_preserves_memory_and_storage": true,
+      "locked_month_blocks_fetch": true,
+      "no_page_errors": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    }
+  ],
+  "test_browser_inspections": [
+    {
+      "width": 1440,
+      "passed": true,
+      "update_button_uses_exact_sheet": true,
+      "area_rows_imported": true,
+      "month_status_and_dedup_preserved": true,
+      "new_pg_name_matching_preserved": true,
+      "targets_unchanged": true,
+      "one_atomic_three_key_write": true,
+      "trainer_other_region_data_preserved": true,
+      "failed_save_preserves_memory_and_storage": true,
+      "locked_month_blocks_fetch": true,
+      "no_page_errors": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "update_button_uses_exact_sheet": true,
+      "area_rows_imported": true,
+      "month_status_and_dedup_preserved": true,
+      "new_pg_name_matching_preserved": true,
+      "targets_unchanged": true,
+      "one_atomic_three_key_write": true,
+      "trainer_other_region_data_preserved": true,
+      "failed_save_preserves_memory_and_storage": true,
+      "locked_month_blocks_fetch": true,
+      "no_page_errors": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    }
+  ],
+  "legacy_processors_byte_exact_test": true,
+  "synthetic_data_only": true,
+  "private_source_aggregates_not_published": true,
+  "real_data_writes": 0
+}

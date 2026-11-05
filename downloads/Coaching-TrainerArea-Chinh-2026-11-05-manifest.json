@@ -1,0 +1,24 @@
+{
+  "version": "2026-11-05",
+  "environment": "Main",
+  "repository": "CentralTraining/Dashboard",
+  "feature": "Bổ sung TrainerArea khi cập nhật Coaching PGs Dev từ COACHING_LOG",
+  "html": "Dashboard-Chinh-2026-11-05-Coaching-TrainerArea.html",
+  "bytes": 2645437,
+  "sha256": "1cf4f31f33ce09f9f0a193ad497815ada5c4e3cca51d75e8c0ab2c178f5c5bc2",
+  "blob": "ffbb6301984390e0308e2b18d6d19162dd934408",
+  "scripts_byte_exact_test": true,
+  "test_source_commit": "b098fbbe441eccb9492d744c15698afbe38cc8a4",
+  "main_parent_commit": "59254a01622fee89a44a838f669625d69386f0d2",
+  "site_specific_changes": "Five logo asset URLs point to Dashboard assets",
+  "rule": "TrainerRegion khớp MIEN TRUNG theo quy tắc cũ HOẶC TrainerArea khớp HUE, DA NANG, BINH DINH, VUNG TAU, TAY NGUYEN, NHA TRANG.",
+  "unchanged": [
+    "Tháng chiến dịch / tháng đang xem",
+    "Lọc trạng thái",
+    "Gộp trùng 60 phút",
+    "Phân loại và tra tên PG mới",
+    "Gán Trainer và quyền cập nhật khu vực",
+    "Target và các hàm lưu dữ liệu hiện có"
+  ],
+  "scope": "Frontend only; no backend, source Sheet edits, real imports, targets, Secrets or automation changes."
+}

@@ -13203,7 +13203,7 @@ function renderCoachingRegistration(){
      TrainerName, TrainerUsername, PGCode, PGName, Phone, FCStatus, UsefulnessScore,
      ConfidenceScore, TrainerClarityScore, SkillNeeded, TrainerFeedback, Status(VALID), CoachingContents...
    Quy tắc:
-   - Chỉ lấy TrainerRegion = MIEN TRUNG.
+   - Nhận TrainerRegion = MIEN TRUNG HOẶC TrainerArea thuộc HUE, DA NANG, BINH DINH, VUNG TAU, TAY NGUYEN, NHA TRANG.
    - Lọc ĐÚNG THÁNG đang xem qua Period (đầu tháng); nếu thiếu Period thì dùng Timestamp.
    - Chỉ tính Status = VALID.
    - GỘP TRÙNG 60 PHÚT: cùng PG (PGCode, hoặc theo Tên nếu thiếu Code) + cùng loại + cùng ngày,
@@ -13231,6 +13231,11 @@ function clIsCentralRegion_(value){
   // TrainerRegion có thể là đường dẫn, VD "MIEN TRUNG / MIEN TRUNG / IND".
   // So từng thành phần chính xác để không nhận nhầm một vùng chỉ chứa chuỗi tương tự.
   return String(value??'').split(/[\/|,;>\n]+/).some(part=>clNorm_(part)==='mientrung');
+}
+function clIsCentralArea_(value){
+  // Match a complete normalized area name; do not accept similar substrings.
+  const key=clNorm_(String(value??'').replace(/[Đđ]/g,'d'));
+  return ['hue','danang','binhdinh','vungtau','taynguyen','nhatrang'].includes(key);
 }
 function clPeriodMonth_(value){
   const m=String(value??'').trim().match(/^(\d{4})[-\/](\d{1,2})$/);
@@ -13274,7 +13279,7 @@ async function processCoachingLogSheet_(wb){
     const P=(...n)=>clPick_(row,idx,n);
     const ts=clParseDate_(P('Timestamp')); if(!ts) continue;
     total++;
-    if(!clIsCentralRegion_(P('TrainerRegion'))){ skipRegion++; continue; }
+    if(!clIsCentralRegion_(P('TrainerRegion'))&&!clIsCentralArea_(P('TrainerArea'))){ skipRegion++; continue; }
     const mk=clPeriodMonth_(P('Period'))||clMonthKey_(ts);
     if(mk!==currentMonth){ skipMonth++; continue; }
     const st=clNorm_(P('Status'));
@@ -13291,7 +13296,7 @@ async function processCoachingLogSheet_(wb){
       useful:P('UsefulnessScore','Hữu ích /5')||'', confident:P('ConfidenceScore','Tự tin /5')||'',
       clarity:P('TrainerClarityScore','Trainer dễ hiểu /5')||'', skill:String(P('SkillNeeded')||'').trim(), fb:String(P('TrainerFeedback','Góp ý')||'').trim() });
   }
-  if(!recs.length) throw new Error(`Không có dòng VALID nào thuộc MIEN TRUNG trong ${monthLabel(currentMonth)} (đọc ${total} dòng · bỏ ${skipRegion} khác vùng · ${skipMonth} khác tháng · ${skipStatus} không VALID).`);
+  if(!recs.length) throw new Error(`Không có dòng VALID nào thuộc Miền Trung (TrainerRegion hoặc TrainerArea) trong ${monthLabel(currentMonth)} (đọc ${total} dòng · bỏ ${skipRegion} khác vùng · ${skipMonth} khác tháng · ${skipStatus} không VALID).`);
 
   // 2) GỘP TRÙNG 60 PHÚT: cùng PG + loại + ngày, cách <=60p -> giữ bản ghi sớm nhất.
   const dayKey=d=>`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
@@ -13466,7 +13471,7 @@ function renderCoachingImportBox(){
   const canEdit = isAdmin() && !monthLocked;
   box.innerHTML = `<div class="form-card" style="max-width:none;">
     <h3 style="font-size:var(--body);margin:0 0 10px;color:var(--green-dark);">Import kết quả khảo sát Coaching (PGs 0★/1★ &amp; PGs mới) — ${monthLabel(currentMonth)}</h3>
-    <p class="section-desc" style="margin-bottom:10px;">Bấm <strong>↻ Cập nhật tiến độ từ COACHING_LOG</strong> để tự lấy dữ liệu khảo sát PGs Dev đúng <strong>${monthLabel(currentMonth)}</strong>, chỉ vùng <strong>MIEN TRUNG</strong> — không cần import tay. (Cũ) Import file "Lịch sử Coaching" (cột: Thời gian, Loại Coaching, Khu vực, Trainer, Trainer Username, Mã NV, PGs, SĐT, Shop FC, Nội dung Coaching, Nội dung khác, Hữu ích/5, Tự tin/5, Trainer dễ hiểu/5, Kỹ năng cần hỗ trợ thêm, Góp ý cho Trainer, Trạng thái). <strong>Chỉ cần import 1 lần</strong> — hệ thống tự phân loại đúng theo cột "Loại Coaching" vào cả 2 mục PGs 0★/1★ và PGs mới cùng lúc. Chỉ tính vào kết quả những dòng có Trạng thái = "Hợp lệ" trong ${monthLabel(currentMonth)}; các dòng khác vẫn đếm số lượng để Trainer kiểm tra lại. Import lại tự bỏ qua dòng trùng. <strong>Riêng dòng "PGs mới" mà cột Mã NV để trống</strong> (PG chưa kịp tạo Code lúc làm khảo sát): hệ thống tự tra theo cột "PGs" (tên) trong Danh sách PGs mới của tháng — khớp được thì vẫn tính bình thường.</p>
+    <p class="section-desc" style="margin-bottom:10px;">Bấm <strong>↻ Cập nhật tiến độ từ COACHING_LOG</strong> để tự lấy dữ liệu khảo sát PGs Dev đúng <strong>${monthLabel(currentMonth)}</strong>, nhận vùng <strong>MIEN TRUNG</strong> hoặc <strong>TrainerArea thuộc 6 khu vực Miền Trung</strong> — không cần import tay. (Cũ) Import file "Lịch sử Coaching" (cột: Thời gian, Loại Coaching, Khu vực, Trainer, Trainer Username, Mã NV, PGs, SĐT, Shop FC, Nội dung Coaching, Nội dung khác, Hữu ích/5, Tự tin/5, Trainer dễ hiểu/5, Kỹ năng cần hỗ trợ thêm, Góp ý cho Trainer, Trạng thái). <strong>Chỉ cần import 1 lần</strong> — hệ thống tự phân loại đúng theo cột "Loại Coaching" vào cả 2 mục PGs 0★/1★ và PGs mới cùng lúc. Chỉ tính vào kết quả những dòng có Trạng thái = "Hợp lệ" trong ${monthLabel(currentMonth)}; các dòng khác vẫn đếm số lượng để Trainer kiểm tra lại. Import lại tự bỏ qua dòng trùng. <strong>Riêng dòng "PGs mới" mà cột Mã NV để trống</strong> (PG chưa kịp tạo Code lúc làm khảo sát): hệ thống tự tra theo cột "PGs" (tên) trong Danh sách PGs mới của tháng — khớp được thì vẫn tính bình thường.</p>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
       <button class="primary" id="coachingLogUpdateBtn" type="button" ${monthLocked?'disabled':''}>↻ Cập nhật tiến độ từ COACHING_LOG</button>
       <span class="save-msg" id="coachingImportMsg" style="display:none;"></span>
