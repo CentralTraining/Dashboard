@@ -2513,7 +2513,7 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
 #channelTool .channel-status:before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#25f4ee;margin-right:7px;vertical-align:1px;}
 #channelTool .channel-status[data-error=true]{color:#ff8298;}
 #channelTool .channel-status[data-error=true]:before{background:#fe2c55;}
-#channelTool .channel-summary-compact{gap:10px;margin:10px 0 13px;}
+#channelTool .channel-summary-compact{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:10px 0 13px;}
 #channelTool .channel-stat{
   position:relative;overflow:hidden;padding:13px 14px;background:#181b25;border:1px solid #2c3140;
   border-radius:12px;box-shadow:none;
@@ -2524,12 +2524,14 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2325f4ee' d='M7 4v16l13-8Z'/%3E%3C/svg%3E");
 }
 #channelTool .channel-stat:nth-child(2):after{background-color:#fe2c5518;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23ff7290' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='m4 17 6-6 4 3 6-8m-6 0h6v6'/%3E%3C/svg%3E");}
-#channelTool .channel-stat:nth-child(3):after{background-color:#fe2c5518;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ff7290' d='M12 21 3 12A6 6 0 0 1 12 4a6 6 0 0 1 9 8Z'/%3E%3C/svg%3E");}
-#channelTool .channel-stat:nth-child(4):after{background-color:#af98ff17;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23c0adff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M4 19c0-8 5-10 11-10V4l6 7-6 7v-5c-5 0-8 1-11 6Z'/%3E%3C/svg%3E");}
+#channelTool .channel-like-stat:after{background-color:#fe2c5518;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ff7290' d='M12 21 3 12A6 6 0 0 1 12 4a6 6 0 0 1 9 8Z'/%3E%3C/svg%3E");}
+#channelTool .channel-share-stat:after{background-color:#af98ff17;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23c0adff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M4 19c0-8 5-10 11-10V4l6 7-6 7v-5c-5 0-8 1-11 6Z'/%3E%3C/svg%3E");}
+#channelTool .channel-view-stat:after{background-color:#81aeff18;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%2381aeff' stroke-width='2' d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z'/%3E%3Ccircle cx='12' cy='12' r='3' fill='none' stroke='%2381aeff' stroke-width='2'/%3E%3C/svg%3E");}
 #channelTool .channel-stat>span{color:#a4aec1;font-size:9px;font-weight:650;letter-spacing:.5px;padding-right:28px;}
 #channelTool .channel-stat strong{color:#fff;font-size:29px;letter-spacing:-.9px;font-weight:800;margin:5px 0 3px;}
 #channelTool .channel-stat:first-child strong{color:#25f4ee;}
 #channelTool .channel-follow-stat>strong{color:#ff6c89;}
+#channelTool .channel-view-stat>strong{color:#81aeff;}
 #channelTool .channel-stat strong em{color:#8691a7;font-size:12px;letter-spacing:0;}
 #channelTool .channel-stat small{color:#9ba5b9;font-size:9px;}
 #channelTool .channel-team-average b{color:#f0f4fc;}
@@ -2612,7 +2614,9 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
 .mobile-layout #channelTool .channel-toolbar.scope-filters{padding:7px!important;gap:6px!important;border-radius:10px;}
 .mobile-layout #channelTool .channel-filter-field>.scope-label{font-size:8px;}
 .mobile-layout #channelTool .channel-modes{border-radius:7px;}
-.mobile-layout #channelTool .channel-summary-compact{gap:5px;margin:9px 0;}
+.mobile-layout #channelTool .channel-summary-compact{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:9px 0;}
+.mobile-layout #channelTool .channel-summary-compact>.channel-stat{grid-column:span 2;}
+.mobile-layout #channelTool .channel-summary-compact>:is(.channel-like-stat,.channel-share-stat){grid-column:span 3;}
 .mobile-layout #channelTool .channel-stat{padding:8px 6px;border-radius:9px;}
 .mobile-layout #channelTool .channel-stat:after{display:none;}
 .mobile-layout #channelTool .channel-stat>span{font-size:7px;padding-right:0;letter-spacing:0;}
@@ -20561,7 +20565,7 @@ const ChannelModel=(()=>{
  const day=v=>iso(new Date(Date.parse(v.createdAt)+7*3600000));
  function report(trainers,p){
   const rows=trainers.map(t=>{const videos=(t.videos||[]).filter(v=>day(v)>=p.from&&day(v)<=p.to);const target=goal(t,p),known=!!t.known;return {...t,videos,target,actual:known?videos.length:null,views:known&&videos.every(v=>Number.isSafeInteger(v.views)&&v.views>=0)?videos.reduce((n,v)=>n+v.views,0):null,likes:known?videos.reduce((n,v)=>n+v.likes,0):null,shares:known?videos.reduce((n,v)=>n+v.shares,0):null,pct:known&&target?Math.round(videos.length/target*1000)/10:null};});
-  const totals=rows.reduce((a,t)=>({target:a.target+t.target,actual:a.actual+(t.actual||0),likes:a.likes+(t.likes||0),shares:a.shares+(t.shares||0),known:a.known+Number(t.known)}),{target:0,actual:0,likes:0,shares:0,known:0});
+  const totals=rows.reduce((a,t)=>({target:a.target+t.target,actual:a.actual+(t.actual||0),views:a.views+(t.views??0),viewKnown:a.viewKnown+Number(t.views!==null),likes:a.likes+(t.likes||0),shares:a.shares+(t.shares||0),known:a.known+Number(t.known)}),{target:0,actual:0,views:0,viewKnown:0,likes:0,shares:0,known:0});
   const binSize=p.days>35?7:1,bins=[];for(let start=p.from;start<=p.to;start=add(start,binSize))bins.push({from:start,to:add(start,binSize-1)>p.to?p.to:add(start,binSize-1),count:0});
   for(const t of rows.filter(t=>t.known))for(const v of t.videos){const i=Math.floor((+date(day(v))-+date(p.from))/DAY/binSize);if(bins[i])bins[i].count++;}
   return {rows,totals,bins,complete:rows.length>0&&totals.known===rows.length};
@@ -20821,7 +20825,7 @@ function channelCompactSummary_(report,trainers,period){
  const progress=report.complete&&report.totals.target?channelNumber_(Math.round(report.totals.actual/report.totals.target*1000)/10)+'%':known+'/'+trainers.length+' kênh có dữ liệu';
  const average=team.average===null?'—':(team.average>0?'+':'')+new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(team.average),teamLabel=isAdmin()||channelView_.data?.overviewScope==='team'?'TB toàn team':'TB khu vực';
  const coverage=follower.comparable+'/'+trainers.length+' kênh · từ '+follower.label.slice(0,5),averageTip='Trung bình = tổng tăng / số kênh đủ dữ liệu trong phạm vi tài khoản: '+team.comparable+'/'+team.total+' kênh. '+(team.complete?'Đã đủ dữ liệu.':'Chưa đủ dữ liệu toàn bộ; không tính kênh thiếu mốc là 0.');
- return `<div class="channel-summary channel-summary-compact"><div class="channel-stat"><span>Bài đăng</span><strong>${channelFollowerCount_(known?report.totals.actual:null)}<em> / ${channelNumber_(report.totals.target)}</em></strong><small>${e(progress)}</small></div><div class="channel-stat channel-follow-stat"><span>↑ Tăng follow</span><strong title="${e((follower.complete?'Tổng tăng':'Tổng tăng đã ghi nhận')+' từ '+follower.label+': '+channelFollowerSigned_(follower.delta))}">${channelFollowerCount_(follower.delta,true)}</strong><small class="channel-team-average" title="${e(averageTip)}">${teamLabel}: <b>${e(average)}</b><span class="channel-average-unit"> FL/Trainer</span>${team.complete?'':` <span class="channel-average-coverage">(${team.comparable}/${team.total})</span>`}</small><small class="channel-follow-coverage">${e(coverage)} <button type="button" class="channel-stat-info" data-channel-follow-help title="Cách tính follower">ⓘ</button></small></div><div class="channel-stat"><span>♥ Like</span><strong>${channelFollowerCount_(known?report.totals.likes:null)}</strong><small>Video trong kỳ</small></div><div class="channel-stat"><span>↗ Share</span><strong>${channelFollowerCount_(known?report.totals.shares:null)}</strong><small>Video trong kỳ</small></div></div>`;
+ return `<div class="channel-summary channel-summary-compact"><div class="channel-stat"><span>Bài đăng</span><strong>${channelFollowerCount_(known?report.totals.actual:null)}<em> / ${channelNumber_(report.totals.target)}</em></strong><small>${e(progress)}</small></div><div class="channel-stat channel-follow-stat"><span>↑ Tăng follow</span><strong title="${e((follower.complete?'Tổng tăng':'Tổng tăng đã ghi nhận')+' từ '+follower.label+': '+channelFollowerSigned_(follower.delta))}">${channelFollowerCount_(follower.delta,true)}</strong><small class="channel-team-average" title="${e(averageTip)}">${teamLabel}: <b>${e(average)}</b><span class="channel-average-unit"> FL/Trainer</span>${team.complete?'':` <span class="channel-average-coverage">(${team.comparable}/${team.total})</span>`}</small><small class="channel-follow-coverage">${e(coverage)} <button type="button" class="channel-stat-info" data-channel-follow-help title="Cách tính follower">ⓘ</button></small></div><div class="channel-stat channel-view-stat" title="Tổng lượt xem hiện tại của video đăng trong kỳ, theo bộ lọc đang chọn; không phải lượt xem tăng riêng trong kỳ."><span>◉ View</span><strong>${channelFollowerCount_(report.totals.viewKnown?report.totals.views:null)}</strong><small>Video trong kỳ${report.totals.viewKnown<trainers.length?` · ${report.totals.viewKnown}/${trainers.length} kênh có số View`:""}</small></div><div class="channel-stat channel-like-stat"><span>♥ Like</span><strong>${channelFollowerCount_(known?report.totals.likes:null)}</strong><small>Video trong kỳ</small></div><div class="channel-stat channel-share-stat"><span>↗ Share</span><strong>${channelFollowerCount_(known?report.totals.shares:null)}</strong><small>Video trong kỳ</small></div></div>`;
 }
 function channelMetricCompact_(value,signed=false){return value===null||value===undefined?'—':(signed&&value>0?'+':'')+new Intl.NumberFormat('vi-VN',{notation:'compact',maximumFractionDigits:1}).format(value);}
 function channelMetricsCard_(report,period){

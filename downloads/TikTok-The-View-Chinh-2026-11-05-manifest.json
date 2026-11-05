@@ -1,0 +1,20 @@
+{
+  "version": "2026-11-05",
+  "environment": "Main",
+  "repository": "CentralTraining/Dashboard",
+  "feature": "Thẻ View trong thống kê Xây kênh TikTok",
+  "html": "Dashboard-Chinh-2026-11-05-TikTok-The-View.html",
+  "html_bytes": 2643706,
+  "html_sha256": "c06a34983f0c8783ef629a6a87abc6a17d23ab889b04394d60e2289710b72711",
+  "html_git_blob": "2554b6c28c5efd515613e4a502fbaeb4b32482fd",
+  "scripts_byte_exact_test": true,
+  "test_source_commit": "6b015cba1eaddaa766bc1a80983a991b47d92774",
+  "main_parent_commit": "4034ba639f504038bbbfb0149e02557e7c94c7f5",
+  "logo_paths": "Main assets; all other source is byte-exact Test",
+  "behavior": [
+    "Tổng View video đăng trong kỳ, theo bộ lọc khu vực và Trainer.",
+    "Giữ phân biệt số View bằng 0 và chưa có dữ liệu.",
+    "5 thẻ trên máy tính, 2 hàng trên điện thoại."
+  ],
+  "scope": "Frontend only; no backend, data, OAuth, follower baseline, Secrets or automation changes."
+}
