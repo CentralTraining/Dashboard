@@ -1,0 +1,22 @@
+{
+  "version": "2026-11-05",
+  "environment": "Main",
+  "repository": "CentralTraining/Dashboard",
+  "feature": "Lưu và Sửa nguồn Google Sheet riêng cho từng mục cập nhật",
+  "html": "Dashboard-Chinh-2026-11-05-Luu-Sua-Nguon-Google-Sheet.html",
+  "bytes": 2652095,
+  "sha256": "b7b6e94dcf4e717fb486fbe6c32d4af94821504fd079170f658be16330ef3dc4",
+  "blob": "c63f3d58c22e16bb81803794842c0fd756d1f918",
+  "scripts_byte_exact_test": true,
+  "test_source_commit": "36bb346c414290aa4875da296199f6066008f778",
+  "main_parent_commit": "4d7795297b21015b2de295b1292c34a82fe75f7a",
+  "site_specific_changes": "Five logo asset URLs point to Dashboard assets",
+  "behavior": [
+    "Lưu cố định link/tên sheet, khóa ô nhập; bấm Sửa khi cần thay đổi.",
+    "Mở lại lấy nguồn đã lưu; ưu tiên cấu hình dùng chung hơn cache cũ.",
+    "Lưu và Test kết nối không tự nhập dữ liệu. Cập nhật chỉ dùng nguồn đã lưu.",
+    "Hỗ trợ các nút dùng chung, nhiều tab, S.O Shop, PG Master và Target theo danh sách.",
+    "Lỗi lưu hoặc hủy sửa giữ cấu hình trước."
+  ],
+  "scope": "Frontend only; existing storage and permissions preserved. No schema, Edge Function, Secrets, real config or business data writes."
+}

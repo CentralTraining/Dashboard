@@ -4011,84 +4011,127 @@ async function fetchGoogleSheetAsWorkbook_(url, sheetSpecs){
 }
 /* Modal nhập 2 trường: link Google Sheet + tên sheet/tab cần truy vấn.
    Với import cần nhiều tab, nhập các tên tab cách nhau bằng dấu phẩy (VD: on, off). */
-function promptGoogleSheetLink_(hint, defaultSheetNames, storageKey){
-  return new Promise(resolve=>{
-    const modal=document.getElementById('sheetLinkModal');
-    document.getElementById('sheetLinkModalHint').textContent = hint || '';
-    const linkInput=document.getElementById('sheetLinkModalInput');
-    const sheetInput=document.getElementById('sheetLinkModalSheetName');
-    const saved = storageKey ? (()=>{ try{return JSON.parse(localStorage.getItem('gsync:'+storageKey)||'null');}catch(e){return null;} })() : null;
-    linkInput.value = saved?.url || '';
-    sheetInput.value = saved?.sheetNames || (defaultSheetNames && defaultSheetNames.length ? defaultSheetNames.join(', ') : '');
-    modal.style.display='flex';
-    linkInput.focus();
-    const okBtn=document.getElementById('sheetLinkModalOk');
-    const testBtn=document.getElementById('sheetLinkModalTest');
-    const cancelBtn=document.getElementById('sheetLinkModalCancel');
-    const testStatus=document.getElementById('sheetLinkModalTestStatus');
-    if(testStatus){ testStatus.style.display='none'; testStatus.textContent=''; }
-    const cleanup=(val)=>{
-      modal.style.display='none';
-      okBtn.removeEventListener('click', onOk);
-      testBtn?.removeEventListener('click', onTest);
-      cancelBtn.removeEventListener('click', onCancel);
-      resolve(val);
-    };
-    const onOk=()=>{
-      const url=linkInput.value.trim();
-      const rawNames=sheetInput.value.trim();
-      if(!url){ linkInput.focus(); return; }
-      const sheetNames = rawNames ? rawNames.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean) : [];
-      if(storageKey){ try{localStorage.setItem('gsync:'+storageKey, JSON.stringify({url, sheetNames:rawNames}));}catch(e){} }
-      cleanup({url, sheetNames});
-    };
-    const onTest=async()=>{
-      const url=linkInput.value.trim();
-      const rawNames=sheetInput.value.trim();
-      if(!url){ linkInput.focus(); return; }
-      const sheetNames = rawNames ? rawNames.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean) : [];
-      if(testStatus){
-        testStatus.style.display='block';
-        testStatus.style.color='var(--muted)';
-        testStatus.style.background='var(--bg)';
-        testStatus.style.border='1px solid var(--line)';
-        testStatus.textContent='⏳ Đang kiểm tra kết nối Google Sheet...';
-      }
-      if(testBtn){ testBtn.disabled=true; }
-      try{
-        const sheetId=parseGoogleSheetId_(url);
-        if(!sheetId) throw new Error('Link Google Sheet không hợp lệ hoặc không nhận diện được Sheet ID.');
-        const names = sheetNames.length ? sheetNames : [null];
-        const results=[];
-        for(const name of names){
-          const rows=await fetchGoogleSheetRows_(sheetId, name);
-          const nonEmptyRows=rows.filter(r=>r.some(c=>String(c??'').trim()!=='')).length;
-          const maxCols=rows.reduce((m,r)=>Math.max(m,r.length),0);
-          results.push(`${name||'Sheet đầu tiên'}: ${nonEmptyRows} dòng · ${maxCols} cột`);
-        }
-        if(testStatus){
-          testStatus.style.color='var(--green-ok)';
-          testStatus.style.background='var(--green-ok-bg)';
-          testStatus.style.border='1px solid #BFDCCB';
-          testStatus.textContent='✅ Kết nối thành công!\n'+results.join('\n')+'\nChưa cập nhật Dashboard — bấm “↻ Cập nhật dữ liệu” để đồng bộ.';
-        }
-      }catch(err){
-        if(testStatus){
-          testStatus.style.color='var(--red)';
-          testStatus.style.background='var(--red-bg)';
-          testStatus.style.border='1px solid #E7B8B4';
-          testStatus.textContent='❌ Test kết nối thất bại.\n'+(err?.message||String(err));
-        }
-      }finally{
-        if(testBtn){ testBtn.disabled=false; }
-      }
-    };
-    const onCancel=()=>cleanup(null);
-    okBtn.addEventListener('click', onOk);
-    testBtn?.addEventListener('click', onTest);
-    cancelBtn.addEventListener('click', onCancel);
-  });
+function googleSheetConfigOwner_(){return JSON.stringify([session?.userId,session?.username,session?.role,session?.trainerId,session?.region]);}
+function validatedGoogleSheetConfig_(raw){
+ const cfg=parseSavedGoogleSheetConfig_(raw);let url;
+ try{url=new URL(cfg?.url||'');}catch{throw Error('Hãy nhập link Google Sheet hợp lệ.');}
+ if(url.protocol!=='https:'||url.hostname!=='docs.google.com'||!/^\/spreadsheets\/(?:u\/\d+\/)?d\/[a-zA-Z0-9_-]+(?:\/|$)/.test(url.pathname))throw Error('Link phải là Google Sheet tại https://docs.google.com/spreadsheets/d/…');
+ if(cfg.exactTab&&cfg.sheetNames.length!==1)throw Error('Hãy nhập đúng tên một sheet/tab.');
+ return {...cfg,url:url.href};
 }
+function googleSheetConfigCache_(storageKey,cfg){
+ const value={url:cfg.url,sheetNames:cfg.exactTab?cfg.sheetNames[0]:cfg.sheetNames.join(', '),...(cfg.exactTab?{exactTab:true}:{}),...(storageKey==='soShopSheetLinkBtn'?{sheetName:cfg.sheetNames[0]}:{})};
+ try{localStorage.setItem('gsync:'+storageKey,JSON.stringify(value));}catch{}
+ return value;
+}
+function bindSavedGoogleSheetFields_(options){
+ const {urlInput,tabInput,storageKey}=options,owner=googleSheetConfigOwner_();
+ let alive=true,loaded=false,saving=false,externalBusy=false,locked=false,saved=null,message='Đang đọc nguồn đã lưu…',error=false;
+ const bar=document.createElement('div');bar.className='gsheet-source-controls';
+ const save=document.createElement('button'),edit=document.createElement('button'),status=document.createElement('span');
+ save.type=edit.type='button';save.className=edit.className='secondary';save.textContent='💾 Lưu';edit.textContent='✏️ Sửa';
+ const prefix=options.idPrefix||'googleSheetSource';save.id=prefix+'Save';edit.id=prefix+'Edit';status.id=prefix+'Status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+ status.className='gsheet-source-state';bar.append(save,edit,status);(options.mountAfter||tabInput.closest('.form-row')||tabInput).after(bar);
+ const same=()=>alive&&urlInput.isConnected&&tabInput.isConnected&&owner===googleSheetConfigOwner_()&&(!options.sameContext||options.sameContext());
+ const permitted=()=>options.canEdit?options.canEdit():isAdmin()||isTrainer();
+ const busy=()=>!loaded||saving||externalBusy;
+ const readDraft=()=>{
+  const cfg=validatedGoogleSheetConfig_({url:urlInput.value,sheetNames:options.exactTab?[tabInput.value.normalize('NFC')]:tabInput.value,exactTab:!!options.exactTab});
+  options.validate?.(cfg);return cfg;
+ };
+ const fill=cfg=>{urlInput.value=cfg.url;tabInput.value=cfg.sheetNames.join(cfg.exactTab?'':', ');};
+ const render=()=>{
+  if(!alive)return;
+  const valid=same(),disabled=busy()||!valid;
+  urlInput.readOnly=tabInput.readOnly=locked;
+  urlInput.disabled=tabInput.disabled=disabled||!permitted();
+  for(const input of [urlInput,tabInput])input.classList.toggle('gsheet-source-locked',locked);
+  save.hidden=locked;edit.hidden=!locked;save.disabled=edit.disabled=disabled||!permitted();
+  save.textContent=saving?'Đang lưu…':'💾 Lưu';status.textContent=valid?message:'Tháng hoặc tài khoản đã thay đổi. Hãy mở lại mục cập nhật.';
+  status.dataset.error=String(error||!valid);bar.dataset.saved=String(locked);
+  options.onChange?.({locked,busy:busy(),saving,loaded,valid,config:saved});
+ };
+ const onInput=()=>{if(!alive||busy())return;locked=false;message='Chưa lưu thay đổi. Bấm Lưu trước khi cập nhật.';error=false;render();};
+ const onEdit=()=>{
+  if(!same()||busy()||!permitted())return;
+  locked=false;message='Đang sửa nguồn. Bấm Lưu để cố định link và tên sheet.';error=false;options.onEdit?.();render();urlInput.focus();
+ };
+ const onSave=async()=>{
+  if(!same()||busy()||!permitted())return;
+  let cfg;try{cfg=readDraft();if(!storageKey)throw Error('Chưa xác định mục lưu nguồn Google Sheet.');}catch(e){message=e.message;error=true;render();return;}
+  saving=true;message='Đang lưu link và tên sheet…';error=false;render();
+  try{
+   await saveGoogleSheetConfig_(storageKey,cfg);
+   if(!same())return;
+   saved=cfg;locked=true;fill(cfg);message='Đã lưu link và tên sheet. Bấm Sửa nếu muốn thay đổi.';
+  }catch(e){if(same()){message=e.message||'Chưa lưu được nguồn Google Sheet. Hãy thử lại.';error=true;}}
+  finally{saving=false;if(alive)render();}
+ };
+ save.addEventListener('click',onSave);edit.addEventListener('click',onEdit);urlInput.addEventListener('input',onInput);tabInput.addEventListener('input',onInput);
+ render();
+ const ready=(async()=>{
+  try{
+   const existing=options.loadConfig?await options.loadConfig():await loadSavedGoogleSheetConfig_(storageKey);
+   if(!same())return;
+   const initial=existing||options.fallbackSaved;
+   if(initial){
+    try{saved=validatedGoogleSheetConfig_(initial);options.validate?.(saved);fill(saved);locked=true;message='Đã lưu link và tên sheet. Bấm Sửa nếu muốn thay đổi.';}
+    catch(e){const draft=parseSavedGoogleSheetConfig_(initial);if(draft)fill(draft);message='Nguồn đã lưu cần kiểm tra lại: '+e.message;error=true;}
+   }else{
+    if(!urlInput.value&&options.defaultUrl)urlInput.value=options.defaultUrl;
+    if(!tabInput.value&&options.defaultSheetNames?.length)tabInput.value=options.defaultSheetNames.join(', ');
+    message='Nhập link và tên sheet, rồi bấm Lưu để dùng cho những lần sau.';
+   }
+  }catch(e){if(alive){message=e.message||'Không đọc được nguồn đã lưu.';error=true;}}
+  finally{loaded=true;if(alive)render();}
+ })();
+ return {
+  ready,readDraft,
+  savedConfig(){if(!same())throw Error('Tài khoản hoặc mục cập nhật đã thay đổi.');if(busy())throw Error('Hãy chờ thao tác đang chạy hoàn tất.');if(!locked||!saved)throw Error('Hãy Lưu link và tên sheet trước khi cập nhật dữ liệu.');return {...saved,sheetNames:[...saved.sheetNames]};},
+  setBusy(value){externalBusy=!!value;render();},
+  get locked(){return locked;},get busy(){return busy();},get saving(){return saving;},
+  dispose(){alive=false;save.removeEventListener('click',onSave);edit.removeEventListener('click',onEdit);urlInput.removeEventListener('input',onInput);tabInput.removeEventListener('input',onInput);bar.remove();}
+ };
+}
+let googleSheetModalClose_=null;
+function promptGoogleSheetLink_(hint,defaultSheetNames,storageKey,options={}){
+ googleSheetModalClose_?.();
+ return new Promise(resolve=>{
+  const modal=document.getElementById('sheetLinkModal'),linkInput=document.getElementById('sheetLinkModalInput'),sheetInput=document.getElementById('sheetLinkModalSheetName');
+  const okBtn=document.getElementById('sheetLinkModalOk'),testBtn=document.getElementById('sheetLinkModalTest'),cancelBtn=document.getElementById('sheetLinkModalCancel'),testStatus=document.getElementById('sheetLinkModalTestStatus');
+  document.getElementById('sheetLinkModalHint').textContent=hint||'';linkInput.value='';sheetInput.value='';
+  modal.style.display='flex';testStatus.style.display='none';testStatus.textContent='';let active=true;
+  const control=bindSavedGoogleSheetFields_({urlInput:linkInput,tabInput:sheetInput,storageKey,defaultSheetNames,idPrefix:'sheetLinkModal',...options,onChange:state=>{okBtn.disabled=!state.locked||state.busy||!state.valid;testBtn.disabled=state.busy||!state.valid;cancelBtn.disabled=state.saving;options.onChange?.(state);}});
+  const showError=message=>{if(!active)return;testStatus.style.display='block';testStatus.style.color='var(--red)';testStatus.style.background='var(--red-bg)';testStatus.style.border='1px solid #E7B8B4';testStatus.textContent=message;};
+  const cleanup=value=>{
+   if(!active)return;active=false;control.dispose();modal.style.display='none';
+   okBtn.removeEventListener('click',onOk);testBtn.removeEventListener('click',onTest);cancelBtn.removeEventListener('click',onCancel);modal.removeEventListener('keydown',onKey);
+   if(googleSheetModalClose_===close)googleSheetModalClose_=null;resolve(value);
+  };
+  const onOk=()=>{try{cleanup(control.savedConfig());}catch(e){showError(e.message);}};
+  const onCancel=()=>{if(!control.saving)cleanup(null);};
+  const close=()=>cleanup(null);googleSheetModalClose_=close;
+  const onKey=event=>{if(event.key==='Escape'&&!control.saving){event.preventDefault();cleanup(null);}};
+  const onTest=async()=>{
+   if(!active||control.busy)return;
+   let cfg;try{cfg=control.readDraft();}catch(e){showError(e.message);return;}
+   control.setBusy(true);testStatus.style.display='block';testStatus.style.color='var(--muted)';testStatus.style.background='var(--bg)';testStatus.style.border='1px solid var(--line)';testStatus.textContent='⏳ Đang kiểm tra kết nối Google Sheet…';
+   try{
+    const results=[];
+    for(const name of cfg.sheetNames.length?cfg.sheetNames:[null]){
+     const rows=await fetchGoogleSheetRows_(parseGoogleSheetId_(cfg.url),name);
+     results.push(`${name||'Sheet đầu tiên'}: ${rows.filter(r=>r.some(c=>String(c??'').trim()!=='')).length} dòng · ${rows.reduce((n,r)=>Math.max(n,r.length),0)} cột`);
+    }
+    if(!active)return;
+    testStatus.style.color='var(--green-ok)';testStatus.style.background='var(--green-ok-bg)';testStatus.style.border='1px solid #BFDCCB';testStatus.textContent='✅ Kết nối thành công!\n'+results.join('\n')+'\nChưa cập nhật dữ liệu Dashboard.';
+   }catch(e){showError('❌ Test kết nối thất bại.\n'+(e.message||e));}
+   finally{if(active)control.setBusy(false);}
+  };
+  okBtn.addEventListener('click',onOk);testBtn.addEventListener('click',onTest);cancelBtn.addEventListener('click',onCancel);modal.addEventListener('keydown',onKey);
+  control.ready.then(()=>{if(active)(control.locked?okBtn:linkInput).focus();});
+ });
+}
+
 /**
  * Gắn nút "🔗 Cập nhật từ Google Sheet" cạnh 1 mục import.
  * btnId: id nút bấm | msgElId: id thẻ hiển thị thông báo (đã có sẵn cho từng mục import)
@@ -4109,36 +4152,28 @@ function formatImportFileError_(err, expectedDesc){
   return `❌ ${cause}\nCách khắc phục: ${fix}\nChi tiết kỹ thuật: ${raw}`;
 }
 function parseSavedGoogleSheetConfig_(raw){
-  if(!raw || !raw.url) return null;
-  const rawNames = Array.isArray(raw.sheetNames) ? raw.sheetNames.join(', ') : String(raw.sheetNames||'');
-  return {
-    url: String(raw.url||'').trim(),
-    sheetNames: rawNames ? rawNames.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean) : []
-  };
+ if(!raw||!raw.url)return null;
+ const exactTab=!!raw.exactTab;
+ const rawNames=Array.isArray(raw.sheetNames)?raw.sheetNames.join(exactTab?'':', '):String(raw.sheetNames??raw.sheetName??'');
+ return {url:String(raw.url).trim(),sheetNames:exactTab?(rawNames.trim()?[rawNames.normalize('NFC')]:[]):rawNames.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean),...(exactTab?{exactTab:true}:{})};
 }
 async function loadSavedGoogleSheetConfig_(storageKey){
-  if(!storageKey) return null;
-  try{
-    const local = JSON.parse(localStorage.getItem('gsync:'+storageKey)||'null');
-    const parsed = parseSavedGoogleSheetConfig_(local);
-    if(parsed) return parsed;
-  }catch(e){}
-  try{
-    const shared = await dbGet('gsync_config:'+storageKey);
-    const parsed = parseSavedGoogleSheetConfig_(shared);
-    if(parsed){
-      try{ localStorage.setItem('gsync:'+storageKey, JSON.stringify({url:parsed.url, sheetNames:parsed.sheetNames.join(', ')})); }catch(e){}
-      return parsed;
-    }
-  }catch(e){}
-  return null;
+ if(!storageKey)return null;
+ // Prefer shared settings so another device does not keep using an older cached link.
+ try{
+  const shared=parseSavedGoogleSheetConfig_(await dbGet('gsync_config:'+storageKey));
+  if(shared){googleSheetConfigCache_(storageKey,shared);return shared;}
+ }catch{}
+ try{return parseSavedGoogleSheetConfig_(JSON.parse(localStorage.getItem('gsync:'+storageKey)||'null'));}catch{return null;}
 }
-async function saveGoogleSheetConfig_(storageKey, cfg){
-  if(!storageKey || !cfg?.url) return;
-  const normalized={url:String(cfg.url).trim(), sheetNames:(cfg.sheetNames||[]).join(', ')};
-  try{ localStorage.setItem('gsync:'+storageKey, JSON.stringify(normalized)); }catch(e){}
-  try{ await dbSet('gsync_config:'+storageKey, normalized); }catch(e){}
+async function saveGoogleSheetConfig_(storageKey,raw){
+ if(!storageKey)throw Error('Chưa xác định mục lưu nguồn Google Sheet.');
+ const cfg=validatedGoogleSheetConfig_(raw);
+ const value={url:cfg.url,sheetNames:cfg.exactTab?cfg.sheetNames[0]:cfg.sheetNames.join(', '),...(cfg.exactTab?{exactTab:true}:{}),...(storageKey==='soShopSheetLinkBtn'?{sheetName:cfg.sheetNames[0]}:{})};
+ if(!await dbSet('gsync_config:'+storageKey,value))throw Error('Chưa lưu được link và tên sheet. Hãy kiểm tra kết nối rồi bấm Lưu lại.');
+ googleSheetConfigCache_(storageKey,cfg);return cfg;
 }
+
 function ensureGoogleSheetQuickButton_(btn, onQuickUpdate){
   // Bản DATA UPDATE: bỏ nút “↻ Cập nhật dữ liệu” cạnh từng nguồn để giao diện gọn hơn.
   // Việc cập nhật nhanh được gom về DATA ▸ UPDATE ▸ “CẬP NHẬT DATA TỔNG”.
@@ -4169,7 +4204,6 @@ function attachGoogleSheetButton_(btnId, msgElId, sheetSpecs, onWorkbook){
       : 'Dán link Google Sheet và nhập tên tab muốn lấy dữ liệu. Để trống tên tab = lấy tab đầu tiên.';
     const cfg = await promptGoogleSheetLink_(hint, sheetSpecs, btnId);
     if(!cfg) return;
-    await saveGoogleSheetConfig_(btnId, cfg);
     await runUpdate(cfg);
   });
 
@@ -4216,7 +4250,6 @@ function attachGoogleSheetToFileInput_(btnId, msgElId, fileInputId, defaultSheet
       : 'Dán link Google Sheet và nhập tên tab muốn lấy dữ liệu. Để trống tên tab = lấy tab đầu tiên.';
     const cfg = await promptGoogleSheetLink_(hint, defaults, btnId);
     if(!cfg) return;
-    await saveGoogleSheetConfig_(btnId, cfg);
     await runUpdate(cfg);
   });
 
@@ -15854,10 +15887,14 @@ function openFrequencyTargetImport_(camp){
  url.value=draft.source?.url||'';tab.value=draft.source?.sheet||'';let candidate=null,busy=false;
  const same=()=>ov.isConnected&&currentMonth===month&&owner===frequencyTargetOwner_()&&!camp.targetLocked&&!monthLocked&&document.getElementById('targetCampaignSelect')?.value===camp.id;
  const reset=()=>{candidate=null;use.disabled=true;preview.replaceChildren();error.textContent='';};url.oninput=tab.oninput=reset;
- const close=()=>{ov.remove();document.getElementById('frequencyTargetImportBtn')?.focus();};ov.querySelector('#frequencyTargetImportClose').onclick=close;
+ const sourceFields=bindSavedGoogleSheetFields_({urlInput:url,tabInput:tab,storageKey:'frequencyTargetSheet:'+month+':'+camp.id,idPrefix:'frequencyTargetSource',exactTab:true,canEdit:()=>isAdmin()&&same(),sameContext:same,
+  fallbackSaved:!draft.pendingImport&&draft.source?.url?{url:draft.source.url,sheetNames:[draft.source.sheet||''],exactTab:true}:null,
+  onEdit:reset,onChange:state=>{fetchButton.disabled=busy||!state.locked||state.busy||!state.valid;}
+ });
+ const close=()=>{sourceFields.dispose();ov.remove();document.getElementById('frequencyTargetImportBtn')?.focus();};ov.querySelector('#frequencyTargetImportClose').onclick=close;
  ov.addEventListener('keydown',e=>{if(e.key==='Escape')close();if(e.key==='Tab'){const controls=[...ov.querySelectorAll('input,button')].filter(el=>!el.disabled),first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
  fetchButton.onclick=async()=>{
-  if(busy||!same())return;busy=true;reset();fetchButton.disabled=true;url.disabled=tab.disabled=true;error.style.color='var(--muted)';error.textContent='Đang đọc Sheet và đối chiếu với nhân sự…';
+  if(busy||!same()||!sourceFields.locked)return;busy=true;reset();sourceFields.setBusy(true);fetchButton.disabled=true;error.style.color='var(--muted)';error.textContent='Đang đọc Sheet và đối chiếu với nhân sự…';
   try{
    let parsed;try{parsed=new URL(url.value.trim());}catch{throw Error('Link Google Sheet chưa hợp lệ.');}
    const id=parseGoogleSheetId_(parsed.href),sheet=tab.value.normalize('NFC');if(parsed.protocol!=='https:'||parsed.hostname!=='docs.google.com'||!id||!sheet.trim())throw Error('Nhập link Google Sheet và đúng tên một sheet.');
@@ -15869,7 +15906,7 @@ function openFrequencyTargetImport_(camp){
    preview.innerHTML=`<p class="section-desc">Tab đã xác minh: <strong>${escapeHtml(out.source.sheet)}</strong> · ${rows.length-1} dòng dữ liệu.</p><div class="frequency-target-summary"><strong>${p.eligible} PG tính Target</strong><span>${p.unique} PG khớp · ${p.duplicates.length} dòng lặp được gộp · ${p.excluded.length} PG không Đang làm · ${p.issues.length} lỗi</span></div><div class="table-scroll"><table><thead><tr><th>Trainer</th><th>Khu vực</th><th>Target PG</th></tr></thead><tbody>${p.allocations.map(t=>`<tr><td>${escapeHtml(t.trainerName)}</td><td>${escapeHtml(t.region)}</td><td>${t.count}</td></tr>`).join('')}</tbody></table></div>${(p.eligiblePgs||[]).length?`<details ${p.eligible<=50?'open':''} id="frequencyTargetMatchedPgs"><summary>Danh sách PG tính Target (${p.eligible})</summary><div class="table-scroll"><table><thead><tr><th>Code</th><th>Họ tên</th><th>Trainer</th><th>Khu vực</th><th>Shop</th></tr></thead><tbody>${p.eligiblePgs.slice(0,150).map(r=>`<tr><td>${escapeHtml(r.code)}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.trainerName)}</td><td>${escapeHtml(r.region)}</td><td>${escapeHtml(r.shopId)} · ${escapeHtml(r.shopName)}</td></tr>`).join('')}</tbody></table></div>${p.eligible>150?'<p>Hiển thị 150 PG đầu để xem trước.</p>':''}</details>`:''}${p.issues.length||p.excluded.length?`<details open><summary>Các dòng cần lưu ý</summary><div class="table-scroll"><table><thead><tr><th>Dòng</th><th>Mã PG</th><th>Họ tên</th><th>Kết quả</th></tr></thead><tbody>${[...p.issues,...p.excluded].slice(0,150).map(r=>`<tr><td>${r.line||'—'}</td><td>${escapeHtml(r.code)}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.reason)}</td></tr>`).join('')}</tbody></table></div>${p.issues.length+p.excluded.length>150?'<p>Hiển thị 150 dòng đầu. Hãy sửa Sheet rồi xem trước lại.</p>':''}</details>`:''}`;
    error.style.color=p.issues.length?'var(--red)':'var(--green-ok)';error.textContent=p.issues.length?'Danh sách còn lỗi; sửa Sheet và lấy dữ liệu lại. Chưa thay đổi Target.':'Đối chiếu xong. Chọn Dùng danh sách này, rồi Lưu Target để áp dụng.';use.disabled=!!p.issues.length||!p.eligible;
   }catch(e){if(ov.isConnected){error.style.color='var(--red)';error.textContent=e.message||'Chưa import được danh sách. Target cũ được giữ nguyên.';}}
-  finally{busy=false;if(ov.isConnected){fetchButton.disabled=false;url.disabled=tab.disabled=false;}}
+  finally{busy=false;if(ov.isConnected)sourceFields.setBusy(false);}
  };
  use.onclick=()=>{if(!candidate||use.disabled||!same())return;frequencyTargetDrafts_.set(frequencyTargetKey_(month)+':'+camp.id,candidate);close();renderTargetTable();};url.focus();
 }
@@ -17355,7 +17392,8 @@ function parseSoShopRows_(aoa){
 function soShopConfig_(raw){
   let url;try{url=new URL(String(raw?.url||'').trim());}catch{throw Error('Hãy nhập link Google Sheet hợp lệ.');}
   if(url.protocol!=='https:'||url.hostname!=='docs.google.com'||!/^\/spreadsheets\/d\/[a-zA-Z0-9_-]+\//.test(url.pathname))throw Error('Link phải có dạng https://docs.google.com/spreadsheets/d/.../edit.');
-  const name=String(raw.sheetName??(raw.sheetNames?.length===1?raw.sheetNames[0]:'')).trim();
+  const names=Array.isArray(raw.sheetNames)?raw.sheetNames:raw.exactTab?[String(raw.sheetNames||'')]:[];
+  const name=String(raw.sheetName??(names.length===1?names[0]:'')).trim();
   if(!name)throw Error('Hãy nhập chính xác một tên sheet/tab chứa S.O Shop.');
   return {url:url.href,sheetName:name};
 }
@@ -17437,7 +17475,6 @@ async function updateSoShopFromGoogle_(raw){
       renderSoSummary_();renderSoListTab_();
       if(document.getElementById('sotab-stats')?.classList.contains('active'))renderSoStatsTab_();
     }
-    if(isAdmin()&&context===soShopContext_())await saveSoShopConfig_(cfg);
     return {status:'ok',message:`Đã cập nhật ${payload.shops.length} Shop · ${monthLabel(month)}.${parsed.skipped?' Bỏ qua '+parsed.skipped+' dòng ngoài phạm vi.':''}${parsed.duplicates?' Gộp '+parsed.duplicates+' dòng trùng cùng kết quả.':''}`};
   }finally{soShopUpdating_=false;if(btn)btn.disabled=!isAdmin();}
 }
@@ -17447,23 +17484,20 @@ async function runSoShopSavedUpdate_(){
   return updateSoShopFromGoogle_(cfg);
 }
 async function openSoShopSheetForm_(){
-  if(!isAdmin()||soShopUpdating_)return;
-  const context=soShopContext_(),saved=await loadSoShopConfig_();
-  if(!isAdmin()||context!==soShopContext_())return;
-  const html=`<p class="section-desc">Cập nhật kết quả Shop cho <strong>${escapeHtml(monthLabel(soTargetMonth_()))}</strong> (tháng trước). Mỗi PG gán vào cùng Store ID dùng chung % target và mốc của Shop.</p>
-    <div class="form-row"><label for="soShopSourceUrl">Link Google Sheet</label><input id="soShopSourceUrl" type="url" value="${escapeHtml(saved?.url||SO_SHOP_SAMPLE_URL_)}" style="width:100%;"></div>
-    <div class="form-row"><label for="soShopSourceName">Tên sheet / tab</label><input id="soShopSourceName" type="text" value="${escapeHtml(saved?.sheetName||'')}" placeholder="Nhập đúng tên tab chứa S.O Shop" style="width:100%;"></div>
-    <p id="soShopConfigError" style="color:var(--red);font-size:var(--cap);" role="alert"></p>`;
-  const cfg=await showFormModal_('Cập nhật Google Sheet S.O Shop',html,()=>{
-    try{return soShopConfig_({url:document.getElementById('soShopSourceUrl').value,sheetName:document.getElementById('soShopSourceName').value});}
-    catch(e){document.getElementById('soShopConfigError').textContent=e.message;return false;}
-  });
-  if(!cfg)return;
-  const msg=document.getElementById('soShopImportMsg');msg.style.display='block';msg.style.color='var(--muted)';msg.textContent='Đang cập nhật S.O Shop…';
-  try{
-    if(context!==soShopContext_())throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy cập nhật lại.');
-    const result=await updateSoShopFromGoogle_(cfg);msg.style.color='var(--green-ok)';msg.textContent=result.message;
-  }catch(e){msg.style.color='var(--red)';msg.textContent=e.message;}
+ if(!isAdmin()||soShopUpdating_)return;
+ const context=soShopContext_();
+ const cfg=await promptGoogleSheetLink_('Cập nhật S.O Shop cho '+monthLabel(soTargetMonth_())+' (tháng trước). Nhập đúng một tên tab chứa kết quả Shop.',null,SO_SHOP_CONFIG_KEY_,{
+  defaultUrl:SO_SHOP_SAMPLE_URL_,exactTab:true,
+  sameContext:()=>isAdmin()&&!soShopUpdating_&&context===soShopContext_(),
+  validate:raw=>soShopConfig_(raw),
+  loadConfig:async()=>{const saved=await loadSoShopConfig_();return saved?{url:saved.url,sheetNames:[saved.sheetName],exactTab:true}:null;}
+ });
+ if(!cfg)return;
+ const msg=document.getElementById('soShopImportMsg');msg.style.display='block';msg.style.color='var(--muted)';msg.textContent='Đang cập nhật S.O Shop…';
+ try{
+  if(context!==soShopContext_())throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy cập nhật lại.');
+  const result=await updateSoShopFromGoogle_(soShopConfig_(cfg));msg.style.color='var(--green-ok)';msg.textContent=result.message;
+ }catch(e){msg.style.color='var(--red)';msg.textContent=e.message;}
 }
 document.getElementById(SO_SHOP_CONFIG_KEY_).addEventListener('click',openSoShopSheetForm_);
 
@@ -18475,6 +18509,18 @@ new MutationObserver(muts=>{
     </div>
   </div>
 </div>
+<style id="google-sheet-source-lock-20261105">
+.gsheet-source-controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:10px 0 13px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);}
+.gsheet-source-controls>button{flex:0 0 auto;font:inherit;font-size:var(--cap);padding:7px 12px;}
+.gsheet-source-controls>button[hidden]{display:none!important;}
+.gsheet-source-state{flex:1 1 180px;min-width:0;font-size:var(--cap);line-height:1.5;color:var(--muted);}
+.gsheet-source-controls[data-saved=true] .gsheet-source-state{color:var(--green-dark);}
+.gsheet-source-controls .gsheet-source-state[data-error=true]{color:var(--red);}
+input.gsheet-source-locked{background:var(--bg)!important;color:var(--text)!important;border-color:#bdd7c9!important;}
+#sheetLinkModal .modal-box{max-height:88dvh;overflow-y:auto;}
+.mobile-layout .gsheet-source-controls{padding:8px;gap:7px;}
+.mobile-layout .gsheet-source-state{font-size:11px;flex-basis:150px;}
+</style>
 <div class="modal-overlay" id="sheetLinkModal" style="display:none;">
   <div class="modal-box" style="max-width:560px;">
     <div class="modal-text" style="margin-bottom:8px;font-weight:800;color:var(--green-dark);">🔗 Cập nhật dữ liệu từ Google Sheet</div>
@@ -19425,7 +19471,6 @@ async function renderPgsMasterTarget_(camp,editLocked=false){
      const csv=await fetchGoogleSheetRows_(sheetId,name,{allowFallback:false});
      const sheet=XLSX.utils.aoa_to_sheet(csv),wb={SheetNames:[name||'Sheet1'],Sheets:{[name||'Sheet1']:sheet}};
      await importShopRows(wb,'Google Sheets'+(name?' / '+name:''));
-     await saveGoogleSheetConfig_(key,cfg);
    }catch(err){status.textContent='❌ '+String(err?.message||err);alert(status.textContent);}
  });
  box.querySelector('#pgsmImportShopFile')?.addEventListener('change',async e=>{
