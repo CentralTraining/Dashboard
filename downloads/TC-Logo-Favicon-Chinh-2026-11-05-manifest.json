@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-05",
+  "repo": "CentralTraining/Dashboard",
+  "full_html": "Dashboard-Chinh-2026-11-05-TC-Logo-Favicon.html",
+  "logo_file": "assets/team-training-central-icon-1024.jpg",
+  "logo_sha256": "ffd02778b01dc20aec2f358436891488306355542cf4ef6104c5df35e3d95164",
+  "logo_git_blob": "7dcb3c8b28a53e916e8c5d3c04232598ac6091f7",
+  "files": {
+    "index.html": {
+      "bytes": 2642401,
+      "sha256": "cb42f97bbb450092f48a9638fe237a247d25ccefd7b7c3cb5e4d9b2e84ffbc30"
+    },
+    "privacy.html": {
+      "bytes": 22036,
+      "sha256": "0dc0e590c9feec42c8e84da9c334d1ac3e70743165dd69373700950feba59371"
+    },
+    "terms.html": {
+      "bytes": 17949,
+      "sha256": "41a3d29bfd3da99005480ac21568e35a38fec35df8506f33b1cd4207d639914b"
+    }
+  },
+  "business_scripts_unchanged": true,
+  "original_logo_unchanged": true,
+  "policy_wording_unchanged": true
+}

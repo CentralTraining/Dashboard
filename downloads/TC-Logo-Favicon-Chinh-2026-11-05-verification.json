@@ -1,0 +1,55 @@
+{
+  "repo": "CentralTraining/Dashboard",
+  "date": "2026-11-05",
+  "passed": true,
+  "original_logo_git_blob": "7dcb3c8b28a53e916e8c5d3c04232598ac6091f7",
+  "original_logo_bytes_unchanged": true,
+  "business_scripts_byte_exact": true,
+  "legal_policy_content_unchanged": true,
+  "backend_changes": 0,
+  "real_data_writes": 0,
+  "browser_checks": [
+    {
+      "repo": "Dashboard",
+      "width": 1440,
+      "login_logo_px": 48,
+      "sidebar_logo_fits": true,
+      "legal_logo_loaded": true,
+      "icons_match": true,
+      "legal_no_overflow": true,
+      "all_backend_requests_mocked": true,
+      "real_data_writes": 0,
+      "mocked_initialization_write_keys": [
+        "pgs:2026-11"
+      ]
+    },
+    {
+      "repo": "Dashboard",
+      "width": 390,
+      "login_logo_px": 64,
+      "sidebar_logo_fits": true,
+      "legal_logo_loaded": true,
+      "icons_match": true,
+      "legal_no_overflow": true,
+      "all_backend_requests_mocked": true,
+      "real_data_writes": 0,
+      "mocked_initialization_write_keys": [
+        "pgs:2026-11"
+      ]
+    },
+    {
+      "repo": "Dashboard",
+      "width": 320,
+      "login_logo_px": 64,
+      "sidebar_logo_fits": true,
+      "legal_logo_loaded": true,
+      "icons_match": true,
+      "legal_no_overflow": true,
+      "all_backend_requests_mocked": true,
+      "real_data_writes": 0,
+      "mocked_initialization_write_keys": [
+        "pgs:2026-11"
+      ]
+    }
+  ]
+}
