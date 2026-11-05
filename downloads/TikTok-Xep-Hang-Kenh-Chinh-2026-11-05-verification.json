@@ -1,0 +1,118 @@
+{
+  "status": "passed",
+  "source": {
+    "parent_commit": "42cc64df92b9996a0b31c93d3c2a613b897fba41",
+    "tested_commit": "18efd1de660ef2e8c81024b71b53b5977879135f",
+    "sha256": "b2cd4098551ee0dd0670ed2255c1b0b0b14faf5bbacb8769b8f60604f938d876",
+    "blob": "aeeacf5e55226b4abc7c6ad8c5e27e36e7511ff9",
+    "bytes": 2657545,
+    "all_scripts_byte_exact_test": true,
+    "main_assets_only_difference_from_test": 5,
+    "all_changes_match_eight_tested_patches": true,
+    "changed_inline_script_indices": [
+      7
+    ]
+  },
+  "main_browser": [
+    {
+      "width": 1440,
+      "passed": true,
+      "main_url_verified": true,
+      "main_channel_facade_verified": true,
+      "growth_then_viral_order": true,
+      "both_badges_after_winner_name": true,
+      "all_channel_tables_consistent": true,
+      "filtered_and_monthly_winners_recalculated": true,
+      "missing_values_not_zero": true,
+      "no_awards_for_zero": true,
+      "trainer_team_access_preserved": true,
+      "sorted_follow_history_opens_correct_trainer": true,
+      "totals_and_source_data_unchanged": true,
+      "badges_visible_and_no_overflow": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "main_url_verified": true,
+      "main_channel_facade_verified": true,
+      "growth_then_viral_order": true,
+      "both_badges_after_winner_name": true,
+      "all_channel_tables_consistent": true,
+      "filtered_and_monthly_winners_recalculated": true,
+      "missing_values_not_zero": true,
+      "no_awards_for_zero": true,
+      "trainer_team_access_preserved": true,
+      "sorted_follow_history_opens_correct_trainer": true,
+      "totals_and_source_data_unchanged": true,
+      "badges_visible_and_no_overflow": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    }
+  ],
+  "test_browser": [
+    {
+      "width": 1440,
+      "passed": true,
+      "growth_then_viral_order": true,
+      "both_badges_after_winner_name": true,
+      "all_channel_tables_consistent": true,
+      "filtered_and_monthly_winners_recalculated": true,
+      "missing_values_not_zero": true,
+      "no_awards_for_zero": true,
+      "trainer_team_access_preserved": true,
+      "sorted_follow_history_opens_correct_trainer": true,
+      "totals_and_source_data_unchanged": true,
+      "badges_visible_and_no_overflow": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "growth_then_viral_order": true,
+      "both_badges_after_winner_name": true,
+      "all_channel_tables_consistent": true,
+      "filtered_and_monthly_winners_recalculated": true,
+      "missing_values_not_zero": true,
+      "no_awards_for_zero": true,
+      "trainer_team_access_preserved": true,
+      "sorted_follow_history_opens_correct_trainer": true,
+      "totals_and_source_data_unchanged": true,
+      "badges_visible_and_no_overflow": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    },
+    {
+      "width": 320,
+      "passed": true,
+      "growth_then_viral_order": true,
+      "both_badges_after_winner_name": true,
+      "all_channel_tables_consistent": true,
+      "filtered_and_monthly_winners_recalculated": true,
+      "missing_values_not_zero": true,
+      "no_awards_for_zero": true,
+      "trainer_team_access_preserved": true,
+      "sorted_follow_history_opens_correct_trainer": true,
+      "totals_and_source_data_unchanged": true,
+      "badges_visible_and_no_overflow": true,
+      "real_data_writes": 0,
+      "backend_requests": "mocked"
+    }
+  ],
+  "ranking_rules": {
+    "status": "passed",
+    "growth_descending_then_raw_viral_sum": true,
+    "one_winner_per_category": true,
+    "both_badges_same_channel_supported": true,
+    "stable_ties_independent_of_api_order": true,
+    "missing_values_not_zero": true,
+    "no_badge_for_zero_or_negative_growth": true,
+    "no_viral_badge_without_complete_positive_metrics": true,
+    "input_totals_and_bins_unchanged": true,
+    "real_data_writes": 0
+  },
+  "synthetic_data_only": true,
+  "real_data_writes": 0
+}
