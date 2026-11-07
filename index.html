@@ -2797,6 +2797,36 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
 .mobile-layout #soListFilterMilestone legend,.mobile-layout #soListMilestoneSelection{font-size:11px;}
 .mobile-layout #soListMilestoneHelp{font-size:10px;}
 </style>
+<style>
+#centerHrBox .center-hr-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+#centerHrBox .center-hr-tag{background:var(--amber-bg,#fff5df);color:var(--amber,#865d14);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap;}
+#centerHrBox .center-hr-source{margin:15px 0;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--bg);}
+#centerHrBox label{display:block;font-weight:700;margin-bottom:8px;}
+#centerHrBox input,#centerHrBox select{display:block;width:100%;min-width:0;box-sizing:border-box;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card,#fff);color:var(--text);}
+#centerHrBox input[readonly]{background:var(--green-bg,#edf5f0);}
+#centerHrBox .center-hr-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px;}
+#centerHrBox .center-hr-connections{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:700;margin:12px 0;}
+#centerHrBox .center-hr-connections>span{border:1px solid var(--line);border-radius:7px;padding:7px 9px;}
+#centerHrBox .center-hr-setup{border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12px;line-height:1.7;}
+#centerHrBox summary{font-weight:800;cursor:pointer;}
+#centerHrBox .center-hr-setup code{overflow-wrap:anywhere;}
+#centerHrBox .center-hr-message{font-size:13px;font-weight:700;line-height:1.6;overflow-wrap:anywhere;}
+#centerHrBox .center-hr-last{font-size:12px;line-height:1.8;padding:12px 0;}
+#centerHrBox .center-hr-preview-scroll{overflow:auto;max-height:390px;border:1px solid var(--line);border-radius:10px;}
+#centerHrBox table{font-size:12px;min-width:850px;width:100%;border-collapse:collapse;}
+#centerHrBox td,#centerHrBox th{padding:9px;border-bottom:1px solid var(--line);text-align:left;}
+#centerHrBox th{background:var(--green-bg,#e8f3ed);color:var(--green-dark);position:sticky;top:0;}
+#centerHrBox .center-hr-footnote{margin:15px 0 0;}
+@media(max-width:600px){#centerHrBox .center-hr-source{padding:12px;}#centerHrBox .center-hr-heading{gap:8px;}#centerHrBox .center-hr-actions button{white-space:normal;max-width:100%;}#centerHrBox .center-hr-setup{padding:10px;}#centerHrBox .center-hr-setup ol{padding-left:18px;}}
+#centerHrBox .center-hr-connection-card{padding:14px 0;border-top:1px solid var(--line);margin-top:14px;}
+#centerHrBox .center-hr-connection-card h4{margin:0 0 12px;font-size:14px;}
+#centerHrBox .center-hr-connection-card label{margin-top:12px;}
+#centerHrBox .center-hr-setup li{margin:9px 0;}
+#centerHrBox .center-hr-setup a{overflow-wrap:anywhere;}
+
+#centerHrBox .center-hr-reuse{margin:8px 0 14px;color:var(--green-dark);font-weight:600;}
+
+</style>
 </head>
 <body>
 
@@ -3596,6 +3626,67 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
             <button class="danger" id="onoffResetAllBtn" type="button">🗑 Xoá sạch, làm lại từ đầu</button>
           </div>
           <span class="save-msg" id="onoffImportMsg" style="display:none;"></span>
+        </div>
+        <div class="cfg-card admin-only-gsheet" id="centerHrBox" hidden>
+          <div class="center-hr-heading"><div><h3>Đồng bộ Center lúc 23:59 — 4 nguồn nhân sự</h3><p class="section-desc">Excel Center → 4 tab Google Sheet → tự cập nhật Data nhân sự dùng chung. Dùng Apps Script bằng tài khoản Google của bạn, không cần Service Account hoặc JSON key.</p></div><span class="center-hr-tag">BẢN CHÍNH</span></div>
+          <p class="center-hr-reuse" id="centerHrReuse">Dùng lại kết nối đã lưu. Không cần triển khai lại Apps Script.</p>
+          <div class="center-hr-source">
+            <label for="centerHrUrl">Link Google Sheet — <strong id="centerHrMonth"></strong></label>
+            <input id="centerHrUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://docs.google.com/spreadsheets/d/…/edit" disabled>
+            <p class="section-desc">Dùng lại <strong>link Google Sheet tháng đã lưu</strong>; không cần tạo file hay triển khai lại Apps Script khi chuyển sang Dashboard chính. Các tab nhận: <strong>DS GÁN SHOP PGS, SAO PGS, ON, OFF</strong>. Mỗi lần cập nhật thay toàn bộ giá trị và xóa phần dữ liệu cũ dư; không cộng dồn. Các ô gộp trong bốn tab được tách trước khi ghi.</p>
+            <div class="center-hr-actions"><button type="button" class="primary" id="centerHrSave" disabled>Lưu link tháng này</button><button type="button" class="secondary" id="centerHrEdit" hidden>Sửa link</button><button type="button" class="secondary" id="centerHrCancel" hidden>Hủy sửa</button><button type="button" class="secondary" id="centerHrReload">↻ Tải trạng thái</button></div>
+          </div>
+          <div class="center-hr-plan">
+            <strong>4 nguồn cập nhật lúc 23:59 giờ Việt Nam</strong>
+            <ul><li><strong>DS GÁN SHOP PGS:</strong> Export gán shop hiện tại.</li><li><strong>SAO PGS:</strong> Export Hạng sao hiện tại.</li><li><strong>ON:</strong> Working status: Choose; Joined at từ <span id="centerHrOnRange"></span>.</li><li><strong>OFF:</strong> Working status: Choose; Off date từ <span id="centerHrOffRange"></span>.</li></ul>
+            <p class="section-desc">Chỉ ghi khi đủ 4 file hợp lệ. Tab SAO PGS, ON hoặc OFF còn thiếu sẽ được tạo trong lần cập nhật. ON/OFF không có phát sinh vẫn thay bằng bảng tiêu đề hợp lệ để xóa danh sách cũ.</p>
+          </div>
+          <div class="center-hr-connections"><span id="centerHrCenterStatus">Center: chưa kiểm tra</span><span id="centerHrGoogleStatus">Apps Script: chưa kiểm tra</span><span id="centerHrScheduleStatus">Lịch tự động: chưa kiểm tra</span></div>
+          <details class="center-hr-setup" id="centerHrWriterUpdate"><summary>Cập nhật Apps Script — 4 tab nhân sự</summary>
+            <p>Bản này bổ sung <strong>SAO PGS, ON và OFF</strong> cùng tab gán shop. Bộ ghi kiểm tra đủ nguồn, tách ô gộp và thay giá trị cả bốn tab trong cùng một lần xử lý, rồi đọc lại đối chiếu từng ô. Kết nối đang dùng đã hỗ trợ 4 tab thì giữ nguyên Code.gs, URL và khóa đã lưu. Chỉ xem hướng dẫn dưới đây khi hệ thống báo bộ ghi cũ chưa hỗ trợ 4 tab.</p>
+            <ol><li>Bấm <strong>Sao chép mã 4 tab</strong> bên dưới.</li><li>Mở dự án <strong>Center HR</strong> đã tạo trong Apps Script → thay toàn bộ <code>Code.gs</code> bằng mã mới → <strong>Lưu</strong>.</li><li>Chọn <strong>Triển khai / Deploy → Quản lý bản triển khai / Manage deployments</strong> → chọn bản đang dùng → biểu tượng <strong>bút chì</strong> → <strong>Phiên bản: Phiên bản mới / New version</strong> → <strong>Triển khai / Deploy</strong>. Giữ nguyên URL <code>/exec</code> và khóa kết nối; không cần tạo dự án hay khóa mới.</li><li>Quay lại Dashboard chính → <strong>Kiểm tra Sheet</strong>. Khi xác nhận bộ ghi đã hỗ trợ đủ 4 tab, bấm <strong>Chạy thử</strong>. Chỉ bật lịch 23:59 sau khi ghi, đọc lại và nhập thử thành công.</li></ol>
+            <div class="center-hr-actions"><button type="button" class="secondary" id="centerHrCopyUpdatedCode">Sao chép mã 4 tab</button><button type="button" class="secondary" id="centerHrDownloadUpdatedCode">Tải Code.gs 4 tab</button></div>
+          </details>
+          <details class="center-hr-setup" id="centerHrSetup"><summary>Thiết lập miễn phí bằng Gmail — làm một lần</summary>
+            <p>Bấm <strong>Tải trạng thái</strong> trước khi nhập. Tài khoản Center và khóa kết nối được mã hóa trong Vault trên máy chủ. Chỉ Admin được lưu; mật khẩu và khóa không được trả lại khi tải cấu hình.</p>
+            <div class="center-hr-connection-card">
+              <h4>1. Kết nối Center</h4>
+              <label for="centerHrAuthMode">Cách kết nối Center</label><select id="centerHrAuthMode" disabled><option value="password">Tài khoản và mật khẩu</option><option value="session">Phiên Center đã đăng nhập — có CAPTCHA</option></select>
+              <div id="centerHrPasswordFields">
+              <label for="centerHrUsername">Tên đăng nhập Center</label><input id="centerHrUsername" type="text" autocomplete="off" maxlength="200" disabled>
+              <label for="centerHrPassword">Mật khẩu Center</label><input id="centerHrPassword" type="password" autocomplete="new-password" maxlength="512" placeholder="Nhập trực tiếp tại đây; không gửi qua chat" disabled>
+              </div>
+              <div id="centerHrSessionFields" hidden>
+                <p>Đăng nhập trực tiếp trên <a href="https://center.erp-portal.vn/" target="_blank" rel="noopener noreferrer">Center</a> và hoàn tất CAPTCHA. Sau đó dùng phiên đã xác minh để tải Excel. Phiên được mã hóa trong Vault; khi hết hạn cần cập nhật lại.</p>
+                <ol><li>Trên máy tính, mở Center đã đăng nhập → nhấn <strong>F12</strong> (Mac: <strong>⌘⌥I</strong>) → tab <strong>Network</strong>.</li><li>Vào <strong>Đào Tạo → Danh sách PGs PB Sales</strong> hoặc tải lại trang danh sách. Chọn một yêu cầu tới <strong>center.erp-portal.vn</strong> trong Network.</li><li>Mở <strong>Headers → Request Headers → Cookie</strong>. Sao chép riêng <strong>giá trị Cookie</strong>, rồi dán vào ô bảo mật bên dưới. Không sao chép Set-Cookie, Response Headers hoặc toàn bộ cURL.</li><li>Bấm <strong>Lưu kết nối Center</strong>, rồi <strong>Kiểm tra Center</strong>. Nếu báo hết hạn, đăng nhập lại trực tiếp trên Center rồi cập nhật phiên ở đây.</li></ol>
+                <label for="centerHrSessionCookie">Cookie của phiên Center đã đăng nhập</label><input id="centerHrSessionCookie" type="password" autocomplete="new-password" maxlength="8192" placeholder="Dán trực tiếp tại đây; không gửi Cookie qua chat" disabled>
+                <p class="section-desc">Đây là thông tin đăng nhập nhạy cảm. Chỉ nhập trong khung bảo mật này. Dashboard không đọc được Cookie từ cửa sổ Center và không tự hoàn tất CAPTCHA.</p>
+              </div>
+              <div class="center-hr-actions"><button type="button" class="primary" id="centerHrSaveCenter" disabled>Lưu kết nối Center</button><button type="button" class="secondary" id="centerHrEditCenter" hidden>Sửa kết nối Center</button><button type="button" class="secondary" id="centerHrCancelCenter" hidden>Hủy sửa</button></div>
+            </div>
+            <div class="center-hr-connection-card">
+              <h4>2. Kết nối Apps Script đã lưu</h4>
+              <p>Khi đã kết nối thành công ở bản Test, giữ nguyên URL và khóa; không tạo hoặc triển khai lại. Hướng dẫn tạo lần đầu bên dưới chỉ dành cho kết nối hoàn toàn mới.</p>
+              <ol>
+                <li>Mở <a href="https://script.new" target="_blank" rel="noopener noreferrer">script.new</a> bằng tài khoản có quyền sửa Sheet dữ liệu. Đặt tên <strong>Center HR</strong>. Bấm <strong>Sao chép mã Apps Script</strong> bên dưới, thay toàn bộ mã trong <code>Code.gs</code>, rồi lưu.</li>
+                <li>Trong Apps Script, bấm <strong>+</strong> cạnh <strong>Dịch vụ / Services</strong> → thêm <strong>Google Sheets API</strong>, phiên bản <strong>v4</strong>. Dự án Google mặc định được tạo tự động; không cần mở Cloud Console hay thêm thẻ thanh toán.</li>
+                <li>Trở lại Dashboard, bấm <strong>Tạo khóa kết nối</strong> rồi <strong>Sao chép khóa</strong>. Trong Apps Script mở <strong>Cài đặt dự án / Project Settings → Thuộc tính tập lệnh / Script properties → Thêm</strong>: tên <code>CENTER_HR_BRIDGE_SECRET</code>, giá trị là khóa vừa sao chép. Lưu thuộc tính. Giữ khóa trong ô Dashboard để lưu ở bước 5.</li>
+                <li>Chạy hàm <code>kiemTraCauHinh</code> một lần, cấp quyền Google cho dự án của chính bạn. Bấm <strong>Triển khai / Deploy → Bản triển khai mới / New deployment → Ứng dụng web / Web app</strong>. Chọn <strong>Thực thi bằng: Tôi / Me</strong>, <strong>Ai có quyền truy cập: Bất kỳ ai / Anyone</strong>. Sao chép URL kết thúc bằng <code>/exec</code>. Yêu cầu ghi luôn cần chữ ký bằng khóa kết nối.</li>
+                <li>Dán URL bên dưới, dùng đúng khóa đã lưu trong Script properties, rồi bấm <strong>Lưu kết nối Apps Script</strong>. Nếu tài khoản cơ quan chặn triển khai cho Anyone, dùng Gmail cá nhân có quyền sửa Sheet dữ liệu.</li>
+              </ol>
+              <div class="center-hr-actions"><button type="button" class="secondary" id="centerHrCopyCode">Sao chép mã Apps Script</button><button type="button" class="secondary" id="centerHrDownloadCode">Tải Code.gs</button></div>
+              <label for="centerHrBridgeUrl">URL Apps Script — bản triển khai /exec</label><input id="centerHrBridgeUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec" disabled>
+              <label for="centerHrBridgeKey">Khóa kết nối Apps Script</label><input id="centerHrBridgeKey" type="password" autocomplete="new-password" maxlength="64" placeholder="64 ký tự; cùng khóa trong Script properties" disabled>
+              <div class="center-hr-actions"><button type="button" class="secondary" id="centerHrGenerateKey" disabled>Tạo khóa kết nối</button><button type="button" class="secondary" id="centerHrCopyKey" disabled>Sao chép khóa</button><button type="button" class="primary" id="centerHrSaveBridge" disabled>Lưu kết nối Apps Script</button><button type="button" class="secondary" id="centerHrEditBridge" hidden>Sửa kết nối</button><button type="button" class="secondary" id="centerHrCancelBridge" hidden>Hủy sửa</button></div>
+            </div>
+            <p>Apps Script sử dụng hạn mức miễn phí của tài khoản Google. Sau khi lưu đủ kết nối và link tháng, kiểm tra Center, kiểm tra Sheet rồi chạy thử. Đổi kết nối sẽ tắt lịch tự động để kiểm tra lại.</p>
+          </details>
+          <div class="center-hr-actions center-hr-run-actions"><button type="button" class="secondary" id="centerHrProbeCenter" disabled>Kiểm tra Center</button><button type="button" class="secondary" id="centerHrProbeGoogle" disabled>Kiểm tra Sheet</button><button type="button" class="secondary" id="centerHrProbeImport" disabled>Đối soát Data</button><button type="button" class="primary" id="centerHrRun" disabled>Cập nhật 4 tab & Data nhân sự</button><button type="button" class="secondary" id="centerHrToggle" disabled>Bật lịch tự động 23:59</button></div>
+          <p class="center-hr-message" id="centerHrMessage" role="status" aria-live="polite">Bấm Tải trạng thái để mở cấu hình đã lưu.</p>
+          <div id="centerHrLastRun" class="center-hr-last"></div>
+          <div id="centerHrBlocked" hidden></div>
+          <div id="centerHrPreview" hidden></div>
+          <p class="section-desc center-hr-footnote">Sau khi cả 4 tab đọc lại khớp Excel, hệ thống tự nhập Gán shop, Sao và ON/OFF vào kho Data nhân sự dùng chung với Dashboard chính. Giữ trạng thái HR đã chốt, ưu tiên ngày vào làm từ Sao PGs; không tự đổi OFF khi PG vắng nguồn gán shop. Thiếu Trainer sẽ dừng nhập Data và báo shop cần bổ sung; Sale được để trống. Lịch chạy lúc 23:59 giờ Việt Nam sau khi bật. Dashboard chính dùng lại kết nối đã lưu; không cần triển khai lại Apps Script.</p>
         </div>
       </div>
       <div id="panel-data-nhansu-hang" class="panel">
@@ -17198,6 +17289,7 @@ function currentTabId_(){
   return b ? b.dataset.tab : 'home';
 }
 function renderAll(){
+  if(typeof centerHrMount_==='function')centerHrMount_();
   // Tối ưu: CHỈ render tab đang xem (thay vì render mọi tab mỗi lần) -> nhanh hơn nhiều.
   const keepX = window.scrollX || 0;
   const keepY = window.scrollY || 0;
@@ -21579,5 +21671,153 @@ async function exportMediaReportExcel_(){
 <style id="frequency-target-roster-20261103">.frequency-target-control{margin-top:14px;padding:14px 16px;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--text);}
 .frequency-target-choice{display:flex;align-items:center;flex-wrap:wrap;gap:10px;}.frequency-target-choice label{font-weight:700;}.frequency-target-choice select{width:210px;max-width:100%;}.frequency-target-control p{margin:8px 0 0;line-height:1.6;}.frequency-target-overlay{position:fixed;inset:0;z-index:245;background:rgba(8,35,26,.48);display:flex;align-items:center;justify-content:center;padding:16px;}.frequency-target-modal{width:min(850px,100%);max-height:90dvh;overflow:auto;box-sizing:border-box;padding:24px;border-radius:18px;background:#fff;box-shadow:0 18px 70px #10251a33;}.frequency-target-modal h3{margin:0 0 10px;}.frequency-target-modal>label{display:block;font-weight:700;margin:14px 0 6px;}.frequency-target-modal>input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:9px;min-height:40px;font:inherit;background:#fff;color:var(--text);}.frequency-target-modal>input:focus{outline:2px solid #00945c55;border-color:var(--green);}.frequency-target-modal table{font-size:12px;}.frequency-target-modal td{overflow-wrap:anywhere;}.frequency-target-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}.frequency-target-summary{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#eaf5ef;padding:12px;border-radius:10px;margin:12px 0;}.frequency-target-summary span{font-size:12px;}.frequency-target-modal details{margin-top:12px;}.frequency-target-modal summary{cursor:pointer;font-weight:700;}@media(max-width:600px){.frequency-target-modal{padding:16px;max-height:94dvh;}.frequency-target-overlay{padding:10px;}.frequency-target-choice{align-items:stretch;}.frequency-target-choice label{width:100%;}.frequency-target-choice select,.frequency-target-choice button{width:100%;}.frequency-target-actions button{flex:1 1 100%;}.frequency-target-modal th,.frequency-target-modal td{padding:8px;}.frequency-target-summary{gap:5px;}}
 </style>
+<script>
+const CENTER_HR_APPS_SCRIPT_SOURCE_="/* CENTER HR TEST — Google Apps Script writer. No account password or JSON key here. */\nvar CENTER_HR_PROTOCOL = 1;\nvar CENTER_HR_WRITER_VERSION = 3;\nvar CENTER_HR_ENVIRONMENT = 'test';\nvar CENTER_HR_SECRET_PROPERTY = 'CENTER_HR_BRIDGE_SECRET';\nvar CENTER_HR_TAB = 'DS GÁN SHOP PGS';\nvar CENTER_HR_TABS = [{key:'assign',title:CENTER_HR_TAB},{key:'stars',title:'SAO PGS'},{key:'on',title:'ON'},{key:'off',title:'OFF'}];\n\nfunction kiemTraCauHinh() {\n  var key = PropertiesService.getScriptProperties().getProperty(CENTER_HR_SECRET_PROPERTY);\n  if (!/^[a-f0-9]{64}$/.test(key || '')) throw new Error('Thêm CENTER_HR_BRIDGE_SECRET trong Cài đặt dự án → Thuộc tính tập lệnh.');\n  if (typeof Sheets === 'undefined') throw new Error('Bấm dấu + ở Dịch vụ, thêm Google Sheets API v4.');\n  SpreadsheetApp.getActiveSpreadsheet();\n  return 'Cấu hình hợp lệ. Triển khai dưới dạng Ứng dụng web, thực thi bằng tài khoản của bạn, quyền truy cập Bất kỳ ai.';\n}\nfunction doGet() { return centerHrOutput_({ok:false,code:'POST_REQUIRED',message:'Chỉ nhận yêu cầu đã xác thực từ Dashboard.'}); }\nfunction centerHrOutput_(data) { return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON); }\nfunction centerHrMac_(text,key) {\n  return Utilities.computeHmacSha256Signature(text,key,Utilities.Charset.UTF_8).map(function(b){return ('0'+((b+256)%256).toString(16)).slice(-2);}).join('');\n}\nfunction centerHrEqual_(a,b) {\n  if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;\n  var difference=0;for(var i=0;i<a.length;i++)difference|=a.charCodeAt(i)^b.charCodeAt(i);return difference===0;\n}\nfunction centerHrProblem_(code,message) { var e=new Error(message);e.centerCode=code;throw e; }\nfunction centerHrMonth_() { return Utilities.formatDate(new Date(),'Asia/Ho_Chi_Minh','yyyy-MM'); }\nfunction centerHrMatrix_(input,kind) {\n  if(!Array.isArray(input)||input.length<(kind==='assign'?2:1)||input.length>60000||!Array.isArray(input[0])||input[0].length<1||input[0].length>100||input.length*input[0].length>250000)centerHrProblem_('MATRIX_SIZE','Dữ liệu Excel không hợp lệ hoặc quá lớn.');\n  var width=input[0].length;\n  input.forEach(function(row){if(!Array.isArray(row)||row.length!==width||row.some(function(v){return typeof v!=='string';}))centerHrProblem_('MATRIX_FORMAT','Dữ liệu cần là bảng chuỗi đồng nhất.');});\n  var norm=function(v){return String(v).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');};\n  if(kind!=='assign'){\n    var code=['code','staffcode','manv','manhanvien','mapg','mapgs','employeecode'];\n    var names=['staffname','name','fullname','hoten','hovaten','tennhanvien','tenpg','tenpgs','tennv'];\n    var stars=['star','stars','rank','hangsao','hangsaohientai','saohientai','sao','xephang','currentstar','currentrank','starcurrent','starscurrent','rankcurrent','hanghientai'];\n    var dates=kind==='on'?['joinedat','joineddate','ngayvaolam','ngaybatdau','ngaynhanviec']:['offdate','releasedat','releaseddate','ngaynghi','ngaynghiviec','ngayoff'];\n    for(var h=0;h<Math.min(input.length,20);h++){\n      var labels=input[h].map(norm),has=function(a){return a.some(function(v){return labels.indexOf(v)>=0;});};\n      if(has(code)&&(kind==='stars'?has(stars):has(names)&&has(dates)))return input;\n    }\n    centerHrProblem_('EXPORT_HEADERS','File '+kind+' chưa đúng mẫu cột; chưa ghi dữ liệu.');\n  }\n  var found=false;\n  for(var r=0;r<Math.min(20,input.length);r++){\n    var headers=input[r].map(norm),required=[['staffid','idnhanvien','maidnhanvien'],['staffname','nhanvien','hovaten','tennhanvien'],['code','manv','manhanvien','staffcode'],['area','khuvuc','region'],['shopid','idshop','mashop'],['shop','tenshop','shopname'],['loaiganshop','loaigan','assignmenttype','type']];\n    if(required.every(function(a){return a.some(function(v){return headers.indexOf(v)>=0;});})){\n      var typeIndex=headers.findIndex(function(v){return required[6].indexOf(v)>=0;}),codeIndex=headers.findIndex(function(v){return required[2].indexOf(v)>=0;});\n      found=input.slice(r+1).some(function(row){return norm(row[typeIndex])==='pg'&&row[codeIndex].trim()!=='';});break;\n    }\n  }\n  if(!found)centerHrProblem_('EXPORT_HEADERS','File không có đúng mẫu DS gán Shop PG và dòng PG hợp lệ.');\n  return input;\n}\nfunction centerHrSheets_(id) {\n  if(typeof Sheets==='undefined')centerHrProblem_('SHEETS_SERVICE','Chưa thêm Google Sheets API v4.');\n  var book;try{book=Sheets.Spreadsheets.get(id,{fields:'spreadsheetId,sheets(properties(sheetId,title,gridProperties))'});}catch(e){centerHrProblem_('SHEET_ACCESS','Tài khoản Apps Script chưa đọc được Google Sheet đã chọn.');}\n  if(book.spreadsheetId!==id)centerHrProblem_('SHEET_ID','Google trả về sai mã file.');\n  var sheets=(book.sheets||[]).map(function(s){return s.properties;}),ids=sheets.map(function(s){return s.sheetId;});\n  return CENTER_HR_TABS.map(function(target){\n    var matches=sheets.filter(function(s){return s.title===target.title;});\n    if(!matches.length)matches=sheets.filter(function(s){return s.title.trim()===target.title;});\n    if(matches.length>1)centerHrProblem_('SHEET_TAB','Có nhiều tab trùng tên '+target.title+'.');\n    if(matches.length)return Object.assign({key:target.key,exists:true},matches[0]);\n    if(target.key==='assign')centerHrProblem_('SHEET_TAB','File cần có tab DS GÁN SHOP PGS trước khi chạy thử.');\n    var next=1;while(ids.indexOf(next)>=0)next++;ids.push(next);\n    return {key:target.key,sheetId:next,title:target.title,exists:false,gridProperties:{rowCount:1,columnCount:1}};\n  });\n}\nfunction centerHrWrite_(request,sheets) {\n  if(request.month!==centerHrMonth_())centerHrProblem_('CURRENT_MONTH_ONLY','Chỉ ghi dữ liệu cho tháng hiện tại theo giờ Việt Nam.');\n  if(!Array.isArray(request.tabs)||request.tabs.length!==4)centerHrProblem_('FOUR_TABS_REQUIRED','Cần đủ bốn nguồn trước khi ghi.');\n  var validated=[],used=[],total=0;\n  CENTER_HR_TABS.forEach(function(target){\n    var matches=request.tabs.filter(function(t){return t.key===target.key;});\n    if(matches.length!==1)centerHrProblem_('FOUR_TABS_REQUIRED','Thiếu hoặc trùng nguồn '+target.title+'.');\n    var input=matches[0],current=sheets.find(function(s){return s.key===target.key;});\n    if(!Number.isSafeInteger(input.sheetId)||input.sheetId<0||used.indexOf(input.sheetId)>=0||input.sheetId!==current.sheetId||input.sheetTitle!==current.title)centerHrProblem_('SHEET_CHANGED','Danh sách tab vừa thay đổi; hãy Kiểm tra Sheet lại.');\n    used.push(input.sheetId);var matrix=centerHrMatrix_(input.matrix,target.key);total+=matrix.length*matrix[0].length;\n    validated.push({key:target.key,sheet:current,matrix:matrix});\n  });\n  if(total>500000)centerHrProblem_('MATRIX_SIZE','Bốn nguồn vượt giới hạn 500.000 ô; chưa ghi dữ liệu.');\n  var batch=[];\n  validated.forEach(function(v){\n    var sheet=v.sheet,matrix=v.matrix,width=matrix[0].length;\n    if(!sheet.exists)batch.push({addSheet:{properties:{sheetId:sheet.sheetId,title:sheet.title,gridProperties:{rowCount:Math.max(1,matrix.length),columnCount:Math.max(1,width)}}}});\n    else if(matrix.length>sheet.gridProperties.rowCount||width>sheet.gridProperties.columnCount)batch.push({updateSheetProperties:{properties:{sheetId:sheet.sheetId,gridProperties:{rowCount:Math.max(matrix.length,sheet.gridProperties.rowCount),columnCount:Math.max(width,sheet.gridProperties.columnCount)}},fields:'gridProperties.rowCount,gridProperties.columnCount'}});\n    batch.push({unmergeCells:{range:{sheetId:sheet.sheetId}}});\n    batch.push({updateCells:{range:{sheetId:sheet.sheetId},rows:matrix.map(function(row){return {values:row.map(function(value){return {userEnteredValue:{stringValue:value}};})};}),fields:'userEnteredValue'}});\n  });\n  try{Sheets.Spreadsheets.batchUpdate({requests:batch},request.spreadsheetId);}catch(e){centerHrProblem_('SHEET_WRITE','Google chưa xác nhận lần ghi bốn tab; cần đối soát trước khi chạy lại.');}\n  var ranges=validated.map(function(v){var letters='',n=v.matrix[0].length;while(n>0){n--;letters=String.fromCharCode(65+n%26)+letters;n=Math.floor(n/26);}return \"'\"+v.sheet.title.replace(/'/g,\"''\")+\"'!A1:\"+letters+v.matrix.length;});\n  var read;try{read=Sheets.Spreadsheets.Values.batchGet(request.spreadsheetId,{ranges:ranges,valueRenderOption:'UNFORMATTED_VALUE'});}catch(e){centerHrProblem_('SHEET_READBACK','Chưa đọc lại đủ bốn tab sau khi ghi.');}\n  if(!Array.isArray(read.valueRanges)||read.valueRanges.length!==4)centerHrProblem_('SHEET_READBACK','Google chưa trả đủ bốn tab để đối chiếu.');\n  var result=validated.map(function(v,i){\n    var actual=read.valueRanges[i].values||[],matrix=v.matrix,width=matrix[0].length,verified=[],different=0,first='';\n    for(var r=0;r<matrix.length;r++){\n      var row=[];for(var c=0;c<width;c++){var value=String((actual[r]||[])[c]===undefined?'':actual[r][c]);row.push(value);if(value!==matrix[r][c]){different++;if(!first){var col='',k=c+1;while(k>0){k--;col=String.fromCharCode(65+k%26)+col;k=Math.floor(k/26);}first=col+(r+1);}}}verified.push(row);\n    }\n    if(actual.length!==matrix.length||different)centerHrProblem_('SHEET_READBACK','Tab '+v.sheet.title+' đọc lại chưa khớp Excel'+(first?' (ô '+first+'; '+different+' ô lệch)':' (số dòng chưa khớp)')+'. Chưa nhập nhân sự thử.');\n    return {key:v.key,sheetId:v.sheet.sheetId,sheetTitle:v.sheet.title,matrix:verified,rows:matrix.length,columns:width};\n  });\n  return {tabs:result,sheetVerified:true,writerVersion:CENTER_HR_WRITER_VERSION};\n}\nfunction doPost(e) {\n  var key=PropertiesService.getScriptProperties().getProperty(CENTER_HR_SECRET_PROPERTY),request=null,authenticated=false,lock=null,locked=false;\n  var reply=function(data){var payload=JSON.stringify(Object.assign({version:CENTER_HR_PROTOCOL,environment:CENTER_HR_ENVIRONMENT,nonce:request.nonce,month:request.month,spreadsheetId:request.spreadsheetId,action:request.action,deploymentUrl:request.deploymentUrl},data));return centerHrOutput_({payload:payload,signature:centerHrMac_('CENTER_HR_RESPONSE_V1\\n'+payload,key)});};\n  try {\n    if(!/^[a-f0-9]{64}$/.test(key||''))return centerHrOutput_({ok:false,code:'UNCONFIGURED'});\n    var raw=e&&e.postData&&e.postData.contents;if(typeof raw!=='string'||raw.length>16000000)return centerHrOutput_({ok:false,code:'INVALID_REQUEST'});\n    var envelope=JSON.parse(raw);\n    if(typeof envelope.payload!=='string'||typeof envelope.signature!=='string'||!centerHrEqual_(envelope.signature,centerHrMac_('CENTER_HR_REQUEST_V1\\n'+envelope.payload,key)))return centerHrOutput_({ok:false,code:'UNAUTHORIZED'});\n    request=JSON.parse(envelope.payload);\n    if(request.version!==CENTER_HR_PROTOCOL||request.environment!==CENTER_HR_ENVIRONMENT||!['metadata','write'].includes(request.action)||typeof request.nonce!=='string'||!/^[a-f0-9-]{36}$/.test(request.nonce)||typeof request.timestamp!=='number'||Math.abs(Date.now()-request.timestamp)>180000||typeof request.month!=='string'||!/^20\\d{2}-(0[1-9]|1[0-2])$/.test(request.month)||typeof request.spreadsheetId!=='string'||!/^[A-Za-z0-9_-]{20,160}$/.test(request.spreadsheetId))return centerHrOutput_({ok:false,code:'INVALID_REQUEST'});\n    authenticated=true;\n    if(request.deploymentUrl!==ScriptApp.getService().getUrl())centerHrProblem_('DEPLOYMENT_URL','Link triển khai chưa khớp. Dùng URL /exec của đúng bản triển khai này.');\n    lock=LockService.getScriptLock();if(!lock.tryLock(10000))centerHrProblem_('BRIDGE_BUSY','Một lượt ghi đang xử lý. Hãy chờ rồi kiểm tra trạng thái.');\n    locked=true;\n    var props=PropertiesService.getScriptProperties(),seen={};try{seen=JSON.parse(props.getProperty('CENTER_HR_NONCES')||'{}');}catch(ignore){}\n    Object.keys(seen).forEach(function(nonce){if(typeof seen[nonce]!=='number'||seen[nonce]<Date.now()-600000)delete seen[nonce];});\n    if(seen[request.nonce])centerHrProblem_('REPLAY','Yêu cầu này đã được xử lý.');\n    if(Object.keys(seen).length>=100)centerHrProblem_('BRIDGE_BUSY','Đã đạt hạn mức yêu cầu tạm thời.');\n    seen[request.nonce]=Date.now();props.setProperty('CENTER_HR_NONCES',JSON.stringify(seen));\n    var sheets=centerHrSheets_(request.spreadsheetId);\n    return reply({ok:true,data:request.action==='metadata'?{sheets:sheets,writerVersion:CENTER_HR_WRITER_VERSION,features:['unmergeBeforeWrite','fourTabReplace']}:centerHrWrite_(request,sheets)});\n  } catch(error) {\n    if(!authenticated||!request)return centerHrOutput_({ok:false,code:'INVALID_REQUEST'});\n    return reply({ok:false,code:error.centerCode||'SCRIPT_ERROR',message:error.centerCode?error.message:'Apps Script chưa xử lý xong yêu cầu. Hãy kiểm tra cấu hình và quyền Google.'});\n  } finally {if(locked)lock.releaseLock();}\n}\n";
+/* Center HR Main: reuse the saved shared connection; signed Apps Script v3 marker stays unchanged. No password/key storage in browser. */
+const centerHrState_={key:'',loaded:false,busy:false,editing:false,data:null,request:0,page:0,snapshot:null,uncertain:false,timer:null,editingCenter:false,editingBridge:false,refreshedRunId:'',blockedShops:null};
+const centerHrOwner_=()=>JSON.stringify([session?.userId,session?.role,session?.trainerId,session?.region]);
+const centerHrKey_=()=>centerHrOwner_()+':'+currentMonth;
+const centerHrEl_=id=>document.getElementById('centerHr'+id);
+const centerHrEscape_=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const centerHrCurrentMonth_=()=>new Date(Date.now()+7*3600000).toISOString().slice(0,7);
+const centerHrDateRange_=()=>{const [y,m]=String(currentMonth).split('-').map(Number);return '01/'+String(m).padStart(2,'0')+'/'+y+' đến '+new Date(Date.UTC(y,m,0)).getUTCDate()+'/'+String(m).padStart(2,'0')+'/'+y;};
+const centerHrTabText_=tabs=>(tabs||[]).map(t=>t.tab+': '+t.rows+' dòng').join(' · ');
+function centerHrMessage_(text,error=false){const el=centerHrEl_('Message');if(el){el.textContent=text;el.style.color=error?'var(--red)':'var(--green-dark)';}}
+function centerHrClearSecrets_(){for(const id of ['Password','BridgeKey','SessionCookie'])if(centerHrEl_(id))centerHrEl_(id).value='';}
+function centerHrFillConnections_(){const c=centerHrState_.data?.connections||{};centerHrEl_('AuthMode').value=c.centerMode||'password';centerHrEl_('Username').value=c.centerUsername||'';centerHrEl_('BridgeUrl').value=c.bridgeUrl||'';centerHrClearSecrets_();}
+function centerHrMount_(){
+ const box=document.getElementById('centerHrBox');if(!box)return;
+ const allowed=!!session&&isAdmin();box.hidden=!allowed;if(!allowed){centerHrClearSecrets_();centerHrState_.key='';clearTimeout(centerHrState_.timer);return;}
+ const key=centerHrKey_();if(centerHrState_.key!==key){clearTimeout(centerHrState_.timer);Object.assign(centerHrState_,{key,loaded:false,busy:false,editing:false,data:null,snapshot:null,page:0,uncertain:false,editingCenter:false,editingBridge:false,refreshedRunId:'',blockedShops:null});centerHrState_.request++;centerHrClearSecrets_();centerHrEl_('AuthMode').value='password';centerHrEl_('Username').value='';centerHrEl_('BridgeUrl').value='';centerHrEl_('Url').value='';centerHrEl_('Preview').hidden=true;centerHrEl_('LastRun').textContent='';centerHrMessage_('Bấm Tải trạng thái để mở cấu hình đã lưu.');centerHrPaint_();}
+}
+function centerHrPaint_(){
+ const s=centerHrState_,d=s.data||{},c=d.connections||{},saved=s.loaded&&d.version>0,can=s.loaded&&!s.busy,editing=s.editing||!saved;
+ centerHrEl_('Month').textContent=(currentMonth||'').split('-').reverse().join('/');
+ for(const id of ['OnRange','OffRange'])centerHrEl_(id).textContent=centerHrDateRange_();
+ const input=centerHrEl_('Url');input.disabled=!can;input.readOnly=!editing;
+ centerHrEl_('Save').hidden=!editing;centerHrEl_('Save').disabled=!can;
+ centerHrEl_('Edit').hidden=!saved||editing;centerHrEl_('Edit').disabled=!can;
+ centerHrEl_('Cancel').hidden=!saved||!editing;centerHrEl_('Cancel').disabled=!can;
+ centerHrEl_('Reload').disabled=s.busy;
+ centerHrEl_('ProbeImport').disabled=!can||!c.center;
+ centerHrEl_('ProbeCenter').disabled=!can||!c.center;
+ centerHrEl_('ProbeGoogle').disabled=!can||!saved||editing||!c.google;
+ const running=d.lastRun?.status==='running',pending=s.editingCenter||s.editingBridge||!!centerHrEl_('Password').value||!!centerHrEl_('SessionCookie').value||!!centerHrEl_('BridgeKey').value; 
+ centerHrEl_('Run').disabled=!can||!saved||editing||!c.center||!c.google||currentMonth!==centerHrCurrentMonth_()||running||pending||s.uncertain;
+ centerHrEl_('Toggle').disabled=!can||!saved||editing||pending||(!d.enabled&&(!c.center||!c.google||!d.canSchedule));
+ centerHrEl_('Toggle').textContent=d.enabled?'Tắt lịch tự động':'Bật lịch tự động 23:59';
+ centerHrEl_('CenterStatus').textContent='Center: '+(s.loaded?(c.center?(c.centerMode==='session'?'đã lưu phiên mã hóa':'đã lưu tài khoản mã hóa'):'chưa lưu trong Vault'):'chưa kiểm tra');
+ centerHrEl_('GoogleStatus').textContent='Apps Script: '+(s.loaded?(c.google?'đã lưu trong Vault':'chưa lưu trong Vault'):'chưa kiểm tra');
+ centerHrEl_('ScheduleStatus').textContent='Lịch tự động: '+(s.loaded?(d.enabled?'23:59 giờ Việt Nam':'chưa bật'):'chưa kiểm tra');
+ for(const [kind,configured,flag,fields] of [['Center',c.center,s.editingCenter,['AuthMode','Username','Password','SessionCookie']],['Bridge',c.google,s.editingBridge,['BridgeUrl','BridgeKey']]]){
+  const edit=flag||!configured;
+  for(const id of fields){centerHrEl_(id).disabled=!can||!edit;centerHrEl_(id).readOnly=!edit;}
+  centerHrEl_('Save'+kind).hidden=!edit;centerHrEl_('Save'+kind).disabled=!can;
+  centerHrEl_('Edit'+kind).hidden=!configured||edit;centerHrEl_('Edit'+kind).disabled=!can;
+  centerHrEl_('Cancel'+kind).hidden=!configured||!edit;centerHrEl_('Cancel'+kind).disabled=!can;
+ }
+ const sessionMode=centerHrEl_('AuthMode').value==='session';
+ centerHrEl_('PasswordFields').hidden=sessionMode;centerHrEl_('SessionFields').hidden=!sessionMode;
+ for(const id of ['Username','Password'])centerHrEl_(id).disabled=!can||(!s.editingCenter&&c.center)||sessionMode;
+ centerHrEl_('SessionCookie').disabled=!can||(!s.editingCenter&&c.center)||!sessionMode;
+ centerHrEl_('SessionCookie').placeholder=c.center&&c.centerMode==='session'?'Để trống để giữ phiên đã lưu':'Dán Cookie từ Request Headers của Center; không gửi qua chat';
+ centerHrEl_('Password').placeholder=c.center?'Để trống để giữ mật khẩu đã lưu':'Nhập mật khẩu Center trực tiếp tại đây';
+ centerHrEl_('BridgeKey').placeholder=c.google?'Để trống để giữ khóa đã lưu':'64 ký tự; cùng khóa trong Script properties';
+ centerHrEl_('GenerateKey').disabled=!can||(!s.editingBridge&&c.google);
+ centerHrEl_('CopyKey').disabled=!can||(!s.editingBridge&&c.google);
+
+ if(d.lastRun){
+  const j=d.lastRun,v=j.summary||{},labels={running:'Đang xử lý',succeeded:'Thành công',failed:'Chưa hoàn tất',uncertain:'Cần đối soát kết quả'},when=j.finished_at||j.started_at;
+  centerHrEl_('LastRun').textContent='Lượt gần nhất: '+(labels[j.status]||j.status)+' · '+new Date(when).toLocaleString('vi-VN',{timeZone:'Asia/Saigon'})+(v.stage?' · '+v.stage:'')+(j.status==='succeeded'?` · ${v.rows} dòng Excel · ${v.pgs} PG đối chiếu · thêm ${v.added}, cập nhật ${v.updated}`:'')+(v.dataImported?' · Data dùng chung đã cập nhật':v.sheetVerified?' · Sheet đã khớp; Data chưa cập nhật':'')+(v.message?' · '+v.message:'')+(Array.isArray(v.tabs)?' · '+centerHrTabText_(v.tabs):j.status==='succeeded'?' · Lượt cũ chưa xác nhận đủ 4 tab; cần chạy thử bản mới.':'');
+  centerHrEl_('LastRun').style.color=['failed','uncertain'].includes(j.status)?'var(--red)':'var(--text)';
+  if(j.status==='succeeded'&&!document.getElementById('centerHrShowPreview')){const button=document.createElement('button');button.id='centerHrShowPreview';button.className='secondary';button.type='button';button.textContent='Xem kết quả nhập Data';button.style.marginLeft='10px';button.addEventListener('click',()=>centerHrOperate_('snapshot'));centerHrEl_('LastRun').append(button);}
+ }
+ centerHrBlocked_(s.blockedShops||d.lastRun?.summary?.blockedShops||[]);
+}
+async function centerHrApi_(action,extra={}){
+ const key=centerHrKey_(),month=currentMonth,token=await workshopNoiboToken_();
+ if(key!==centerHrKey_())throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy tải lại.');
+ const res=await fetch(SUPABASE_URL+'/functions/v1/center-hr-sync-test',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify({action,month,pipelineVersion:4,...extra,dashboardToken:token}),signal:AbortSignal.timeout(['run','probe_center','probe_export','probe_import'].includes(action)?150000:30000)});
+ let data;try{data=await res.json();}catch{throw Error('Chưa nhận được phản hồi hợp lệ. Hãy tải lại trạng thái.');}
+ if(key!==centerHrKey_())throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy tải lại.');
+ if(res.status===401&&data.code==='AUTH_ERROR')sessionStorage.removeItem('workshop_private_session');
+ if(!res.ok||!data.ok){const error=Error(data.error||'Chưa hoàn tất yêu cầu.');error.code=data.code;error.blockedShops=data.blockedShops;throw error;}
+ if(data.month!==month||data.environment!=='test')throw Error('Phản hồi không khớp tháng hoặc kết nối đồng bộ đã lưu.');
+ return data;
+}
+function centerHrBlocked_(rows){
+ const box=centerHrEl_('Blocked');if(!box)return;box.hidden=!rows.length;if(!rows.length){box.textContent='';return;}
+ const e=centerHrEscape_;box.innerHTML='<p style="color:var(--red)"><strong>Chưa nhập Data: cần gán Trainer cho các shop sau</strong></p><ul>'+rows.map(r=>'<li><strong>'+e(r.shopId)+'</strong> — '+e(r.shopName)+' · '+e(r.area)+' · '+e(r.pgCount)+' PG</li>').join('')+'</ul><p>Gán Trainer tại Cài đặt → Khu vực/Trainer → Gán shop, sau đó chạy lại. Sale được để trống.</p>';
+}
+async function centerHrRefreshShared_(data,key,ticket){
+ const s=centerHrState_,run=data.lastRun,receipt=run?.summary?.importReceipt;
+ if(run?.status!=='succeeded'||!run.summary?.dataImported||!receipt?.runId||receipt.runId!==run.id||s.refreshedRunId===run.id)return;
+ const values=await dbGetMulti(['config','pgs:'+currentMonth,'onoffRoster','saleRoster','pg_shop_source_codes_v2']);
+ if(key!==centerHrKey_()||ticket!==s.request)return;
+ if(!Array.isArray(values.config?.trainers)||!Array.isArray(values['pgs:'+currentMonth])||!Array.isArray(values.onoffRoster))throw Error('Data đã lưu trên máy chủ nhưng chưa tải lại được giao diện. Bấm Tải trạng thái để thử lại.');
+ config=values.config;pgs=values['pgs:'+currentMonth];onoffRoster=values.onoffRoster;
+ saleRosterCache_=values.saleRoster;pgShopSourceCodes=new Set((values.pg_shop_source_codes_v2||[]).map(normalizePgMatchCode_).filter(Boolean));
+ s.refreshedRunId=run.id;
+ populateOvFilters();populatePgRegionSelect();populatePgTrainerSelect();populatePgSaleSelect();populatePgChannelSelect();populatePgShopSelect();populatePgShopSizeSelect();renderAll();
+}
+async function centerHrOperate_(action,connectionKind){
+ centerHrMount_();const s=centerHrState_;if(!isAdmin()||s.busy)return;
+ const key=s.key,ticket=++s.request,old=s.data;let extra={};
+ if(action==='save_connection')extra=connectionKind==='erp'?{kind:'erp',authMode:centerHrEl_('AuthMode').value,username:centerHrEl_('Username').value,password:centerHrEl_('Password').value,sessionCookie:centerHrEl_('SessionCookie').value,previousRevision:old?.connections?.centerRevision||''}:{kind:'apps_script',url:centerHrEl_('BridgeUrl').value,key:centerHrEl_('BridgeKey').value,previousRevision:old?.connections?.bridgeRevision||''};
+ if(action==='save_source')extra={url:centerHrEl_('Url').value,version:old?.version||0};
+ if(action==='toggle')extra={version:old?.version||0,enabled:!old?.enabled};
+ if(action==='run'){
+  if(Array.isArray(pgMergePreview)&&pgMergePreview.length){centerHrMessage_('Còn bản nháp nhập nhân sự chưa xử lý. Hãy lưu hoặc xóa bản nháp trước khi chạy tự động.',true);return;}
+  const okay=await showConfirm('Cập nhật tháng '+currentMonth+'? Bốn tab DS GÁN SHOP PGS, SAO PGS, ON, OFF của link đã lưu sẽ được tách ô gộp và thay toàn bộ giá trị bằng file mới nhất, xóa dữ liệu cũ dư. Tab SAO PGS/ON/OFF còn thiếu sẽ được tạo. ON/OFF lọc từ '+centerHrDateRange_()+'. Sau khi đọc lại đủ 4 tab khớp Excel, Data Gán shop, Sao và ON/OFF dùng chung với Dashboard chính sẽ được cập nhật theo quy tắc hiện tại. Trạng thái HR đã chốt giữ nguyên; thiếu Trainer sẽ dừng nhập Data.');
+  if(!okay||key!==centerHrKey_())return;
+ }
+ s.busy=true;centerHrPaint_();centerHrMessage_(action==='run'?'Đang lấy đủ 4 file → kiểm tra ngày ON/OFF → thay mới và đọc lại 4 tab → tự nhập Data dùng chung. Vui lòng đợi...':'Đang xử lý...');
+ try{
+  const data=await centerHrApi_(action,extra);if(ticket!==s.request||key!==centerHrKey_())return;
+  if(['status','save_source','save_connection','toggle','run'].includes(action)){s.data=data;s.blockedShops=null;s.loaded=true;s.editing=false;s.uncertain=false;centerHrEl_('Url').value=data.url||'';if(['status','save_connection'].includes(action)){s.editingCenter=false;s.editingBridge=false;centerHrFillConnections_();}}
+  if(['status','run'].includes(action)){await centerHrRefreshShared_(data,key,ticket);if(ticket!==s.request||key!==centerHrKey_())return;}
+  if(action==='probe_import')s.blockedShops=[];
+  if(action==='snapshot'){s.snapshot=data.snapshot;s.page=0;centerHrPreview_();}
+  const text={save_connection:'Đã lưu kết nối mã hóa trên máy chủ. Lịch tự động đã tắt; chạy thử thành công trước khi bật lại.',status:'Đã đọc cấu hình của tháng đang chọn.',save_source:'Đã lưu và khóa link tháng này. Bấm Sửa link khi cần thay đổi.',toggle:data.enabled?'Đã bật lịch tự động 23:59 giờ Việt Nam: 4 tab và Data nhân sự dùng chung.':'Đã tắt lịch tự động.',run:'Đã đọc lại đủ 4 tab khớp Excel và cập nhật Data nhân sự dùng chung với Dashboard chính.',snapshot:'Đã mở kết quả nhập Data.'};
+  centerHrMessage_((data.message||text[action]||'Đã hoàn tất.')+(action==='probe_center'&&Array.isArray(data.tabs)?' '+centerHrTabText_(data.tabs):''));
+ }catch(error){
+  if(ticket!==s.request||key!==centerHrKey_())return;
+  if(error.blockedShops)s.blockedShops=error.blockedShops;
+  if(action==='run'){
+   s.uncertain=true;
+   try{const latest=await centerHrApi_('status');if(key===centerHrKey_()){s.data=latest;s.loaded=true;s.uncertain=false;await centerHrRefreshShared_(latest,key,ticket);}}catch{}
+  }
+  if(['BRIDGE_UPDATE_REQUIRED','SHEET_READBACK'].includes(error.code))centerHrEl_('WriterUpdate').open=true;
+  centerHrMessage_(error.message||'Chưa hoàn tất. Hãy tải lại trạng thái.',true);
+ }finally{
+  if(ticket===s.request&&key===centerHrKey_()){s.busy=false;centerHrPaint_();clearTimeout(s.timer);if(s.data?.lastRun?.status==='running')s.timer=setTimeout(()=>{if(key===centerHrKey_()&&!document.getElementById('centerHrBox').hidden)centerHrOperate_('status');},10000);}
+ }
+}
+function centerHrPreview_(){
+ const s=centerHrState_,box=centerHrEl_('Preview'),data=s.snapshot?.data;if(!data){box.hidden=true;centerHrMessage_('Chưa có kết quả nhập Data.',true);return;}
+ const rows=data.affected||[],pageSize=10,total=Math.max(1,Math.ceil(rows.length/pageSize));s.page=Math.max(0,Math.min(s.page,total-1));
+ const e=centerHrEscape_,trainers=new Map((data.trainers||[]).map(t=>[t.id,t.name]));
+ box.hidden=false;box.innerHTML=`<h4>Kết quả nhập Data — ${e(s.snapshot.month)} (${rows.length} PG)</h4><div class="center-hr-preview-scroll" data-mobile-scroll="center-hr-preview"><table><thead><tr><th>Code</th><th>Họ tên</th><th>Mã shop</th><th>Shop</th><th>Khu vực</th><th>Trainer</th><th>Sale</th><th>Sao</th><th>Trạng thái</th></tr></thead><tbody>${rows.slice(s.page*pageSize,(s.page+1)*pageSize).map(p=>`<tr><td>${e(p.code)}</td><td>${e(p.name)}</td><td>${e(p.shopId)}</td><td>${e(p.shop)}</td><td>${e(p.area)}</td><td>${e(trainers.get(p.trainerId)||'Chưa gán')}</td><td>${e(p.sale)}</td><td>${e(p.star)}</td><td>${e(p.status)}</td></tr>`).join('')}</tbody></table></div><div class="center-hr-actions"><button type="button" class="secondary" data-center-page="-1" ${s.page===0?'disabled':''}>‹</button><span>Trang ${s.page+1}/${total}</span><button type="button" class="secondary" data-center-page="1" ${s.page+1>=total?'disabled':''}>›</button></div>`;
+ box.querySelectorAll('[data-center-page]').forEach(button=>button.addEventListener('click',()=>{s.page+=Number(button.dataset.centerPage);centerHrPreview_();}));
+}
+for(const [id,action] of [['Reload','status'],['Save','save_source'],['ProbeCenter','probe_center'],['ProbeGoogle','probe_google'],['ProbeImport','probe_import'],['Run','run'],['Toggle','toggle']])centerHrEl_(id)?.addEventListener('click',()=>centerHrOperate_(action));
+centerHrEl_('Edit')?.addEventListener('click',()=>{if(centerHrState_.busy)return;centerHrState_.editing=true;centerHrPaint_();centerHrMessage_('Đang sửa. Link cũ còn hiệu lực đến khi lưu thành công.');centerHrEl_('Url').focus();});
+centerHrEl_('Cancel')?.addEventListener('click',()=>{if(centerHrState_.busy)return;centerHrState_.editing=false;centerHrEl_('Url').value=centerHrState_.data?.url||'';centerHrPaint_();centerHrMessage_('Đã hủy sửa; giữ link đã lưu.');});
+for(const [kind,flag] of [['Center','editingCenter'],['Bridge','editingBridge']]){
+ centerHrEl_('Save'+kind)?.addEventListener('click',()=>centerHrOperate_('save_connection',kind==='Center'?'erp':'apps_script'));
+ centerHrEl_('Edit'+kind)?.addEventListener('click',()=>{if(centerHrState_.busy)return;centerHrState_[flag]=true;centerHrPaint_();});
+ centerHrEl_('Cancel'+kind)?.addEventListener('click',()=>{if(centerHrState_.busy)return;centerHrState_[flag]=false;const c=centerHrState_.data?.connections||{};if(kind==='Center'){centerHrEl_('AuthMode').value=c.centerMode||'password';centerHrEl_('Username').value=c.centerUsername||'';centerHrEl_('Password').value='';centerHrEl_('SessionCookie').value='';}else{centerHrEl_('BridgeUrl').value=c.bridgeUrl||'';centerHrEl_('BridgeKey').value='';}centerHrPaint_();centerHrMessage_('Đã hủy sửa kết nối.');});
+}
+centerHrEl_('GenerateKey')?.addEventListener('click',()=>{if(centerHrState_.busy||!centerHrState_.loaded)return;const bytes=crypto.getRandomValues(new Uint8Array(32));centerHrEl_('BridgeKey').value=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');centerHrPaint_();centerHrMessage_('Đã tạo khóa mới trong ô. Sao chép sang Script properties rồi lưu kết nối; không chia sẻ khóa.');});
+async function centerHrCopy_(value,label){if(!value){centerHrMessage_('Chưa có nội dung để sao chép.',true);return;}try{await navigator.clipboard.writeText(value);centerHrMessage_('Đã sao chép '+label+'.');}catch{centerHrMessage_('Trình duyệt chưa cho phép sao chép. Chọn và sao chép ô hoặc tải mã về.',true);}}
+centerHrEl_('CopyKey')?.addEventListener('click',()=>centerHrCopy_(centerHrEl_('BridgeKey').value,'khóa kết nối'));
+for(const id of ['CopyCode','CopyUpdatedCode'])centerHrEl_(id)?.addEventListener('click',()=>centerHrCopy_(CENTER_HR_APPS_SCRIPT_SOURCE_,'mã Apps Script 4 tab'));
+for(const id of ['DownloadCode','DownloadUpdatedCode'])centerHrEl_(id)?.addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([CENTER_HR_APPS_SCRIPT_SOURCE_],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='Code.gs';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+for(const id of ['Password','BridgeKey','SessionCookie'])centerHrEl_(id)?.addEventListener('input',()=>centerHrPaint_());
+centerHrEl_('AuthMode')?.addEventListener('change',()=>{centerHrEl_('Password').value='';centerHrEl_('SessionCookie').value='';centerHrPaint_();});
+centerHrMount_();
+
+
+</script>
 </body>
 </html>

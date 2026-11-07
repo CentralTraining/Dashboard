@@ -1,0 +1,20 @@
+{
+  "version": "2026-11-08-center-main-2359",
+  "frontend": "Dashboard",
+  "schedule": "23:59 Asia/Saigon",
+  "existing_connection_reused": true,
+  "apps_script_redeployment_required": false,
+  "edge_redeployment_required": false,
+  "files": [
+    {
+      "name": "Dashboard-Main-2026-11-08-Center-Lich-2359.html",
+      "bytes": 2706456,
+      "sha256": "00cb216b16c2d1d118547d96fd1e94bc1e09c56fe988d0372b72e5a4d7b8d438"
+    },
+    {
+      "name": "Center-Lich-2359-Main-2026-11-08-README.txt",
+      "bytes": 1446,
+      "sha256": "2b62cc04ad45cc04b8e64a5509c789ab8120369102ff0dfcd4fabff8264b8d00"
+    }
+  ]
+}
