@@ -1,0 +1,116 @@
+{
+  "version": "2026-11-08",
+  "environment": "main",
+  "source": {
+    "bytes": 2711015,
+    "chars": 2638840,
+    "sha256": "7102f75a76b2462748d75ddb502e4281bf5c9e4b4cd140145c2034180fb4b421",
+    "blob_sha1": "6074294810bd9e5befdfb232d23e8e29a2de7d2e",
+    "old_blob_sha1": "a214bb1eb3e16ee3c4f2bf97a1c21341709b2229",
+    "changed_script_indexes": [
+      1
+    ],
+    "scripts": 17
+  },
+  "edge": {
+    "version": 1,
+    "verify_jwt": true,
+    "files": [
+      {
+        "name": "index.ts",
+        "exact": true
+      },
+      {
+        "name": "access.ts",
+        "exact": true
+      },
+      {
+        "name": "model.js",
+        "exact": true
+      },
+      {
+        "name": "deno.json",
+        "exact": true
+      }
+    ]
+  },
+  "sql_model_and_permissions": [
+    {
+      "verification": {
+        "passed": true,
+        "synthetic_only": true,
+        "atomic_approval": true,
+        "real_data_writes": 0,
+        "allowed_keys_only": true,
+        "locked_month_blocked": true,
+        "stale_expected_conflict": true,
+        "failure_rolls_back_all_keys": true,
+        "new_non_status_fields_saved": true,
+        "stale_payload_status_preserved": true,
+        "legacy_anonymous_writes_blocked": true
+      }
+    }
+  ],
+  "scheduled_import_transaction": [
+    {
+      "verification": {
+        "passed": true,
+        "idempotency": true,
+        "month_carry": true,
+        "latest_history": true,
+        "synthetic_only": true,
+        "real_data_writes": 0,
+        "receipt_and_backup": true,
+        "conflict_no_partial": true,
+        "private_permissions": true,
+        "snapshot_matches_actual": true,
+        "trigger_canonical_status": true,
+        "audit_hash_matches_actual": true,
+        "credential_revision_check": true,
+        "finish_failure_rolls_back_kv_and_audit": true
+      }
+    }
+  ],
+  "ui": [
+    {
+      "width": 1440,
+      "passed": true,
+      "one_atomic_status_save": true,
+      "stale_import_keeps_approved_status": true,
+      "canonical_response_refreshes_memory": true,
+      "server_failure_and_conflict_leave_data_unchanged": true,
+      "trainer_requires_admin_approval": true,
+      "locked_month_blocked": true,
+      "no_direct_rest_hr_upserts": true,
+      "no_overflow": true,
+      "real_data_writes": 0
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "one_atomic_status_save": true,
+      "stale_import_keeps_approved_status": true,
+      "canonical_response_refreshes_memory": true,
+      "server_failure_and_conflict_leave_data_unchanged": true,
+      "trainer_requires_admin_approval": true,
+      "locked_month_blocked": true,
+      "no_direct_rest_hr_upserts": true,
+      "no_overflow": true,
+      "real_data_writes": 0
+    },
+    {
+      "width": 320,
+      "passed": true,
+      "one_atomic_status_save": true,
+      "stale_import_keeps_approved_status": true,
+      "canonical_response_refreshes_memory": true,
+      "server_failure_and_conflict_leave_data_unchanged": true,
+      "trainer_requires_admin_approval": true,
+      "locked_month_blocked": true,
+      "no_direct_rest_hr_upserts": true,
+      "no_overflow": true,
+      "real_data_writes": 0
+    }
+  ],
+  "production_data_reconciliation": "Private audit; no personnel rows published in this artifact."
+}

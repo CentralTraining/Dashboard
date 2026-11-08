@@ -3955,6 +3955,10 @@ async function dbGetMulti(keys){
   }
 }
 async function dbSet(key,value){
+  if(SUPABASE_URL && hrGuardedKey_(key)){
+    await hrGuardedWrite_([{key,value}],String(key).startsWith('pgs:')?String(key).slice(4):currentMonth);
+    return true;
+  }
   if(!SUPABASE_URL){
     try{ localStorage.setItem(key, JSON.stringify(value)); return true; }catch(e){ return false; }
   }
@@ -4536,11 +4540,41 @@ let onoffDetailPage=1;
 const ONOFF_PAGE_SIZE=10;
 let currentMonth=null;
 let editingPgId=null;
+let editingPgOriginalStatus_=null;
 
 const BRANDS=['OPPO','Samsung','Xiaomi','Vivo','Realme','Honor'];
 const STATUS_LIST=['Đang làm','THAI SẢN','CODE ĐẠI LÝ','OFF (chưa cắt Center)'];
 const STATUS_CLASS={ 'Đang làm':'st-dangl','THAI SẢN':'st-thaisan','CODE ĐẠI LÝ':'st-ctv','OFF (chưa cắt Center)':'st-danghi' };
 /* PGs Dev và Tổng quan dùng cùng trạng thái chính thức + yêu cầu chờ Admin duyệt. */
+/* HR status writes use one transaction and preserve newer approved decisions. */
+function hrGuardedKey_(key){return /^pgs:20\d{2}-(0[1-9]|1[0-2])$/.test(String(key))||['onoffRoster','pendingPgStatusRequests'].includes(key);}
+async function hrGuardedWrite_(entries,month=currentMonth,expected=null){
+  if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(String(month)))throw Error('Không xác định được tháng lưu nhân sự.');
+  const context=JSON.stringify([currentMonth,session?.userId,session?.role,session?.trainerId]);
+  const keys=['pgs:'+month,'onoffRoster','pendingPgStatusRequests'];
+  const previous=expected||await dbGetMulti(keys);
+  if(!keys.every(k=>Object.prototype.hasOwnProperty.call(previous,k)))throw Error('Không đọc đủ dữ liệu nhân sự. Chưa lưu thay đổi.');
+  const token=await workshopNoiboToken_();
+  if(context!==JSON.stringify([currentMonth,session?.userId,session?.role,session?.trainerId]))throw Error('Tháng hoặc tài khoản đã thay đổi. Chưa lưu.');
+  const response=await fetch(`${SUPABASE_URL}/functions/v1/hr-status-write`,{
+    method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify({month,entries:Object.fromEntries(entries.map(e=>[e.key,e.value])),basedOn:previous,dashboardToken:token}),signal:AbortSignal.timeout(25000)
+  });
+  let result;try{result=await response.json();}catch{throw Error('Chưa xác nhận được kết quả lưu. Hãy tải lại để kiểm tra trước khi thử lại.');}
+  if(!response.ok||result?.ok!==true){
+    const code=String(result?.message||result?.code||'');
+    if(response.status===401){sessionStorage.removeItem('workshop_private_session');throw Error('Phiên xác thực đã hết hạn. Hãy xác thực lại trước khi lưu.');}
+    if(code.includes('HR_STATUS_CONFLICT'))throw Error('Dữ liệu đã thay đổi ở tab khác. Hãy tải lại trước khi lưu; trạng thái đã duyệt được giữ nguyên.');
+    if(code.includes('HR_STATUS_MONTH_LOCKED'))throw Error('Tháng đã khóa. Chưa lưu thay đổi nhân sự.');
+    throw Error('Không lưu được dữ liệu nhân sự (HTTP '+response.status+'). Chưa xác nhận thay đổi.');
+  }
+  if(context===JSON.stringify([currentMonth,session?.userId,session?.role,session?.trainerId])){
+    if(month===currentMonth&&Array.isArray(result.saved?.['pgs:'+month]))pgs=result.saved['pgs:'+month];
+    if(Array.isArray(result.saved?.onoffRoster))onoffRoster=result.saved.onoffRoster;
+    if(Array.isArray(result.saved?.pendingPgStatusRequests))pendingPgStatusRequests=result.saved.pendingPgStatusRequests;
+  }
+  if(typeof invalidateHomeSnapshot_==='function')invalidateHomeSnapshot_();
+  return result.saved;
+}
 function pgStatusCode_(value){return String(value??'').trim().replace(/\.0$/,'');}
 function pgStatusPgForRoster_(r, source=pgs){
   const code=pgStatusCode_(r?.code);if(!code)return null;
@@ -4573,18 +4607,15 @@ async function pgStatusReadState_(month){
   const data=await dbGetMulti(keys);
   if(!keys.every(key=>Object.prototype.hasOwnProperty.call(data,key)))throw Error('Không đọc được dữ liệu trạng thái. Hãy thử lại.');
   if(keys.some(key=>data[key]!==null&&!Array.isArray(data[key])))throw Error('Dữ liệu trạng thái không đúng định dạng.');
-  return {pgs:JSON.parse(JSON.stringify(data[keys[0]]||[])),roster:JSON.parse(JSON.stringify(data[keys[1]]||[])),requests:JSON.parse(JSON.stringify(data[keys[2]]||[]))};
+  return {pgs:JSON.parse(JSON.stringify(data[keys[0]]||[])),roster:JSON.parse(JSON.stringify(data[keys[1]]||[])),requests:JSON.parse(JSON.stringify(data[keys[2]]||[])),expected:data};
 }
-async function pgStatusPersist_(entries){
+async function pgStatusPersist_(entries,expected=null){
   if(!SUPABASE_URL){
     const backup=entries.map(e=>localStorage.getItem(e.key));
     try{entries.forEach(e=>localStorage.setItem(e.key,JSON.stringify(e.value)));}
     catch{entries.forEach((e,i)=>{try{if(backup[i]===null)localStorage.removeItem(e.key);else localStorage.setItem(e.key,backup[i]);}catch{}});throw Error('Không lưu được trạng thái. Hãy thử lại.');}
   }else{
-    const updated_at=new Date().toISOString();
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,{method:'POST',
-      headers:{...SUPA_HEADERS_,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(entries.map(e=>({...e,updated_at})))});
-    if(!res.ok)throw Error('Không lưu được trạng thái (HTTP '+res.status+'). Hãy thử lại.');
+    return await hrGuardedWrite_(entries,currentMonth,expected);
   }
   if(typeof invalidateHomeSnapshot_==='function')invalidateHomeSnapshot_();
 }
@@ -4631,15 +4662,15 @@ async function pgStatusApplyChange_(pg,roster,newStatus,expectedStatus,requestId
   if(!target||!STATUS_LIST.includes(newStatus))throw Error('Không tìm thấy đúng PGs hoặc trạng thái không hợp lệ.');
   if(pgStatusCurrent_(target.pg,target.roster)!==expectedStatus)throw Error('Trạng thái PGs đã thay đổi. Hãy tải lại và kiểm tra trước khi duyệt.');
   const at=new Date().toISOString(),owner=(target.roster||target.pg).trainerId,code=pgStatusCode_((target.roster||target.pg).code);
-  if(target.pg)Object.assign(target.pg,{status:newStatus,statusChangedAt:at,statusApprovedAt:at,statusChangedBy:request?.trainerName||session.displayName||'Admin'});
+  if(target.pg)Object.assign(target.pg,{status:newStatus,statusChangedAt:at,statusApprovedAt:at,statusChangedBy:request?.trainerName||session.displayName||'Admin',statusMonth:month});
   state.roster.forEach(r=>{
     if((target.roster&&String(r.id)===String(target.roster.id))||(target.pg&&code&&pgStatusCode_(r.code)===code&&String(r.trainerId)===String(owner))){
-      r.devStatusNote=newStatus==='Đang làm'?'':newStatus;r.statusChangedAt=at;r.statusApprovedAt=at;
+      r.devStatusNote=newStatus==='Đang làm'?'':newStatus;r.statusChangedAt=at;r.statusApprovedAt=at;r.statusMonth=month;
     }
   });
   state.requests=state.requests.filter(r=>!pgStatusMatches_(r,target.pg,target.roster,month));
-  await pgStatusPersist_([{key:'pgs:'+month,value:state.pgs},{key:'onoffRoster',value:state.roster},{key:'pendingPgStatusRequests',value:state.requests}]);
-  if(context===pgStatusContext_()){pgs=state.pgs;onoffRoster=state.roster;pendingPgStatusRequests=state.requests;}
+  const saved=await pgStatusPersist_([{key:'pgs:'+month,value:state.pgs},{key:'onoffRoster',value:state.roster},{key:'pendingPgStatusRequests',value:state.requests}],state.expected);
+  if(context===pgStatusContext_()){pgs=saved?.['pgs:'+month]||state.pgs;onoffRoster=saved?.onoffRoster||state.roster;pendingPgStatusRequests=saved?.pendingPgStatusRequests||state.requests;}
 }
 async function confirmAndUpdatePgStatus_(pg,newStatus,selectEl,onDone,roster=null){
   const oldStatus=pgStatusCurrent_(pg,roster),key=pgStatusKey_(pg,roster),context=pgStatusContext_();
@@ -9493,7 +9524,7 @@ function refreshPgDependentSelects(){
 }
 function startEditPg(id){
   const p=pgs.find(x=>x.id===id); if(!p) return;
-  editingPgId=id;
+  editingPgId=id;editingPgOriginalStatus_=p.status;
   document.getElementById('pgCode').value=p.code||''; document.getElementById('pgName').value=p.name||'';
   const tr = trainerOf(p.trainerId);
   populatePgRegionSelect(tr?tr.region:(p.area||''));
@@ -9508,7 +9539,7 @@ function startEditPg(id){
   document.getElementById('cancelEditPgBtn').style.display='inline-block';
 }
 function resetPgForm(){
-  editingPgId=null;
+  editingPgId=null;editingPgOriginalStatus_=null;
   ['pgCode','pgName','pgSeniority'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('pgStar').value='4'; document.getElementById('pgStatus').value='Đang làm';
   populatePgRegionSelect('');
@@ -9534,7 +9565,7 @@ async function requestPgStatusChange_(pg,newStatus,roster=null){
       ...(target.roster?{onoffId:target.roster.id}:{}),pgCode:(target.roster||target.pg).code||'',pgName:(target.roster||target.pg).name||'',
       trainerId:session.trainerId,trainerName:tr?.name||session.displayName||'Trainer',oldStatus,newStatus,requestedAt:new Date().toISOString()});
   }
-  await pgStatusPersist_([{key:'pendingPgStatusRequests',value:state.requests}]);
+  await pgStatusPersist_([{key:'pendingPgStatusRequests',value:state.requests}],state.expected);
   if(context===pgStatusContext_())pendingPgStatusRequests=state.requests;
   return true;
 }
@@ -9580,7 +9611,7 @@ async function rejectPgStatusRequest_(id){
     if(context!==pgStatusContext_()||monthLocked)throw Error('Tháng hoặc tài khoản đã thay đổi. Hãy thực hiện lại.');
     const req=state.requests.find(r=>String(r.id)===String(id)&&r.month===month);if(!req)return;
     state.requests=state.requests.filter(r=>String(r.id)!==String(id));
-    await pgStatusPersist_([{key:'pendingPgStatusRequests',value:state.requests}]);
+    await pgStatusPersist_([{key:'pendingPgStatusRequests',value:state.requests}],state.expected);
     if(context!==pgStatusContext_())return;
     pendingPgStatusRequests=state.requests;
     renderPendingPgStatusModal_();renderPendingPgStatusBell_();renderOverviewAll();renderKpiAll();
@@ -9607,6 +9638,11 @@ function renderPendingPgStatusModal_(){
 }
 document.getElementById('savePgBtn').addEventListener('click', async ()=>{
   const admin=isAdmin(), trainer=isTrainer();
+  const context=pgStatusContext_(),month=currentMonth,button=document.getElementById('savePgBtn');
+  const msg=document.getElementById('pgSaveMsg');
+  if(monthLocked){msg.style.display='block';msg.textContent='Tháng đã khóa. Chưa lưu thay đổi.';return;}
+  button.disabled=true;
+  try{
   if(!admin && !trainer) return;
   if(trainer && !editingPgId) return; // Trainer không được thêm PG mới.
   const existing=editingPgId ? pgs.find(p=>p.id===editingPgId) : null;
@@ -9625,20 +9661,25 @@ document.getElementById('savePgBtn').addEventListener('click', async ()=>{
       shop:document.getElementById('pgShop').value.trim(),
       shopSize:document.getElementById('pgShopSize').value.trim(), status:requestedStatus,
     };
-    if(editingPgId){
-      const idx=pgs.findIndex(p=>p.id===editingPgId);
-      if(idx>-1){
-        const oldStatus=pgs[idx].status;
-        pgs[idx]={...pgs[idx],...data};
-        if(oldStatus!==data.status){
-          pgs[idx].statusChangedAt=new Date().toISOString();
-          pgs[idx].statusApprovedAt=new Date().toISOString();
-          if(syncApprovedPgStatusToOnOff_(pgs[idx],data.status)) await dbSet('onoffRoster', onoffRoster);
-        }
+    const state=await pgStatusReadState_(month);
+    if(context!==pgStatusContext_())throw Error('Tháng hoặc tài khoản đã thay đổi. Chưa lưu.');
+    const fresh=editingPgId?state.pgs.find(p=>p.id===editingPgId):null;
+    if(editingPgId&&!fresh)throw Error('Nhân sự đã thay đổi. Hãy tải lại trước khi lưu.');
+    const explicitStatusChange=!!fresh&&requestedStatus!==editingPgOriginalStatus_;
+    if(explicitStatusChange&&fresh.status!==editingPgOriginalStatus_)throw Error('Trạng thái đã được cập nhật ở tab khác. Hãy tải lại trước khi đổi.');
+    if(fresh){
+      data.status=explicitStatusChange?requestedStatus:fresh.status;
+      Object.assign(fresh,data);
+      if(explicitStatusChange){
+        const at=new Date().toISOString();
+        Object.assign(fresh,{statusChangedAt:at,statusApprovedAt:at,statusChangedBy:session.displayName||'Admin',statusMonth:month});
+        state.roster.forEach(r=>{if(pgStatusCode_(r.code)===pgStatusCode_(fresh.code)&&String(r.trainerId)===String(fresh.trainerId))Object.assign(r,{devStatusNote:data.status==='Đang làm'?'':data.status,statusChangedAt:at,statusApprovedAt:at,statusMonth:month});});
+        state.requests=state.requests.filter(r=>!pgStatusMatches_(r,fresh,null,month));
       }
-    }
-    else { pgs.push({ id:uid('pg'), ...data }); }
-    await dbSet('pgs:'+currentMonth, pgs);
+    }else state.pgs.push({id:uid('pg'),...data});
+    const saved=await pgStatusPersist_([{key:'pgs:'+month,value:state.pgs},{key:'onoffRoster',value:state.roster},{key:'pendingPgStatusRequests',value:state.requests}],state.expected);
+    if(context!==pgStatusContext_())return;
+    pgs=saved?.['pgs:'+month]||state.pgs;onoffRoster=saved?.onoffRoster||state.roster;pendingPgStatusRequests=saved?.pendingPgStatusRequests||state.requests;
   }else{
     // Trainer chỉ cập nhật các trường được phân quyền ngay lập tức; trạng thái phải chờ Admin duyệt.
     existing.channel=document.getElementById('pgChannel').value.trim();
@@ -9646,19 +9687,21 @@ document.getElementById('savePgBtn').addEventListener('click', async ()=>{
     existing.shopSize=document.getElementById('pgShopSize').value.trim();
     await dbSet('pgs:'+currentMonth, pgs);
     try{
-      if(!await requestPgStatusChange_(existing,requestedStatus))throw Error('Không gửi được yêu cầu đổi trạng thái.');
+      if(requestedStatus!==editingPgOriginalStatus_&&!await requestPgStatusChange_(existing,requestedStatus))throw Error('Không gửi được yêu cầu đổi trạng thái.');
     }catch(error){
       const msg=document.getElementById('pgSaveMsg');msg.style.display='block';msg.style.color='var(--red)';msg.textContent=error.message;return;
     }
   }
 
+  if(context!==pgStatusContext_())return;
   resetPgForm(); renderOverviewAll(); renderPendingPgStatusBell_();
-  const msg=document.getElementById('pgSaveMsg'); msg.style.display='block';
+  msg.style.display='block';
   msg.style.color='var(--green-ok)';
   msg.textContent = trainer && existing && requestedStatus!==existing.status
     ? 'Đã gửi yêu cầu đổi trạng thái cho Admin duyệt. Trạng thái hiện tại chưa thay đổi.'
     : 'Đã lưu.';
-  setTimeout(()=>{msg.style.display='none';},3000);
+  setTimeout(()=>{msg.style.display='none';},3000);  }catch(error){msg.style.display='block';msg.style.color='var(--red)';msg.textContent=error.message||'Không lưu được nhân sự.';}
+  finally{button.disabled=false;}
 });
 document.getElementById('cancelEditPgBtn').addEventListener('click', ()=>{ resetPgForm(); applyPermissionLocks(); });
 document.getElementById('pgRegion').addEventListener('change', ()=>{ refreshPgDependentSelects(); });

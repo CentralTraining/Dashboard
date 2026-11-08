@@ -1,0 +1,14 @@
+{
+  "environment": "main",
+  "version": "2026-11-08",
+  "html": "Dashboard-Chinh-2026-11-08-Sua-Luu-Trang-Thai-HR.html",
+  "bytes": 2711015,
+  "sha256": "7102f75a76b2462748d75ddb502e4281bf5c9e4b4cd140145c2034180fb4b421",
+  "edge_function": "hr-status-write",
+  "edge_version": 1,
+  "gateway_jwt": true,
+  "private_write_rpc": "service_role only",
+  "old_browser_hr_writes": "blocked",
+  "changes_to_other_main_scripts": false,
+  "server_source_archive": "private delivery"
+}
