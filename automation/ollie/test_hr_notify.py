@@ -58,6 +58,12 @@ class NoticeTests(unittest.TestCase):
  def test_cli_error_never_prints_sensitive_exception(self):
   with patch.object(h,'run',side_effect=ValueError('SYNTHETIC_SECRET')),patch.object(h,'configuration',return_value=CONFIG),patch('sys.argv',['hr_notify.py']),redirect_stdout(io.StringIO()) as out:self.assertEqual(h.main(),1)
   self.assertNotIn('SYNTHETIC_SECRET',out.getvalue());self.assertIn('ValueError',out.getvalue())
+ def test_old_uncertainty_does_not_fail_today(self):
+  api=Api(None);original=api.call
+  def call(action,**extra):
+   if action=='status':return {'pending':0,'due':0,'unknown':7,'rejected':1,'unresolved':0}
+   return original(action,**extra)
+  api.call=call;r=h.run(CONFIG,True,api,self.sender());self.assertEqual(r['unresolved'],0)
  def test_real_sender_uses_one_private_recipient(self):
   s=h.DingTalkSender(CONFIG['credentials'],{'robot_code':CONFIG['state']['robot_code']});s.token='SYNTHETIC_TOKEN';s.token_until=10**12;r=Mock(ok=True,status_code=200);r.json.return_value={'processQueryKey':'SYNTHETIC_RECEIPT'}
   with patch('tracker.requests.post',return_value=r) as post:self.assertEqual(s.send('dm','SYNTHETIC_LEADER',h.message(NOTICE)),'SYNTHETIC_RECEIPT')

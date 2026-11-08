@@ -67,6 +67,7 @@ jobs:
             python github_daily.py
           fi
       - name: Notify Nghia of verified HR updates at 08:00
+        continue-on-error: true # HR notices do not alter KPI delivery results.
         if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'push' || inputs.send == true) }}
         working-directory: automation/ollie
         env:

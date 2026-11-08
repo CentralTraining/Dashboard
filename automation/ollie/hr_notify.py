@@ -159,7 +159,7 @@ def run(config, send=False, api=None, sender=None):
             accepted += 1
     state = api.call('status')
     return {'mode': 'send', 'accepted': accepted, 'rejected': rejected, 'unknown': unknown,
-            'due': state['due'], 'unresolved': state['unknown'] + state['rejected'], 'group': 0}
+            'due': state['due'], 'unresolved': state.get('unresolved', state['unknown'] + state['rejected']), 'group': 0}
 
 
 def main():
