@@ -1,0 +1,31 @@
+name: Check Ollie HR notifications
+on:
+  push:
+    branches: [main]
+    paths: ['automation/ollie/hr_notify.py', 'automation/ollie/test_hr_notify.py', '.github/workflows/ollie-hr-notify-check.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: ollie-hr-notify-check
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install existing report dependencies
+        run: python -m pip install -r automation/ollie/requirements-github.txt
+      - name: Check private HR notice delivery rules
+        working-directory: automation/ollie
+        run: python -m unittest test_hr_notify
+      - name: Verify HR queue authorization and bot connection without sending
+        working-directory: automation/ollie
+        env:
+          OLLIE_KPI_CONFIG_JSON: ${{ secrets.OLLIE_KPI_CONFIG_JSON }}
+        run: python hr_notify.py

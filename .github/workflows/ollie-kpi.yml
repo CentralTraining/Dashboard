@@ -66,6 +66,12 @@ jobs:
           else
             python github_daily.py
           fi
+      - name: Notify Nghia of verified HR updates at 08:00
+        if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'push' || inputs.send == true) }}
+        working-directory: automation/ollie
+        env:
+          OLLIE_KPI_CONFIG_JSON: ${{ secrets.OLLIE_KPI_CONFIG_JSON }}
+        run: python hr_notify.py --send
       - name: Check group capture result
         if: always() && steps.group_capture.outcome == 'failure'
         run: exit 1
