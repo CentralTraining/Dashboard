@@ -1,0 +1,25 @@
+{
+  "version": "2026-11-09",
+  "environment": "Dashboard chính",
+  "repository": "CentralTraining/Dashboard",
+  "base_commit": "df269e792dbd2bb9a564b5720703ad0668f40bde",
+  "tested_feature_commit": "2b701c52f9a59f7e4f08c9d20f2dc138aea21b30",
+  "html_blob": "21306b7ce9be4ead057af0223656219578d9efaf",
+  "files": [
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-09-Xuat-Excel-Workshop-Hub.html",
+      "bytes": 2723650,
+      "sha256": "ec9ac623e495f4cdc8cdccc0818127f705927c87c356f2b8a6096a2e5c355414"
+    },
+    {
+      "path": "downloads/README-Xuat-Excel-Workshop-Hub-Chinh-2026-11-09.txt",
+      "bytes": 1226,
+      "sha256": "912fc88a36aa73a5cc8a68463338bba040c60f1bcbca9a92c7c00133ceef7c09"
+    },
+    {
+      "path": "downloads/Xuat-Excel-Workshop-Hub-Chinh-2026-11-09-verification.json",
+      "bytes": 3197,
+      "sha256": "2a371db37210d34050270b91891d5452466988415ff3f86ee56f03eb9436cd7e"
+    }
+  ]
+}

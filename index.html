@@ -12526,6 +12526,119 @@ function downloadPartnerTrainingActualSample_(){
   a.href=url; a.download='data_ws_hub.xlsx'; a.style.display='none'; document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1500);
 }
+/* Export class aggregates only; never imports or changes campaign/HR data. */
+const partnerTrainingExportViews_=new Map();
+function partnerTrainingExportField_(row,names){
+  const keys=Object.keys(row||{});
+  for(const name of names){
+    const key=keys.find(k=>normalizeRegionLoose_(k)===normalizeRegionLoose_(name));
+    if(key!==undefined&&row[key]!==null&&row[key]!==undefined&&String(row[key]).trim()!=='')return row[key];
+  }
+  return null;
+}
+function partnerTrainingExportNumber_(v){
+  if(v===null||v===undefined||String(v).trim()==='')return null;
+  const n=typeof v==='number'?v:Number(String(v).trim().replace(',','.'));
+  return Number.isFinite(n)&&n>=0?n:null;
+}
+function partnerTrainingExportTime_(row){
+  const direct=partnerTrainingExportField_(row,['Thời gian','Thời gian tổ chức']);
+  if(direct!==null)return String(direct);
+  const date=partnerTrainingExportField_(row,['training_date','Ngày đào tạo','Ngày tổ chức','date']);
+  let day='';
+  if(date!==null){
+    if(typeof date==='number'){
+      const x=XLSX.SSF.parse_date_code(date);if(x)day=`${String(x.d).padStart(2,'0')}/${String(x.m).padStart(2,'0')}/${x.y}`;
+    }else{
+      const value=String(date),vn=value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/),parsed=/^\d{4}-\d{2}-\d{2}$/.test(value)?new Date(value+'T00:00:00+07:00'):new Date(value);
+      day=vn?`${vn[1].padStart(2,'0')}/${vn[2].padStart(2,'0')}/${vn[3]}`:Number.isFinite(+parsed)?new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Saigon',day:'2-digit',month:'2-digit',year:'numeric'}).format(parsed):value;
+    }
+  }
+  const clock=value=>{
+    if(value===null)return '';
+    const s=String(value),hhmm=s.match(/^(\d{1,2}):(\d{2})/);if(hhmm)return hhmm[1].padStart(2,'0')+':'+hhmm[2];
+    const d=new Date(s);return Number.isFinite(+d)?new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Saigon',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d):s;
+  };
+  const from=clock(partnerTrainingExportField_(row,['start_time','Giờ bắt đầu'])),to=clock(partnerTrainingExportField_(row,['end_time','Giờ kết thúc']));
+  return [day,from+(to?' – '+to:'')].filter(Boolean).join(' ');
+}
+function buildPartnerTrainingExportRows_(camp,sourceRows,detailRows,view,scopeRegion=''){
+  const field=partnerTrainingExportField_,number=partnerTrainingExportNumber_;
+  const regionOf=row=>partnerTrainingRegionOfRow_(row)||configuredRegionFromLoose_(row.region||row.khu_vuc_user||'')||String(field(row,['Khu vực','region','Area'])||'');
+  const allowed=region=>!scopeRegion||normalizeRegionLoose_(region)===normalizeRegionLoose_(scopeRegion);
+  const idOf=row=>String(field(row,['WS ID','ws_id','wsid','workshop_id','id'])??'').trim();
+  const nameOf=row=>String(field(row,['Tên Workshop','Tên Hub','Tên lớp','class_name','wsName','ten_ws'])??'').trim();
+  const nameKey=(region,name)=>normalizeRegionLoose_(region)+'|'+normalizeRegionLoose_(name);
+  const filtered=!!view&&Object.values(view.filters||{}).some(Boolean);
+  const detailsKnown=filtered||Array.isArray(detailRows);
+  const parts=(filtered?view.parts:(detailRows||[])).filter(r=>r&&typeof r==='object').map(r=>{
+    const region=regionOf(r),value=field(r,['Khảo sát','survey','trang_thai_khao_sat']);
+    const done=value!==null?wsDoitacSurveyDone_(value):r.is_survey_done===true||r.is_survey_done===1;
+    return {region,id:idOf(r),name:nameOf(r),done,known:value!==null||typeof r.is_survey_done==='boolean'||[0,1].includes(r.is_survey_done)};
+  }).filter(p=>allowed(p.region));
+  const groups=new Map();
+  parts.forEach(p=>{
+    const key=p.id?'id:'+p.id:'name:'+nameKey(p.region,p.name);
+    let g=groups.get(key);if(!g){g={id:p.id,name:p.name,region:p.region,count:0,survey:0,surveyKnown:true};groups.set(key,g);}
+    g.count++;if(p.done)g.survey++;if(!p.known)g.surveyKnown=false;
+  });
+  let classes=(Array.isArray(sourceRows)?sourceRows:[]).filter(r=>r&&typeof r==='object'&&!Array.isArray(r)).map(r=>({raw:r,id:idOf(r),name:nameOf(r),region:regionOf(r)})).filter(r=>allowed(r.region));
+  if(!classes.length)classes=[...groups.values()].map(g=>({raw:{},id:g.id,name:g.name,region:g.region}));
+  const names=new Map();classes.forEach(c=>{const k=nameKey(c.region,c.name);names.set(k,(names.get(k)||0)+1);});
+  const rows=[];
+  for(const c of classes){
+    let g=c.id?groups.get('id:'+c.id):null;
+    if(!g&&!c.id&&names.get(nameKey(c.region,c.name))===1){
+      const candidates=[...groups.values()].filter(p=>nameKey(p.region,p.name)===nameKey(c.region,c.name));if(candidates.length===1)g=candidates[0];
+    }
+    if(filtered&&!g)continue;
+    const planned=number(field(c.raw,['target_students','Dự trù','Dự trù HR','HV dự kiến','Số lượng dự kiến','Số học viên']));
+    const actual=number(field(c.raw,['Số lượng thực tế','actual_students','sl_thuc_te','actual_quantity','HR check-in','HR check in','HV thực tế']));
+    const mismatchedIdentity=!!c.id&&!g&&[...groups.values()].some(p=>nameKey(p.region,p.name)===nameKey(c.region,c.name));
+    const checkin=filtered?(g?.count??null):(actual!==null?actual:detailsKnown&&!mismatchedIdentity?(g?.count||0):null);
+    const rawSurvey=number(field(c.raw,['HR khảo sát','survey_count','survey_done','Số lượng khảo sát','Số khảo sát']));
+    const surveys=filtered?(g?.surveyKnown?g.survey:null):(detailsKnown?(g?(g.surveyKnown?g.survey:null):mismatchedIdentity?null:0):rawSurvey);
+    const average=number(field(c.raw,['Điểm Khảo Sát (TB)','diem_khao_sat_tb','survey_avg','Điểm TB khảo sát','TB Khảo sát']));
+    rows.push({
+      'STT':rows.length+1,'Loại':campaignSubtype(camp)==='hub'?'Hub':'Workshop/Hub','Chiến dịch':camp.name||'',
+      'WS ID':c.id,'Tên Workshop/Hub':c.name,'Khu vực':c.region,'Thời gian':partnerTrainingExportTime_(c.raw),
+      'Địa điểm':String(field(c.raw,['location_name','Địa điểm','location','venue'])??''),
+      'Dự trù HR':planned,'HR check-in':checkin,'HR khảo sát':surveys,
+      'Độ phủ HR':planned>0&&checkin!==null?checkin/planned:null,
+      'Kết quả TB khảo sát':average,'Trạng thái':String(field(c.raw,['status','Trạng thái'])??''),
+      'Link bản đồ':String(field(c.raw,['location_gmap','Link bản đồ'])??'')
+    });
+  }
+  return rows;
+}
+async function exportPartnerTrainingExcel_(camp,subtype,button,message){
+  if(!isAdmin()&&!isTrainer())return;
+  const signature=()=>JSON.stringify([currentMonth,session?.userId,session?.role,session?.trainerId,session?.region,camp.id,camp.month]);
+  const state=signature(),viewGetter=partnerTrainingExportViews_.get(camp.id);
+  const getView=()=>{const v=viewGetter?.();return v&&v.node?.isConnected&&v.month===camp.month?v:null;};
+  const view=getView(),filters=JSON.stringify(view?.filters||{}),scope=isTrainer()?session.region:'';
+  const stillCurrent=()=>state===signature()&&camp.month===currentMonth&&button.isConnected&&document.getElementById(button.id)===button&&filters===JSON.stringify(getView()?.filters||{});
+  const oldText=button.textContent;button.disabled=true;button.textContent='Đang xuất…';message.textContent='';
+  try{
+    if(camp.month!==currentMonth||isTrainer()&&!scope)throw Error('Chưa xác định đúng tháng hoặc khu vực được phép xuất.');
+    const keys=['partnerTrainingActualRows:'+camp.id,'wsDoitacParticipants:'+camp.id],values=await dbGetMulti(keys);
+    if(!values||!keys.every(k=>Object.prototype.hasOwnProperty.call(values,k)))throw Error('Không đọc đủ dữ liệu xuất Excel. Hãy thử lại.');
+    if(!stillCurrent())throw Error('Tháng, tài khoản hoặc bộ lọc đã thay đổi. Hãy bấm xuất lại.');
+    const rows=buildPartnerTrainingExportRows_(camp,values[keys[0]],values[keys[1]],view,scope);
+    if(!rows.length)throw Error('Không có Workshop/Hub phù hợp để xuất. Hãy cập nhật dữ liệu hoặc kiểm tra bộ lọc.');
+    const ws=XLSX.utils.json_to_sheet(rows);ws['!autofilter']={ref:ws['!ref']};
+    ws['!cols']=[6,14,35,15,42,20,30,45,16,16,16,18,24,18,45].map(wch=>({wch}));
+    for(let i=2;i<=rows.length+1;i++){if(ws['L'+i])ws['L'+i].z='0.0%';if(ws['M'+i])ws['M'+i].z='0.00';}
+    const now=new Date(),day=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Saigon',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+    const info=[['Thông tin','Giá trị'],['Chiến dịch',camp.name||''],['Tháng',camp.month],['Loại',subtype==='hub'?'Hub':'Workshop'],['Phạm vi',scope||'Toàn bộ khu vực được phép'],['Bộ lọc danh sách',view?Object.entries(view.filters).filter(([,v])=>v).map(([k,v])=>k+': '+v).join('; '):''],['Số lớp xuất',rows.length],['Thời điểm xuất',now.toLocaleString('vi-VN',{timeZone:'Asia/Saigon'})],['Độ phủ HR','HR check-in / Dự trù HR. Dự trù bằng 0 hoặc chưa có thì để trống.'],['HR check-in','Ưu tiên số lượng thực tế trong tổng hợp; khi lọc danh sách học viên, lấy số học viên theo bộ lọc.'],['HR khảo sát','Đếm học viên đã làm khảo sát trong nguồn chi tiết của đúng chiến dịch; dùng số khảo sát tổng hợp nếu chưa có nguồn chi tiết.'],['Ô trống','Nguồn chưa có dữ liệu cho chỉ số đó; không tự gán thành 0.'],['TB khảo sát','Điểm TB của cả lớp trong nguồn tổng hợp; giữ nguyên khi lọc học viên.']];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,subtype==='hub'?'Danh_sach_Hub':'Danh_sach_Workshop');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(info),'Thong_tin');wb.Sheets.Thong_tin['!cols']=[{wch:25},{wch:100}];
+    if(!stillCurrent())throw Error('Màn hình đã thay đổi. Chưa tạo file; hãy bấm xuất lại.');
+    XLSX.writeFile(wb,`${subtype==='hub'?'Hub':'Workshop'}_DoiTac_${camp.month}_${day}.xlsx`);
+    message.style.color='var(--green-ok)';message.textContent=`Đã xuất ${rows.length} ${subtype==='hub'?'Hub':'Workshop/Hub'}.`;
+  }catch(error){if(button.isConnected){message.style.color='var(--red)';message.textContent=error.message||'Không xuất được Excel.';}}
+  finally{if(button.isConnected){button.disabled=false;button.textContent=oldText;}}
+}
+
 async function renderPartnerTrainingRegionProgress_(subtype){
   const box=document.getElementById('partnerTrainingRegionProgressBox-'+subtype) || document.getElementById('partnerWorkshopRegionProgressBox');
   if(!box) return;
@@ -12584,7 +12697,7 @@ async function renderPartnerTrainingRegionProgress_(subtype){
       ${pct!==null?`<div class="frac">${p}%</div>`:''}
     </div>`;
   };
-  let html=`<div class="campaign-context">Chiến dịch: <strong>${camp.name}</strong> — ${monthLabel(currentMonth)} · Hiển thị theo Khu vực</div>`;
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;"><div class="campaign-context" style="margin:0;">Chiến dịch: <strong>${camp.name}</strong> — ${monthLabel(currentMonth)} · Hiển thị theo Khu vực</div>${isAdmin()||isTrainer()?`<button class="secondary" id="partnerTrainingExport-${subtype}" type="button">⬇ Xuất Excel ${subtype==='hub'?'Hub':'Workshop/Hub'}</button>`:''}</div><p id="partnerTrainingExportMsg-${subtype}" class="section-desc" role="status" aria-live="polite"></p>`;
   // Thẻ tổng toàn Miền
   html+=`<div class="kpi-row cols-4" style="margin-bottom:14px;">
     ${kpiCard('SỐ BUỔI TOÀN MIỀN', Math.round(tot.sessions), Math.round(tot.targetSessions), pctSafe(tot.sessions,tot.targetSessions))}
@@ -12631,6 +12744,8 @@ async function renderPartnerTrainingRegionProgress_(subtype){
   }
   if(subtype==='workshop'){ html+=`<div id="wsDoitacParticipantsBox" style="margin-top:20px;"></div>`; }
   box.innerHTML=html;
+  const exportButton=document.getElementById('partnerTrainingExport-'+subtype),exportMessage=document.getElementById('partnerTrainingExportMsg-'+subtype);
+  if(exportButton&&exportMessage)exportButton.onclick=()=>exportPartnerTrainingExcel_(camp,subtype,exportButton,exportMessage);
   if(subtype==='workshop' && camp){ renderWsDoitacParticipants_(camp).catch(e=>console.error('WS participants:',e)); }
   box.querySelectorAll('.partner-training-note').forEach(el=>{
     el.addEventListener('change',async()=>{
@@ -12748,6 +12863,7 @@ async function renderWsDoitacParticipants_(camp){
     });
     return [...m.values()].sort((a,b)=>a.region.localeCompare(b.region,'vi')||(a.wsName||'').localeCompare(b.wsName||'','vi'));
   };
+  partnerTrainingExportViews_.set(camp.id,()=>({month:camp.month,node:inner,filters:{region:fRegion,shop:fShop,channel:fChannel,trainer:fTrainer,survey:fSurvey},parts:filtered_()}));
   const render=()=>{
     const list=filtered_(); const groups=grouped_(list);
     const totalPages=Math.max(1,Math.ceil(groups.length/pageSize));
