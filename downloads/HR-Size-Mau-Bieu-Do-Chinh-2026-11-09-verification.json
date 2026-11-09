@@ -1,0 +1,193 @@
+{
+  "base_main_commit": "d4019256feb4398028dc78124738c77c21cb686d",
+  "base_main_blob": "6074294810bd9e5befdfb232d23e8e29a2de7d2e",
+  "main_html_blob": "9f856abe0abe4255b811f574005993b894b917c7",
+  "bytes": 2712542,
+  "sha256": "5ee4f4b6d546ed6145268ecef51959c93048d65a4d99f612548f52560aa1f190",
+  "exact_tested_size_patches": 17,
+  "exact_tested_color_patches": 2,
+  "native_main_hr_endpoint_preserved": true,
+  "environment": "main",
+  "date_vietnam": "2026-11-09",
+  "hr_edge_version": 2,
+  "hr_edge_verify_jwt": true,
+  "browser_status_checks": [
+    {
+      "width": 1440,
+      "passed": true,
+      "one_atomic_status_save": true,
+      "stale_import_keeps_approved_status": true,
+      "canonical_response_refreshes_memory": true,
+      "server_failure_and_conflict_leave_data_unchanged": true,
+      "trainer_requires_admin_approval": true,
+      "locked_month_blocked": true,
+      "no_direct_rest_hr_upserts": true,
+      "no_overflow": true,
+      "real_data_writes": 0
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "one_atomic_status_save": true,
+      "stale_import_keeps_approved_status": true,
+      "canonical_response_refreshes_memory": true,
+      "server_failure_and_conflict_leave_data_unchanged": true,
+      "trainer_requires_admin_approval": true,
+      "locked_month_blocked": true,
+      "no_direct_rest_hr_upserts": true,
+      "no_overflow": true,
+      "real_data_writes": 0
+    },
+    {
+      "width": 320,
+      "passed": true,
+      "one_atomic_status_save": true,
+      "stale_import_keeps_approved_status": true,
+      "canonical_response_refreshes_memory": true,
+      "server_failure_and_conflict_leave_data_unchanged": true,
+      "trainer_requires_admin_approval": true,
+      "locked_month_blocked": true,
+      "no_direct_rest_hr_upserts": true,
+      "no_overflow": true,
+      "real_data_writes": 0
+    }
+  ],
+  "daily_readonly_audit": [
+    {
+      "verified_audit": {
+        "run_id": "3d8cdd48-3460-452b-b835-8aacdaa27acf",
+        "after_pg_rows": 510,
+        "before_pg_rows": 510,
+        "status_changes": 0,
+        "off_reactivated": 0,
+        "approved_pg_count": 40,
+        "after_duplicate_ids": 0,
+        "after_status_counts": {
+          "THAI SẢN": 5,
+          "Đang làm": 471,
+          "CODE ĐẠI LÝ": 20,
+          "OFF (chưa cắt Center)": 14
+        },
+        "before_duplicate_ids": 0,
+        "before_status_counts": {
+          "THAI SẢN": 5,
+          "Đang làm": 471,
+          "CODE ĐẠI LÝ": 20,
+          "OFF (chưa cắt Center)": 14
+        },
+        "old_rows_missing_after": 0,
+        "snapshot_matches_receipt": true,
+        "approval_metadata_changes": 0,
+        "approved_roster_note_changes": 0,
+        "pending_requests_not_written": true
+      }
+    }
+  ],
+  "readonly_guard_checks": [
+    {
+      "case": "ambiguous_roster_ignored",
+      "actual": "Đang làm",
+      "passed": true,
+      "expected": "Đang làm",
+      "non_status_star_updated": true
+    },
+    {
+      "case": "approved_active",
+      "actual": "Đang làm",
+      "passed": true,
+      "expected": "Đang làm",
+      "non_status_star_updated": true
+    },
+    {
+      "case": "approved_OFF",
+      "actual": "OFF (chưa cắt Center)",
+      "passed": true,
+      "expected": "OFF (chưa cắt Center)",
+      "non_status_star_updated": true
+    },
+    {
+      "case": "dealer_code",
+      "actual": "CODE ĐẠI LÝ",
+      "passed": true,
+      "expected": "CODE ĐẠI LÝ",
+      "non_status_star_updated": true
+    },
+    {
+      "case": "future_month_roster_not_applied",
+      "actual": "Đang làm",
+      "passed": true,
+      "expected": "Đang làm",
+      "non_status_star_updated": true
+    },
+    {
+      "case": "maternity",
+      "actual": "THAI SẢN",
+      "passed": true,
+      "expected": "THAI SẢN",
+      "non_status_star_updated": true
+    },
+    {
+      "case": "newer_approved_roster",
+      "actual": "OFF (chưa cắt Center)",
+      "passed": true,
+      "expected": "OFF (chưa cắt Center)",
+      "non_status_star_updated": true
+    },
+    {
+      "case": "old_roster_before_rejoin_ignored",
+      "actual": "Đang làm",
+      "passed": true,
+      "expected": "Đang làm",
+      "non_status_star_updated": true
+    }
+  ],
+  "daily_worker_synthetic_checks": {
+    "passed": true,
+    "scenario": "daily import at 23:59 VN",
+    "statuses_preserved": [
+      "Đang làm",
+      "OFF (chưa cắt Center)",
+      "THAI SẢN",
+      "CODE ĐẠI LÝ"
+    ],
+    "approval_metadata_preserved": true,
+    "upstream_on_cannot_reactivate_approved_off": true,
+    "upstream_off_without_approval_does_not_override_official_state": true,
+    "missing_assignment_does_not_reactivate": true,
+    "stars_and_assignment_fields_still_update": true,
+    "real_data_writes": 0
+  },
+  "handler_checks": [
+    {
+      "environment": "test",
+      "passed": true,
+      "old_preflight_error_reproduced": true,
+      "preflight_204_has_null_body": true,
+      "preflight_does_not_authenticate_or_write": true,
+      "cors_origin_unchanged": true,
+      "forged_session_rejected": true,
+      "trainer_only_submits_pending_request": true,
+      "trainer_direct_status_write_rejected": true,
+      "cross_trainer_request_rejected": true,
+      "stale_and_locked_month_rejected": true,
+      "private_rpc_route_preserved": true,
+      "real_data_writes": 0
+    },
+    {
+      "environment": "main",
+      "passed": true,
+      "old_preflight_error_reproduced": true,
+      "preflight_204_has_null_body": true,
+      "preflight_does_not_authenticate_or_write": true,
+      "cors_origin_unchanged": true,
+      "forged_session_rejected": true,
+      "trainer_only_submits_pending_request": true,
+      "trainer_direct_status_write_rejected": true,
+      "cross_trainer_request_rejected": true,
+      "stale_and_locked_month_rejected": true,
+      "private_rpc_route_preserved": true,
+      "real_data_writes": 0
+    }
+  ],
+  "real_business_writes_for_testing": 0
+}

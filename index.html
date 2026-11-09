@@ -3177,6 +3177,7 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
             <option value="shopsize">Phân bổ theo Size shop</option>
           </select>
         </div>
+        <p class="section-desc" id="brandShopSizeSourceNote" style="margin:8px 0;">Size shop lấy từ DS gán Shop–Sale–Trainer trên Dashboard. Shop chưa có size được hiển thị là <strong>Chưa xác định</strong>.</p>
         <div class="chart-wrap" style="height:340px;"><canvas id="chartBrandDist"></canvas></div>
       </div>
 
@@ -3692,7 +3693,7 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
       <div id="panel-data-nhansu-hang" class="panel">
         <div class="cfg-card">
           <h3>Import dữ liệu Nhân sự các hãng (theo Shop)</h3>
-          <p class="section-desc" style="margin-bottom:10px;">Dùng file HR tổng hợp theo Shop (cột: Store ID, Store name, Province, Miền, Channel, Shop Focus, SL PG SAMSUNG/XIAOMI/VIVO/REALME/HONOR/KHÁC + Thâm niên từng PG...). <strong>Riêng số liệu PGs OPPO KHÔNG lấy từ file này</strong> — luôn tham chiếu đúng data Nhân sự (Danh sách PGs) đã import, file này chỉ bổ sung số liệu các hãng đối thủ.</p>
+          <p class="section-desc" style="margin-bottom:10px;">Dùng file HR tổng hợp theo Shop (cột: Store ID, Store name, Province, Miền, Channel, Shop Focus, SL PG SAMSUNG/XIAOMI/VIVO/REALME/HONOR/KHÁC + Thâm niên từng PG...). <strong>Riêng số liệu PGs OPPO KHÔNG lấy từ file này</strong> — luôn tham chiếu đúng data Nhân sự (Danh sách PGs) đã import, file này chỉ bổ sung số liệu các hãng đối thủ. <strong>Size shop khi thống kê lấy từ DS gán Shop–Sale–Trainer trên Dashboard</strong>; cột Type/Size trong file không thay đổi size thống kê.</p>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             <input type="file" id="brandShopImportInput" accept=".xlsx,.xls">
             <button class="secondary" id="downloadBrandShopTemplateBtn" type="button">⬇ Tải file mẫu</button>
@@ -5833,7 +5834,7 @@ document.getElementById('exportPgFullTemplateBtn').addEventListener('click', ()=
       'Channel':p.channel||'', 'Big Channel':channelGroup(p.channel), 'Joined at':joinedStr, 'Released at':'',
       'Loại gán shop':'PG', 'Là Shop chính':1, 'trainer':tr?tr.name:'', 'sao':Number(p.star)||0,
       'THÂM NIÊN THÁNG':Number(p.seniority)||0, 'LOẠI THÂM NIÊN':seniorityBucket_(p.seniority),
-      'TRẠNG THÁI': p.status==='Đang làm' ? '' : p.status, 'Size shop':shopSizeFromMap_(p.shop)||p.shopSize||'', 'SALE ':p.sale||'',
+      'TRẠNG THÁI': p.status==='Đang làm' ? '' : p.status, 'Size shop':resolvedShopSize_(p)||'', 'SALE ':p.sale||'',
     };
   });
   const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
@@ -9276,9 +9277,9 @@ function populatePgSearchSelects(){
   const sizeSel = document.getElementById('pgShopSizeFilterSelect');
   if(sizeSel){
     const cur = sizeSel.value;
-    // Ưu tiên Size shop từ bảng Gán Shop chuẩn (giống hệt cách hiển thị/Export) — chỉ dùng shopSize
-    // riêng của PG khi Shop đó chưa có trong bảng Gán Shop.
-    const sizeNames = Array.from(new Set(scopedPgs('OPPO').map(p=> shopSizeFromMap_(p.shop)||p.shopSize||'').filter(Boolean))).sort();
+    // Bộ lọc dùng cùng nguồn Size với biểu đồ, danh sách và file xuất HR.
+    const sizeOf=createHrShopSizeResolver_();
+    const sizeNames = Array.from(new Set(scopedPgs('OPPO').map(p=>sizeOf(p)||'Chưa xác định'))).sort();
     sizeSel.innerHTML = '<option value="">Tất cả</option>' + sizeNames.map(s=>`<option value="${s}">${s}</option>`).join('');
     if(sizeNames.includes(cur)) sizeSel.value=cur;
   }
@@ -9301,7 +9302,7 @@ function visiblePgList(){
   }
   if(pgStatusFilter) list = list.filter(p=> p.status===pgStatusFilter);
   if(pgStarFilter!=='') list = list.filter(p=> Number(p.star)===Number(pgStarFilter));
-  if(pgShopSizeFilter) list = list.filter(p=> (shopSizeFromMap_(p.shop)||p.shopSize||'')===pgShopSizeFilter);
+  if(pgShopSizeFilter){const sizeOf=createHrShopSizeResolver_();list=list.filter(p=>(sizeOf(p)||'Chưa xác định')===pgShopSizeFilter);}
   return list;
 }
 function renderPgPagination(totalItems){
@@ -9333,17 +9334,39 @@ function renderPgPagination(totalItems){
     });
   });
 }
-/* Size shop hiển thị ở Danh sách PGs LUÔN ưu tiên tra theo "Gán Shop Trainer - Sale" (Cài đặt ▸ DATA ▸
-   Gán Shop), khớp theo tên Shop — chỉ fallback về p.shopSize của chính PG nếu Shop đó chưa có trong
-   danh sách Gán Shop. */
-function shopSizeFromMap_(shopName){
-  if(!shopName) return '';
-  const key = shopName.trim();
-  const rec = shopTrainerMap.find(s=>(s.shopName||'').trim()===key);
-  return rec ? (rec.shopSize||'') : '';
+/* Size thống kê HR chỉ lấy từ DS gán Shop–Sale–Trainer. Có mã shop thì tra đúng mã;
+   chỉ tra tên đầy đủ khớp duy nhất khi hồ sơ chưa có mã. Thiếu/trùng phân công hoặc thiếu size
+   trả rỗng để giao diện gom vào “Chưa xác định”; không lấy size/Type từ file Excel hay hồ sơ PG. */
+function hrShopSizeIdentity_(shop){
+  return {id:String(shop?.shopId??shop?.storeId??'').normalize('NFC').trim(),
+    name:normShopKey_(String(shop?.shop??shop?.shopName??shop?.storeName??''))};
+}
+function hrShopSizeFromMatches_(matches){
+  return matches.length===1 ? String(matches[0].shopSize??'').trim() : '';
+}
+function createHrShopSizeResolver_(){
+  const byId=new Map(), byName=new Map();
+  const add=(map,key,row)=>{if(key){if(!map.has(key))map.set(key,[]);map.get(key).push(row);}};
+  shopTrainerMap.forEach(row=>{
+    const key=hrShopSizeIdentity_(row);
+    add(byId,key.id,row);add(byName,key.name,row);
+  });
+  return shop=>{
+    const key=hrShopSizeIdentity_(shop);
+    const matches=(key.id?byId.get(key.id):byName.get(key.name))||[];
+    return hrShopSizeFromMatches_(matches);
+  };
+}
+function shopSizeFromMap_(shopName,shopId=''){
+  const key=hrShopSizeIdentity_({shop:shopName,shopId});
+  const matches=shopTrainerMap.filter(row=>{
+    if(key.id)return String(row.shopId??'').normalize('NFC').trim()===key.id;
+    return key.name&&normShopKey_(String(row.shopName??''))===key.name;
+  });
+  return hrShopSizeFromMatches_(matches);
 }
 function resolvedShopSize_(p){
-  return shopSizeFromMap_(p.shop) || (p.shopSize && p.shopSize.trim()) || '';
+  return shopSizeFromMap_(p?.shop??p?.shopName??p?.storeName??'',p?.shopId??p?.storeId??'');
 }
 function renderPgOppoTable(){
   populatePgSearchSelects();
@@ -9375,7 +9398,7 @@ function renderPgOppoTable(){
     const tr=trainerOf(p.trainerId);
     return `<tr>
       <td>${p.code||'—'}</td><td><strong>${p.name}</strong></td><td>${tr?tr.region:(p.area||'—')}</td>
-      <td>${p.shop||'—'}</td><td>${p.channel||'—'}</td><td>${shopSizeFromMap_(p.shop)||p.shopSize||'—'}</td><td>${p.seniority||0} tháng</td><td class="stars">${starDisplay(p.star)}</td><td>${tr?tr.name:'—'}</td><td>${p.sale||'—'}</td>
+      <td>${p.shop||'—'}</td><td>${p.channel||'—'}</td><td>${resolvedShopSize_(p)||'Chưa xác định'}</td><td>${p.seniority||0} tháng</td><td class="stars">${starDisplay(p.star)}</td><td>${tr?tr.name:'—'}</td><td>${p.sale||'—'}</td>
       <td><span class="status-badge ${STATUS_CLASS[p.status]||''}">${p.status}</span>${(()=>{const req=pendingPgStatusRequests.find(r=>r.month===currentMonth&&r.pgId===p.id);return req?`<div style="margin-top:5px;font-size:7.5pt;color:var(--amber);font-weight:700;">Chờ duyệt → ${req.newStatus}</div>`:'';})()}</td>
       <td>${((isAdmin())||(isTrainer() && p.trainerId===session.trainerId))?`<button class="secondary" data-edit-pg="${p.id}">Sửa</button>`:''}</td>
     </tr>`;
@@ -9419,7 +9442,7 @@ document.getElementById('exportPgBtn').addEventListener('click', ()=>{
       'Tỉnh': p.province||'',
       'Phường': p.district||'',
       'Shop': p.shop||'',
-      'Size shop': shopSizeFromMap_(p.shop)||p.shopSize||'',
+      'Size shop': resolvedShopSize_(p)||'',
       'Kênh': p.channel||'',
       'Nhóm kênh': channelGroup(p.channel),
       'Thâm niên (tháng)': p.seniority||0,
@@ -10649,6 +10672,7 @@ let brandShopListCurrentPageItems_ = [];
 // chuẩn hoá Unicode (NFC), gộp các loại dấu gạch ngang (- – —) về 1 loại, gộp khoảng trắng thừa.
 function normShopKey_(s){ return (s||'').normalize('NFC').trim().toLowerCase().replace(/[–—]/g,'-').replace(/\s+/g,' '); }
 function buildUnifiedShopList_(){
+  const sizeOf=createHrShopSizeResolver_();
   // Hợp nhất theo nguyên tắc: 2 bản ghi được coi là CÙNG 1 Shop nếu khớp ID **HOẶC** khớp Tên (không
   // cần khớp cả 2). Dùng 2 chỉ mục byId/byName cùng trỏ về đúng 1 object Shop — khi xử lý 1 bản ghi
   // mới, thử tìm theo ID trước, không thấy thì thử tìm theo Tên; tìm thấy ở chỉ mục nào thì cập nhật
@@ -10758,7 +10782,7 @@ function buildUnifiedShopList_(){
     const trainerName = shop.trainerId ? (tr ? tr.name : '⚠ ID Trainer không khớp (đã xoá?)') : '';
     return {
       shopId: shop.shopId, shopName: shop.shopName, region: shop.region, province: shop.province, channel: shop.channel,
-      shopSize: shop.shopSize||'', trainerName, trainerId: shop.trainerId||'',
+      shopSize: sizeOf(shop), trainerName, trainerId: shop.trainerId||'',
       slOppo: finalSl('oppo', slOppo), slSS: finalSl('ss', slOf('Samsung')), slXM: finalSl('xm', slOf('Xiaomi')),
       slVV: finalSl('vv', slOf('Vivo')), slRM: finalSl('rm', slOf('Realme')), slHonor: finalSl('honor', slOf('Honor')),
       manualSl,
@@ -10789,7 +10813,7 @@ function getFilteredBrandShopListForExport_(){
   if(brandShopListFilter_.region) list = list.filter(s=>s.region===brandShopListFilter_.region);
   if(brandShopListFilter_.province) list = list.filter(s=>s.province===brandShopListFilter_.province);
   if(brandShopListFilter_.channel) list = list.filter(s=>s.channel===brandShopListFilter_.channel);
-  if(brandShopListFilter_.size) list = list.filter(s=>s.shopSize===brandShopListFilter_.size);
+  if(brandShopListFilter_.size) list = list.filter(s=>(s.shopSize||'Chưa xác định')===brandShopListFilter_.size);
   if(brandShopListFilter_.search){
     const term = brandShopListFilter_.search.trim().toLowerCase();
     list = list.filter(s=> (s.shopId||'').toLowerCase().includes(term) || (s.shopName||'').toLowerCase().includes(term));
@@ -10834,10 +10858,10 @@ function renderBrandShopList_(){
   const afterChannel = brandShopListFilter_.channel ? afterProvince.filter(s=>s.channel===brandShopListFilter_.channel) : afterProvince;
   fillSel(channelSel, Array.from(new Set(afterProvince.map(s=>s.channel).filter(Boolean))).sort(), brandShopListFilter_.channel);
 
-  fillSel(sizeSel, Array.from(new Set(afterChannel.map(s=>s.shopSize).filter(Boolean))).sort(), brandShopListFilter_.size);
+  fillSel(sizeSel, Array.from(new Set(afterChannel.map(s=>s.shopSize||'Chưa xác định'))).sort(), brandShopListFilter_.size);
 
   let list = afterChannel;
-  if(brandShopListFilter_.size) list = list.filter(s=>s.shopSize===brandShopListFilter_.size);
+  if(brandShopListFilter_.size) list = list.filter(s=>(s.shopSize||'Chưa xác định')===brandShopListFilter_.size);
   if(brandShopListFilter_.search){
     const term = brandShopListFilter_.search.trim().toLowerCase();
     list = list.filter(s=> (s.shopId||'').toLowerCase().includes(term) || (s.shopName||'').toLowerCase().includes(term));
@@ -10878,7 +10902,7 @@ function renderBrandShopList_(){
     const isRealShop = s.shopId!=='—' || (s.shopName && !s.shopName.startsWith('⚠'));
     html += `<tr>
       <td>${s.shopId||'—'}</td><td>${s.shopName||'—'}</td><td>${s.region||'—'}</td><td>${s.province||'—'}</td><td>${s.channel||'—'}</td>
-      <td>${s.shopSize||'—'}</td><td>${s.trainerName||'—'}</td>
+      <td>${s.shopSize||'Chưa xác định'}</td><td>${s.trainerName||'—'}</td>
       <td style="text-align:center;font-weight:700;color:var(--green-dark);">${s.slOppo}</td>
       <td style="text-align:center;">${s.slSS}</td><td style="text-align:center;">${s.slXM}</td><td style="text-align:center;">${s.slVV}</td><td style="text-align:center;">${s.slRM}</td><td style="text-align:center;">${s.slHonor}</td>
       <td>${isRealShop?`<button class="secondary" data-edit-shop-idx="${idx}" type="button" style="padding:4px 10px;font-size:11.5px;">✏ Sửa</button>`:''}</td>
@@ -11093,7 +11117,7 @@ function renderBrandStats(){
   renderBrandDistChart(brandDistMode);
   renderBrandShopList_();
 }
-const BRAND_COLORS = { 'OPPO':'#016C38','Samsung':'#2F6FB0','Xiaomi':'#E8B923','Vivo':'#2F9BD6','Realme':'#E8C023','Honor':'#9098A0' };
+const BRAND_COLORS = { 'OPPO':'#016C38','Samsung':'#2F6FB0','Xiaomi':'#FF6900','Vivo':'#2F9BD6','Realme':'#FFD200','Honor':'#9098A0' };
 function competitorCountByPredicate_(brand, predicate){
   let total=0;
   brandShopList.forEach(shop=>{
@@ -11104,7 +11128,7 @@ function competitorCountByPredicate_(brand, predicate){
   return total;
 }
 let brandDistMode='region';
-const BRAND_DIST_TITLES = { region:'Phân bổ PGs các hãng theo Khu vực', trainer:'Phân bổ PGs các hãng theo Trainer', channel:'Phân bổ PGs các hãng theo Kênh', shopsize:'Phân bổ PGs các hãng theo Size/Loại Shop' };
+const BRAND_DIST_TITLES = { region:'Phân bổ PGs các hãng theo Khu vực', trainer:'Phân bổ PGs các hãng theo Trainer', channel:'Phân bổ PGs các hãng theo Kênh', shopsize:'Phân bổ PGs các hãng theo Size shop' };
 /* Trainer phụ trách 1 Shop trong "Nhân sự các hãng" — tra theo Gán Shop-Trainer (storeId=shopId). */
 function competitorTrainerIdForShop_(shop){
   const sm = shopTrainerMap.find(m=>m.shopId===shop.storeId);
@@ -11117,6 +11141,8 @@ function renderBrandDistChart(mode){
   if(chartBrandDistInstance) chartBrandDistInstance.destroy();
   document.getElementById('brandDistTitle').textContent = BRAND_DIST_TITLES[mode]||'Phân bổ PGs các hãng';
 
+  const resolveSize=createHrShopSizeResolver_();
+  const sizeOf=shop=>resolveSize(shop)||'Chưa xác định';
   let labels;
   if(mode==='trainer'){
     labels = visibleTrainers().map(t=>t.name);
@@ -11127,10 +11153,10 @@ function renderBrandDistChart(mode){
     // Chỉ quy hoạch theo 3 Big Channel
     labels = ['MWG','K.A','IND'];
   } else {
-    // shopsize: OPPO dùng Size shop, hãng khác dùng Loại Shop (Type) — 2 field khác tên nhưng cùng ý nghĩa phân khúc shop
-    const oppoSizes = scopedActivePgs('OPPO').map(p=>resolvedShopSize_(p)).filter(Boolean);
-    const competitorTypes = brandShopList.map(s=>s.shopType).filter(Boolean);
-    labels = Array.from(new Set([...oppoSizes, ...competitorTypes])).sort();
+    // OPPO và đối thủ dùng cùng Size từ DS gán Shop–Sale–Trainer, theo phạm vi đang chọn.
+    const oppoSizes = scopedActivePgs('OPPO').map(sizeOf);
+    const competitorSizes = brandShopList.filter(shopMatchesScope_).map(sizeOf);
+    labels = Array.from(new Set([...oppoSizes, ...competitorSizes])).sort();
   }
   if(labels.length===0) return;
 
@@ -11151,8 +11177,8 @@ function renderBrandDistChart(mode){
         return competitorCountByPredicate_(brand, s=>channelGroup(s.channel)===label);
       }
       // shopsize
-      if(brand==='OPPO') return scopedActivePgs('OPPO').filter(p=>resolvedShopSize_(p)===label).length;
-      return competitorCountByPredicate_(brand, s=>s.shopType===label);
+      if(brand==='OPPO') return scopedActivePgs('OPPO').filter(p=>sizeOf(p)===label).length;
+      return competitorCountByPredicate_(brand, s=>shopMatchesScope_(s)&&sizeOf(s)===label);
     });
     return { label:brand, data, backgroundColor: BRAND_COLORS[brand]||'#999', maxBarThickness:20 };
   });

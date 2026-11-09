@@ -1,0 +1,23 @@
+{
+  "environment": "main",
+  "date_vietnam": "2026-11-09",
+  "base_commit": "d4019256feb4398028dc78124738c77c21cb686d",
+  "html_blob": "9f856abe0abe4255b811f574005993b894b917c7",
+  "files": [
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-09-HR-Size-Mau-Bieu-Do.html",
+      "bytes": 2712542,
+      "sha256": "5ee4f4b6d546ed6145268ecef51959c93048d65a4d99f612548f52560aa1f190"
+    },
+    {
+      "path": "downloads/HR-Size-Mau-Bieu-Do-Chinh-2026-11-09-verification.json",
+      "bytes": 5978,
+      "sha256": "f78244d4fecd198772a8d25a408ad9018ff85a027544ac217e30c140d2cd0ce3"
+    },
+    {
+      "path": "downloads/README-HR-Size-Mau-Bieu-Do-Chinh-2026-11-09.txt",
+      "bytes": 840,
+      "sha256": "60505af74702958e6e30f2419de4ea53499ffec36394704cd59aa78dd574b788"
+    }
+  ]
+}
