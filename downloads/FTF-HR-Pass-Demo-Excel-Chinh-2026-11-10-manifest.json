@@ -1,0 +1,24 @@
+{
+  "version": "2026-11-10",
+  "environment": "CHÍNH",
+  "repository": "CentralTraining/Dashboard",
+  "base_commit": "1ebf9c71c117ca37ae80cbbb1b81e892bfd9b2d5",
+  "html_blob": "bb17829291ee43f2d3c6e19962cc48f64c0fe623",
+  "files": [
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-10-FTF-HR-Pass-Demo-Excel.html",
+      "bytes": 2764769,
+      "sha256": "38030df160f081b5d0c617910150154d7cae76bbbbbac00341c55c11be83414a"
+    },
+    {
+      "path": "downloads/README-FTF-HR-Pass-Demo-Excel-Chinh-2026-11-10.txt",
+      "bytes": 2018,
+      "sha256": "5a0e586b7aa4d1ba239641b4b836d8b9e996f2601e09286ddb87ebdad053f235"
+    },
+    {
+      "path": "downloads/FTF-HR-Pass-Demo-Excel-Chinh-2026-11-10-verification.json",
+      "bytes": 8423,
+      "sha256": "9a2d4a72a989264bc81bd65ab569a37d5eec0a97528162c6c2b22cf8db96509c"
+    }
+  ]
+}

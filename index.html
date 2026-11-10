@@ -513,7 +513,7 @@
   .kpi-card .value{font-size:22px;font-weight:800;color:var(--green-dark);margin-top:4px;word-break:break-word;}
   .kpi-card .frac{font-size:var(--cap);color:var(--muted);margin-top:2px;word-break:break-word;}
   /* FTF summary: cố định 5 thẻ / hàng để K.A + MWG luôn gọn đúng 2 hàng */
-  .kpi-row.ftf-summary-row{grid-template-columns:repeat(5,minmax(0,1fr)) !important;gap:10px !important;margin-bottom:14px !important;}
+  .kpi-row.ftf-summary-row{grid-template-columns:repeat(var(--ftf-cols,5),minmax(0,1fr)) !important;gap:10px !important;margin-bottom:14px !important;}
   .kpi-row.ftf-summary-row .kpi-card{padding:10px 12px !important;min-width:0;}
   .kpi-row.ftf-summary-row .kpi-card .label{font-size:11px;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .kpi-row.ftf-summary-row .kpi-card .value{font-size:20px !important;margin-top:2px;}
@@ -7718,8 +7718,344 @@ function renderMediaImportBox(){
 }
 /* Tổng hợp Target/Actual theo Kênh (K.A/MWG) từ Danh sách SHOP FTF (ftfShopList) — dùng cho bảng
    tiến độ Đối tác dạng thanh ngang (giống Truyền thông), cho 1 tập hợp shop cho trước */
+/* FTF Demo source matching. Pure functions; no writes or hidden source fallback. */
+const FtfDemoModel=(()=>{
+ const norm=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const text=value=>String(value??'').normalize('NFC').trim();
+ const code=value=>text(value).replace(/^(\d+)\.0$/,'$1');
+ const regions=new Set(['binhdinh','danang','hue','nhatrang','vungtau','taynguyen']);
+ const region=value=>regions.has(norm(value))?norm(value):'';
+ const ratio=value=>{
+  const match=text(value).match(/^(\d+)\s*\/\s*(\d+)$/);
+  if(!match)return null;
+  const completed=Number(match[1]),total=Number(match[2]);
+  return Number.isSafeInteger(completed)&&Number.isSafeInteger(total)?{completed,total}:null;
+ };
+ function makeIndex(targets,shops=[],assignments=[],channelGroup=value=>text(value)){
+  if(!Array.isArray(targets)||!targets.length)throw Error('Chưa có danh sách Target FTF của chiến dịch. Hãy import Target theo Shop trước.');
+  const byId=new Map(),byName=new Map(),conflicts=new Set();
+  const addName=(item,name)=>{if(!text(name))return;item.names.add(text(name));const key=item.region+'|'+norm(name);if(!byName.has(key))byName.set(key,new Set());byName.get(key).add(item.id);};
+  for(const row of targets){
+   const id=code(row.storeId),area=region(row.region);
+   if(!id||!area)continue;
+   const trainerId=text(row.trainerId),channel=channelGroup(row.channel);
+   let item=byId.get(id);
+   if(item&&(item.region!==area||item.trainerId!==trainerId||item.channel!==channel)){conflicts.add(id);continue;}
+   if(!item){item={id,region:area,regionLabel:text(row.region),trainerId,channel,names:new Set()};byId.set(id,item);}
+   addName(item,row.storeName);
+  }
+  for(const row of [...shops,...assignments]){
+   const id=code(row.shopCode||row.shopId||row.storeId),item=byId.get(id);
+   if(!item||region(row.region||row.area)!==item.region)continue;
+   addName(item,row.shopName||row.storeName||row.shop);
+  }
+  if(conflicts.size)throw Error('Target FTF có mã Shop bị gán nhiều Trainer, khu vực hoặc kênh. Hãy kiểm tra Target trước khi cập nhật Demo.');
+  if(!byId.size)throw Error('Không có Shop Target FTF hợp lệ trong 6 khu vực Miền Trung.');
+  const fingerprint=JSON.stringify([...byId.values()].map(x=>[x.id,x.region,x.trainerId,x.channel]).sort((a,b)=>a[0].localeCompare(b[0])));
+  return {byId,byName,fingerprint};
+ }
+ function columns(rows){
+  const definitions={zone:['Vùng','Region'],area:['Khu vực','Area'],code:['Mã NV','Mã nhân viên','Code'],name:['Tên nhân viên','Họ tên','Tên đối tác'],shop:['Shop','Tên Shop','Store name'],shopId:['Mã Shop','Shop ID','Store ID'],progress:['Bài thi demo hoàn thành / Tổng']};
+  for(let row=0;row<Math.min(10,rows.length);row++){
+   const keys=(rows[row]||[]).map(norm),found={};
+   for(const [key,aliases] of Object.entries(definitions)){
+    const matches=keys.map((v,i)=>aliases.some(a=>norm(a)===v)?i:-1).filter(i=>i>=0);
+    if(matches.length>1)throw Error('Sheet có nhiều cột cùng nghĩa '+aliases[0]+'. Hãy giữ một cột để tránh lấy nhầm dữ liệu.');
+    found[key]=matches.length?matches[0]:-1;
+   }
+   if(['zone','area','code','name','progress'].every(k=>found[k]>=0)&&(found.shop>=0||found.shopId>=0))return {row,found};
+  }
+  throw Error('Sheet cần các cột Vùng, Khu vực, Mã NV, Tên nhân viên, Shop và Bài thi demo hoàn thành / Tổng.');
+ }
+ function read(rows,index){
+  if(!Array.isArray(rows))throw Error('Không đọc được dữ liệu dạng bảng từ Google Sheet.');
+  const {row:headerRow,found:c}=columns(rows),people=new Map(),errors=[];
+  const stats={rows:0,centralRows:0,outsideScope:0,unmatchedShopRows:0,ambiguousShopRows:0,missingCodes:0,invalidProgress:0,duplicateRows:0,conflictingPeople:0,matchedRows:0};
+  for(let i=headerRow+1;i<rows.length;i++){
+   const row=rows[i];if(!Array.isArray(row)||!row.some(v=>text(v)))continue;
+   stats.rows++;
+   const area=region(row[c.area]);
+   if(norm(row[c.zone])!=='mientrung'||!area){stats.outsideScope++;continue;}
+   stats.centralRows++;
+   const explicitId=c.shopId>=0?code(row[c.shopId]):'';
+   let shopId=explicitId;
+   if(!shopId){
+    const name=text(row[c.shop]),set=index.byName.get(area+'|'+norm(name));
+    if(set?.size>1){stats.ambiguousShopRows++;errors.push({row:i+1,reason:'Tên Shop khớp nhiều mã trong cùng khu vực.'});continue;}
+    if(set?.size===1)shopId=[...set][0];
+    else {const prefix=name.match(/^(\d+)\s*[-_|]/);if(prefix)shopId=prefix[1];}
+   }
+   const shop=index.byId.get(shopId);
+   if(!shop||shop.region!==area||!shop.trainerId){stats.unmatchedShopRows++;continue;}
+   const employeeCode=code(row[c.code]);
+   if(!employeeCode){stats.missingCodes++;errors.push({row:i+1,reason:'Thiếu Mã NV trong Shop Target.'});continue;}
+   const progress=ratio(row[c.progress]);
+   if(!progress){stats.invalidProgress++;errors.push({row:i+1,reason:'Bài thi demo hoàn thành / Tổng phải có dạng x/y, gồm hai số nguyên không âm.'});continue;}
+   stats.matchedRows++;
+   const name=text(row[c.name]),prior=people.get(employeeCode);
+   if(prior){
+    if(prior.shopId!==shopId||prior.region!==area||(name&&prior.name&&norm(name)!==norm(prior.name))){stats.conflictingPeople++;errors.push({row:i+1,reason:'Một Mã NV có thông tin tên hoặc Shop mâu thuẫn.'});continue;}
+    stats.duplicateRows++;
+    if(progress.completed>prior.completed){prior.completed=progress.completed;prior.total=progress.total;}
+    if(!prior.name)prior.name=name;
+    continue;
+   }
+   people.set(employeeCode,{code:employeeCode,name,shopId,region:area,trainerId:shop.trainerId,channel:shop.channel,completed:progress.completed,total:progress.total});
+  }
+  if(errors.length)return {rows:[],stats,errors};
+  if(!stats.centralRows)throw Error('Sheet không có dữ liệu thuộc MIEN TRUNG và 6 khu vực đã chọn. Chưa cập nhật kết quả.');
+  if(!people.size)throw Error('Không có Mã NV khớp Shop trong Target FTF. Chưa thay đổi kết quả Demo đã lưu.');
+  return {rows:[...people.values()],stats,errors:[]};
+ }
+ const minimum=value=>{const n=Number(value);return Number.isSafeInteger(n)&&n>=1?n:null;};
+ const passed=(rows,min)=>minimum(min)===null?null:(rows||[]).filter(p=>Number.isSafeInteger(p.completed)&&p.completed>=Number(min));
+ return {norm,text,code,region,ratio,makeIndex,read,minimum,passed};
+})();
+if(typeof module!=='undefined'&&module.exports)module.exports=FtfDemoModel;
+
+/* Campaign-scoped FTF configuration and Demo results. Existing FTF result imports stay intact. */
+const FTF_DEMO_ENV_=location.pathname.startsWith('/Test/')?'test':'main';
+const FTF_DEMO_METRICS_=[{key:'ftfShop',label:'SL Shop'},{key:'ftfHr',label:'SL HR'},{key:'ftfBaiTest',label:'SL Bài Test'},{key:'ftfTuVanAI',label:'Tư vấn AI'},{key:'ftfHrPassDemo',label:'SL HR Pass Demo'},{key:'ftfKhaoSat',label:'SL Khảo sát'}];
+const FTF_DEMO_SOURCE_={url:'https://docs.google.com/spreadsheets/d/1QVJk58fupSDv9ev22VoZo3Z-wSF8fQmYJjmY4T5mURA/edit?gid=649233839#gid=649233839',sheetName:'Tiến độ thi demo'};
+const ftfDemoStates_=new Map(),ftfDemoSettingDrafts_=new Map(),ftfDemoTargetDrafts_=new Map();
+const ftfDemoOperations_=new Set();
+let ftfDemoTargetRender_=0;
+function ftfDemoOperation_(camp){
+ if(ftfDemoOperations_.size)return null;
+ ftfDemoOperations_.add(camp.id);
+ const fields=[...document.querySelectorAll('#targetCampaignContext input,#targetCampaignContext button,#targetTableBody input,#saveTargetBtn,#editTargetBtn,#ftfDemoProgressUpdate')].map(node=>({node,disabled:node.disabled}));
+ fields.forEach(({node})=>node.disabled=true);
+ return ()=>{ftfDemoOperations_.delete(camp.id);fields.forEach(({node,disabled})=>{if(node.isConnected)node.disabled=disabled;});};
+}
+const ftfDemoOwner_=()=>JSON.stringify([session?.userId,session?.role,session?.trainerId,session?.region]);
+const ftfDemoCampaign_=()=>campaigns.find(c=>c.month===currentMonth&&c.group==='doitac'&&campaignSubtype(c)==='ftf');
+const ftfDemoDataKey_=camp=>'ftfDemoData:'+FTF_DEMO_ENV_+':'+camp.id;
+const ftfDemoConfig_=camp=>camp?.inheritance?.copiedSettings===false&&camp?.ftfConfig?.ownerCampaignId!==camp?.id?{}:(camp?.ftfConfig||{});
+const ftfDemoAllKeys_=()=>FTF_DEMO_METRICS_.map(m=>m.key);
+function ftfDemoMetricDefs_(camp=ftfDemoCampaign_(),preview=false){
+ const cfg=preview?(ftfDemoSettingDrafts_.get(camp?.id)?.value||ftfDemoConfig_(camp)):ftfDemoConfig_(camp);
+ const selected=Array.isArray(cfg.metrics)?cfg.metrics:ftfDemoAllKeys_();
+ return FTF_DEMO_METRICS_.filter(m=>selected.includes(m.key));
+}
+function ftfDemoSource_(camp){return {...FTF_DEMO_SOURCE_,...(ftfDemoConfig_(camp).source||{})};}
+function ftfDemoSourceKey_(source){return JSON.stringify([parseGoogleSheetId_(source.url),String(source.sheetName||'').normalize('NFC')]);}
+function ftfDemoIndex_(targets,shops=ftfShopList,assignments=shopTrainerMap){return FtfDemoModel.makeIndex(targets,shops,assignments,channelGroup);}
+function ftfDemoTargetValue_(camp,trainerId,key,channel){
+ if(key==='ftfHrPassDemo')return Number(ftfDemoConfig_(camp).demoTargets?.[trainerId]?.[channel])||0;
+ const rec=trainerRecord(trainerId),stored=rec[key+'Target_'+channel];
+ return Math.round(stored!==undefined?Number(stored)||0:ftfTargetFallbackFromShopList_(trainerId,key,channel==='KA'?'K.A':'MWG'));
+}
+function ftfDemoMessage_(text,error=false,node=document.getElementById('targetSaveMsg')){if(node){node.style.display='block';node.style.color=error?'var(--red)':'var(--green-dark)';node.textContent=text;}}
+async function ftfDemoRead_(keys){const values=await dbGetMulti(keys);if(!values||!keys.every(k=>Object.prototype.hasOwnProperty.call(values,k)))throw Error('Không đọc được đầy đủ cấu hình FTF. Hãy thử lại.');return values;}
+async function loadFtfDemoState_(camp){
+ if(!camp)return null;
+ const owner=ftfDemoOwner_(),month=currentMonth,keys=['campaigns','ftfTargetRows:'+camp.id,ftfDemoDataKey_(camp)];
+ const values=await ftfDemoRead_(keys);
+ if(owner!==ftfDemoOwner_()||month!==currentMonth||camp.month!==month)return null;
+ const fresh=Array.isArray(values.campaigns)?values.campaigns.find(c=>c.id===camp.id&&c.month===month&&c.group==='doitac'&&campaignSubtype(c)==='ftf'):null;
+ if(!fresh)throw Error('Chiến dịch FTF đã thay đổi. Hãy tải lại trang.');
+ camp.ftfConfig=fresh.ftfConfig;camp.targetLocked=fresh.targetLocked;
+ const targets=Array.isArray(values[keys[1]])?values[keys[1]]:[];
+ let index=null,indexError='';try{index=ftfDemoIndex_(targets);}catch(e){indexError=e.message;}
+ const snapshot=values[keys[2]],state={targets,index,indexError,snapshot,peopleByShop:new Map()};
+ if(Array.isArray(snapshot?.rows))for(const p of snapshot.rows){if(!state.peopleByShop.has(p.shopId))state.peopleByShop.set(p.shopId,[]);state.peopleByShop.get(p.shopId).push(p);}
+ ftfDemoStates_.set(camp.id,state);return state;
+}
+function ftfDemoStatus_(camp=ftfDemoCampaign_()){
+ const cfg=ftfDemoConfig_(camp),state=ftfDemoStates_.get(camp?.id),x=FtfDemoModel.minimum(cfg.demoMinPass),data=state?.snapshot;
+ if(!cfg.settingsSaved||x===null)return {ready:false,text:'Chưa lưu ngưỡng X và nguồn Demo.'};
+ if(!state?.index)return {ready:false,text:state?.indexError||'Chưa tải được Target FTF.'};
+ if(!data)return {ready:false,text:'Chưa cập nhật kết quả Demo từ Google Sheet.'};
+ if(data.version!==1||data.environment!==FTF_DEMO_ENV_||data.campaignId!==camp.id||data.month!==camp.month||!Array.isArray(data.rows)||data.sourceKey!==ftfDemoSourceKey_(ftfDemoSource_(camp))||data.mappingKey!==state.index.fingerprint)return {ready:false,text:'Nguồn hoặc danh sách Shop Target đã đổi. Hãy cập nhật Demo lại.'};
+ return {ready:true,text:'Đã cập nhật '+new Date(data.updatedAt).toLocaleString('vi-VN',{timeZone:'Asia/Saigon'}),state,x};
+}
+function ftfDemoShopPeople_(shop,camp=ftfDemoCampaign_()){
+ const status=ftfDemoStatus_(camp);if(!status.ready)return null;
+ const id=FtfDemoModel.code(shop.shopCode||shop.shopIdOtr);
+ const item=status.state.index.byId.get(id);
+ if(!item||item.region!==FtfDemoModel.region(shop.region))return null;
+ return {all:status.state.peopleByShop.get(id)||[],passed:FtfDemoModel.passed(status.state.peopleByShop.get(id)||[],status.x),x:status.x};
+}
+const ftfDemoShopCount_=shop=>ftfDemoShopPeople_(shop)?.passed.length??null;
+function ftfDemoCountFor_(trainerIds,channel,camp=ftfDemoCampaign_()){
+ const status=ftfDemoStatus_(camp);if(!status.ready)return null;
+ const ids=trainerIds instanceof Set?trainerIds:new Set(trainerIds||[]);
+ return FtfDemoModel.passed(status.state.snapshot.rows,status.x).filter(p=>ids.has(p.trainerId)&&p.channel===channel).length;
+}
+function ftfDemoCaptureTarget_(){
+ const campId=document.getElementById('targetCampaignSelect')?.value;if(!campId)return;
+ const draft=ftfDemoTargetDrafts_.get(campId)||{};
+ document.querySelectorAll('#targetTableBody .target-input[data-chan]').forEach(input=>{if(input.dataset.ftfDirty==='1')draft[input.dataset.trainer+'|'+input.dataset.metric+'|'+input.dataset.chan]=input.value;});
+ ftfDemoTargetDrafts_.set(campId,draft);
+}
+async function ftfDemoFresh_(camp,extras=[]){
+ const keys=['campaigns','monthLock:'+camp.month,...extras],values=await ftfDemoRead_(keys);
+ const list=values.campaigns,fresh=Array.isArray(list)?list.find(c=>c.id===camp.id&&c.month===camp.month&&c.group==='doitac'&&campaignSubtype(c)==='ftf'):null;
+ if(!fresh)throw Error('Không còn đúng chiến dịch FTF. Hãy tải lại trang.');
+ if(values['monthLock:'+camp.month])throw Error('Tháng đã khóa. Chưa thay đổi cấu hình hoặc dữ liệu.');
+ return {values,list,camp:fresh};
+}
+function ftfDemoSettingDraft_(camp){
+ let draft=ftfDemoSettingDrafts_.get(camp.id);
+ if(!draft){const cfg=ftfDemoConfig_(camp);draft={editing:!cfg.settingsSaved,value:{...structuredClone(cfg),metrics:Array.isArray(cfg.metrics)?[...cfg.metrics]:ftfDemoAllKeys_(),demoMinPass:cfg.demoMinPass??'',source:ftfDemoSource_(camp)}};ftfDemoSettingDrafts_.set(camp.id,draft);}
+ return draft;
+}
+function renderFtfDemoSettings_(camp,container){
+ const draft=ftfDemoSettingDraft_(camp),value=draft.value,editable=isAdmin()&&!monthLocked&&draft.editing;
+ const box=document.createElement('div');box.className='form-card ftf-demo-settings';box.style.cssText='max-width:none;margin:14px 0;';
+ box.innerHTML=`<h3 style="margin:0 0 10px;">Cột hiển thị và HR Pass Demo</h3><p class="section-desc">Lưu riêng cho chiến dịch này. Bỏ chọn chỉ ẩn cột, vẫn giữ Target và dữ liệu đã nhập.</p><div class="ftf-demo-metric-options" style="display:flex;flex-wrap:wrap;gap:12px;margin:12px 0;">${FTF_DEMO_METRICS_.map(m=>`<label style="display:inline-flex;gap:6px;align-items:center;"><input type="checkbox" data-ftf-column="${m.key}" ${value.metrics.includes(m.key)?'checked':''} ${editable?'':'disabled'}>${m.label}</label>`).join('')}</div><label style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0;"><strong>X — số lần pass Demo tối thiểu/HR:</strong><input id="ftfDemoX" type="number" min="1" step="1" placeholder="Nhập X" value="${escapeHtml(String(value.demoMinPass))}" style="width:90px;" ${editable?'':'disabled'}><span class="section-desc">Ví dụ 2/10, X = 2 ⇒ tính 1 HR pass.</span></label><label style="display:block;margin-top:10px;">Link Google Sheet<input id="ftfDemoSourceUrl" type="url" value="${escapeHtml(value.source.url)}" style="width:100%;margin-top:5px;" ${editable?'':'readonly'}></label><label style="display:block;margin-top:10px;">Tên sheet (tab)<input id="ftfDemoSourceTab" type="text" value="${escapeHtml(value.source.sheetName)}" style="width:100%;margin-top:5px;" ${editable?'':'readonly'}></label><p class="section-desc" style="margin:8px 0;">Cột “Bài thi demo hoàn thành / Tổng” · chỉ MIEN TRUNG: BINH DINH, DA NANG, HUE, NHA TRANG, VUNG TAU, TAY NGUYEN. Ghép Shop theo Target FTF; mỗi Mã NV chỉ tính một lần.</p><div style="display:flex;flex-wrap:wrap;gap:8px;">${isAdmin()?`<button id="ftfDemoSettingsSave" type="button" class="primary" ${editable?'':'style="display:none;"'}>Lưu cấu hình</button><button id="ftfDemoSettingsEdit" type="button" class="secondary" ${draft.editing?'style="display:none;"':''} ${monthLocked?'disabled':''}>✎ Sửa cấu hình</button><button id="ftfDemoSourceUpdate" type="button" class="secondary" ${!draft.editing&&ftfDemoConfig_(camp).settingsSaved&&!monthLocked?'':'disabled'}>↻ Cập nhật riêng HR Pass Demo từ Google Sheet</button>`:''}</div><p id="ftfDemoSettingsMsg" role="status" style="margin-bottom:0;">${escapeHtml(ftfDemoStatus_(camp).text)}</p>`;
+ container.appendChild(box);
+ const current=()=>box.isConnected&&document.getElementById('targetCampaignSelect')?.value===camp.id&&currentMonth===camp.month;
+ box.querySelectorAll('[data-ftf-column]').forEach(input=>input.onchange=()=>{
+  if(!editable||ftfDemoOperations_.size||!current())return;ftfDemoCaptureTarget_();value.metrics=[...box.querySelectorAll('[data-ftf-column]:checked')].map(x=>x.dataset.ftfColumn);
+  value.demoMinPass=box.querySelector('#ftfDemoX').value;value.source={url:box.querySelector('#ftfDemoSourceUrl').value,sheetName:box.querySelector('#ftfDemoSourceTab').value};renderFtfDemoTarget_(camp);
+ });
+ box.querySelector('#ftfDemoSettingsEdit')?.addEventListener('click',()=>{if(!isAdmin()||monthLocked||ftfDemoOperations_.size||!current())return;ftfDemoCaptureTarget_();draft.editing=true;draft.value={...structuredClone(ftfDemoConfig_(camp)),metrics:ftfDemoMetricDefs_(camp).map(m=>m.key),demoMinPass:ftfDemoConfig_(camp).demoMinPass??'',source:ftfDemoSource_(camp)};renderFtfDemoTarget_(camp);});
+ box.querySelector('#ftfDemoSettingsSave')?.addEventListener('click',async event=>{
+  if(!editable||!current())return;const owner=ftfDemoOwner_(),expected=JSON.stringify(ftfDemoConfig_(camp)),button=event.currentTarget,msg=box.querySelector('#ftfDemoSettingsMsg');
+  const finish=ftfDemoOperation_(camp);if(!finish)return;button.disabled=true;
+  try{
+   const metrics=[...box.querySelectorAll('[data-ftf-column]:checked')].map(x=>x.dataset.ftfColumn);if(!metrics.length)throw Error('Chọn ít nhất một cột hiển thị.');
+   const rawX=box.querySelector('#ftfDemoX').value,x=FtfDemoModel.minimum(rawX);if(x===null&&(rawX!==''||metrics.includes('ftfHrPassDemo')))throw Error('X phải là số nguyên từ 1 trở lên khi hiển thị HR Pass Demo.');
+   const source=validatedGoogleSheetConfig_({url:box.querySelector('#ftfDemoSourceUrl').value,sheetNames:[box.querySelector('#ftfDemoSourceTab').value],exactTab:true});if(source.sheetNames.length!==1||!source.sheetNames[0])throw Error('Nhập đúng tên một tab nguồn Demo.');
+   const fresh=await ftfDemoFresh_(camp);if(!current()||owner!==ftfDemoOwner_())throw Error('Tài khoản hoặc chiến dịch đã thay đổi.');
+   if(expected!==JSON.stringify(ftfDemoConfig_(fresh.camp)))throw Error('Cấu hình đã được sửa ở nơi khác. Hãy tải lại trước khi lưu.');
+   const cfg={...structuredClone(ftfDemoConfig_(fresh.camp)),ownerCampaignId:camp.id,metrics,demoMinPass:x,source:{url:source.url,sheetName:source.sheetNames[0]},settingsSaved:true};
+   const next=fresh.list.map(c=>c.id===camp.id?{...c,ftfConfig:cfg}:c);await saveCampaignData_([['campaigns',next]]);
+   if(!current()||owner!==ftfDemoOwner_())return;campaigns=next;camp=campaigns.find(c=>c.id===camp.id);ftfDemoSettingDrafts_.delete(camp.id);await renderFtfDemoTarget_(camp);renderKpiAll();ftfDemoMessage_('Đã lưu X, cột hiển thị và nguồn Demo. Lưu cấu hình không tự nhập dữ liệu.',false,document.getElementById('ftfDemoSettingsMsg'));
+  }catch(e){ftfDemoMessage_(e.message||'Chưa xác nhận lưu cấu hình. Hãy tải lại để kiểm tra.',true,msg);}finally{finish();if(button.isConnected)button.disabled=false;}
+ });
+ box.querySelector('#ftfDemoSourceUpdate')?.addEventListener('click',event=>updateFtfDemoFromSheet_(camp,event.currentTarget,box.querySelector('#ftfDemoSettingsMsg')));
+}
+async function renderFtfDemoTarget_(camp){
+ const render=++ftfDemoTargetRender_,owner=ftfDemoOwner_(),ctx=document.getElementById('targetCampaignContext'),head=document.getElementById('targetTableThead'),body=document.getElementById('targetTableBody');
+ const same=()=>render===ftfDemoTargetRender_&&owner===ftfDemoOwner_()&&camp.month===currentMonth&&document.getElementById('targetCampaignSelect')?.value===camp.id;
+ try{await loadFtfDemoState_(camp);if(!same())return;}catch(e){if(same()){ctx.textContent=e.message;head.replaceChildren();body.replaceChildren();document.getElementById('saveTargetBtn').style.display='none';document.getElementById('editTargetBtn').style.display='none';}return;}
+ ftfTargetRows=ftfDemoStates_.get(camp.id)?.targets||[];
+ ctx.innerHTML=`Đang set Target cho chiến dịch: <strong>${escapeHtml(camp.name)}</strong> — FTF Đối tác — ${monthLabel(camp.month)}`;
+ renderFtfDemoSettings_(camp,ctx);
+ for(const id of ['workshopTargetSectionBox','partnerTrainingTargetSectionBox']){const box=document.getElementById(id);if(box){box.innerHTML='';box.style.display='none';}}
+ const view=document.getElementById('targetDoitacViewModeBox'),mode=document.getElementById('targetDoitacViewModeSelect');view.style.display='';mode.value=ftfTargetViewMode;mode.onchange=()=>{ftfDemoCaptureTarget_();ftfTargetViewMode=mode.value;renderFtfDemoTarget_(camp);};
+ const locked=!!camp.targetLocked,canEdit=isAdmin()&&!locked&&!monthLocked,metrics=ftfDemoMetricDefs_(camp,true),draft=ftfDemoTargetDrafts_.get(camp.id)||{};
+ const save=document.getElementById('saveTargetBtn'),edit=document.getElementById('editTargetBtn');save.style.display=isAdmin()&&!locked?'inline-block':'none';edit.style.display=isAdmin()&&locked?'inline-block':'none';save.disabled=monthLocked;edit.disabled=monthLocked;
+ head.innerHTML=`<tr><th rowspan="2">${ftfTargetViewMode==='region'?'Khu vực':'Trainer'}</th>${ftfTargetViewMode==='trainer'?'<th rowspan="2">Khu vực</th>':''}${metrics.map(m=>`<th colspan="2">${m.label} — Target</th>`).join('')}</tr><tr>${metrics.map(()=>'<th>K.A</th><th>MWG</th>').join('')}</tr>`;
+ const trainers=isAdmin()?config.trainers:visibleTrainers(),sums={KA:0,MWG:0};
+ const val=(t,m,ch)=>draft[t.id+'|'+m.key+'|'+ch]??ftfDemoTargetValue_(camp,t.id,m.key,ch);
+ if(ftfTargetViewMode==='region'){
+  const areas=[...new Set(trainers.map(t=>t.region).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+  body.innerHTML=areas.map(area=>`<tr><td><strong>${escapeHtml(area)}</strong></td>${metrics.map(m=>['KA','MWG'].map(ch=>`<td>${trainers.filter(t=>t.region===area).reduce((n,t)=>n+(Number(val(t,m,ch))||0),0)}</td>`).join('')).join('')}</tr>`).join('');
+ }else body.innerHTML=trainers.map(t=>`<tr><td><strong>${escapeHtml(t.name)}</strong></td><td>${escapeHtml(t.region||'—')}</td>${metrics.map(m=>['KA','MWG'].map(ch=>`<td><input type="number" min="0" step="1" class="quick-num target-input" data-trainer="${escapeHtml(t.id)}" data-metric="${m.key}" data-chan="${ch}" value="${escapeHtml(String(val(t,m,ch)))}" style="width:72px;${locked?'opacity:.5;background:var(--bg);':''}" ${canEdit?'':'disabled'}></td>`).join('')).join('')}</tr>`).join('');
+ const totals=metrics.map(m=>`${m.label} — K.A: ${trainers.reduce((n,t)=>n+(Number(val(t,m,'KA'))||0),0)} · MWG: ${trainers.reduce((n,t)=>n+(Number(val(t,m,'MWG'))||0),0)}`);
+ document.getElementById('targetDoitacSummaryBox').textContent=totals.join(' | ');
+ body.querySelectorAll('.target-input').forEach(input=>input.oninput=()=>{input.dataset.ftfDirty='1';ftfDemoCaptureTarget_();});
+ const importBox=document.getElementById('ftfTargetSectionBox');if(importBox){importBox.style.display='';renderFtfTargetSection_(camp);}
+}
+async function editFtfDemoTarget_(camp){
+ if(!isAdmin()||monthLocked)return;const owner=ftfDemoOwner_(),button=document.getElementById('editTargetBtn'),finish=ftfDemoOperation_(camp);if(!finish)return;button.disabled=true;
+ try{const fresh=await ftfDemoFresh_(camp);if(owner!==ftfDemoOwner_()||camp.month!==currentMonth||document.getElementById('targetCampaignSelect')?.value!==camp.id)return;
+  const next=fresh.list.map(c=>c.id===camp.id?{...c,targetLocked:false}:c);await saveCampaignData_([['campaigns',next]]);campaigns=next;ftfDemoTargetDrafts_.delete(camp.id);await renderTargetTable();
+ }catch(e){ftfDemoMessage_(e.message,true);}finally{finish();if(button.isConnected)button.disabled=false;}
+}
+async function saveFtfDemoTarget_(camp){
+ if(!isAdmin()||monthLocked||camp.targetLocked)return;ftfDemoCaptureTarget_();const owner=ftfDemoOwner_(),button=document.getElementById('saveTargetBtn'),draft=structuredClone(ftfDemoTargetDrafts_.get(camp.id)||{}),finish=ftfDemoOperation_(camp);if(!finish)return;button.disabled=true;
+ try{
+  const fresh=await ftfDemoFresh_(camp,['records:'+camp.month]);if(owner!==ftfDemoOwner_()||camp.month!==currentMonth||document.getElementById('targetCampaignSelect')?.value!==camp.id)return;
+  if(fresh.camp.targetLocked)throw Error('Target đã được chốt ở nơi khác. Hãy tải lại trước khi sửa.');
+  const nextRecords=structuredClone(fresh.values['records:'+camp.month]||{}),cfg=structuredClone(ftfDemoConfig_(fresh.camp));cfg.ownerCampaignId=camp.id;cfg.demoTargets=cfg.demoTargets||{};
+  const changed=new Set();
+  for(const [key,raw] of Object.entries(draft)){
+   const [tid,metric,ch]=key.split('|');if(!config.trainers.some(t=>t.id===tid)||!ftfDemoAllKeys_().includes(metric)||!['KA','MWG'].includes(ch))continue;
+   const n=Number(raw);if(!Number.isFinite(n)||n<0)throw Error('Target phải là số không âm.');const value=Math.round(n);
+   if(metric==='ftfHrPassDemo'){cfg.demoTargets[tid]={...(cfg.demoTargets[tid]||{}),[ch]:value};}
+   else{nextRecords[tid]=nextRecords[tid]||{};nextRecords[tid][metric+'Target_'+ch]=value;changed.add(tid+'|'+metric);}
+  }
+  for(const item of changed){const [tid,metric]=item.split('|'),rec=nextRecords[tid];rec[metric+'Target']=Math.round((Number(rec[metric+'Target_KA'])||0)+(Number(rec[metric+'Target_MWG'])||0));}
+  const next=fresh.list.map(c=>c.id===camp.id?{...c,targetLocked:true,ftfConfig:cfg}:c);await saveCampaignData_([['records:'+camp.month,nextRecords],['campaigns',next]]);
+  if(owner!==ftfDemoOwner_()||camp.month!==currentMonth)return;records=nextRecords;campaigns=next;ftfDemoTargetDrafts_.delete(camp.id);await renderTargetTable();renderKpiAll();ftfDemoMessage_('Đã lưu Target FTF theo K.A/MWG. Cột đang ẩn vẫn giữ nguyên Target; bấm Sửa Target khi cần.');
+ }catch(e){ftfDemoMessage_(e.message||'Chưa xác nhận lưu Target. Hãy tải lại để kiểm tra.',true);}finally{finish();if(button.isConnected)button.disabled=false;}
+}
+async function updateFtfDemoFromSheet_(camp,button,message){
+ if(!isAdmin()||monthLocked||button.disabled)return;
+ const owner=ftfDemoOwner_(),month=currentMonth,messageId=message?.id;
+ const contextCurrent=()=>owner===ftfDemoOwner_()&&month===currentMonth&&camp.month===month;
+ const same=()=>button.isConnected&&contextCurrent();
+ const feedback=()=>document.getElementById(messageId)||document.getElementById('ftfDemoProgressMsg')||document.getElementById('ftfDemoSettingsMsg')||message;
+ const refresh=async(text,error=false)=>{
+  if(!same())return;
+  if(!ftfDemoSettingDrafts_.get(camp.id)?.editing){
+   ftfDemoSettingDrafts_.delete(camp.id);
+   if(document.getElementById('targetCampaignSelect')?.value===camp.id&&document.getElementById('ftfDemoSettingsMsg'))await renderTargetTable();
+  }
+  if(!contextCurrent())return;
+  await renderKpiCategory('doitac');
+  if(contextCurrent())ftfDemoMessage_(text,error,feedback());
+ };
+ const finish=ftfDemoOperation_(camp);if(!finish)return;const oldText=button.textContent;button.disabled=true;button.textContent='Đang cập nhật Demo…';
+ try{
+  ftfDemoMessage_('Đang đọc nguồn Google Sheet đã lưu trong Target của chiến dịch…',false,message);
+  const keys=['ftfTargetRows:'+camp.id,'ftfShopList:'+month,'shopTrainerMap'];
+  const start=await ftfDemoFresh_(camp,keys);if(!same())throw Error('Tháng hoặc tài khoản đã thay đổi. Chưa nhập Demo.');
+  const cfg=ftfDemoConfig_(start.camp);
+  if(!cfg.settingsSaved||FtfDemoModel.minimum(cfg.demoMinPass)===null)throw Error('Hãy Lưu cấu hình X và nguồn Google Sheet trong Cài đặt → Target trước.');
+  if(!cfg.source?.url||!String(cfg.source?.sheetName||'').trim())throw Error('Chưa có link và tên sheet Demo đã lưu trong Target.');
+  const checked=validatedGoogleSheetConfig_({url:cfg.source.url,sheetNames:[cfg.source.sheetName],exactTab:true});
+  if(checked.sheetNames.length!==1)throw Error('Target cần lưu đúng một tên tab nguồn Demo.');
+  const source={url:checked.url,sheetName:checked.sheetNames[0]},cfgKey=JSON.stringify(cfg);
+  const beforeIndex=ftfDemoIndex_(start.values[keys[0]]||[],start.values[keys[1]]||[],start.values[keys[2]]||[]);
+  const rows=await fetchGoogleSheetRows_(parseGoogleSheetId_(source.url),source.sheetName,{allowFallback:false});
+  if(!same())throw Error('Tháng hoặc tài khoản đã thay đổi. Chưa nhập Demo.');
+  const fresh=await ftfDemoFresh_(camp,keys);
+  if(!same())throw Error('Tháng hoặc tài khoản đã thay đổi. Chưa nhập Demo.');
+  if(cfgKey!==JSON.stringify(ftfDemoConfig_(fresh.camp)))throw Error('Nguồn hoặc cấu hình Demo đã đổi trong lúc đọc Sheet. Hãy bấm cập nhật lại.');
+  const index=ftfDemoIndex_(fresh.values[keys[0]]||[],fresh.values[keys[1]]||[],fresh.values[keys[2]]||[]);
+  if(beforeIndex.fingerprint!==index.fingerprint)throw Error('Danh sách hoặc phân công Shop Target đã đổi. Hãy bấm cập nhật lại.');
+  const parsed=FtfDemoModel.read(rows,index);
+  if(parsed.errors.length)throw Error('Có '+parsed.errors.length+' dòng lỗi trong Shop Target. Dòng '+parsed.errors.slice(0,5).map(e=>e.row).join(', ')+': '+parsed.errors[0].reason+' Chưa thay đổi kết quả Demo.');
+  const snapshot={version:1,environment:FTF_DEMO_ENV_,campaignId:camp.id,month,sourceKey:ftfDemoSourceKey_(source),mappingKey:index.fingerprint,updatedAt:new Date().toISOString(),rows:parsed.rows,stats:parsed.stats};
+  if(!same())throw Error('Màn hình đã thay đổi. Chưa nhập Demo.');
+  await saveCampaignData_([[ftfDemoDataKey_(camp),snapshot]]);
+  if(!same())return;
+  camp.ftfConfig=structuredClone(cfg);const current=campaigns.find(c=>c.id===camp.id&&c.month===month);if(current)current.ftfConfig=structuredClone(cfg);
+  const state={targets:fresh.values[keys[0]],index,indexError:'',snapshot,peopleByShop:new Map()};
+  for(const p of snapshot.rows){if(!state.peopleByShop.has(p.shopId))state.peopleByShop.set(p.shopId,[]);state.peopleByShop.get(p.shopId).push(p);}
+  ftfDemoStates_.set(camp.id,state);
+  const passed=FtfDemoModel.passed(snapshot.rows,cfg.demoMinPass).length;
+  await refresh(`Đã cập nhật riêng Demo từ sheet “${source.sheetName}” đã lưu trong Target · ${parsed.rows.length} HR khớp Shop · ${passed} HR pass · gộp ${parsed.stats.duplicateRows} dòng trùng.`,false);
+ }catch(e){if(same())await refresh(e.message||'Chưa xác nhận cập nhật Demo. Hãy tải lại để kiểm tra.',true);}
+ finally{finish();if(button.isConnected){button.disabled=false;button.textContent=oldText;}}
+}
+function renderFtfDemoUpdateControl_(){
+ const box=document.getElementById('ftfImportBox'),camp=ftfDemoCampaign_();if(!box||!camp||!ftfDemoMetricDefs_(camp).some(m=>m.key==='ftfHrPassDemo')||(!isAdmin()&&!isTrainer()))return;
+ const status=ftfDemoStatus_(camp),wrap=document.createElement('div');wrap.className='form-card';wrap.style.cssText='max-width:none;margin:12px 0;';
+ wrap.innerHTML=`<h3 style="margin:0 0 8px;">HR Pass Demo — Google Sheet</h3><p class="section-desc">Dùng link và tên sheet đã lưu tại Cài đặt → Target của chiến dịch.</p><p class="section-desc">${FtfDemoModel.minimum(ftfDemoConfig_(camp).demoMinPass)!==null?'Mỗi HR cần ≥ '+Number(ftfDemoConfig_(camp).demoMinPass)+' lần pass Demo. ':''}${escapeHtml(status.text)}</p>${isAdmin()?`<button type="button" class="secondary" id="ftfDemoProgressUpdate" ${monthLocked||!ftfDemoConfig_(camp).settingsSaved?'disabled':''}>↻ Cập nhật riêng HR Pass Demo</button><button type="button" class="secondary" id="ftfDemoOpenSettings" style="margin-left:8px;">Cài đặt X, cột và nguồn</button>`:''}<p id="ftfDemoProgressMsg" role="status" style="margin-bottom:0;"></p>`;box.appendChild(wrap);
+ wrap.querySelector('#ftfDemoProgressUpdate')?.addEventListener('click',e=>updateFtfDemoFromSheet_(camp,e.currentTarget,wrap.querySelector('#ftfDemoProgressMsg')));
+ wrap.querySelector('#ftfDemoOpenSettings')?.addEventListener('click',()=>{document.querySelector('nav.tabs [data-tab="settings"]')?.click();document.querySelector('#tab-settings [data-set="set-target"]')?.click();populateTargetCampaignSelect();const select=document.getElementById('targetCampaignSelect');select.value=camp.id;onTargetCampaignChange();});
+}
+function openFtfDemoShopDetail_(shop){
+ const own=isAdmin()||isTrainer()&&(shop.trainerId===session.trainerId||FtfDemoModel.region(shop.region)===FtfDemoModel.region(session.region));if(!own)return;
+ const old=document.getElementById('ftfShopDetailOverlay');old?.remove();const detail=ftfDemoShopPeople_(shop),ov=document.createElement('div');ov.id='ftfShopDetailOverlay';ov.className='modal-overlay';ov.style.cssText='position:fixed;inset:0;background:rgba(8,51,31,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
+ ov.innerHTML=`<div class="modal-box" style="background:#fff;border-radius:16px;max-width:780px;width:100%;max-height:86vh;overflow:auto;padding:20px;"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;"><h3 style="margin:0;">HR Pass Demo — ${escapeHtml(shop.shopName||shop.shopCode||'')}</h3><button type="button" id="ftfShopDetailClose" class="secondary">Đóng</button></div>${!detail?`<p role="status">${escapeHtml(ftfDemoStatus_().text)}</p>`:`<p class="section-desc">${escapeHtml(shop.region||'')} · ${escapeHtml(channelGroup(shop.channel))} · X = ${detail.x} lần/HR · ${detail.passed.length} người pass / ${detail.all.length} người khớp Sheet</p><div class="table-scroll"><table><thead><tr><th>Mã NV</th><th>Họ tên</th><th>Demo hoàn thành / Tổng</th></tr></thead><tbody>${detail.passed.length?detail.passed.map(p=>`<tr><td>${escapeHtml(p.code)}</td><td>${escapeHtml(p.name||'Chưa có tên trong nguồn')}</td><td>${p.completed}/${p.total}</td></tr>`).join(''):'<tr><td colspan="3">Chưa có đối tác đủ X lần pass Demo trong nguồn đã cập nhật.</td></tr>'}</tbody></table></div>`}</div>`;
+ document.body.appendChild(ov);ov.querySelector('#ftfShopDetailClose').onclick=()=>ov.remove();ov.onclick=e=>{if(e.target===ov)ov.remove();};
+}
+function ftfDemoShopMissing_(shop){
+ const keys=ftfDemoMetricDefs_().map(m=>m.key),missing=[];
+ if(keys.includes('ftfBaiTest')&&shop.testPass<shop.testTotal)missing.push('Test');
+ if(keys.includes('ftfKhaoSat')&&shop.surveyDone<shop.surveyTotal)missing.push('Khảo sát');
+ return missing;
+}
+const ftfDemoHasIncomplete_=()=>ftfDemoMetricDefs_().some(m=>m.key==='ftfBaiTest'||m.key==='ftfKhaoSat');
+function ftfDemoShopMetricHeaders_(){
+ const labels={ftfShop:'Training',ftfHr:'HR',ftfBaiTest:'Bài test',ftfTuVanAI:'Tư vấn AI',ftfKhaoSat:'Khảo sát',ftfHrPassDemo:'HR Pass Demo'};
+ return ftfDemoMetricDefs_().map(m=>`<th class="${m.key==='ftfShop'?'c-train':'c-num'}" data-ftf-metric="${m.key}">${labels[m.key]}</th>`).join('');
+}
+function ftfDemoShopMetricCells_(shop){
+ const button=(metric,value)=>`<td class="c-num" data-label="${({hr:'HR',test:'Bài test',ai:'Tư vấn AI',survey:'Khảo sát',demo:'HR Pass Demo'})[metric]}"><span class="ftf-cell-btn" data-shop-id="${escapeHtml(shop.id)}" data-metric="${metric}" style="cursor:pointer;text-decoration:underline dotted;">${value}</span></td>`;
+ const values={ftfHr:()=>button('hr',`${shop.hrActual}/${shop.hrTarget}`),ftfBaiTest:()=>button('test',`${shop.testPass}/${shop.testTotal}`),ftfTuVanAI:()=>button('ai',`${shop.aiDone}/${shop.aiTotal}`),ftfKhaoSat:()=>button('survey',`${shop.surveyDone}/${shop.surveyTotal}`),ftfHrPassDemo:()=>button('demo',ftfDemoShopCount_(shop)??'—'),ftfShop:()=>`<td class="c-train" data-label="Training"><span class="status-badge ${shop.status==='DONE'?'st-dangl':'st-tamoff'}">${shop.status==='DONE'?'Done':escapeHtml(shop.status==='PLAN'?'Plan':(shop.status||'Chưa'))}</span></td>`};
+ return ftfDemoMetricDefs_().map(m=>values[m.key]()).join('');
+}
+
 function ftfChannelStats_(shops, trainerIds){
-  const metrics = ['ftfShop','ftfHr','ftfBaiTest','ftfTuVanAI','ftfKhaoSat'];
+  const metrics = FTF_DEMO_METRICS_.map(m=>m.key);
   const out = {};
   metrics.forEach(mk=>{ out[mk] = { 'K.A':{a:0,t:0}, 'MWG':{a:0,t:0} }; });
   // Actual: đếm từ Danh sách SHOP FTF (đã check-in thực tế), theo đúng Kênh của từng shop
@@ -7737,8 +8073,8 @@ function ftfChannelStats_(shops, trainerIds){
   (trainerIds||[]).forEach(tid=>{
     const rec = trainerRecord(tid);
     metrics.forEach(mk=>{
-      const ka = rec[mk+'Target_KA']!==undefined ? rec[mk+'Target_KA'] : ftfTargetFallbackFromShopList_(tid, mk, 'K.A');
-      const mwg = rec[mk+'Target_MWG']!==undefined ? rec[mk+'Target_MWG'] : ftfTargetFallbackFromShopList_(tid, mk, 'MWG');
+      const ka = mk==='ftfHrPassDemo'?ftfDemoTargetValue_(ftfDemoCampaign_(),tid,mk,'KA'):(rec[mk+'Target_KA']!==undefined ? rec[mk+'Target_KA'] : ftfTargetFallbackFromShopList_(tid, mk, 'K.A'));
+      const mwg = mk==='ftfHrPassDemo'?ftfDemoTargetValue_(ftfDemoCampaign_(),tid,mk,'MWG'):(rec[mk+'Target_MWG']!==undefined ? rec[mk+'Target_MWG'] : ftfTargetFallbackFromShopList_(tid, mk, 'MWG'));
       out[mk]['K.A'].t += Math.round(ka)||0;
       out[mk]['MWG'].t += Math.round(mwg)||0;
     });
@@ -7747,6 +8083,7 @@ function ftfChannelStats_(shops, trainerIds){
   // Training thực tế thay đổi, target Khảo sát cũng đổi theo. VD: HR Training MWG = 159 -> target Khảo sát MWG = 159.
   out.ftfKhaoSat['K.A'].t = out.ftfHr['K.A'].a;
   out.ftfKhaoSat['MWG'].t = out.ftfHr['MWG'].a;
+  for(const channel of ['K.A','MWG'])out.ftfHrPassDemo[channel].a=ftfDemoCountFor_(trainerIds,channel);
   return out;
 }
 /* Thanh tiến độ ngang với MÀU CỐ ĐỊNH theo Kênh (không theo mức độ hoàn thành) — MWG vàng, K.A đỏ sậm */
@@ -7773,10 +8110,7 @@ function progressBarChannelHtml_(valueText, pctVal, color){
 function renderDoitacProgressTable(){
   const box = document.getElementById('doitacProgressTableBox');
   if(!box) return;
-  const metricDefs = [
-    {key:'ftfShop', label:'SL Shop'}, {key:'ftfHr', label:'SL HR'}, {key:'ftfBaiTest', label:'SL Bài Test'},
-    {key:'ftfTuVanAI', label:'Tư vấn AI'}, {key:'ftfKhaoSat', label:'SL Khảo sát'},
-  ];
+  const metricDefs = ftfDemoMetricDefs_();
   const activeChannels = doitacChannelFilter==='MWG' ? ['MWG'] : (doitacChannelFilter==='K.A' ? ['K.A'] : ['MWG','K.A']);
   const channelLabel = ch=> ch==='K.A' ? 'K.A' : 'MWG';
   const channelColor = ch=> ch==='K.A' ? '#8B1E1E' : CHANNEL_COLORS.MWG;
@@ -7796,9 +8130,10 @@ function renderDoitacProgressTable(){
     const trList = activeChannels.map((ch, idx)=>{
       const cells = metricDefs.map(m=>{
         const v = stats[m.key][ch];
+        if(v.a===null)return `<td data-ftf-metric="${m.key}" data-ftf-state="unavailable" style="padding:4px 6px;" title="${escapeHtml(ftfDemoStatus_().text)}">${progressBarChannelHtml_(`—/${v.t}·—%`,0,channelColor(ch))}</td>`;
         const pRaw = pct(v.a, v.t); const p = pRaw===null?0:pRaw;
         sumPct += p; cnt += 1;
-        return `<td style="padding:4px 6px;">${progressBarChannelHtml_(`${v.a}/${v.t}·${p}%`, p, channelColor(ch))}</td>`;
+        return `<td data-ftf-metric="${m.key}" data-ftf-state="ready" style="padding:4px 6px;">${progressBarChannelHtml_(`${v.a}/${v.t}·${p}%`, p, channelColor(ch))}</td>`;
       }).join('');
       const firstColHtml = idx===0 ? `<td rowspan="${activeChannels.length}" style="vertical-align:middle;"><strong>${label}</strong></td>${extraColHtml?`<td rowspan="${activeChannels.length}" style="vertical-align:middle;">${extraColHtml}</td>`:''}` : '';
       return `<tr>${firstColHtml}<td style="font-weight:700;color:${channelColor(ch)};white-space:nowrap;">${channelLabel(ch)}</td>${cells}</tr>`;
@@ -7994,7 +8329,7 @@ function renderFtfShopListBox(){
       <option value="chua" ${ftfShopFilterStatus_==='chua'?'selected':''}>Chưa Done</option>
     </select>
     <label style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-size:var(--cap);cursor:pointer;white-space:nowrap;">
-      <input type="checkbox" id="ftfShopFilterIncompleteChk" ${ftfShopFilterIncomplete_?'checked':''}> Chưa đủ (Test/KS)
+      <input type="checkbox" id="ftfShopFilterIncompleteChk" ${ftfShopFilterIncomplete_&&ftfDemoHasIncomplete_()?'checked':''} ${ftfDemoHasIncomplete_()?'':'disabled'}> Chưa đủ Test/KS đã chọn
     </label>
   </div>`;
 
@@ -8002,26 +8337,20 @@ function renderFtfShopListBox(){
     html += `<div class="empty">Không có Shop nào khớp bộ lọc.</div>`;
     box.innerHTML = html;
   } else {
-    html += `<table class="coaching-table ftf-shop-table" style="table-layout:fixed;width:100%;"><thead><tr><th class="c-kv">Khu vực</th><th class="c-shop">Shop</th><th class="c-kenh">Kênh</th><th class="c-size">Size</th><th class="c-train">Training</th><th class="c-num">HR</th><th class="c-num">Bài test</th><th class="c-num">Tư vấn AI</th><th class="c-num">Khảo sát</th><th class="c-chuadu">Chưa đủ</th><th class="c-note">Note</th></tr></thead><tbody>`;
+    html += `<div class="table-scroll"><table class="coaching-table ftf-shop-table" style="table-layout:fixed;width:100%;min-width:${600+ftfDemoMetricDefs_().length*80}px;"><thead><tr><th class="c-kv">Khu vực</th><th class="c-shop">Shop</th><th class="c-kenh">Kênh</th><th class="c-size">Size</th>${ftfDemoShopMetricHeaders_()}<th class="c-chuadu">Chưa đủ</th><th class="c-note">Note</th></tr></thead><tbody>`;
     pageList.forEach(s=>{
-      const missing = [];
-      if(s.testPass<s.testTotal) missing.push('Test');
-      if(s.surveyDone<s.surveyTotal) missing.push('Khảo sát');
+      const missing = ftfDemoShopMissing_(s);
       html += `<tr${s.closedNote?' style="background:var(--red-bg);"':''}>
-        <td class="c-kv" title="${escapeHtml(s.region||'')}">${escapeHtml(abbrRegionFtf_(s.region)||'—')}</td>
-        <td class="c-shop" title="${escapeHtml(s.shopName||s.shopCode||'')}">${s.shopName||s.shopCode}</td>
-        <td class="c-kenh">${channelGroup(s.channel)||'—'}</td>
-        <td class="c-size">${ftfShopSizeOf_(s)}</td>
-        <td class="c-train"><span class="status-badge ${s.status==='DONE'?'st-dangl':'st-tamoff'}">${s.status==='DONE'?'Done':(s.status==='PLAN'?'Plan':(s.status||'Chưa'))}</span></td>
-        <td class="c-num"><span class="ftf-cell-btn" data-shop-id="${s.id}" data-metric="hr" style="cursor:pointer;text-decoration:underline dotted;">${s.hrActual}/${s.hrTarget}</span></td>
-        <td class="c-num"><span class="ftf-cell-btn" data-shop-id="${s.id}" data-metric="test" style="cursor:pointer;text-decoration:underline dotted;">${s.testPass}/${s.testTotal}</span></td>
-        <td class="c-num"><span class="ftf-cell-btn" data-shop-id="${s.id}" data-metric="ai" style="cursor:pointer;text-decoration:underline dotted;">${s.aiDone}/${s.aiTotal}</span></td>
-        <td class="c-num"><span class="ftf-cell-btn" data-shop-id="${s.id}" data-metric="survey" style="cursor:pointer;text-decoration:underline dotted;">${s.surveyDone}/${s.surveyTotal}</span></td>
-        <td class="c-chuadu">${missing.length?`<span style="color:var(--red);font-weight:700;font-size:var(--tag);">⚠ ${missing.join(', ')}</span>`:'<span style="color:var(--green-ok);">✓ Đủ</span>'}</td>
-        <td class="c-note"><input type="text" class="ftf-shop-note-input" data-shop-id="${s.id}" value="${(s.closedNote||'').replace(/"/g,'&quot;')}" placeholder="VD: Shop đã đóng cửa" style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);" ${canEditNote?'':'disabled'}></td>
+        <td class="c-kv" data-label="Khu vực" title="${escapeHtml(s.region||'')}">${escapeHtml(abbrRegionFtf_(s.region)||'—')}</td>
+        <td class="c-shop" data-label="Shop" title="${escapeHtml(s.shopName||s.shopCode||'')}">${s.shopName||s.shopCode}</td>
+        <td class="c-kenh" data-label="Kênh">${channelGroup(s.channel)||'—'}</td>
+        <td class="c-size" data-label="Size">${ftfShopSizeOf_(s)}</td>
+        ${ftfDemoShopMetricCells_(s)}
+        <td class="c-chuadu" data-label="Chưa đủ">${missing.length?`<span style="color:var(--red);font-weight:700;font-size:var(--tag);">⚠ ${missing.join(', ')}</span>`:'<span style="color:var(--green-ok);">✓ Đủ</span>'}</td>
+        <td class="c-note" data-label="Note"><input type="text" class="ftf-shop-note-input" data-shop-id="${s.id}" value="${(s.closedNote||'').replace(/"/g,'&quot;')}" placeholder="VD: Shop đã đóng cửa" style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:var(--cap);" ${canEditNote?'':'disabled'}></td>
       </tr>`;
     });
-    html += `</tbody></table>`;
+    html += `</tbody></table></div>`;
     html += `<div class="pagination-bar" id="ftfShopPagination" style="margin-top:12px;"></div>`;
     box.innerHTML = html;
     box.querySelectorAll('.ftf-shop-note-input').forEach(inp=>{
@@ -8053,6 +8382,7 @@ function renderFtfShopListBox(){
 }
 const _ftfAttendeesCache={}, _ftfTestCache={};
 async function openFtfShopDetail_(shop, metric){
+  if(metric==='demo'){openFtfDemoShopDetail_(shop);return;}
   const titleMap={ hr:'HR tham gia', test:'Kết quả Test', ai:'Tư vấn mẫu AI', survey:'Khảo sát' };
   const old=document.getElementById('ftfShopDetailOverlay'); if(old) old.remove();
   const ov=document.createElement('div'); ov.id='ftfShopDetailOverlay'; ov.className='modal-overlay';
@@ -13039,9 +13369,15 @@ function renderKpiSimpleSubtypeBody_(catKey, subtype){
 async function renderKpiCategoryLegacyBody_(catKey){
   const activeSub = kpiSubtype[catKey] || CAMPAIGN_SUBTYPE_DEFAULT[catKey];
   if(catKey==='truyenthong') mediaActiveSubtype = activeSub;
-  const metrics = catKey==='truyenthong' ? metricsOf(catKey) : metricsOf(catKey, activeSub);
+  let metrics = catKey==='truyenthong' ? metricsOf(catKey) : metricsOf(catKey, activeSub);
   const container=document.getElementById('kpiSubBody-'+catKey);
   const campsHere = campaignsForGroupMonth(catKey).filter(c=>campaignSubtype(c)===activeSub);
+  if(catKey==='doitac'&&activeSub==='ftf'){
+    const month=currentMonth,owner=ftfDemoOwner_(),camp=campsHere[0];
+    if(camp){try{await loadFtfDemoState_(camp);}catch(e){ftfDemoStates_.set(camp.id,{indexError:e.message});}}
+    if(!container?.isConnected||month!==currentMonth||owner!==ftfDemoOwner_()||kpiSubtype[catKey]!==activeSub)return;
+    metrics=ftfDemoMetricDefs_(camp);
+  }
 
   let html = `<div class="campaign-context">`;
   html += campsHere.length
@@ -13056,11 +13392,11 @@ async function renderKpiCategoryLegacyBody_(catKey){
     const scopedShops = ftfShopList.filter(s=>scopedTrainerIds.has(s.trainerId));
     const chanStats = ftfChannelStats_(scopedShops, scopedTrainerIds);
     const chanRow = (chanKey, label, dotColor)=>{
-      html += `<div class="kpi-row cols-${metrics.length} ftf-summary-row">`;
+      html += `<div class="kpi-row cols-${metrics.length} ftf-summary-row" style="--ftf-cols:${metrics.length};">`;
       metrics.forEach(m=>{
         const s = chanStats[m.key] ? chanStats[m.key][chanKey] : {a:0,t:0};
-        const p = pct(s.a, s.t); const st = statusClass(p);
-        const fracText = (s.a===0 && s.t===0) ? '0 / target' : `${s.a} / ${s.t}`;
+        const p = s.a===null?null:pct(s.a, s.t); const st = statusClass(p);
+        const fracText = s.a===null?('— / '+s.t):((s.a===0 && s.t===0) ? '0 / target' : `${s.a} / ${s.t}`);
         html += `<div class="kpi-card"><div class="label"><span style="color:${dotColor};">●</span> ${m.label} — ${label}</div><div class="value ${st.status}">${p===null?'—':p+'%'}</div><div style="font-size:8pt;color:var(--muted);margin-top:-2px;margin-bottom:2px;">% hoàn thành</div><div class="frac">${fracText}</div></div>`;
       });
       html += `</div>`;
@@ -13229,6 +13565,7 @@ async function renderKpiCategoryLegacyBody_(catKey){
     }
     renderDoitacProgressTable();
     renderFtfImportBox();
+    renderFtfDemoUpdateControl_();
     renderFtfShopListBox();
   }
 
@@ -16255,6 +16592,7 @@ async function renderTargetTable(){
     return;
   }
   const sub = campaignSubtype(camp);
+  if(camp.group==='doitac'&&sub==='ftf'){await renderFtfDemoTarget_(camp);return;}
   if(camp.group==='noibo' && sub==='pgsmaster'){ await renderPgsMasterTarget_(camp); return; }
   if(document.getElementById('pgsMasterTargetBox')) document.getElementById('pgsMasterTargetBox').remove();
   if(camp.group==='truyenthong' && !camp.mediaTargetsCache){
@@ -16459,6 +16797,7 @@ document.getElementById('editTargetBtn').addEventListener('click', async ()=>{
   if(!isAdmin()) return;
   const camp = campaigns.find(c=>c.id===document.getElementById('targetCampaignSelect').value);
   if(!camp) return;
+  if(camp.group==='doitac'&&campaignSubtype(camp)==='ftf'){await editFtfDemoTarget_(camp);return;}
   const beforeLocked=camp.targetLocked;
   camp.targetLocked = false;
   if(!await dbSet('campaigns', campaigns)){camp.targetLocked=beforeLocked;frequencyTargetMessage_('Chưa mở khóa được Target. Vui lòng thử lại.',true);return;}
@@ -16469,6 +16808,7 @@ document.getElementById('saveTargetBtn').addEventListener('click', async ()=>{
   const campId = document.getElementById('targetCampaignSelect').value;
   const camp = campaigns.find(c=>c.id===campId);
   if(!camp) return;
+  if(camp.group==='doitac'&&campaignSubtype(camp)==='ftf'){await saveFtfDemoTarget_(camp);return;}
   if(isFrequencyNoiboCampaign_(camp)){await saveFrequencyTarget_(camp);return;}
   if(camp.group==='truyenthong'){
     // Chiến dịch Truyền thông: lưu Target RIÊNG theo đúng chiến dịch (mediaTargets:<campaignId>),
@@ -18416,6 +18756,7 @@ function mobileRecordHeaders_(table){
  const width=Math.max(0,...matrix.map(row=>row.length));return Array.from({length:width},(_,col)=>[...new Set(matrix.map(row=>row[col]?.textContent.replace(/\s+/g,' ').trim()).filter(Boolean))].join(' · '));
 }
 function mobileRecordType_(table){
+ if(table.matches('.ftf-shop-table')&&table.closest('#ftfShopListBox'))return null;
  const headers=mobileRecordHeaders_(table),keys=headers.map(h=>mobilePgKey_(h.split(' · ').at(-1)));
  const eventName=keys.findIndex(k=>['tenworkshop','tenhub','tenworkshophub','tenwshub'].includes(k));
  if(eventName>=0)return {kind:'event',name:eventName,headers,keys};
@@ -21680,12 +22021,60 @@ document.getElementById('logoutBtn').addEventListener('click',()=>pgsmPairViews_
 
 </script>
 <style id="ftf-export-style-20261028">.ftf-export-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0 0 12px;}.ftf-export-toolbar button{flex-shrink:0;}.ftf-export-toolbar span{font-size:11px;color:var(--muted);line-height:1.6;min-width:0;max-width:100%;overflow-wrap:anywhere;}@media(max-width:700px){.ftf-export-toolbar{gap:6px;}.ftf-export-toolbar button{font-size:11px!important;}.ftf-export-toolbar span{font-size:10px;width:100%;}}</style><script id="ftf-export-script-20261028">
+/* Check-in workbook enrichment: stable shop ID + unique exact full name.
+   The existing upstream workbook does not expose an employee-code column. */
+const FtfDemoExcelModel=(()=>{
+ const text=v=>String(v??'').normalize('NFC').trim();
+ const name=v=>text(v).replace(/\s+/g,' ').toLocaleLowerCase('vi-VN');
+ const area=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const key=(shop,region,person)=>JSON.stringify([text(shop),area(region),name(person)]);
+ function enrich(sheet,people,selectedShopCodes){
+  if(sheet?.name!=='Chi Tiet Check-in'||sheet.columns?.length!==14||sheet.columns[1]!=='Mã Shop'||sheet.columns[9]!=='Tên học viên'||sheet.columns[12]!=='Khảo sát'||!Array.isArray(sheet.rows))throw Error('Cấu trúc sheet Chi tiết check-in chưa hợp lệ.');
+  const selected=new Set(selectedShopCodes.map(text)),source=new Map(),checkins=new Map(),codes=new Set();
+  if(people!==null){
+   if(!Array.isArray(people))throw Error('Dữ liệu Demo đã lưu chưa hợp lệ. Hãy cập nhật Demo lại.');
+   for(const p of people){
+    if(!selected.has(text(p.shopId)))continue;
+    if(!Number.isSafeInteger(p.completed)||p.completed<0||!Number.isSafeInteger(p.total)||p.total<0||!text(p.code)||codes.has(text(p.code)))throw Error('Dữ liệu Demo đã lưu có số lần hoặc mã đối tác chưa hợp lệ. Hãy cập nhật Demo lại.');
+    codes.add(text(p.code));if(!name(p.name))continue;
+    const k=key(p.shopId,p.region,p.name);if(!source.has(k))source.set(k,[]);source.get(k).push(p);
+   }
+  }
+  for(const row of sheet.rows){
+   if(!Array.isArray(row)||row.length!==14||!selected.has(text(row[1])))throw Error('Dòng check-in không khớp danh sách Shop được phép xuất.');
+   const k=key(row[1],row[4],row[9]);checkins.set(k,(checkins.get(k)||0)+1);
+  }
+  const stats={matched:0,missing:0,ambiguous:0,notUpdated:0};
+  const rows=sheet.rows.map(row=>{
+   let value;
+   if(people===null){value='Chưa cập nhật';stats.notUpdated++;}
+   else{
+    const k=key(row[1],row[4],row[9]),matches=source.get(k)||[];
+    if(matches.length>1||matches.length===1&&checkins.get(k)!==1){value='Chưa xác định (trùng tên)';stats.ambiguous++;}
+    else if(matches.length===1){value=matches[0].completed+'/'+matches[0].total;stats.matched++;}
+    else{value='Chưa có dữ liệu';stats.missing++;}
+   }
+   return [...row.slice(0,12),value,...row.slice(12)];
+  });
+  return {sheet:{name:sheet.name,columns:[...sheet.columns.slice(0,12),'Trạng thái Thao tác Demo',...sheet.columns.slice(12)],rows},stats};
+ }
+ return {enrich};
+})();
+if(typeof module!=='undefined'&&module.exports)module.exports=FtfDemoExcelModel;
+
+function ftfDemoExcelPeople_(camp){
+ const cfg=ftfDemoConfig_(camp),state=ftfDemoStates_.get(camp.id),data=state?.snapshot;
+ if(!cfg.settingsSaved||!cfg.source?.url||!cfg.source?.sheetName||!state?.index||!data)return null;
+ if(data.version!==1||data.environment!==FTF_DEMO_ENV_||data.campaignId!==camp.id||data.month!==camp.month||!Array.isArray(data.rows)||data.sourceKey!==ftfDemoSourceKey_(cfg.source)||data.mappingKey!==state.index.fingerprint)return null;
+ return data.rows;
+}
+
 let ftfExcelExportBusy_=false;
 function ftfExportFilter_(list){
  if(ftfShopFilterTrainer_)list=list.filter(s=>s.trainerId===ftfShopFilterTrainer_);
  if(ftfShopFilterStatus_==='done')list=list.filter(s=>s.status==='DONE');else if(ftfShopFilterStatus_==='chua')list=list.filter(s=>s.status!=='DONE');
  if(ftfShopFilterChannel_)list=list.filter(s=>channelGroup(s.channel)===ftfShopFilterChannel_);
- if(ftfShopFilterIncomplete_)list=list.filter(s=>s.testPass<s.testTotal||s.surveyDone<s.surveyTotal);return list;
+ if(ftfShopFilterIncomplete_&&ftfDemoHasIncomplete_())list=list.filter(s=>ftfDemoShopMissing_(s).length>0);return list;
 }
 function ftfExportVisibleShops_(){
  const trainers=isTrainer()?config.trainers.filter(t=>t.id===session.trainerId):visibleTrainers(),ids=new Set(trainers.map(t=>t.id));
@@ -21707,11 +22096,14 @@ async function exportFtfShopExcel_(){
   if(!current())return;
   if(out.campaignKey!==String(camp.id)||out.month!==month||String(out.campaignId)!==String(camp.otrId)||out.source!=='otraining-f2f-download-all'||out.shopCount!==shopIds.length||!Array.isArray(out.sheets)||out.sheets.length!==2)throw Error('Dữ liệu xuất chưa khớp chiến dịch hoặc số shop đang chọn.');
   if(typeof XLSX==='undefined')throw Error('Thư viện Excel chưa sẵn sàng. Hãy tải lại trang.');const wb=XLSX.utils.book_new(),expected=[['Tong Hop F2F',15],['Chi Tiet Check-in',14]];
+  await loadFtfDemoState_(camp);if(!current())return;
+  const demoPeople=ftfDemoExcelPeople_(camp),demoShopCodes=shops.map(s=>String(s.shopCode||s.shopIdOtr||''));let demoStats=null;
   out.sheets.forEach((sheet,i)=>{if(sheet.name!==expected[i][0]||!Array.isArray(sheet.columns)||sheet.columns.length!==expected[i][1]||!Array.isArray(sheet.rows)||sheet.rows.some(r=>!Array.isArray(r)||r.length!==sheet.columns.length||r.some(v=>v!==null&&!['string','number'].includes(typeof v))))throw Error('Cấu trúc hai sheet Excel chưa hợp lệ.');
-   const ws=XLSX.utils.aoa_to_sheet([sheet.columns,...sheet.rows]);ws['!cols']=(i===0?[14,48,20,18,22,23,36,15,22,29,21,29,15,15,18]:[32,14,20,18,22,23,48,29,29,30,25,18,18,18]).map(wch=>({wch}));ws['!rows']=[{hpt:27}];ws['!autofilter']={ref:XLSX.utils.encode_range({r:0,c:0},{r:sheet.rows.length,c:sheet.columns.length-1})};XLSX.utils.book_append_sheet(wb,ws,sheet.name);
+   let exported=sheet;if(i===1){const enriched=FtfDemoExcelModel.enrich(sheet,demoPeople,demoShopCodes);exported=enriched.sheet;demoStats=enriched.stats;}
+   const ws=XLSX.utils.aoa_to_sheet([exported.columns,...exported.rows]);ws['!cols']=(i===0?[14,48,20,18,22,23,36,15,22,29,21,29,15,15,18]:[32,14,20,18,22,23,48,29,29,30,25,18,29,18,18]).map(wch=>({wch}));ws['!rows']=[{hpt:27}];ws['!autofilter']={ref:XLSX.utils.encode_range({r:0,c:0},{r:exported.rows.length,c:exported.columns.length-1})};if(i===1)for(let row=2;row<=exported.rows.length+1;row++){if(ws['M'+row])ws['M'+row].z='@';}XLSX.utils.book_append_sheet(wb,ws,exported.name);
   });
   wb.Props={Title:'Báo cáo FTF Đối tác',Subject:camp.name+' · '+month,Author:'Training Central'};if(!current())return;XLSX.writeFile(wb,'BaoCao_FTF_'+String(camp.otrId).replace(/[^A-Za-z0-9_-]/g,'')+'_'+month+'.xlsx');
-  const warning=out.warnings?.missingNames?' · '+out.warnings.missingNames+' lượt chưa có tên trong nguồn, hiển thị bằng ID.':'';ftfExportMessage_('Đã xuất '+out.shopCount+' shop và '+out.attendeeCount+' học viên · 2 sheet theo bộ lọc.'+warning);
+  const warning=out.warnings?.missingNames?' · '+out.warnings.missingNames+' lượt chưa có tên trong nguồn, hiển thị bằng ID.':'';const demoWarning=demoStats&&(demoStats.missing||demoStats.ambiguous||demoStats.notUpdated)?` · Demo: ${demoStats.missing+demoStats.notUpdated} dòng chưa có dữ liệu, ${demoStats.ambiguous} dòng trùng tên cần đối soát.`:'';ftfExportMessage_('Đã xuất '+out.shopCount+' shop và '+out.attendeeCount+' học viên · 2 sheet theo bộ lọc.'+warning+demoWarning);
  }catch(error){if(same())ftfExportMessage_(error.message||'Chưa xuất được Excel FTF.',true);}
  finally{ftfExcelExportBusy_=false;const button=document.getElementById('ftfShopExportExcelBtn');if(button){button.disabled=!ftfExportVisibleShops_().length;button.textContent='⇩ Xuất Excel (2 sheet)';}if(same()&&!current())ftfExportMessage_('Bộ lọc hoặc danh sách shop đã thay đổi. Hãy bấm xuất lại theo bảng hiện tại.',true);}
 }

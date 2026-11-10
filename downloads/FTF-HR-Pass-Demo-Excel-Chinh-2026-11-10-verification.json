@@ -1,0 +1,249 @@
+{
+  "build": {
+    "base_main_commit": "1ebf9c71c117ca37ae80cbbb1b81e892bfd9b2d5",
+    "base_main_blob": "21306b7ce9be4ead057af0223656219578d9efaf",
+    "html_blob": "bb17829291ee43f2d3c6e19962cc48f64c0fe623",
+    "sha256": "38030df160f081b5d0c617910150154d7cae76bbbbbac00341c55c11be83414a",
+    "bytes": 2764769,
+    "patches": 28,
+    "patch_groups": [
+      18,
+      7,
+      3
+    ],
+    "changed_inline_scripts": [
+      1,
+      12
+    ],
+    "all_other_scripts_unchanged": true,
+    "reverse_patch_exact": true,
+    "native_main_auth_logo_endpoints_preserved": true,
+    "raw_test_snapshot_copied": false,
+    "backend_changes": false,
+    "business_data_writes": 0
+  },
+  "model": [
+    {
+      "name": "known_zero_and_variable_denominator_are_text",
+      "passed": true
+    },
+    {
+      "name": "unicode_case_whitespace_match_but_accents_are_not_guessed",
+      "passed": true
+    },
+    {
+      "name": "same_name_different_shop_keeps_distinct_counts",
+      "passed": true
+    },
+    {
+      "name": "ambiguous_source_name_is_not_assigned_to_a_person",
+      "passed": true
+    },
+    {
+      "name": "ambiguous_checkin_name_is_not_reused_for_two_people",
+      "passed": true
+    },
+    {
+      "name": "missing_snapshot_and_missing_person_are_not_fake_zero",
+      "passed": true
+    },
+    {
+      "name": "wrong_shop_or_region_never_matches",
+      "passed": true
+    },
+    {
+      "name": "invalid_saved_ratio_and_duplicate_codes_are_rejected",
+      "passed": true
+    },
+    {
+      "name": "empty_detail_has_a_header_without_invented_rows",
+      "passed": true
+    }
+  ],
+  "browser": [
+    {
+      "width": 1440,
+      "environment": "Dashboard",
+      "passed": true,
+      "real_xlsx_download_readback": true,
+      "exactly_two_sheets": true,
+      "summary_sheet_unchanged": true,
+      "detail_demo_column_before_survey": true,
+      "known_pass_zero_and_variable_total_as_text": true,
+      "score_numeric_and_formula_like_names_safe": true,
+      "leading_zero_shop_codes_preserved": true,
+      "unknown_snapshot_not_fake_zero": true,
+      "all_pages_and_filters": true,
+      "trainer_own_shops": true,
+      "errors_and_stale_context_download_nothing": true,
+      "no_google_refresh_on_export": true,
+      "read_only": true,
+      "real_business_writes": 0
+    },
+    {
+      "width": 390,
+      "environment": "Dashboard",
+      "passed": true,
+      "real_xlsx_download_readback": true,
+      "exactly_two_sheets": true,
+      "summary_sheet_unchanged": true,
+      "detail_demo_column_before_survey": true,
+      "known_pass_zero_and_variable_total_as_text": true,
+      "score_numeric_and_formula_like_names_safe": true,
+      "leading_zero_shop_codes_preserved": true,
+      "unknown_snapshot_not_fake_zero": true,
+      "all_pages_and_filters": true,
+      "trainer_own_shops": true,
+      "errors_and_stale_context_download_nothing": true,
+      "no_google_refresh_on_export": true,
+      "read_only": true,
+      "real_business_writes": 0
+    },
+    {
+      "width": 320,
+      "environment": "Dashboard",
+      "passed": true,
+      "real_xlsx_download_readback": true,
+      "exactly_two_sheets": true,
+      "summary_sheet_unchanged": true,
+      "detail_demo_column_before_survey": true,
+      "known_pass_zero_and_variable_total_as_text": true,
+      "score_numeric_and_formula_like_names_safe": true,
+      "leading_zero_shop_codes_preserved": true,
+      "unknown_snapshot_not_fake_zero": true,
+      "all_pages_and_filters": true,
+      "trainer_own_shops": true,
+      "errors_and_stale_context_download_nothing": true,
+      "no_google_refresh_on_export": true,
+      "read_only": true,
+      "real_business_writes": 0
+    }
+  ],
+  "demo_settings_progress_regression": [
+    {
+      "width": 1440,
+      "passed": true,
+      "prefilled_exact_tab": true,
+      "six_metrics_with_ka_mwg_targets": true,
+      "region_target_totals": true,
+      "selected_four_columns_target_progress_shops": true,
+      "hidden_target_values_preserved": true,
+      "persists_after_reload": true,
+      "source_save_does_not_import": true,
+      "source_read_and_unique_matching": true,
+      "ratio_minimum_and_recount": true,
+      "passing_partner_details": true,
+      "escaped_sheet_names": true,
+      "source_failure_retains_snapshot": true,
+      "failed_settings_save_preserves_config": true,
+      "locked_month_blocks_import": true,
+      "stale_account_blocks_import": true,
+      "trainer_scope": true,
+      "no_hr_or_other_ftf_results_changed": true,
+      "no_overflow": true,
+      "real_business_writes": 0,
+      "no_test_demo_key_written": true
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "prefilled_exact_tab": true,
+      "six_metrics_with_ka_mwg_targets": true,
+      "region_target_totals": true,
+      "selected_four_columns_target_progress_shops": true,
+      "hidden_target_values_preserved": true,
+      "persists_after_reload": true,
+      "source_save_does_not_import": true,
+      "source_read_and_unique_matching": true,
+      "ratio_minimum_and_recount": true,
+      "passing_partner_details": true,
+      "escaped_sheet_names": true,
+      "source_failure_retains_snapshot": true,
+      "failed_settings_save_preserves_config": true,
+      "locked_month_blocks_import": true,
+      "stale_account_blocks_import": true,
+      "trainer_scope": true,
+      "no_hr_or_other_ftf_results_changed": true,
+      "no_overflow": true,
+      "real_business_writes": 0,
+      "no_test_demo_key_written": true
+    },
+    {
+      "width": 320,
+      "passed": true,
+      "prefilled_exact_tab": true,
+      "six_metrics_with_ka_mwg_targets": true,
+      "region_target_totals": true,
+      "selected_four_columns_target_progress_shops": true,
+      "hidden_target_values_preserved": true,
+      "persists_after_reload": true,
+      "source_save_does_not_import": true,
+      "source_read_and_unique_matching": true,
+      "ratio_minimum_and_recount": true,
+      "passing_partner_details": true,
+      "escaped_sheet_names": true,
+      "source_failure_retains_snapshot": true,
+      "failed_settings_save_preserves_config": true,
+      "locked_month_blocks_import": true,
+      "stale_account_blocks_import": true,
+      "trainer_scope": true,
+      "no_hr_or_other_ftf_results_changed": true,
+      "no_overflow": true,
+      "real_business_writes": 0,
+      "no_test_demo_key_written": true
+    }
+  ],
+  "latest_saved_source_and_survey_last": [
+    {
+      "width": 1440,
+      "passed": true,
+      "survey_is_final_selected_metric_column": true,
+      "unknown_and_known_demo_use_existing_progress_bar": true,
+      "unavailable_never_faked_as_zero": true,
+      "latest_saved_target_url_tab_and_x_used": true,
+      "unsaved_draft_ignored": true,
+      "feedback_in_clicked_section": true,
+      "source_change_during_read_blocks_write": true,
+      "source_failure_preserves_confirmed_snapshot": true,
+      "only_demo_snapshot_written": true,
+      "other_ftf_hr_targets_campaigns_unchanged": true,
+      "no_overflow": true,
+      "real_business_writes": 0,
+      "no_test_snapshot_written": true
+    },
+    {
+      "width": 390,
+      "passed": true,
+      "survey_is_final_selected_metric_column": true,
+      "unknown_and_known_demo_use_existing_progress_bar": true,
+      "unavailable_never_faked_as_zero": true,
+      "latest_saved_target_url_tab_and_x_used": true,
+      "unsaved_draft_ignored": true,
+      "feedback_in_clicked_section": true,
+      "source_change_during_read_blocks_write": true,
+      "source_failure_preserves_confirmed_snapshot": true,
+      "only_demo_snapshot_written": true,
+      "other_ftf_hr_targets_campaigns_unchanged": true,
+      "no_overflow": true,
+      "real_business_writes": 0,
+      "no_test_snapshot_written": true
+    },
+    {
+      "width": 320,
+      "passed": true,
+      "survey_is_final_selected_metric_column": true,
+      "unknown_and_known_demo_use_existing_progress_bar": true,
+      "unavailable_never_faked_as_zero": true,
+      "latest_saved_target_url_tab_and_x_used": true,
+      "unsaved_draft_ignored": true,
+      "feedback_in_clicked_section": true,
+      "source_change_during_read_blocks_write": true,
+      "source_failure_preserves_confirmed_snapshot": true,
+      "only_demo_snapshot_written": true,
+      "other_ftf_hr_targets_campaigns_unchanged": true,
+      "no_overflow": true,
+      "real_business_writes": 0,
+      "no_test_snapshot_written": true
+    }
+  ]
+}
