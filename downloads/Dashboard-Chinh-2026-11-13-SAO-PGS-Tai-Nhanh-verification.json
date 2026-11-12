@@ -1,0 +1,18 @@
+{
+  "version": "2026-11-13",
+  "passed": true,
+  "viewport_widths": [
+    1440,
+    390,
+    320
+  ],
+  "admin_and_trainer_views_verified": true,
+  "staged_loading_and_manual_refresh_verified": true,
+  "account_and_month_isolation_verified": true,
+  "filters_history_excel_verified": true,
+  "existing_hr_charts_and_data_rules_preserved": true,
+  "native_main_integrations_preserved": true,
+  "no_page_overflow_or_javascript_errors": true,
+  "automated_browser_tests_use_synthetic_data": true,
+  "no_business_data_written_for_testing": true
+}

@@ -1,0 +1,30 @@
+{
+  "version": "2026-11-13-sao-pgs-fast-load",
+  "repository": "CentralTraining/Dashboard",
+  "files": [
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-13-SAO-PGS-Tai-Nhanh-README.txt",
+      "bytes": 420,
+      "sha256": "ab49f0991852ad6cee851e1b9c9d24237714844d354ef20106ab419f56b68b23",
+      "git_blob_sha": "13cc7d63c859ae1f7d0d7dc9fa9ae51b37f41834"
+    },
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-13-SAO-PGS-Tai-Nhanh-verification.json",
+      "bytes": 543,
+      "sha256": "aa852a2ace6189aa673ba796402e083a14fd33693fe0826e1b2bf3221206284a",
+      "git_blob_sha": "5cca5ea41a869eab900897dad5b6e67914a49203"
+    },
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-13-SAO-PGS-Tai-Nhanh.html",
+      "bytes": 2828314,
+      "sha256": "d10d14de35accac59ab4b34ae052be1068529cdd7b5084ee33883de06d87e287",
+      "git_blob_sha": "308883073c1b3afe9f09f5f9993949a106db065c"
+    },
+    {
+      "path": "index.html",
+      "bytes": 2828314,
+      "sha256": "d10d14de35accac59ab4b34ae052be1068529cdd7b5084ee33883de06d87e287",
+      "git_blob_sha": "308883073c1b3afe9f09f5f9993949a106db065c"
+    }
+  ]
+}
