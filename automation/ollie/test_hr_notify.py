@@ -8,6 +8,7 @@ import hr_notify as h
 from tracker import DeliveryError
 CONFIG={'credentials':{'appKey':'SYNTHETIC_ROBOT','appSecret':'SYNTHETIC_SECRET'},'state':{'robot_code':'SYNTHETIC_ROBOT','leader_staff_id':'SYNTHETIC_LEADER'},'source':{'url':h.BASE,'anon_key':'SYNTHETIC_PUBLIC'}}
 NOTICE={'kind':'hr_data_updated','version':1,'runId':'11111111-1111-4111-8111-111111111111','claimId':'22222222-2222-4222-8222-222222222222','month':'2026-11','completedAt':'2026-11-08T17:01:00Z','noticeDay':'2026-11-09'}
+REPORT={**NOTICE,'kind':'hr_data_sync_report','version':2,'runStatus':'succeeded','coreVerified':True,'historyVerified':True,'verifiedSources':['assign','stars','on','off','promotions'],'historyRecords':1080}
 class Api:
  def __init__(self,notice=NOTICE):self.notice=copy.deepcopy(notice);self.calls=[];self.ack_fail=0;self.start_fail=False;self.unknown=0;self.rejected=0
  def call(self,action,**extra):
@@ -68,4 +69,23 @@ class NoticeTests(unittest.TestCase):
   s=h.DingTalkSender(CONFIG['credentials'],{'robot_code':CONFIG['state']['robot_code']});s.token='SYNTHETIC_TOKEN';s.token_until=10**12;r=Mock(ok=True,status_code=200);r.json.return_value={'processQueryKey':'SYNTHETIC_RECEIPT'}
   with patch('tracker.requests.post',return_value=r) as post:self.assertEqual(s.send('dm','SYNTHETIC_LEADER',h.message(NOTICE)),'SYNTHETIC_RECEIPT')
   a,k=post.call_args;self.assertTrue(a[0].endswith('/oToMessages/batchSend'));self.assertEqual(k['json']['userIds'],['SYNTHETIC_LEADER']);self.assertNotIn('openConversationId',k['json'])
+ def test_five_source_success_requires_extra_proof(self):
+  text=h.message(REPORT);self.assertIn('đủ 5 tab',text);self.assertIn('LÊN SAO',text)
+  api=Api(REPORT);s=self.sender();r=h.run(CONFIG,True,api,s);self.assertEqual(r['accepted'],1);self.assertEqual(s.send.call_args.args[:2],('dm','SYNTHETIC_LEADER'))
+ def test_core_only_is_partial_not_five_source_success(self):
+  notice={**REPORT,'historyVerified':False,'historyRecords':None,'verifiedSources':['assign','stars','on','off']};text=h.message(notice)
+  self.assertIn('4 nguồn',text);self.assertIn('LÊN SAO chưa',text);self.assertNotIn('đủ 5 tab',text);self.assertNotIn('mới thành công',text)
+ def test_failed_and_uncertain_report_no_false_success(self):
+  for status in ['failed','uncertain']:
+   notice={**REPORT,'runStatus':status,'coreVerified':False,'historyVerified':False,'historyRecords':None,'verifiedSources':[]};text=h.message(notice)
+   self.assertNotIn('thành công',text);self.assertIn('Data → Nhân sự → Nội bộ',text)
+   s=self.sender();self.assertEqual(h.run(CONFIG,True,Api(notice),s)['accepted'],1);self.assertEqual(s.send.call_args.args[0],'dm')
+ def test_inconsistent_extra_evidence_never_sends(self):
+  cases=[{'coreVerified':False},{'historyVerified':'true'},{'historyRecords':0},{'historyRecords':True},{'historyRecords':60001},{'verifiedSources':['promotions']},{'runStatus':'running'}]
+  for change in cases:
+   s=self.sender()
+   with self.assertRaises(h.NoticeError):h.run(CONFIG,True,Api({**REPORT,**change}),s)
+   s.send.assert_not_called()
+ def test_unknown_five_source_notice_is_never_resent(self):
+  s=self.sender();s.send.side_effect=DeliveryError('unknown',ambiguous=True);r=h.run(CONFIG,True,Api(REPORT),s);self.assertEqual(r['unknown'],1);self.assertEqual(s.send.call_count,1)
 if __name__=='__main__':unittest.main()

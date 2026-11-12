@@ -90,10 +90,45 @@ class NoticeApi:
             raise NoticeError('notice_state_unconfirmed') from None
 
 
+def sync_result(notice):
+    """Only render status facts supplied by the server's verified run proof."""
+    if notice['kind'] == 'hr_data_updated' and notice['version'] == 1:
+        return ('Đã cập nhật Data HR mới thành công!',
+                'Đã đồng bộ Gán shop PGs, Sao PGs, ON và OFF vào Dashboard chính.')
+    if notice['kind'] != 'hr_data_sync_report' or notice['version'] != 2:
+        raise ValueError()
+    status, core, history = notice['runStatus'], notice['coreVerified'], notice['historyVerified']
+    if type(core) is not bool or type(history) is not bool:
+        raise ValueError()
+    expected = ['assign', 'stars', 'on', 'off'] if core else []
+    if history:
+        expected += ['promotions']
+    if notice['verifiedSources'] != expected:
+        raise ValueError()
+    count = notice['historyRecords']
+    if history and (not core or type(count) is not int or not 1 <= count <= 60000):
+        raise ValueError()
+    if not history and count is not None:
+        raise ValueError()
+    if status == 'succeeded' and core:
+        if history:
+            return ('Đã cập nhật Data HR mới thành công!',
+                    'Đã đồng bộ đủ 5 tab: DS GÁN SHOP PGS, SAO PGS, ON, OFF và LÊN SAO.\n'
+                    'Data nhân sự và nguồn lộ trình lên sao đã được xác nhận cập nhật.')
+        return ('Data HR đã cập nhật 4 nguồn; LÊN SAO chưa được xác nhận.',
+                'Gán shop PGs, Sao PGs, ON và OFF đã nhập vào Dashboard.\n'
+                'Chưa có xác nhận đồng bộ LÊN SAO. Vui lòng kiểm tra tại Data → Nhân sự → Nội bộ.')
+    if status not in ('failed', 'uncertain') or core or history:
+        raise ValueError()
+    title = ('Cập nhật Data HR chưa hoàn tất.' if status == 'failed'
+             else 'Lượt cập nhật Data HR cần đối soát kết quả.')
+    return (title, 'Chưa có đủ xác nhận đồng bộ 5 tab và nhập Data nhân sự.\n'
+            'Vui lòng kiểm tra lượt gần nhất tại Data → Nhân sự → Nội bộ; không tự chạy lại lượt chưa rõ kết quả.')
+
+
 def message(notice):
     try:
-        if notice['kind'] != 'hr_data_updated' or notice['version'] != 1:
-            raise ValueError()
+        title, detail = sync_result(notice)
         if not UUID.fullmatch(notice['runId']) or not UUID.fullmatch(notice['claimId']):
             raise ValueError()
         if not re.fullmatch(r'20\d{2}-(0[1-9]|1[0-2])', notice['month']):
@@ -103,9 +138,8 @@ def message(notice):
             raise ValueError()
         shown = date.astimezone(VN).strftime('%H:%M ngày %d/%m/%Y')
         period = '/'.join(reversed(notice['month'].split('-')))
-        return ('Đã cập nhật Data HR mới thành công!\n'
-                f'Kỳ dữ liệu: {period}. Hoàn tất lúc {shown}.\n'
-                'Đã đồng bộ Gán shop PGs, Sao PGs, ON và OFF vào Dashboard chính.')
+        return (title + '\n'
+                f'Kỳ dữ liệu: {period}. Ghi nhận kết quả lúc {shown}.\n' + detail)
     except (ValueError, KeyError, TypeError):
         raise NoticeError('notice_proof_invalid') from None
 
@@ -177,3 +211,4 @@ def main():
 
 if __name__ == '__main__':
     raise SystemExit(main())
+
