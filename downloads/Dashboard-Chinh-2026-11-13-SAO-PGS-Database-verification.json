@@ -1,0 +1,16 @@
+{
+  "version": "2026-11-13",
+  "passed": true,
+  "viewport_widths": [
+    1440,
+    390,
+    320
+  ],
+  "database_view_verified": true,
+  "manual_refresh_verified": true,
+  "unknown_data_not_zero": true,
+  "existing_filters_history_excel_rules_preserved": true,
+  "existing_hr_status_rules_preserved": true,
+  "no_page_overflow_or_javascript_errors": true,
+  "browser_tests_use_synthetic_data": true
+}

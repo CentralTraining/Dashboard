@@ -1,0 +1,30 @@
+{
+  "version": "2026-11-13-sao-pgs-database",
+  "repository": "CentralTraining/Dashboard",
+  "files": [
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-13-SAO-PGS-Database-README.txt",
+      "bytes": 382,
+      "sha256": "cf7deae91436168e991f647cd21b72b0924540ad1ce26affd5a5a6d430150ffa",
+      "git_blob_sha": "bebec21410fc9fe9a415cade4d18ccf28f5adb08"
+    },
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-13-SAO-PGS-Database-verification.json",
+      "bytes": 402,
+      "sha256": "c2886a3c0bacc6767279d2dd0f12c952df8035229db5d1eab5a9aba56aca3cfe",
+      "git_blob_sha": "5c9bc4b44cda46fc371730c019f5ed9b409ac42a"
+    },
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-13-SAO-PGS-Database.html",
+      "bytes": 2828744,
+      "sha256": "672c67df6d0a4358eddee2381f5d3ba329567b41521ca8b9c3021e4668968d0f",
+      "git_blob_sha": "6ca491d5518194e73e970aca50b076b93f58f51f"
+    },
+    {
+      "path": "index.html",
+      "bytes": 2828744,
+      "sha256": "672c67df6d0a4358eddee2381f5d3ba329567b41521ca8b9c3021e4668968d0f",
+      "git_blob_sha": "6ca491d5518194e73e970aca50b076b93f58f51f"
+    }
+  ]
+}
