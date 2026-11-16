@@ -1,0 +1,27 @@
+{
+  "version": "2026-11-16",
+  "environment": "Main",
+  "passed": true,
+  "roles": [
+    "admin",
+    "trainer",
+    "viewer"
+  ],
+  "viewport_widths": [
+    1440,
+    390,
+    320
+  ],
+  "trainer_demo_refresh_enabled": true,
+  "settings_remain_admin_only": true,
+  "latest_saved_source_used": true,
+  "existing_region_view_preserved": true,
+  "month_lock_and_freshness_checks_preserved": true,
+  "failed_fetch_or_save_retains_snapshot": true,
+  "only_demo_snapshot_written_by_refresh": true,
+  "targets_hr_and_other_ftf_rules_preserved": true,
+  "native_main_auth_logo_and_endpoints_preserved": true,
+  "no_page_overflow_or_javascript_errors": true,
+  "browser_tests_use_synthetic_data": true,
+  "no_actual_business_writes_for_testing": true
+}

@@ -1,0 +1,30 @@
+{
+  "version": "2026-11-16",
+  "repository": "CentralTraining/Dashboard",
+  "files": [
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-16-FTF-Trainer-Cap-Nhat-Demo-README.txt",
+      "bytes": 725,
+      "sha256": "b3b772d923cda176b27720eb4a630cff0ca857579a70e98da752c862091a7ce5",
+      "git_blob_sha": "ac0d649470c66c185119e41857eedffe822b727c"
+    },
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-16-FTF-Trainer-Cap-Nhat-Demo-verification.json",
+      "bytes": 745,
+      "sha256": "83ced2bd539e955d2ed685208dfdb7620236f5b85982000f0da2304d834abacc",
+      "git_blob_sha": "01790041117b2f31fe30c389a56fd8269963465f"
+    },
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-16-FTF-Trainer-Cap-Nhat-Demo.html",
+      "bytes": 2828760,
+      "sha256": "e18a6929721370a881d0344329bb6063aaaf028e29964a0144488a8aed20b1bc",
+      "git_blob_sha": "d40193972ef2170faddc70bdbd4cb36dc73b1b32"
+    },
+    {
+      "path": "index.html",
+      "bytes": 2828760,
+      "sha256": "e18a6929721370a881d0344329bb6063aaaf028e29964a0144488a8aed20b1bc",
+      "git_blob_sha": "d40193972ef2170faddc70bdbd4cb36dc73b1b32"
+    }
+  ]
+}

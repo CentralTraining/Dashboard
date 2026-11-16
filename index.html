@@ -7985,7 +7985,7 @@ async function saveFtfDemoTarget_(camp){
  }catch(e){ftfDemoMessage_(e.message||'Chưa xác nhận lưu Target. Hãy tải lại để kiểm tra.',true);}finally{finish();if(button.isConnected)button.disabled=false;}
 }
 async function updateFtfDemoFromSheet_(camp,button,message){
- if(!isAdmin()||monthLocked||button.disabled)return;
+ if((!isAdmin()&&!isTrainer())||monthLocked||button.disabled)return;
  const owner=ftfDemoOwner_(),month=currentMonth,messageId=message?.id;
  const contextCurrent=()=>owner===ftfDemoOwner_()&&month===currentMonth&&camp.month===month;
  const same=()=>button.isConnected&&contextCurrent();
@@ -8037,7 +8037,7 @@ async function updateFtfDemoFromSheet_(camp,button,message){
 function renderFtfDemoUpdateControl_(){
  const box=document.getElementById('ftfImportBox'),camp=ftfDemoCampaign_();if(!box||!camp||!ftfDemoMetricDefs_(camp).some(m=>m.key==='ftfHrPassDemo')||(!isAdmin()&&!isTrainer()))return;
  const status=ftfDemoStatus_(camp),wrap=document.createElement('div');wrap.className='form-card';wrap.style.cssText='max-width:none;margin:12px 0;';
- wrap.innerHTML=`<h3 style="margin:0 0 8px;">HR Pass Demo — Google Sheet</h3><p class="section-desc">Dùng link và tên sheet đã lưu tại Cài đặt → Target của chiến dịch.</p><p class="section-desc">${FtfDemoModel.minimum(ftfDemoConfig_(camp).demoMinPass)!==null?'Mỗi HR cần ≥ '+Number(ftfDemoConfig_(camp).demoMinPass)+' lần pass Demo. ':''}${escapeHtml(status.text)}</p>${isAdmin()?`<button type="button" class="secondary" id="ftfDemoProgressUpdate" ${monthLocked||!ftfDemoConfig_(camp).settingsSaved?'disabled':''}>↻ Cập nhật riêng HR Pass Demo</button><button type="button" class="secondary" id="ftfDemoOpenSettings" style="margin-left:8px;">Cài đặt X, cột và nguồn</button>`:''}<p id="ftfDemoProgressMsg" role="status" style="margin-bottom:0;"></p>`;box.appendChild(wrap);
+ wrap.innerHTML=`<h3 style="margin:0 0 8px;">HR Pass Demo — Google Sheet</h3><p class="section-desc">Dùng link và tên sheet đã lưu tại Cài đặt → Target của chiến dịch.</p><p class="section-desc">${FtfDemoModel.minimum(ftfDemoConfig_(camp).demoMinPass)!==null?'Mỗi HR cần ≥ '+Number(ftfDemoConfig_(camp).demoMinPass)+' lần pass Demo. ':''}${escapeHtml(status.text)}</p><button type="button" class="secondary" id="ftfDemoProgressUpdate" ${monthLocked||!ftfDemoConfig_(camp).settingsSaved?'disabled':''}>↻ Cập nhật riêng HR Pass Demo</button>${isAdmin()?`<button type="button" class="secondary" id="ftfDemoOpenSettings" style="margin-left:8px;">Cài đặt X, cột và nguồn</button>`:''}<p id="ftfDemoProgressMsg" role="status" style="margin-bottom:0;"></p>`;box.appendChild(wrap);
  wrap.querySelector('#ftfDemoProgressUpdate')?.addEventListener('click',e=>updateFtfDemoFromSheet_(camp,e.currentTarget,wrap.querySelector('#ftfDemoProgressMsg')));
  wrap.querySelector('#ftfDemoOpenSettings')?.addEventListener('click',()=>{document.querySelector('nav.tabs [data-tab="settings"]')?.click();document.querySelector('#tab-settings [data-set="set-target"]')?.click();populateTargetCampaignSelect();const select=document.getElementById('targetCampaignSelect');select.value=camp.id;onTargetCampaignChange();});
 }
