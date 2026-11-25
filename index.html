@@ -8557,36 +8557,109 @@ function courseCampaignsList_(subtype){
   return campaigns.filter(c=>c.group==='noibo' && campaignSubtype(c)===subtype).sort((a,b)=>b.month.localeCompare(a.month));
 }
 async function loadCourseData_(campId){
+  if(campaignSubtype(campaigns.find(c=>c.id===campId))==='cvtv'){
+    const keys=['courseRegistrations:'+campId,'courseScores:'+campId],context=courseHistoryContext_();
+    const values=await dbGetMulti(keys);
+    if(!keys.every(key=>Object.prototype.hasOwnProperty.call(values,key))) throw Error('COURSE_DATA_UNAVAILABLE');
+    if(context!==courseHistoryContext_()) return;
+    courseRegCache_[campId]=values[keys[0]]||{};
+    courseScoreCache_[campId]=values[keys[1]]||{};
+    return;
+  }
   if(!courseRegCache_[campId]) courseRegCache_[campId] = (await dbGet('courseRegistrations:'+campId)) || {};
   if(!courseScoreCache_[campId]) courseScoreCache_[campId] = (await dbGet('courseScores:'+campId)) || {};
 }
-/* Danh sách Mã Code các PG ĐÃ tham gia + ĐÃ có điểm ở khoá CÙNG LOẠI (CVTV hoặc PGs 3★) TRƯỚC ĐÓ
-   (không tính khoá đang tạo/xem) — mặc định các PG này KHÔNG hiển thị lại trong danh sách ứng viên
-   của khoá MỚI CÙNG LOẠI nữa (đã tham gia CVTV rồi thì không hiện lại ở khoá CVTV sau; tương tự cho
-   PGs 3★ — 2 loại khoá TÁCH RIÊNG, không loại chéo lẫn nhau: đã học CVTV vẫn hiện bình thường ở
-   PGs 3★ và ngược lại). Gộp thành ĐÚNG 1 LẦN GỌI MẠNG (dbGetMulti) dù cần đọc nhiều key.*/
-let courseAlreadyTrainedCache_ = null; // Set<code> — cache lại trong phiên, tránh quét lại mỗi lần render
+/* CVTV: hiển thị người đã học với mặc định Không tham gia và tên lớp cũ.
+   PGs 3★ giữ nguyên quy tắc loại khỏi danh sách ứng viên như trước. */
+let courseAlreadyTrainedCache_ = null;
 let courseAlreadyTrainedForCampId_ = null;
+let courseAlreadyTrainedSubtype_ = null;
+let courseAlreadyTrainedInfo_ = new Map();
+let courseAlreadyTrainedContext_ = '';
+let courseHistoryLoadSequence_ = 0;
+const courseRegistrationSaveTails_ = new Map();
+function courseHistoryContext_(){
+  return JSON.stringify([currentMonth,session?.userId,session?.role,session?.trainerId]);
+}
+function courseHistoryCode_(code){ return String(code??'').normalize('NFKC').trim(); }
+function courseHistoryHasScore_(score){
+  return !!score && typeof score==='object' && ['total','theory','consult'].some(key=>{
+    const value=score[key];
+    return value!==null && value!==undefined && typeof value!=='boolean'
+      && String(value).trim()!=='' && Number.isFinite(Number(value));
+  });
+}
+function courseIsPriorCvtv_(other,current){
+  if(!current || other.id===current.id || other.group!=='noibo' || campaignSubtype(other)!=='cvtv') return false;
+  if(other.month && current.month && other.month!==current.month) return other.month<current.month;
+  const previousDate=other.classDateTo||other.classDateFrom||other.classDate||'';
+  const currentDate=current.classDateFrom||current.classDate||'';
+  return !previousDate || !currentDate || previousDate<currentDate;
+}
 async function loadAlreadyTrainedCodes_(excludeCampId, subtype){
-  if(courseAlreadyTrainedCache_ && courseAlreadyTrainedForCampId_===excludeCampId) return courseAlreadyTrainedCache_;
-  const otherCamps = campaigns.filter(c=> c.group==='noibo' && campaignSubtype(c)===subtype && c.id!==excludeCampId);
-  const keys = [];
-  otherCamps.forEach(c=>{ keys.push('courseRegistrations:'+c.id, 'courseScores:'+c.id); });
-  const excluded = new Set();
+  if(subtype!=='cvtv' && courseAlreadyTrainedCache_ && courseAlreadyTrainedForCampId_===excludeCampId
+      && courseAlreadyTrainedSubtype_===subtype) return courseAlreadyTrainedCache_;
+  const context=courseHistoryContext_(),sequence=++courseHistoryLoadSequence_;
+  const current=campaigns.find(c=>c.id===excludeCampId);
+  const otherCamps=campaigns.filter(c=>subtype==='cvtv' ? courseIsPriorCvtv_(c,current)
+    : c.group==='noibo' && campaignSubtype(c)===subtype && c.id!==excludeCampId);
+  const keys=otherCamps.flatMap(c=>['courseRegistrations:'+c.id,'courseScores:'+c.id]);
+  const excluded=new Set(),info=new Map();
   if(keys.length){
-    const vals = await dbGetMulti(keys);
-    otherCamps.forEach(c=>{
-      const reg = vals['courseRegistrations:'+c.id] || {};
-      const sc = vals['courseScores:'+c.id] || {};
-      Object.keys(reg).forEach(code=>{
-        if(reg[code] && reg[code].status==='Tham gia' && sc[code]) excluded.add(code);
-      });
-    });
+    const vals=await dbGetMulti(keys);
+    if(!keys.every(key=>Object.prototype.hasOwnProperty.call(vals,key))) throw Error('COURSE_HISTORY_UNAVAILABLE');
+    for(const c of otherCamps){
+      const reg=vals['courseRegistrations:'+c.id]||{},scores=vals['courseScores:'+c.id]||{};
+      for(const code of Object.keys(reg)){
+        if(reg[code]?.status!=='Tham gia' || !(subtype==='cvtv'?courseHistoryHasScore_(scores[code]):scores[code])) continue;
+        excluded.add(code);
+        const normalized=courseHistoryCode_(code),previous=info.get(normalized)||[];
+        if(!previous.some(p=>p.id===c.id)) previous.push({id:c.id,name:String(c.name||'CVTV'),month:c.month||''});
+        info.set(normalized,previous);
+      }
+    }
   }
-  courseAlreadyTrainedCache_ = excluded;
-  courseAlreadyTrainedForCampId_ = excludeCampId;
+  if(sequence!==courseHistoryLoadSequence_ || context!==courseHistoryContext_()) return excluded;
+  courseAlreadyTrainedCache_=excluded;
+  courseAlreadyTrainedForCampId_=excludeCampId;
+  courseAlreadyTrainedSubtype_=subtype;
+  courseAlreadyTrainedContext_=context;
+  courseAlreadyTrainedInfo_=info;
   return excluded;
 }
+function courseRegistrationFor_(camp,subtype,code,regMap){
+  const saved=regMap?.[code]||{};
+  if(subtype!=='cvtv' || camp.locked || camp.completed || courseAlreadyTrainedForCampId_!==camp.id
+      || courseAlreadyTrainedSubtype_!=='cvtv' || courseAlreadyTrainedContext_!==courseHistoryContext_())
+    return {status:'',note:'',...saved};
+  const previous=courseAlreadyTrainedInfo_.get(courseHistoryCode_(code))||[];
+  if(!previous.length) return {status:'',note:'',...saved};
+  const names=[...new Set(previous.map(c=>c.name))];
+  // Mặc định chỉ bù trường chưa lưu; lựa chọn và note đã nhập luôn được giữ.
+  return {status:'Không tham gia',note:`Đã tham gia lớp (${names.join('; ')})`,...saved};
+}
+async function courseSaveRegistration_(camp,subtype,code,patch){
+  const context=courseHistoryContext_(),key='courseRegistrations:'+camp.id;
+  const previous=courseRegistrationSaveTails_.get(camp.id)||Promise.resolve();
+  const operation=previous.catch(()=>{}).then(async()=>{
+    const allowed=()=>context===courseHistoryContext_() && !camp.locked && !camp.completed
+      && courseCandidates_(camp,subtype).some(c=>c.code===code && courseCanEditRegistration_(c));
+    if(!allowed()) throw Error('COURSE_REGISTRATION_CONTEXT_CHANGED');
+    const values=await dbGetMulti([key]);
+    if(!Object.prototype.hasOwnProperty.call(values,key)) throw Error('COURSE_REGISTRATION_SOURCE_UNAVAILABLE');
+    const fresh=values[key];
+    if(fresh!==null && fresh!==undefined && (typeof fresh!=='object'||Array.isArray(fresh)))
+      throw Error('COURSE_REGISTRATION_SOURCE_INVALID');
+    if(!allowed()) throw Error('COURSE_REGISTRATION_CONTEXT_CHANGED');
+    const base=fresh||{},next={...base,[code]:{...courseRegistrationFor_(camp,subtype,code,base),...patch}};
+    if(await dbSet(key,next)!==true) throw Error('COURSE_REGISTRATION_SAVE_FAILED');
+    if(context===courseHistoryContext_()) courseRegCache_[camp.id]=next;
+  });
+  courseRegistrationSaveTails_.set(camp.id,operation);
+  try { await operation; }
+  finally { if(courseRegistrationSaveTails_.get(camp.id)===operation) courseRegistrationSaveTails_.delete(camp.id); }
+}
+
 function courseCanEditRegistration_(pg){
   return isAdmin() || (isTrainer() && pg.trainerId===session.trainerId);
 }
@@ -8611,8 +8684,8 @@ function courseCandidates_(camp, subtype, scopeToOwnTrainer){
         return { code:p.code, name:p.name, trainerId:p.trainerId, area:trainerOf(p.trainerId)?trainerOf(p.trainerId).region:'', gender:p.gender||(oo?oo.gender:'')||'' };
       });
   } else {
-    const from = camp.dateFrom ? new Date(camp.dateFrom) : null;
-    const to = camp.dateTo ? new Date(camp.dateTo+'T23:59:59') : null;
+    const from = camp.dateFrom ? new Date(camp.dateFrom+'T00:00:00+07:00') : null;
+    const to = camp.dateTo ? new Date(camp.dateTo+'T23:59:59.999+07:00') : null;
     list = onoffRoster.filter(r=>{
       if(r.status!=='On' || !r.joinedAt) return false;
       const d = new Date(r.joinedAt);
@@ -8636,11 +8709,11 @@ function courseCandidates_(camp, subtype, scopeToOwnTrainer){
     const tList = isTrainer() ? config.trainers.filter(t=>t.id===session.trainerId) : visibleTrainers();
     const trainerIds = new Set(tList.map(t=>t.id));
     list = list.filter(r=>trainerIds.has(r.trainerId));
-    // Loại PG đã Tham gia + đã có điểm ở 1 khoá CVTV/PGs 3★ khác trước đó — mặc định không cần đăng
+    // CVTV giữ người đã học để hiện mặc định Không tham gia; PGs 3★ tiếp tục loại như trước. Không cần đăng
     // ký lại. CHỈ áp dụng ở đây (giai đoạn Đăng ký) — không áp dụng khi Chấm điểm/Đã hoàn thành (gọi
     // với scopeToOwnTrainer=false), vì lúc đó cần hiện đúng PG đã đăng ký "Tham gia" của CHÍNH khoá
     // đang xem, dù PG đó có từng học khoá khác trước đây hay không.
-    if(courseAlreadyTrainedCache_ && courseAlreadyTrainedCache_.size){
+    if(subtype!=='cvtv' && courseAlreadyTrainedCache_ && courseAlreadyTrainedCache_.size){
       list = list.filter(r=>!courseAlreadyTrainedCache_.has(r.code));
     }
   }
@@ -8685,7 +8758,13 @@ function renderCourseClassBody_(subtype){
     return;
   }
   const camp = campaigns.find(c=>c.id===selId);
-  Promise.all([loadCourseData_(selId), loadAlreadyTrainedCodes_(selId, subtype)]).then(()=> renderCourseStage_(camp, subtype));
+  const context=courseHistoryContext_();
+  const active=()=>courseSelectedCampaignId_[subtype]===selId && context===courseHistoryContext_();
+  Promise.all([loadCourseData_(selId), loadAlreadyTrainedCodes_(selId, subtype)]).then(()=>{
+    if(active()) renderCourseStage_(camp, subtype);
+  }).catch(()=>{
+    if(active()) document.getElementById('courseBody').innerHTML='<div class="empty">Không đọc được lịch sử đăng ký và điểm khóa học. Vui lòng mở lại mục CVTV để thử lại.</div>';
+  });
 }
 function renderCourseStage_(camp, subtype){
   const body = document.getElementById('courseBody');
@@ -8747,8 +8826,8 @@ function renderCourseStageRegistration_(body, camp, subtype){
     }
     if(courseViewFilter_.region) candidates = candidates.filter(c=>c.region===courseViewFilter_.region);
     if(courseViewFilter_.trainerId) candidates = candidates.filter(c=>c.trainerId===courseViewFilter_.trainerId);
-    if(courseViewFilter_.regStatus==='chuachonn') candidates = candidates.filter(c=>!(regMap[c.code]||{}).status);
-    else if(courseViewFilter_.regStatus) candidates = candidates.filter(c=>(regMap[c.code]||{}).status===courseViewFilter_.regStatus);
+    if(courseViewFilter_.regStatus==='chuachonn') candidates = candidates.filter(c=>!courseRegistrationFor_(camp,subtype,c.code,regMap).status);
+    else if(courseViewFilter_.regStatus) candidates = candidates.filter(c=>courseRegistrationFor_(camp,subtype,c.code,regMap).status===courseViewFilter_.regStatus);
   }
 
   if(candidatesAll.length===0){
@@ -8769,7 +8848,7 @@ function renderCourseStageRegistration_(body, camp, subtype){
     const pageCandidates = candidates.slice(startIdx, startIdx+COURSE_REG_PAGE_SIZE);
     html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Tỉnh</th><th>Giới tính</th><th>Shop</th><th>Kênh</th><th>Thâm niên</th>${subtype==='pgs3sao'?'<th>Sao</th>':''}<th>Trainer</th><th>Trạng thái</th><th>Note</th></tr></thead><tbody>`;
     pageCandidates.forEach((c,i)=>{
-      const reg = regMap[c.code] || {status:'',note:''};
+      const reg = courseRegistrationFor_(camp,subtype,c.code,regMap);
       const canEdit = courseCanEditRegistration_(c);
       html += `<tr>
         <td>${startIdx+i+1}</td><td>${c.code}</td><td>${c.name}</td><td>${c.region||'—'}</td><td>${c.province||'—'}</td>
@@ -8782,14 +8861,14 @@ function renderCourseStageRegistration_(body, camp, subtype){
           <option value="Tham gia" ${reg.status==='Tham gia'?'selected':''}>✅ Tham gia</option>
           <option value="Không tham gia" ${reg.status==='Không tham gia'?'selected':''}>❌ Không tham gia</option>
         </select>`:(reg.status?`<span class="status-badge ${reg.status==='Tham gia'?'st-dangl':'st-tamoff'}">${reg.status}</span>`:`<span style="color:var(--muted);">Chưa chọn</span>`)}</td>
-        <td>${canEdit?`<input type="text" class="course-note-input" data-code="${c.code}" value="${(reg.note||'').replace(/"/g,'&quot;')}" placeholder="Lý do..." style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;">`:(reg.note||'—')}</td>
+        <td>${canEdit?`<input type="text" class="course-note-input" data-code="${c.code}" value="${escapeHtml(reg.note||'')}" placeholder="Lý do..." style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;">`:escapeHtml(reg.note||'—')}</td>
       </tr>`;
     });
     html += `</tbody></table>`;
     html += `<div class="pagination-bar" id="courseRegPagination" style="margin-top:12px;"></div>`;
     }
     if(isAdmin()){
-      const readyCount = candidatesAll.filter(c=>(regMap[c.code]||{}).status==='Tham gia').length;
+      const readyCount = candidatesAll.filter(c=>courseRegistrationFor_(camp,subtype,c.code,regMap).status==='Tham gia').length;
       html += `<div style="margin-top:14px;"><button class="primary" id="courseLockBtn" type="button">🔒 Chốt danh sách &amp; Tạo lớp (${readyCount} PG đã chọn Tham gia)</button></div>`;
     }
   }
@@ -8835,17 +8914,25 @@ function renderCourseStageRegistration_(body, camp, subtype){
   body.querySelectorAll('.course-status-sel').forEach(sel=>{
     sel.addEventListener('change', async ()=>{
       const code = sel.getAttribute('data-code');
-      const regMap2 = courseRegCache_[camp.id] || (courseRegCache_[camp.id]={});
-      regMap2[code] = { ...(regMap2[code]||{}), status: sel.value };
-      await dbSet('courseRegistrations:'+camp.id, regMap2);
+      try {
+        await courseSaveRegistration_(camp,subtype,code,{status:sel.value});
+        if(courseSelectedCampaignId_[subtype]===camp.id) renderCourseStage_(camp, subtype);
+      } catch {
+        alert('Không lưu được trạng thái đăng ký. Dữ liệu đã xác nhận được giữ nguyên; vui lòng tải lại để kiểm tra.');
+        if(courseSelectedCampaignId_[subtype]===camp.id) renderCourseStage_(camp, subtype);
+      }
     });
   });
   body.querySelectorAll('.course-note-input').forEach(inp=>{
     inp.addEventListener('change', async ()=>{
       const code = inp.getAttribute('data-code');
-      const regMap2 = courseRegCache_[camp.id] || (courseRegCache_[camp.id]={});
-      regMap2[code] = { ...(regMap2[code]||{}), note: inp.value.trim() };
-      await dbSet('courseRegistrations:'+camp.id, regMap2);
+      try {
+        await courseSaveRegistration_(camp,subtype,code,{note:inp.value.trim()});
+        if(courseSelectedCampaignId_[subtype]===camp.id) renderCourseStage_(camp, subtype);
+      } catch {
+        alert('Không lưu được note đăng ký. Dữ liệu đã xác nhận được giữ nguyên; vui lòng tải lại để kiểm tra.');
+        if(courseSelectedCampaignId_[subtype]===camp.id) renderCourseStage_(camp, subtype);
+      }
     });
   });
   const lockBtn = document.getElementById('courseLockBtn');
@@ -8855,7 +8942,7 @@ function renderCourseStageRegistration_(body, camp, subtype){
     // Export đúng danh sách đang hiển thị (đã áp bộ lọc Khu vực/Trainer/Trạng thái rà soát nếu có),
     // đầy đủ các cột giống hệt bảng trên màn hình.
     const rows = candidates.map((c,i)=>{
-      const reg = regMap[c.code] || {status:'',note:''};
+      const reg = courseRegistrationFor_(camp,subtype,c.code,regMap);
       const row = {
         'STT': i+1, 'Code': c.code, 'Họ tên': c.name, 'Khu vực': c.region||'', 'Tỉnh': c.province||'',
         'Giới tính': c.gender||'', 'Shop': c.shop||'', 'Kênh': c.channel||'', 'Thâm niên (tháng)': c.seniority,
@@ -9043,6 +9130,152 @@ async function unlockCourseRegistration_(camp, subtype){
   renderCourseStage_(camp, subtype);
 }
 
+/* Xuất lớp CVTV: chỉ đọc dữ liệu đã lưu, không đổi đăng ký hoặc điểm. */
+const courseClassExportBusy_ = new Set();
+function courseClassExportCode_(value){ return String(value??'').normalize('NFKC').trim(); }
+function courseClassExportContext_(){
+  return JSON.stringify([currentMonth,session?.userId,session?.role,session?.trainerId,session?.region,courseSelectedCampaignId_.cvtv]);
+}
+function courseClassExportError_(code){ const error=new Error(code);error.code=code;return error; }
+function courseClassExportIndex_(entries){
+  const result=new Map();
+  for(const [raw,value] of entries){
+    const code=courseClassExportCode_(raw);
+    if(!code || result.has(code)) throw courseClassExportError_('INVALID_SOURCE');
+    result.set(code,value);
+  }
+  return result;
+}
+function courseClassExportScore_(value){
+  if(value===null || value===undefined || String(value).trim()==='') return null;
+  if(typeof value==='boolean') return String(value);
+  const n=Number(value);
+  return Number.isFinite(n)?n:String(value);
+}
+function courseClassExportDay_(value){
+  if(!value) return '';
+  const d=new Date(value);
+  return Number.isNaN(d.getTime())?'':d.toLocaleDateString('en-GB',{timeZone:'Asia/Saigon'});
+}
+function courseClassExportRows_(registrations,scores,profiles,roster,trainers){
+  const regs=courseClassExportIndex_(Object.entries(registrations));
+  const points=courseClassExportIndex_(Object.entries(scores));
+  const pgsByCode=courseClassExportIndex_(profiles.filter(p=>p.brand==='OPPO').map(p=>[p.code,p]));
+  const rosterByCode=courseClassExportIndex_(roster.map(p=>[p.code,p]));
+  const byTrainer=new Map(trainers.map(t=>[String(t.id),t]));
+  const hasTheory=[...points.values()].some(s=>s && Object.prototype.hasOwnProperty.call(s,'theory'));
+  const hasConsult=[...points.values()].some(s=>s && Object.prototype.hasOwnProperty.call(s,'consult'));
+  const members=[...regs.entries()].filter(([,reg])=>reg?.status==='Tham gia');
+  let missingProfiles=0,scored=0;
+  const rows=members.map(([code,reg])=>{
+    const pg=pgsByCode.get(code),onoff=rosterByCode.get(code),person=pg||onoff||{};
+    const trainer=byTrainer.get(String(person.trainerId||''));
+    const sc=points.get(code)||{},total=courseClassExportScore_(sc.total);
+    if(typeof total==='number') scored++;
+    const name=String(pg?.name||onoff?.name||'');
+    const missing=!pg;
+    if(missing) missingProfiles++;
+    const row={
+      'STT':0,'Code':code,'Họ và tên':name,'Giới tính':String(pg?.gender||onoff?.gender||''),
+      'Shop':String(pg?.shop||onoff?.shop||''),'Kênh':String(pg?.channel||onoff?.channel||''),
+      'Trainer':String(trainer?.name||''),'Khu vực':String(trainer?.region||pg?.area||onoff?.area||''),
+      'Tỉnh':String(pg?.province||onoff?.province||''),
+      'Ngày vào làm':courseClassExportDay_(pg?.joinedAt||onoff?.joinedAt),
+      'Sao':pg?.star??null,'Thâm niên (tháng)':pg?.seniority??null,
+      'Trạng thái đăng ký':'Tham gia'
+    };
+    if(hasTheory) row['Điểm lý thuyết']=courseClassExportScore_(sc.theory);
+    if(hasConsult) row['Điểm tư vấn']=courseClassExportScore_(sc.consult);
+    row['Điểm cuối khoá']=total;
+    row['Xuất sắc']=sc.excellent===true?'Có':sc.excellent===false?'Không':'';
+    row['Note đăng ký']=String(reg.note||'');
+    row['Note đánh giá']=String(sc.note||'');
+    row['Đối soát thông tin']=missing ? (onoff?'Chưa có hồ sơ nhân sự hiện tại; thông tin từ On/Off.':'Không có hồ sơ nhân sự/On-Off hiện tại; giữ Code và điểm gốc.') : '';
+    return row;
+  });
+  rows.sort((a,b)=>a['Khu vực'].localeCompare(b['Khu vực'],'vi') || a.Trainer.localeCompare(b.Trainer,'vi')
+    || a['Họ và tên'].localeCompare(b['Họ và tên'],'vi') || a.Code.localeCompare(b.Code,'vi',{numeric:true}));
+  rows.forEach((row,i)=>row.STT=i+1);
+  return {rows,points,scored,missingProfiles};
+}
+function courseClassExportMarkup_(camp,subtype){
+  if(subtype!=='cvtv') return '';
+  return `<div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+    <button type="button" class="secondary" id="courseClassExportBtn">Xuất Excel học viên &amp; điểm</button>
+    <span id="courseClassExportMsg" class="section-desc" role="status" style="margin:0;"></span>
+    <p class="section-desc" style="margin:0;flex-basis:100%;">Xuất toàn bộ học viên đã chọn Tham gia, gồm học viên đã nghỉ; không phụ thuộc phân trang.</p>
+  </div>`;
+}
+function courseClassExportPendingScore_(body,points){
+  for(const input of body.querySelectorAll('.course-score-total,.course-score-excellent,.course-score-note')){
+    const score=points.get(courseClassExportCode_(input.getAttribute('data-code')))||{};
+    if(input.classList.contains('course-score-total')){
+      if(courseClassExportScore_(input.value)!==courseClassExportScore_(score.total)) return true;
+    }else if(input.classList.contains('course-score-excellent')){
+      if(input.checked!==(score.excellent===true)) return true;
+    }else if(input.value.trim()!==String(score.note||'').trim()) return true;
+  }
+  return false;
+}
+function bindCourseClassExport_(body,camp,subtype){
+  const button=body.querySelector('#courseClassExportBtn'),message=body.querySelector('#courseClassExportMsg');
+  if(subtype!=='cvtv'||!button) return;
+  button.addEventListener('click',async()=>{
+    if(button.disabled||courseClassExportBusy_.has(camp.id)||!session) return;
+    const context=courseClassExportContext_();
+    const active=()=>context===courseClassExportContext_() && courseSelectedCampaignId_.cvtv===camp.id && body.isConnected && button.isConnected;
+    courseClassExportBusy_.add(camp.id);button.disabled=true;
+    message.textContent='Đang tạo file Excel…';message.style.color='var(--muted)';
+    try{
+      const regKey='courseRegistrations:'+camp.id,scoreKey='courseScores:'+camp.id;
+      const keys=['campaigns',regKey,scoreKey,'pgs:'+currentMonth,'onoffRoster','config'];
+      const data=await dbGetMulti(keys);
+      if(!active()) return;
+      if(!keys.every(key=>Object.prototype.hasOwnProperty.call(data,key))) throw courseClassExportError_('READ_FAILED');
+      const fresh=Array.isArray(data.campaigns)?data.campaigns.find(c=>c.id===camp.id):null;
+      if(!fresh || fresh.group!=='noibo' || campaignSubtype(fresh)!=='cvtv' || fresh.month!==camp.month || (!fresh.locked&&!fresh.completed))
+        throw courseClassExportError_('CLASS_CHANGED');
+      const regs=data[regKey]??{},scores=data[scoreKey]??{},profiles=data['pgs:'+currentMonth]??[],roster=data.onoffRoster??[];
+      if(typeof regs!=='object'||Array.isArray(regs)||typeof scores!=='object'||Array.isArray(scores)
+          ||!Array.isArray(profiles)||!Array.isArray(roster)||!Array.isArray(data.config?.trainers)) throw courseClassExportError_('INVALID_SOURCE');
+      const result=courseClassExportRows_(regs,scores,profiles,roster,data.config.trainers);
+      if(!result.rows.length) throw courseClassExportError_('EMPTY_CLASS');
+      if(courseClassExportPendingScore_(body,result.points)) throw courseClassExportError_('PENDING_SCORE');
+      if(typeof XLSX==='undefined') throw courseClassExportError_('XLSX_UNAVAILABLE');
+      const lead=data.config.trainers.find(t=>String(t.id)===String(fresh.leadTrainerId));
+      const info=[['Thông tin lớp','Giá trị'],['Tên lớp',fresh.name||'CVTV'],['Tháng chiến dịch',fresh.month||''],
+        ['Trạng thái lớp',fresh.completed?'Đã hoàn thành':'Đang chấm điểm'],
+        ['Ngày bắt đầu',courseClassExportDay_(fresh.classDateFrom||fresh.classDate)],
+        ['Ngày kết thúc',courseClassExportDay_(fresh.classDateTo||fresh.classDateFrom||fresh.classDate)],
+        ['Địa điểm',fresh.classVenue||''],['Tỉnh tổ chức',fresh.classProvince||''],['Lead khoá',lead?.name||''],
+        ['Học viên đã chọn Tham gia',result.rows.length],['Đã nhập điểm cuối khoá',result.scored],
+        ['Chưa nhập điểm cuối khoá',result.rows.length-result.scored],['Chưa có hồ sơ nhân sự hiện tại',result.missingProfiles],
+        ['Thời điểm xuất',new Date().toLocaleString('vi-VN',{timeZone:'Asia/Saigon'})],
+        ['Cách đọc điểm','Ô trống là chưa nhập; số 0 là điểm 0 đã lưu. Giữ nguyên thang điểm gốc, không tự quy đổi.'],
+        ['Thông tin nhân sự','Tham chiếu hồ sơ nhân sự và On/Off hiện có; không phải ảnh chụp thông tin tại thời điểm học.'],
+        ['Phạm vi','Toàn bộ Code đã chọn Tham gia của lớp; giữ cả người đã OFF hoặc không còn hồ sơ hiện tại.']];
+      const book=XLSX.utils.book_new(),sheet=XLSX.utils.json_to_sheet(result.rows),meta=XLSX.utils.aoa_to_sheet(info);
+      const widths={'STT':6,'Code':15,'Họ và tên':28,'Shop':42,'Trainer':27,'Ngày vào làm':16,'Thâm niên (tháng)':20,'Trạng thái đăng ký':20,'Note đăng ký':36,'Note đánh giá':36,'Đối soát thông tin':68};
+      sheet['!cols']=Object.keys(result.rows[0]).map(key=>({wch:widths[key]||18}));
+      sheet['!autofilter']={ref:sheet['!ref']};meta['!cols']=[{wch:37},{wch:110}];
+      XLSX.utils.book_append_sheet(book,sheet,'Học viên và điểm');XLSX.utils.book_append_sheet(book,meta,'Thông tin lớp');
+      const safeName=String(fresh.name||'Lop_CVTV').normalize('NFC').replace(/[\\/:*?"<>|\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim().slice(0,90)||'Lop_CVTV';
+      const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Saigon',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+      if(!active()) return;
+      XLSX.writeFile(book,`CVTV_${safeName}_${day}.xlsx`,{bookType:'xlsx',compression:true});
+      message.textContent=`Đã tạo Excel ${result.rows.length} học viên.`;message.style.color='var(--green-ok)';
+    }catch(error){
+      const errors={EMPTY_CLASS:'Lớp chưa có học viên chọn Tham gia.',PENDING_SCORE:'Điểm trên màn hình chưa khớp dữ liệu đã lưu. Hãy chờ lưu xong hoặc tải lại lớp rồi xuất lại.',
+        CLASS_CHANGED:'Thông tin lớp đã thay đổi. Vui lòng mở lại lớp để xuất.',INVALID_SOURCE:'Dữ liệu lớp có thông tin trùng hoặc chưa hợp lệ. Chưa tạo file Excel.',
+        READ_FAILED:'Chưa đọc đủ dữ liệu lớp. Vui lòng thử lại.',XLSX_UNAVAILABLE:'Chưa tải được thư viện Excel. Vui lòng tải lại trang.'};
+      if(active()){message.textContent=errors[error.code]||'Không tạo được file Excel. Vui lòng tải lại lớp và thử lại.';message.style.color='var(--red)';}
+    }finally{
+      courseClassExportBusy_.delete(camp.id);
+      if(button.isConnected)button.disabled=false;
+    }
+  });
+}
+
 /* ===== GIAI ĐOẠN 2: CHẤM ĐIỂM (sau khi chốt) ===== */
 function renderCourseStageScoring_(body, camp, subtype){
   const lead = trainerOf(camp.leadTrainerId);
@@ -9060,6 +9293,7 @@ function renderCourseStageScoring_(body, camp, subtype){
       <div><strong>Lead khoá:</strong> ${lead?lead.name:'—'}</div>
       <div><strong>Số lượng học viên:</strong> ${candidates.length}</div>
     </div>
+    ${courseClassExportMarkup_(camp,subtype)}
     ${isAdmin()?`<div style="margin-top:10px;"><button class="secondary" id="courseUnlockBtn" type="button">↩ Quay Lại</button></div>`:''}
   </div>`;
 
@@ -9096,6 +9330,7 @@ function renderCourseStageScoring_(body, camp, subtype){
   body.innerHTML = html;
   if(totalItems>0) renderCourseScorePagination_(totalItems, camp, subtype);
   renderCourseSurveyResults_(camp, subtype);
+  bindCourseClassExport_(body,camp,subtype);
 
   const saveScore = async (code)=>{
     const totalEl = body.querySelector(`.course-score-total[data-code="${code}"]`);
@@ -9185,6 +9420,7 @@ function renderCourseStageComplete_(body, camp, subtype){
       <div><strong>Lead khoá:</strong> ${lead?lead.name:'—'}</div>
       <div><strong>Số lượng học viên:</strong> ${candidates.length}</div>
     </div>
+    ${courseClassExportMarkup_(camp,subtype)}
     ${canEditAgain?`<div style="margin-top:10px;"><button class="secondary" id="courseReopenBtn" type="button">✏️ Sửa lại (nếu có sai sót)</button></div>`:''}
   </div>`;
   html += `<table><thead><tr><th>STT</th><th>Code</th><th>Họ tên</th><th>Khu vực</th><th>Trainer</th><th>Điểm cuối khoá</th><th>⭐</th><th>Note</th></tr></thead><tbody>`;
@@ -9208,6 +9444,7 @@ function renderCourseStageComplete_(body, camp, subtype){
   body.innerHTML = html;
   if(totalItems>0) renderCourseCompletePagination_(totalItems, camp, subtype);
   renderCourseSurveyResults_(camp, subtype);
+  bindCourseClassExport_(body,camp,subtype);
   const reopenBtn = document.getElementById('courseReopenBtn');
   if(reopenBtn) reopenBtn.addEventListener('click', async ()=>{
     const ok = await showConfirm('Mở lại để chỉnh sửa điểm số? Khoá học sẽ quay về trạng thái "Chấm điểm" — bấm "Hoàn thành" lại sau khi sửa xong.');

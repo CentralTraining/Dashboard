@@ -1,0 +1,31 @@
+{
+  "version": "2026-11-25",
+  "environment": "Main",
+  "passed": true,
+  "features": [
+    "CVTV previous-participation defaults",
+    "CVTV class Excel export"
+  ],
+  "roles": [
+    "admin",
+    "trainer",
+    "viewer"
+  ],
+  "widths": [
+    1440,
+    390,
+    320
+  ],
+  "previously_trained_candidates_visible_with_default_note": true,
+  "persisted_choices_and_notes_preserved": true,
+  "class_exports_include_all_enrolled_not_current_page_only": true,
+  "off_and_missing_profiles_retained_in_class_export": true,
+  "score_zero_missing_original_scale_preserved": true,
+  "fresh_saved_data_and_class_account_context_checked": true,
+  "failed_reads_saves_and_unsaved_scores_guarded": true,
+  "xlsx_downloads_and_readbacks": 14,
+  "main_auth_endpoints_and_branding_preserved": true,
+  "other_rules_and_scripts_preserved": true,
+  "tests_use_synthetic_data": true,
+  "actual_business_writes_for_testing": 0
+}

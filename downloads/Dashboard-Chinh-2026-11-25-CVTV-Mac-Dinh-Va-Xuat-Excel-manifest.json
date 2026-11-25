@@ -1,0 +1,30 @@
+{
+  "version": "2026-11-25",
+  "repository": "CentralTraining/Dashboard",
+  "files": [
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-25-CVTV-Mac-Dinh-Va-Xuat-Excel-README.txt",
+      "bytes": 1229,
+      "sha256": "49532fcb3c5f82b0fa768bf7ecae55bfb5c7d4e717426d18f4c27744157701c0",
+      "git_blob_sha": "c0b6229471eef6bff588b6282d92a24192e49a7c"
+    },
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-25-CVTV-Mac-Dinh-Va-Xuat-Excel-verification.json",
+      "bytes": 908,
+      "sha256": "2643b4e28f60a65a499ed5949d16c96709585bce791aa1c618bb2f8d31f27ff2",
+      "git_blob_sha": "353809593825a4574164a533538b06ff4e8ceb3e"
+    },
+    {
+      "path": "downloads/Dashboard-Chinh-2026-11-25-CVTV-Mac-Dinh-Va-Xuat-Excel.html",
+      "bytes": 2845002,
+      "sha256": "30f682880cc320655d40cec91a266f8e9cf8d7446a6dc07cd6d6d1780e695507",
+      "git_blob_sha": "4121e0a423e8baa05e7ceb0ad026def91ee6d439"
+    },
+    {
+      "path": "index.html",
+      "bytes": 2845002,
+      "sha256": "30f682880cc320655d40cec91a266f8e9cf8d7446a6dc07cd6d6d1780e695507",
+      "git_blob_sha": "4121e0a423e8baa05e7ceb0ad026def91ee6d439"
+    }
+  ]
+}
