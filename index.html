@@ -20532,7 +20532,7 @@ function pgsmExtractFmRows_(out){
  return rows;
 }
 async function pgsmImportFmReport_(camp,confirmedId,onMessage){
- if(!isAdmin())throw Error('Chỉ Admin được cập nhật kết quả PGs Master từ hệ thống.');
+ if(!isAdmin()&&!isTrainer())throw Error('Chỉ Admin hoặc Trainer được cập nhật kết quả PGs Master từ hệ thống.');
  if(!/^\d+$/.test(String(confirmedId||'')))throw Error('Campaign ID phải là số nguyên dương đã lưu.');
  const stillCurrent=campaignUpdateContext_(camp,'pgsmSystemCampaignId');
  onMessage('⏳ Đang lấy báo cáo từ OTraining...');
@@ -20728,7 +20728,7 @@ async function pgsmDrawProgress_(camp){
    <div class="pgsm-system-tools">
      <div class="pgsm-system-field"><label for="pgsmSystemCampaignId">Campaign ID OTraining</label><input type="text" inputmode="numeric" autocomplete="off" id="pgsmSystemCampaignId" placeholder="Nhập ID chiến dịch" value="${escapeHtml(String(d.systemCampaignId||''))}" ${String(d.systemCampaignId||'').trim()?'disabled':''} ${!isAdmin()?'disabled':''}></div>
      ${isAdmin()?`<button type="button" class="secondary" id="pgsmSaveSystemId" ${String(d.systemCampaignId||'').trim()?'hidden':''}>💾 Lưu ID</button><button type="button" class="secondary" id="pgsmEditSystemId" ${String(d.systemCampaignId||'').trim()?'':'hidden'}>✏️ Sửa</button>`:''}
-     <button type="button" class="primary" id="pgsmUpdateSystemBtn" ${isAdmin()?'':'disabled title="Chỉ Admin được cập nhật"'}>↻ Cập nhật từ hệ thống</button>
+     <button type="button" class="primary" id="pgsmUpdateSystemBtn" ${isAdmin()||isTrainer()?'':'disabled title="Chỉ Admin hoặc Trainer được cập nhật"'}>↻ Cập nhật từ hệ thống</button>
    </div>
    <div class="pgsm-system-message" id="pgsmSystemMsg" aria-live="polite">${d.systemUpdatedAt?'Lần cập nhật gần nhất: '+escapeHtml(new Date(d.systemUpdatedAt).toLocaleString('vi-VN')):'Chưa cập nhật từ hệ thống.'}</div>
    <div class="section-desc" style="margin-top:6px">Kết quả M1–M5 được cập nhật duy nhất từ OTraining. Không hỗ trợ nhập hoặc lưu tiến độ thủ công.</div>
