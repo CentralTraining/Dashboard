@@ -5401,6 +5401,10 @@ function findPgShopDataSheet_(wb){
   }
   return null;
 }
+function pgShopSalePriority_(value){
+  const type=String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+  return (type==='sale'||type==='sales')?2:type==='leadershoptructiep'?1:0;
+}
 async function processPgShopAssignWorkbook_(wb){
   if(!isAdmin() && !isTrainer()) return;
   const msg=document.getElementById('pgMergeImportMsg');
@@ -5420,14 +5424,14 @@ async function processPgShopAssignWorkbook_(wb){
   const rows=XLSX.utils.sheet_to_json(detected.ws,{defval:'',raw:false,range:detected.headerRow});
 
   const V=(row,...aliases)=>pgShopRowValue_(row,aliases);
-  // File mẫu có cả PG / Trainer / Sales. Map Trainer và Sale theo Shop ID trước.
-  const shopToTrainerName={}; const shopToSaleName={};
+  // Ghép PG với Trainer, Sales hoặc Leader shop trực tiếp theo đúng Shop ID.
+  const shopToTrainerName={}; const shopToSaleName={}; const shopToSalePriority={};
   rows.forEach(row=>{
     const loai=String(V(row,'Loại gán shop','Loai gan shop')).trim().toLowerCase();
     const shopId=String(V(row,'Shop ID','ShopID')).trim();
     if(!shopId) return;
     if(loai==='trainer' && !shopToTrainerName[shopId]) shopToTrainerName[shopId]=toTitleCaseVN(V(row,'Staff Name','Nhân viên','Nhan vien'));
-    else if((loai==='sales'||loai==='sale') && !shopToSaleName[shopId]) shopToSaleName[shopId]=toTitleCaseVN(V(row,'Staff Name','Nhân viên','Nhan vien'));
+    else if(pgShopSalePriority_(loai)>(shopToSalePriority[shopId]||0)){ shopToSaleName[shopId]=toTitleCaseVN(V(row,'Staff Name','Nhân viên','Nhan vien')); shopToSalePriority[shopId]=pgShopSalePriority_(loai); }
   });
 
   const gsByShopId={}; const gsByShopName={};
@@ -12618,7 +12622,7 @@ function bindAiCheckImportControls_(camp){
   };
 }
 /* ============ SALE — TEST ONLINE & TƯ VẤN AI (dùng CHUNG file/Google Sheet với PGs) ============
-   DANH SÁCH SALE CHUẨN = các dòng "Loại gán shop" = Sales/Sale trong DS gán Shop PGs (Nhân sự).
+   DANH SÁCH SALE CHUẨN = các dòng "Loại gán shop" = Sales/Sale hoặc Leader shop trực tiếp trong DS gán Shop PGs (Nhân sự).
    Lấy Code, Staff Name, Area (1 Sale nhiều shop -> gộp theo Code, khu vực = Area xuất hiện nhiều nhất).
    Khi Import / Google Sheet Test Online hoặc Tư vấn AI (form chung với PGs): dòng có Mã NV khớp Code Sale
    -> ghi số lần. Sale có trong DS nhưng không có trong file = 0 lần (Chưa hoàn thành), giống logic PGs.
@@ -12647,7 +12651,7 @@ async function saveSaleRosterFromShopAssign_(rows,V){
   const byCode=new Map();
   rows.forEach(row=>{
     const loai=String(V(row,'Loại gán shop','Loai gan shop')).trim().toLowerCase();
-    if(loai!=='sales' && loai!=='sale') return;
+    if(!pgShopSalePriority_(loai)) return;
     const code=saleCodeNorm_(V(row,'Code'));
     if(!code) return;
     const cur=byCode.get(code)||{code:String(V(row,'Code')).trim().replace(/\.0$/,''),name:'',areas:{}};
@@ -12705,7 +12709,7 @@ async function renderSaleFreqSection_(camp,kind){
   const pfx='sale'+kind;
 
   let html=`<div style="margin-top:28px;padding-top:18px;border-top:2px solid var(--line);"></div>`;
-  html+=`<h3 class="kpi-section-title">${K.title} — SALE</h3><p class="section-desc">Danh sách Sale lấy từ <strong>DS gán Shop PGs</strong> (Loại gán shop = Sales) · số lần lấy từ data import chung với PGs. Sale hoàn thành khi <strong>${K.rule} ≥ ${x}</strong>. Sale chưa có trong file = 0 lần.${data.importedAt?` Cập nhật lần cuối: ${new Date(data.importedAt).toLocaleString('vi-VN')}.`:''}</p>`;
+  html+=`<h3 class="kpi-section-title">${K.title} — SALE</h3><p class="section-desc">Danh sách Sale lấy từ <strong>DS gán Shop PGs</strong> (Loại gán shop = Sales/Sale hoặc Leader shop trực tiếp) · số lần lấy từ data import chung với PGs. Sale hoàn thành khi <strong>${K.rule} ≥ ${x}</strong>. Sale chưa có trong file = 0 lần.${data.importedAt?` Cập nhật lần cuối: ${new Date(data.importedAt).toLocaleString('vi-VN')}.`:''}</p>`;
   if(!sales.length){
     html+=`<div class="empty">${roster.length?`Không có Sale thuộc khu vực của bạn.`:`Chưa có danh sách Sale — Admin cần Import / cập nhật <strong>DS gán Shop PGs</strong> (Nhân sự) có dòng Loại gán shop = Sales.`}</div>`;
     box.innerHTML=html; return;
