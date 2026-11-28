@@ -2914,6 +2914,7 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
       <button data-tab="overview" data-title="TỔNG QUAN HR"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 21v-2a6 6 0 0 0-4-5.65"/></svg></span><span class="nav-label">Tổng quan HR</span><span class="nav-short">HR</span></button>
       <button data-tab="kpi" data-title="Tiến độ KPI"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 3v18h17M8 16v-4M13 16V8M18 16V5"/></svg></span><span class="nav-label">Tiến độ KPI</span><span class="nav-short">KPI</span></button>
       <button data-tab="so" data-title="DATA S.O" id="navSoBtn"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 3v18h17M7 14l4-4 4 3 6-7M17 6h4v4"/></svg></span><span class="nav-label">DATA S.O</span><span class="nav-short">S.O</span></button>
+      <button data-tab="pgbuild" data-title="XÂY KÊNH" id="navPgBuildBtn"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 8 6 4-6 4Z"/></svg></span><span class="nav-label">XÂY KÊNH</span><span class="nav-short">Kênh PG</span></button>
     </div>
     <div class="nav-group">
       <div class="nav-group-label" aria-hidden="true">CÔNG CỤ</div>
@@ -3353,6 +3354,272 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
     </div>
   </section>
 
+<style id="pg-build-style">
+  #tab-pgbuild{--pgb-ink:#18343b;--pgb-muted:#6c7c83;--pgb-cyan:#039da8;--pgb-pink:#e94475;--pgb-line:#e3eaed;min-width:0;color:var(--pgb-ink);}
+  #tab-pgbuild [hidden]{display:none!important;}#tab-pgbuild *{box-sizing:border-box;}
+  #tab-pgbuild .pgb-hero{position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;padding:25px 26px;border:1px solid var(--pgb-line);border-radius:19px;background:linear-gradient(115deg,#fff 65%,#f2fbfc 86%,#fff5f8);overflow:hidden;}
+  #tab-pgbuild .pgb-hero:before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#40d7dc,#ec7293);}
+  #tab-pgbuild .pgb-eyebrow{display:flex;gap:9px;align-items:center;font-size:12px;font-weight:750;letter-spacing:1.4px;color:#526e78;text-transform:uppercase;}
+  #tab-pgbuild .pgb-brand-mark{width:31px;height:31px;border-radius:9px;display:grid;place-items:center;background:#fff;border:1px solid #e5eef0;box-shadow:-2px 1px #5fd8dc,2px -1px #ed8aa5;}
+  #tab-pgbuild h2{font-size:29px;letter-spacing:-.8px;margin:9px 0 7px;color:var(--pgb-ink);font-weight:800;}
+  #tab-pgbuild .pgb-hero p{margin:0;font-size:14px;line-height:1.6;color:var(--pgb-muted);}
+  #tab-pgbuild .pgb-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  #tab-pgbuild .pgb-actions button,#tab-pgbuild .pgb-phase-actions button{font-size:14px;min-height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:7px;}
+  #tab-pgbuild .pgb-actions .pgb-scan{background:#fff3f7;border-color:#f0b5c8;color:#b42a55;}
+  #tab-pgbuild .pgb-actions svg,#tab-pgbuild .pgb-brand-mark svg{width:18px;height:18px;flex:none;}
+  #tab-pgbuild .pgb-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:13px 2px;}
+  #tab-pgbuild #pgBuildStatus{font-size:13px;line-height:1.6;color:var(--pgb-muted);margin:0;}
+  #tab-pgbuild #pgBuildJob{font-size:12px;line-height:1.6;color:#49616b;background:#f4f8fa;border:1px solid var(--pgb-line);border-radius:9px;padding:8px 11px;}
+  #tab-pgbuild .pgb-tabs{display:flex;gap:7px;border-bottom:1px solid var(--pgb-line);margin:6px 0 20px;}
+  #tab-pgbuild .pgb-tabs button{position:relative;display:flex;align-items:center;gap:9px;font-size:16px;font-weight:650;color:#6c7e84;background:none;border:0;border-radius:0;padding:14px 18px;cursor:pointer;}
+  #tab-pgbuild .pgb-tabs button.active{color:#087a83;}#tab-pgbuild .pgb-tabs button.active:after{content:'';position:absolute;bottom:-1px;left:12px;right:12px;height:3px;background:linear-gradient(90deg,#17b6bf,#ee7697);border-radius:4px;}
+  #tab-pgbuild .pgb-tabs svg{width:19px;height:19px;}
+  #tab-pgbuild .pgb-controls{display:grid;grid-template-columns:minmax(190px,1.5fr) repeat(3,minmax(130px,1fr));gap:12px;background:#fff;border:1px solid var(--pgb-line);border-radius:14px;padding:16px;margin-bottom:18px;}
+  #tab-pgbuild label.pgb-label{display:grid;gap:7px;min-width:0;font-size:13px;font-weight:650;color:#5f727b;}
+  #tab-pgbuild input,#tab-pgbuild select{font:inherit;font-size:14px;width:100%;min-width:0;border:1px solid #dce6ea;border-radius:8px;min-height:41px;padding:9px 11px;color:var(--pgb-ink);background:#fff;}
+  #tab-pgbuild input:focus,#tab-pgbuild select:focus{outline:2px solid #98e2e5;outline-offset:1px;}
+  #tab-pgbuild .pgb-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0;}
+  #tab-pgbuild .pgb-metrics{grid-template-columns:repeat(6,minmax(0,1fr));}
+  #tab-pgbuild .pgb-card{min-width:0;background:#fff;border:1px solid var(--pgb-line);border-radius:15px;padding:19px 18px;}
+  #tab-pgbuild .pgb-cards>.pgb-empty{grid-column:1/-1;}
+  #tab-pgbuild .pgb-card-head{display:flex;align-items:center;gap:9px;min-width:0;margin-bottom:13px;}
+  #tab-pgbuild .pgb-card-icon{width:31px;height:31px;display:grid;place-items:center;border-radius:9px;color:#13826b;background:#eaf7f1;flex:none;}
+  #tab-pgbuild .pgb-card-icon svg{width:17px;height:17px;}#tab-pgbuild .pgb-card .label{font-size:13px;font-weight:650;color:#627780;line-height:1.4;}
+  #tab-pgbuild .pgb-card .value{font-size:31px;font-weight:800;letter-spacing:-.7px;line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+  #tab-pgbuild .pgb-card .value.long-value{font-size:22px;}#tab-pgbuild .pgb-card small{display:block;color:var(--pgb-muted);font-size:12px;line-height:1.65;margin-top:10px;}
+  #tab-pgbuild .pgb-card.cyan .pgb-card-icon{background:#e9f8fa;color:#0396a5;}#tab-pgbuild .pgb-card.pink .pgb-card-icon{background:#fff0f5;color:#df4f7e;}#tab-pgbuild .pgb-card.purple .pgb-card-icon{background:#f3effd;color:#8c68c8;}
+  #tab-pgbuild .pgb-card.engagement{background:linear-gradient(125deg,#fff,#fff6fa);border-color:#f1d2df;}#tab-pgbuild .pgb-rate{display:inline-flex;gap:5px;align-items:center;font-weight:750;color:#aa315c;font-size:13px;}
+  #tab-pgbuild .pgb-section{min-width:0;background:#fff;border:1px solid var(--pgb-line);border-radius:16px;padding:20px;margin:18px 0;}
+  #tab-pgbuild .pgb-section-head{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:17px;}
+  #tab-pgbuild h3{font-size:18px;font-weight:750;letter-spacing:-.3px;margin:0;color:var(--pgb-ink);}#tab-pgbuild .pgb-section-head p,#tab-pgbuild .pgb-help{font-size:13px;line-height:1.6;color:var(--pgb-muted);margin:6px 0 0;}
+  #tab-pgbuild .pgb-group-modes{display:flex;gap:3px;padding:4px;border:1px solid #e4edf0;border-radius:10px;background:#f7fafb;}
+  #tab-pgbuild .pgb-group-modes button{font-size:13px;border:0;border-radius:7px;padding:9px 13px;color:#60767f;cursor:pointer;background:transparent;white-space:nowrap;}
+  #tab-pgbuild .pgb-group-modes button.active{background:#fff;color:#07818c;box-shadow:0 1px 6px #19374012;font-weight:750;}
+  #tab-pgbuild .pgb-stage-line{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:13px;margin:18px 0;}
+  #tab-pgbuild .pgb-stage-line select{width:min(100%,340px);}#tab-pgbuild .pgb-period-chip{display:inline-flex;padding:7px 11px;border-radius:8px;background:#f0f7f8;color:#56727c;font-size:13px;line-height:1.5;}
+  #tab-pgbuild .pgb-time-toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;border:1px solid var(--pgb-line);border-radius:14px;padding:16px;background:#fff;}
+  #tab-pgbuild .pgb-time-toolbar>.pgb-label{min-width:155px;flex:1 1 155px;}#tab-pgbuild .pgb-time-toolbar>.pgb-label:first-child{max-width:190px;}
+  #tab-pgbuild .pgb-time-toolbar .pgb-range-pair{display:flex;flex:2 1 300px;gap:12px;}.pgb-range-pair>label{flex:1;min-width:0;}
+  #tab-pgbuild .pgb-time-toolbar button{min-height:41px;padding:9px 17px;font-size:14px;white-space:nowrap;}
+  #tab-pgbuild .pgb-progress-caption{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:13px 1px;font-size:13px;color:var(--pgb-muted);}
+  #tab-pgbuild .pgb-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--pgb-line);border-radius:11px;}
+  #tab-pgbuild .pgb-grid{width:100%;min-width:1010px;border-collapse:collapse;table-layout:auto;font-size:14px;}
+  #tab-pgbuild .pgb-grid th{padding:13px 11px;font-size:12px;white-space:nowrap;color:#5c727c;background:#f5f9fa;text-align:left;}
+  #tab-pgbuild .pgb-grid td{padding:14px 11px;border-bottom:1px solid #edf1f3;vertical-align:middle;color:var(--pgb-ink);}
+  #tab-pgbuild .pgb-grid tr:last-child td{border-bottom:0;}#tab-pgbuild .pgb-grid small{display:block;font-size:12px;font-weight:400;color:var(--pgb-muted);line-height:1.7;}
+  #tab-pgbuild .pgb-owner{min-width:165px;font-weight:700;}#tab-pgbuild .pgb-grid .pgb-total-cell{min-width:175px;}
+  #tab-pgbuild .pgb-meter{height:6px;background:#e9f0f1;border-radius:5px;overflow:hidden;margin:7px 0;min-width:80px;}
+  #tab-pgbuild .pgb-meter i{display:block;height:100%;background:linear-gradient(90deg,#28bcc2,#0c9da8);border-radius:5px;}
+  #tab-pgbuild .pgb-mini-metrics{display:flex;gap:9px;flex-wrap:wrap;font-size:12px;color:var(--pgb-muted);line-height:1.7;}.pgb-mini-metrics span{white-space:nowrap;}
+  #tab-pgbuild .pgb-mini-metrics svg{width:12px;height:12px;vertical-align:-2px;}
+  #tab-pgbuild .pgb-people-scroll{overflow-x:auto;max-width:100%;}.pgb-people-table{width:100%;}
+  #tab-pgbuild .pgb-person{display:grid;grid-template-columns:minmax(230px,2fr) 92px 95px repeat(3,78px) 132px 78px;gap:10px;align-items:center;padding:15px 0;border-bottom:1px solid #edf1f3;min-width:990px;font-size:14px;}
+  #tab-pgbuild .pgb-person.allocation{grid-template-columns:minmax(220px,1.4fr) minmax(190px,1.2fr) minmax(185px,1.15fr) minmax(160px,1fr) 174px;min-width:1010px;}
+  #tab-pgbuild .pgb-person>div{min-width:0;overflow-wrap:anywhere;}#tab-pgbuild .pgb-person strong{font-size:15px;color:var(--pgb-ink);}#tab-pgbuild .pgb-person small{font-size:12px;line-height:1.65;color:var(--pgb-muted);display:block;margin-top:3px;}
+  #tab-pgbuild .pgb-person a{color:#087f8f;text-decoration:none;font-size:13px;}#tab-pgbuild .pgb-person a:hover{text-decoration:underline;}
+  #tab-pgbuild .pgb-person-head{font-size:12px;font-weight:750;background:#f7fafb;color:#617984;padding:11px 9px;border-radius:9px;}
+  #tab-pgbuild .pgb-person:last-child{border-bottom:0;}#tab-pgbuild .pgb-person button{font-size:13px;min-height:34px;padding:7px 9px;}
+  #tab-pgbuild .pgb-profile{display:flex;align-items:flex-start;gap:10px;min-width:0;}.pgb-profile-copy{min-width:0;flex:1;}
+  #tab-pgbuild .pgb-avatar{width:37px;height:37px;border-radius:12px;background:#edf8fa;color:#238b96;display:grid;place-items:center;font-weight:750;font-size:12px;flex:none;position:relative;}
+  #tab-pgbuild .pgb-rank{position:absolute;left:-5px;top:-7px;min-width:18px;height:18px;line-height:18px;padding:0 4px;border-radius:5px;background:#eef2f4;font-size:10px;color:#58707b;text-align:center;box-shadow:0 0 0 2px #fff;}
+  #tab-pgbuild .pgb-rank.top{background:#fff0f5;color:#c23869;}
+  #tab-pgbuild .pgb-tag{display:inline-flex;max-width:100%;font-size:11px;line-height:1.5;border-radius:6px;padding:3px 7px;background:#f1f5f7;color:#647a84;margin-top:5px;}
+  #tab-pgbuild .pgb-tag.good{background:#eaf8f1;color:#148457;}#tab-pgbuild .pgb-tag.error{background:#fff1f5;color:#be4169;}
+  #tab-pgbuild .pgb-number{font-variant-numeric:tabular-nums;font-weight:650;}#tab-pgbuild .pgb-engagement-cell strong{color:#af3763;}#tab-pgbuild .pgb-engagement-cell .pgb-rate{font-size:12px;font-weight:650;}
+  #tab-pgbuild .pagination-bar{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:5px;margin-top:16px;}
+  #tab-pgbuild .pagination-info{margin-right:auto;font-size:12px;line-height:1.6;color:var(--pgb-muted);}#tab-pgbuild .pagination-bar button{font-size:13px;min-width:32px;min-height:32px;border-radius:7px;}
+  #tab-pgbuild .pagination-bar button.active{background:#eaf8fa;color:#057c87;border-color:#b6e2e6;}
+  #tab-pgbuild .pgb-empty{padding:28px 16px;text-align:center;color:var(--pgb-muted);font-size:14px;line-height:1.7;}
+  #tab-pgbuild .pgb-timeline{display:flex;gap:8px;align-items:flex-end;min-height:155px;padding:20px 0 8px;overflow-x:auto;}
+  #tab-pgbuild .pgb-day{display:grid;grid-template-rows:110px auto;min-width:34px;flex:1;text-align:center;font-size:11px;color:var(--pgb-muted);}
+  #tab-pgbuild .pgb-day>div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;}#tab-pgbuild .pgb-day i{background:linear-gradient(#6cd8dc,#14aab6);width:min(100%,27px);min-height:2px;border-radius:5px 5px 0 0;}.pgb-day b{font-size:12px;color:#397782;}.pgb-day span{margin-top:8px;}
+  #tab-pgbuild .pgb-stage-settings summary{cursor:pointer;font-size:15px;font-weight:650;line-height:1.6;color:#254a54;}#tab-pgbuild .pgb-phase-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:18px;}
+  #tab-pgbuild .pgb-phase-form .wide{grid-column:span 2;}#tab-pgbuild .pgb-phase-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;}
+  #tab-pgbuild .pgb-phase-actions label{font-size:13px;display:flex;align-items:center;gap:7px;}#tab-pgbuild .pgb-phase-actions input[type=checkbox]{width:16px;height:16px;min-height:16px;}
+  #tab-pgbuild #pgBuildFooter{font-size:12px;line-height:1.8;margin:17px 2px;color:var(--pgb-muted);}
+  .pgb-detail-overlay{position:fixed;inset:0;z-index:10080;background:#19343b66;display:flex;align-items:center;justify-content:center;padding:18px;}
+  .pgb-detail-dialog{width:min(100%,1040px);max-height:88vh;overflow:auto;box-sizing:border-box;padding:23px;background:#fff;border:1px solid #e3eaed;border-radius:18px;color:#18343b;}
+  .pgb-detail-dialog h3{font-size:20px;margin:0;color:#18343b;}.pgb-detail-dialog p{font-size:14px;line-height:1.7;color:#677e87;}.pgb-detail-dialog .pgb-section-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px;}
+  .pgb-detail-dialog .pgb-scroll{overflow-x:auto;max-width:100%;}.pgb-detail-dialog .pgb-grid{min-width:830px;width:100%;border-collapse:collapse;font-size:14px;}.pgb-detail-dialog .pgb-grid th,.pgb-detail-dialog .pgb-grid td{padding:11px;border-bottom:1px solid #e6edf0;text-align:left;}.pgb-detail-dialog .pgb-grid th{background:#f3f8fa;font-size:12px;}.pgb-detail-dialog .pgb-grid a{color:#087f8f;}.pgb-detail-dialog .pgb-grid small{display:block;font-size:12px;color:#69808a;}
+  @media(max-width:1500px){#tab-pgbuild .pgb-metrics{grid-template-columns:repeat(3,minmax(0,1fr));}}
+  @media(max-width:800px){#tab-pgbuild .pgb-controls{grid-template-columns:repeat(2,minmax(0,1fr));}#tab-pgbuild .pgb-controls>label:first-child{grid-column:1/-1;}#tab-pgbuild .pgb-hero{padding:20px;}#tab-pgbuild .pgb-section{padding:17px;}}
+  @media(max-width:600px){#tab-pgbuild .pgb-hero{padding:18px 16px;border-radius:14px;gap:15px;}#tab-pgbuild h2{font-size:25px;}#tab-pgbuild .pgb-hero p{font-size:13px;}#tab-pgbuild .pgb-actions{width:100%;gap:7px;}#tab-pgbuild .pgb-actions button{flex:1 1 125px;font-size:13px;min-height:38px;}#tab-pgbuild .pgb-actions button:last-child{flex-basis:100%;}#tab-pgbuild .pgb-meta{padding:12px 1px;}#tab-pgbuild .pgb-tabs{margin-bottom:15px;}#tab-pgbuild .pgb-tabs button{flex:1;justify-content:center;font-size:15px;padding:13px 10px;}#tab-pgbuild .pgb-controls{padding:12px;gap:10px;}#tab-pgbuild input,#tab-pgbuild select{font-size:14px;min-height:40px;}#tab-pgbuild .pgb-cards,#tab-pgbuild .pgb-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}#tab-pgbuild .pgb-card{padding:14px 12px;border-radius:12px;}#tab-pgbuild .pgb-card-head{gap:7px;margin-bottom:12px;}#tab-pgbuild .pgb-card-icon{width:27px;height:27px;border-radius:8px;}#tab-pgbuild .pgb-card .label{font-size:12px;}#tab-pgbuild .pgb-card .value{font-size:27px;}#tab-pgbuild .pgb-card .value.long-value{font-size:20px;}#tab-pgbuild .pgb-card small{font-size:11px;}#tab-pgbuild .pgb-section{padding:14px 12px;}#tab-pgbuild h3{font-size:17px;}#tab-pgbuild .pgb-section-head{gap:12px;}#tab-pgbuild .pgb-group-modes{width:100%;}.pgb-group-modes button{flex:1;}#tab-pgbuild .pgb-time-toolbar{padding:12px;gap:10px;}#tab-pgbuild .pgb-time-toolbar>.pgb-label:first-child{max-width:none;}#tab-pgbuild .pgb-time-toolbar .pgb-range-pair{flex-basis:100%;}#tab-pgbuild .pgb-time-toolbar button{width:100%;}#tab-pgbuild .pgb-phase-form{grid-template-columns:repeat(2,minmax(0,1fr));}#tab-pgbuild .pgb-phase-form .wide{grid-column:1/-1;}#tab-pgbuild .pgb-people-scroll{overflow:visible;}#tab-pgbuild .pgb-person,#tab-pgbuild .pgb-person.allocation{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:17px 0;font-size:13px;}#tab-pgbuild .pgb-person-head{display:none!important;}#tab-pgbuild .pgb-person>div:first-child{grid-column:1/-1;}#tab-pgbuild .pgb-person.allocation>div{grid-column:1/-1;}#tab-pgbuild .pgb-person>div:last-child{grid-column:1/-1;}#tab-pgbuild .pgb-person>div:last-child button{width:100%;}#tab-pgbuild .pgb-person strong{font-size:14px;}#tab-pgbuild .pgb-person small{font-size:12px;}#tab-pgbuild .pgb-person [data-pgb-label]:before{content:attr(data-pgb-label);display:block;font-size:11px;color:var(--pgb-muted);margin-bottom:5px;}#tab-pgbuild .pgb-engagement-cell{grid-column:span 2;}#tab-pgbuild .pgb-period-chip{font-size:12px;}#tab-pgbuild .pgb-stage-line select{width:100%;}.pgb-detail-overlay{padding:10px;}.pgb-detail-dialog{padding:17px;}}
+  #tab-pgbuild{--pgb-ink:#23323e;--pgb-muted:#5e737d;--pgb-cyan:#079fa9;--pgb-pink:#f02d66;--pgb-line:#dfebef;font-size:16px;}
+  #tab-pgbuild .pgb-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(210px,.6fr);gap:6px 25px;padding:29px 32px 25px;border:1px solid #d9e9ed;border-radius:23px;background:radial-gradient(ellipse at 91% 17%,#caf6f65e,transparent 48%),radial-gradient(ellipse at 77% 100%,#ffe0eb7d,transparent 44%),#fff;box-shadow:0 10px 30px #233c4d05;}
+  #tab-pgbuild .pgb-hero:before{width:5px;background:linear-gradient(180deg,#1ed5d9,#7cdfe4 38%,#ff3d79);}
+  #tab-pgbuild .pgb-eyebrow{font-size:12px;letter-spacing:1.5px;color:#536a76;}
+  #tab-pgbuild .pgb-brand-mark{width:33px;height:33px;box-shadow:-2px 1px #20cfd4,2px -1px #ff467d;}
+  #tab-pgbuild h2{font-size:44px;letter-spacing:-1.9px;font-weight:850;margin:13px 0 7px;line-height:1.15;}
+  #tab-pgbuild h2 span{color:#ed2e64;text-shadow:-1.5px 1.5px #7fedef;}
+  #tab-pgbuild .pgb-hero .pgb-hero-line{font-size:18px;font-weight:650;color:#324d58;margin-bottom:6px;}
+  #tab-pgbuild .pgb-hero p{font-size:14px;line-height:1.7;max-width:620px;}
+  #tab-pgbuild .pgb-hero-art{align-self:center;justify-self:end;width:min(100%,285px);pointer-events:none;}
+  #tab-pgbuild .pgb-hero-art svg{display:block;width:100%;height:auto;}
+  #tab-pgbuild .pgb-actions{grid-column:1/-1;margin-top:13px;gap:10px;}
+  #tab-pgbuild .pgb-actions button{padding:10px 18px;border-color:#d4e5ea;color:#365d6b;background:#fff;min-height:43px;}
+  #tab-pgbuild .pgb-actions .pgb-scan{background:#eafcfd;border-color:#8edce2;color:#067b86;}
+  #tab-pgbuild .primary{background:#ed3268;border-color:#ed3268;color:#fff;box-shadow:0 3px 9px #f02d6615;}
+  #tab-pgbuild .primary:hover{background:#d92359;border-color:#d92359;}
+  #tab-pgbuild #pgBuildExport{background:#ed3268;border-color:#ed3268;color:#fff;}
+  #tab-pgbuild button:focus-visible,#tab-pgbuild a:focus-visible{outline:3px solid #68d6df;outline-offset:3px;}
+  #tab-pgbuild .pgb-tabs{border:1px solid #e0e9ee;background:#edf5f7;border-radius:14px;padding:5px;gap:5px;margin:5px 0 20px;}
+  #tab-pgbuild .pgb-tabs button{flex:1;justify-content:center;font-size:16px;font-weight:700;border-radius:10px;padding:13px 16px;color:#576f7b;}
+  #tab-pgbuild .pgb-tabs button.active{color:#213d4c;background:#fff;box-shadow:-2px 2px #56d5dc60,2px -1px #f17da34d;}
+  #tab-pgbuild .pgb-tabs button.active:after{height:2px;bottom:0;left:25%;right:25%;background:linear-gradient(90deg,#10b6c3,#ff4b82);}
+  #tab-pgbuild .pgb-controls{padding:18px;border-radius:16px;box-shadow:0 3px 16px #243b4d03;}
+  #tab-pgbuild label.pgb-label{font-size:14px;color:#486473;}
+  #tab-pgbuild input,#tab-pgbuild select{font-size:15px;min-height:43px;}
+  #tab-pgbuild select{appearance:none;padding-right:33px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath d='m7 10 5 5 5-5' fill='none' stroke='%23506b78' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");background-position:right 10px center;background-repeat:no-repeat;}
+  #tab-pgbuild .pgb-time-toolbar{background:linear-gradient(110deg,#fff,#f5fcfd);border-radius:15px;padding:17px;}
+  #tab-pgbuild .pgb-time-toolbar button{min-height:43px;}
+  #tab-pgbuild .pgb-card{border-radius:16px;position:relative;overflow:hidden;padding:21px 20px;box-shadow:0 5px 20px #22485d04;}
+  #tab-pgbuild .pgb-card:before{content:'';position:absolute;top:0;left:20px;width:35px;height:3px;border-radius:0 0 5px 5px;background:#36c6cc;}
+  #tab-pgbuild .pgb-card.pink:before{background:#fa6796;}#tab-pgbuild .pgb-card.purple:before{background:#a38de8;}
+  #tab-pgbuild .pgb-card .label{font-size:14px;color:#556d79;}#tab-pgbuild .pgb-card .value{font-size:35px;letter-spacing:-1px;}
+  #tab-pgbuild .pgb-card .value.long-value{font-size:25px;}#tab-pgbuild .pgb-card.engagement{background:radial-gradient(ellipse at 90% 0,#ffdfeb7a,transparent 70%),#fff9fc;}
+  #tab-pgbuild .pgb-card small{font-size:13px;}
+  #tab-pgbuild .pgb-section{border-radius:17px;box-shadow:0 5px 23px #1f3c4d03;padding:22px;}
+  #tab-pgbuild h3{font-size:20px;letter-spacing:-.45px;}
+  #tab-pgbuild .pgb-section-head p,#tab-pgbuild .pgb-help{font-size:14px;}
+  #tab-pgbuild .pgb-group-count{font-size:13px;line-height:1.6;color:#66808b;margin:0 0 12px;}
+  #tab-pgbuild .pgb-grid{font-size:15px;}#tab-pgbuild .pgb-grid th{font-size:13px;}
+  #tab-pgbuild .pgb-person{font-size:15px;}#tab-pgbuild .pgb-person strong{font-size:16px;}
+  #tab-pgbuild .pgb-person small{font-size:13px;}#tab-pgbuild .pgb-person-head{font-size:13px;}
+  #tab-pgbuild .pgb-profile-copy .pgb-tag{font-size:12px;display:table;}
+  #tab-pgbuild .pgb-ranking-intro{display:flex;gap:20px;align-items:center;justify-content:space-between;padding:15px 2px 20px;flex-wrap:wrap;}
+  #tab-pgbuild .pgb-ranking-intro h3{font-size:27px;letter-spacing:-.8px;margin:5px 0 8px;}
+  #tab-pgbuild .pgb-ranking-intro p{font-size:14px;color:var(--pgb-muted);margin:0;line-height:1.7;}
+  #tab-pgbuild .pgb-board-kicker{font-size:12px;font-weight:750;letter-spacing:1.5px;color:#8a5876;}
+  #tab-pgbuild .pgb-ranking-formula{padding:13px 16px;border-radius:12px;background:linear-gradient(115deg,#effbfc,#fff0f6);border:1px solid #e7e7f0;}
+  #tab-pgbuild .pgb-ranking-formula span{font-size:12px;font-weight:750;letter-spacing:1px;color:#b34674;display:block;}
+  #tab-pgbuild .pgb-ranking-formula strong{font-size:15px;display:block;margin-top:5px;color:#4b6473;}
+  #tab-pgbuild .pgb-leaderboards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}
+  #tab-pgbuild .pgb-leaderboards>.pgb-empty{grid-column:1/-1;}
+  #tab-pgbuild .pgb-leaderboard{background:#fff;border:1px solid #dfe9ee;border-radius:18px;overflow:hidden;box-shadow:0 8px 27px #233b4a05;min-width:0;}
+  #tab-pgbuild .pgb-board-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 20px 17px;background:linear-gradient(115deg,#fbffff,#fff6fa);border-bottom:1px solid #edf0f3;}
+  #tab-pgbuild .pgb-board-heading h3{margin-top:6px;font-size:21px;}
+  #tab-pgbuild .pgb-board-count{padding:6px 9px;border:1px solid #e6e7ec;border-radius:7px;font-size:12px;white-space:nowrap;color:#64808b;background:#fff;}
+  #tab-pgbuild .pgb-board-cols{display:flex;justify-content:space-between;gap:12px;padding:12px 20px;font-size:12px;font-weight:650;color:#67808b;background:#fcfdfe;}
+  #tab-pgbuild .pgb-board-list{max-height:427px;overflow-y:auto;padding:0 16px 5px;scrollbar-width:thin;scrollbar-color:#cbdde3 transparent;}
+  #tab-pgbuild .pgb-board-list.expanded{max-height:none;overflow:visible;}
+  #tab-pgbuild .pgb-board-footer{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:11px 16px;background:#fcfdfe;border-top:1px solid #eaf0f3;font-size:12px;color:#718591;}
+  #tab-pgbuild .pgb-board-footer button{font-size:12px;padding:6px 9px;min-height:30px;background:#f0fafc;border:1px solid #cde7ec;border-radius:7px;color:#1a7686;cursor:pointer;}
+  #tab-pgbuild .pgb-leader-row{display:grid;grid-template-columns:31px minmax(0,1fr) minmax(65px,auto);align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid #edf2f4;}
+  #tab-pgbuild .pgb-leader-row:last-child{border-bottom:0;}
+  #tab-pgbuild .pgb-place{display:grid;place-items:center;width:28px;height:30px;border-radius:8px;font-size:14px;font-weight:750;background:#f1f5f7;color:#71858f;flex:none;}
+  #tab-pgbuild .pgb-leader-row.place-1 .pgb-place{color:#d32661;background:#ffedf3;box-shadow:inset 0 0 0 1px #ffc5d8;}
+  #tab-pgbuild .pgb-leader-row.place-2 .pgb-place{color:#087f8a;background:#e7fafd;box-shadow:inset 0 0 0 1px #b1e6ec;}
+  #tab-pgbuild .pgb-leader-row.place-3 .pgb-place{color:#8054b5;background:#f5edff;box-shadow:inset 0 0 0 1px #e1cff6;}
+  #tab-pgbuild .pgb-leader-owner{min-width:0;}
+  #tab-pgbuild .pgb-leader-owner button{display:block;max-width:100%;white-space:normal;background:transparent;color:#284a5b;border:0;border-radius:3px;padding:0;text-align:left;min-height:0;font-size:15px;font-weight:700;line-height:1.45;overflow-wrap:anywhere;cursor:pointer;}
+  #tab-pgbuild .pgb-leader-owner button:hover{color:#d32d67;text-decoration:underline;}
+  #tab-pgbuild .pgb-leader-owner small{display:block;font-size:12px;line-height:1.6;color:#6c808b;margin-top:4px;overflow-wrap:anywhere;}
+  #tab-pgbuild .pgb-leader-bar{margin-top:8px;max-width:165px;height:4px;border-radius:4px;background:#eff4f6;overflow:hidden;}
+  #tab-pgbuild .pgb-leader-bar i{height:100%;display:block;background:linear-gradient(90deg,#1bc4cd,#7edbe1);border-radius:4px;}
+  #tab-pgbuild .place-1 .pgb-leader-bar i{background:linear-gradient(90deg,#f33d77,#f6aac4);}
+  #tab-pgbuild .pgb-leader-score{text-align:right;min-width:0;}
+  #tab-pgbuild .pgb-leader-score b{font-size:20px;letter-spacing:-.5px;font-variant-numeric:tabular-nums;color:#233e4d;overflow-wrap:anywhere;}
+  #tab-pgbuild .place-1 .pgb-leader-score b{color:#d32b64;}
+  #tab-pgbuild .pgb-leader-score small{display:block;font-size:12px;color:#6e818b;line-height:1.6;margin-top:4px;}
+  #tab-pgbuild .pgb-viral-board{grid-column:1/-1;}
+  #tab-pgbuild .pgb-viral-podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:20px;}
+  #tab-pgbuild .pgb-viral-card{min-width:0;display:block;border:1px solid #e3e9ef;border-radius:13px;overflow:hidden;color:inherit;text-decoration:none;transition:transform .15s,box-shadow .15s;}
+  #tab-pgbuild .pgb-viral-card:hover{transform:translateY(-3px);box-shadow:0 7px 20px #d0316b10;}
+  #tab-pgbuild .pgb-viral-art{height:113px;display:flex;align-items:center;justify-content:center;position:relative;background:radial-gradient(ellipse at 15% 12%,#e48cc337,transparent 55%),linear-gradient(125deg,#e7fafb,#fff1f7);}
+  #tab-pgbuild .pgb-viral-card.place-2 .pgb-viral-art{background:linear-gradient(135deg,#e2f9fb,#effaff);}
+  #tab-pgbuild .pgb-viral-card.place-3 .pgb-viral-art{background:linear-gradient(135deg,#f4efff,#fff1f8);}
+  #tab-pgbuild .pgb-viral-place{position:absolute;top:13px;left:13px;font-size:18px;font-weight:800;color:#ba2f62;}
+  #tab-pgbuild .pgb-viral-play{display:grid;place-items:center;width:50px;height:50px;background:#fff;border:1px solid #edd7e2;border-radius:15px;box-shadow:-3px 2px #58d7dd70,3px -2px #f381a680;color:#d32c66;}
+  #tab-pgbuild .pgb-viral-play svg{width:26px;height:26px;}
+  #tab-pgbuild .pgb-viral-day{position:absolute;bottom:10px;right:10px;font-size:12px;color:#6e7e8c;}
+  #tab-pgbuild .pgb-viral-copy{padding:16px 14px;}
+  #tab-pgbuild .pgb-viral-copy>strong{font-size:16px;line-height:1.5;display:block;color:#274959;overflow-wrap:anywhere;}
+  #tab-pgbuild .pgb-viral-copy small{display:block;font-size:12px;line-height:1.7;color:#6a818d;overflow-wrap:anywhere;}
+  #tab-pgbuild .pgb-viral-score{display:flex;gap:12px;justify-content:space-between;align-items:center;margin:13px 0;}
+  #tab-pgbuild .pgb-viral-score b{font-size:26px;line-height:1.2;color:#d13165;letter-spacing:-.8px;}
+  #tab-pgbuild .pgb-viral-score b small{font-weight:500;letter-spacing:0;}
+  #tab-pgbuild .pgb-viral-score>span{font-size:14px;font-weight:650;text-align:right;color:#476573;}
+  #tab-pgbuild .pgb-viral-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 25px;max-height:325px;overflow-y:auto;padding:0 20px;scrollbar-width:thin;}
+  #tab-pgbuild .pgb-viral-row{display:grid;grid-template-columns:29px minmax(0,1fr) auto;align-items:center;gap:10px;padding:14px 0;text-decoration:none;color:inherit;border-bottom:1px solid #edf1f4;min-width:0;}
+  #tab-pgbuild .pgb-viral-row strong{font-size:14px;line-height:1.5;color:#305463;overflow-wrap:anywhere;display:block;}
+  #tab-pgbuild .pgb-viral-row small{font-size:12px;color:#738691;display:block;line-height:1.6;overflow-wrap:anywhere;}
+  #tab-pgbuild .pgb-viral-row .pgb-leader-score b{font-size:17px;}
+  #tab-pgbuild .pgb-ranking-footnote{font-size:13px;line-height:1.8;color:#6d818d;margin:17px 2px;}
+  #tab-pgbuild .pgb-viral-board>.pgb-ranking-footnote{margin:16px 20px 20px;}
+  @media(min-width:1550px){#tab-pgbuild .pgb-leaderboards{gap:22px;}#tab-pgbuild .pgb-board-list{max-height:470px;}}
+  @media(max-width:900px){#tab-pgbuild .pgb-hero{padding:24px;grid-template-columns:minmax(0,1fr) 180px;}#tab-pgbuild h2{font-size:37px;}#tab-pgbuild .pgb-hero-art{width:190px;}#tab-pgbuild .pgb-board-heading{padding:17px 15px;}#tab-pgbuild .pgb-board-list{padding:0 12px 5px;}#tab-pgbuild .pgb-leader-score b{font-size:18px;}#tab-pgbuild .pgb-leader-owner button{font-size:14px;}#tab-pgbuild .pgb-leaderboards{gap:14px;}}
+  @media(max-width:600px){#tab-pgbuild .pgb-hero{display:block;padding:22px 18px 20px;border-radius:18px;}#tab-pgbuild .pgb-hero-art{display:none;}#tab-pgbuild h2{font-size:36px;letter-spacing:-1.4px;}#tab-pgbuild .pgb-hero .pgb-hero-line{font-size:16px;}#tab-pgbuild .pgb-hero p{font-size:13px;}#tab-pgbuild .pgb-actions{display:flex;margin-top:18px;}#tab-pgbuild .pgb-actions button{font-size:13px;padding:10px;min-height:41px;}#tab-pgbuild .pgb-tabs{gap:3px;padding:4px;}#tab-pgbuild .pgb-tabs button{font-size:14px;padding:13px 5px;white-space:nowrap;}#tab-pgbuild .pgb-controls{padding:14px;}#tab-pgbuild input,#tab-pgbuild select{font-size:14px;}#tab-pgbuild label.pgb-label{font-size:13px;}#tab-pgbuild .pgb-time-toolbar{padding:14px;}#tab-pgbuild .pgb-card{padding:18px 13px;}#tab-pgbuild .pgb-card .value{font-size:29px;}#tab-pgbuild .pgb-card .label{font-size:13px;}#tab-pgbuild .pgb-card small{font-size:12px;}#tab-pgbuild .pgb-section{padding:17px 13px;}#tab-pgbuild .pgb-person strong{font-size:15px;}#tab-pgbuild .pgb-person small{font-size:12px;}#tab-pgbuild .pgb-ranking-intro{gap:13px;padding:10px 1px 17px;}#tab-pgbuild .pgb-ranking-intro h3{font-size:24px;}#tab-pgbuild .pgb-ranking-intro p{font-size:13px;}#tab-pgbuild .pgb-ranking-formula{width:100%;}#tab-pgbuild .pgb-leaderboards{grid-template-columns:minmax(0,1fr);gap:16px;}#tab-pgbuild .pgb-board-heading{padding:18px 15px;}#tab-pgbuild .pgb-board-heading h3{font-size:20px;}#tab-pgbuild .pgb-board-list{max-height:425px;padding:0 13px 4px;}#tab-pgbuild .pgb-leader-row{gap:9px;padding:14px 0;grid-template-columns:28px minmax(0,1fr) minmax(57px,auto);}#tab-pgbuild .pgb-leader-owner button{font-size:14px;}#tab-pgbuild .pgb-leader-score b{font-size:19px;}#tab-pgbuild .pgb-viral-podium{grid-template-columns:minmax(0,1fr);gap:13px;padding:15px;}#tab-pgbuild .pgb-viral-card{display:grid;grid-template-columns:82px minmax(0,1fr);}#tab-pgbuild .pgb-viral-art{height:100%;min-height:141px;}#tab-pgbuild .pgb-viral-day{display:none;}#tab-pgbuild .pgb-viral-place{font-size:15px;top:10px;left:10px;}#tab-pgbuild .pgb-viral-play{width:40px;height:40px;}#tab-pgbuild .pgb-viral-play svg{width:22px;height:22px;}#tab-pgbuild .pgb-viral-copy{padding:13px 12px;}#tab-pgbuild .pgb-viral-copy>strong{font-size:14px;}#tab-pgbuild .pgb-viral-score{flex-wrap:wrap;gap:6px;margin:9px 0;}#tab-pgbuild .pgb-viral-score b{font-size:23px;}#tab-pgbuild .pgb-viral-score>span{font-size:13px;text-align:left;}#tab-pgbuild .pgb-viral-list{grid-template-columns:minmax(0,1fr);padding:0 15px;gap:0;}#tab-pgbuild .pgb-viral-row{grid-template-columns:26px minmax(0,1fr) minmax(65px,auto);gap:8px;}#tab-pgbuild .pgb-viral-row .pgb-leader-score b{font-size:17px;}#tab-pgbuild .pgb-ranking-footnote{font-size:12px;}}
+  @media(prefers-reduced-motion:reduce){#tab-pgbuild .pgb-viral-card{transition:none;}#tab-pgbuild .pgb-viral-card:hover{transform:none;}}
+  #tab-pgbuild .pgb-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;}
+  #tab-pgbuild .pgb-person .pgb-update-channel{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 9px;border:1px solid #97d9df;border-radius:8px;background:#eefbfc;color:#087b86;font-size:13px;font-weight:700;line-height:1.4;text-decoration:none;white-space:nowrap;}
+  #tab-pgbuild .pgb-person .pgb-update-channel:hover{background:#dbf6f9;border-color:#5ac6d0;text-decoration:none;}
+  @media(max-width:600px){#tab-pgbuild .pgb-person .pgb-row-actions{width:100%;gap:9px;}#tab-pgbuild .pgb-person .pgb-row-actions button,#tab-pgbuild .pgb-person .pgb-update-channel{flex:1 1 0;min-width:0;width:auto;min-height:38px;}}
+
+
+  #tab-pgbuild .pgb-growth-section{background:linear-gradient(125deg,#fff,#fbfeff);}
+  #tab-pgbuild .pgb-growth-label{padding:8px 11px;border:1px solid #dfe9ee;border-radius:8px;color:#627986;background:#f7fbfd;font-size:12px;font-weight:700;letter-spacing:.8px;}
+  #tab-pgbuild .pgb-growth-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
+  #tab-pgbuild .pgb-growth-charts>.pgb-empty{grid-column:1/-1;}
+  #tab-pgbuild .pgb-growth-metric{min-width:0;border:1px solid #e0ebef;background:#fff;border-radius:14px;padding:18px 18px 15px;}
+  #tab-pgbuild .pgb-growth-metric.engagement{border-color:#eedee7;background:linear-gradient(180deg,#fff,#fffafd);}
+  #tab-pgbuild .pgb-growth-metric-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+  #tab-pgbuild .pgb-growth-metric h4{display:flex;gap:8px;align-items:center;margin:0;font-size:17px;font-weight:750;color:#365766;}
+  #tab-pgbuild .pgb-growth-metric h4 svg{width:20px;height:20px;color:#0c99a7;}
+  #tab-pgbuild .pgb-growth-metric.engagement h4 svg{color:#d83c74;}
+  #tab-pgbuild .pgb-growth-trend{font-size:14px;font-weight:750;padding:6px 9px;border-radius:7px;background:#f0f5f7;color:#627780;line-height:1.4;}
+  #tab-pgbuild .pgb-growth-trend.up{background:#eaf8f1;color:#177a57;}#tab-pgbuild .pgb-growth-trend.down{background:#fff0f5;color:#bd2f61;}
+  #tab-pgbuild .pgb-growth-trend.unknown{font-size:12px;font-weight:600;}
+  #tab-pgbuild .pgb-growth-plot{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;padding:26px 12px 5px;margin-top:12px;}
+  #tab-pgbuild .pgb-growth-column{min-width:0;text-align:center;}
+  #tab-pgbuild .pgb-growth-track{height:174px;display:flex;align-items:flex-end;justify-content:center;position:relative;border-bottom:1px solid #dfe9ed;background:repeating-linear-gradient(to top,transparent 0,transparent 42px,#edf2f5 42px,#edf2f5 43px);}
+  #tab-pgbuild .pgb-growth-stick{position:relative;width:min(100%,70px);border-radius:8px 8px 0 0;background:linear-gradient(180deg,#d3e3e8,#b7ced8);min-width:18px;}
+  #tab-pgbuild .pgb-growth-column.current .pgb-growth-stick{background:linear-gradient(180deg,#43d3d8,#079fae);}
+  #tab-pgbuild .pgb-growth-metric.engagement .pgb-growth-column.current .pgb-growth-stick{background:linear-gradient(180deg,#ff8eb4,#ed3973);}
+  #tab-pgbuild .pgb-growth-stick.unknown{background:#f9fbfc!important;border:1px dashed #d1dfe5;}
+  #tab-pgbuild .pgb-growth-stick b{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);display:block;white-space:nowrap;font-size:22px;font-weight:750;line-height:1.2;padding-bottom:9px;color:#566e7a;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
+  #tab-pgbuild .pgb-growth-column.current .pgb-growth-stick b{color:#0a7f90;}#tab-pgbuild .pgb-growth-metric.engagement .pgb-growth-column.current .pgb-growth-stick b{color:#c43168;}
+  #tab-pgbuild .pgb-growth-column>strong{display:block;font-size:14px;margin-top:11px;color:#5e7783;font-weight:650;}
+  #tab-pgbuild .pgb-growth-column.current>strong{color:#294c5e;}
+  #tab-pgbuild .pgb-growth-column>small{display:block;font-size:12px;line-height:1.6;color:#6f8792;margin-top:3px;}
+  #tab-pgbuild .pgb-growth-result{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;border-top:1px solid #eaf0f3;padding-top:13px;margin-top:13px;align-items:center;}
+  #tab-pgbuild .pgb-growth-result b{font-size:14px;color:#405f70;}.pgb-growth-result span{font-size:12px;color:#6c818d;line-height:1.5;}
+  #tab-pgbuild .pgb-growth-note{font-size:13px;line-height:1.8;color:#6a818d;margin:16px 0 0;}
+  @media(max-width:600px){#tab-pgbuild .pgb-growth-charts{grid-template-columns:minmax(0,1fr);gap:14px;}#tab-pgbuild .pgb-growth-metric{padding:17px 14px 14px;}#tab-pgbuild .pgb-growth-plot{padding:24px 7px 4px;gap:20px;}#tab-pgbuild .pgb-growth-stick b{font-size:21px;}#tab-pgbuild .pgb-growth-note{font-size:12px;}#tab-pgbuild .pgb-growth-label{font-size:11px;}}
+
+</style>
+<section id="tab-pgbuild" class="maintab">
+  <header class="pgb-hero">
+    <div class="pgb-hero-copy"><div class="pgb-eyebrow"><span class="pgb-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v12a4 4 0 1 1-3-3.9M14 3c1 3.2 3 4.7 6 5"/></svg></span>TikTok · Miền Trung</div><h2>Xây kênh <span>PGs</span></h2><p class="pgb-hero-line">Tạo dấu ấn. Lan tỏa mỗi ngày.</p><p>Phân bổ đội ngũ, theo dõi tiến độ và tôn vinh những kênh nổi bật.</p></div>
+    <div class="pgb-hero-art" aria-hidden="true"><svg viewBox="0 0 300 180" fill="none"><rect x="72" y="16" width="132" height="150" rx="25" fill="white" stroke="#d8e9ef" transform="rotate(9 138 91)"/><rect x="97" y="25" width="120" height="142" rx="22" fill="#f0fcfd" stroke="#9ce4e8" transform="rotate(-9 157 96)"/><circle cx="154" cy="91" r="48" fill="white"/><path d="M164 51v55a19 19 0 1 1-15-18M164 51c5 13 13 21 27 23" stroke="#25d5d7" stroke-width="14" stroke-linecap="round"/><path d="M171 47v55a19 19 0 1 1-15-18M171 47c5 13 13 21 27 23" stroke="#fe3b70" stroke-width="14" stroke-linecap="round"/><path d="M168 49v55a19 19 0 1 1-15-18M168 49c5 13 13 21 27 23" stroke="#25343f" stroke-width="12" stroke-linecap="round"/><rect x="25" y="103" width="60" height="39" rx="12" fill="white" stroke="#edc4d1"/><path d="m42 121 7 8 19-18" stroke="#ee3b70" stroke-width="3" stroke-linecap="round"/><rect x="225" y="39" width="54" height="41" rx="13" fill="white" stroke="#a8e3e8"/><path d="M240 64v-7m9 7V49m9 15V45" stroke="#0a9ba9" stroke-width="4" stroke-linecap="round"/><circle cx="49" cy="53" r="5" fill="#fe7a9a"/><circle cx="248" cy="133" r="7" fill="#4bdbdc"/><path d="M45 75h14m-7-7v14M227 104h11m-5-5v10" stroke="#aacfd6" stroke-width="2" stroke-linecap="round"/></svg></div>
+    <div class="pgb-actions"><button type="button" class="secondary" id="pgBuildRefresh">Cập nhật phân bổ</button><button type="button" class="secondary pgb-scan" id="pgBuildScan">Quét TikTok</button><button type="button" class="primary" id="pgBuildExport" disabled>Xuất Excel</button></div>
+  </header>
+  <div class="pgb-meta"><p id="pgBuildStatus" role="status" aria-live="polite">Mở Xây Kênh để xem số liệu đã cập nhật.</p><div id="pgBuildJob" hidden></div></div>
+  <div class="pgb-tabs" id="pgBuildTabs" role="tablist" aria-label="Xây kênh PGs"><button type="button" data-pg-build-tab="allocation" class="active" role="tab" aria-selected="true">Phân Bổ</button><button type="button" data-pg-build-tab="progress" role="tab" aria-selected="false">Tiến Độ</button><button type="button" data-pg-build-tab="ranking" role="tab" aria-selected="false">Bảng Xếp Hạng</button></div>
+  <div class="pgb-controls"><label class="pgb-label">Tìm PGs / kênh / shop<input id="pgBuildSearch" type="search" placeholder="Code, họ tên, kênh TikTok…"></label><label class="pgb-label">Khu vực<select id="pgBuildRegion"><option value="">Tất cả khu vực</option></select></label><label class="pgb-label">Trainer<select id="pgBuildTrainer"><option value="">Tất cả Trainer</option></select></label><label class="pgb-label">Sale<select id="pgBuildSale"><option value="">Tất cả Sale</option></select></label></div>
+  <div id="pgBuildActivityFilters" hidden>
+    <form id="pgBuildTimeForm" class="pgb-time-toolbar"><label class="pgb-label">Thời gian<select id="pgBuildTimeMode"><option value="day">Ngày</option><option value="week">Tuần</option><option value="month" selected>Tháng</option><option value="custom">Giai đoạn</option></select></label><label class="pgb-label" id="pgBuildDayField" hidden>Ngày<input id="pgBuildTimeDay" type="date"></label><label class="pgb-label" id="pgBuildWeekField" hidden>Tuần · Thứ hai đến Chủ nhật<input id="pgBuildTimeWeek" type="week"></label><label class="pgb-label" id="pgBuildMonthField">Tháng<input id="pgBuildTimeMonth" type="month"></label><label class="pgb-label" id="pgBuildStagePresetField" hidden>Giai đoạn đã lưu<select id="pgBuildTimeStage"><option value="">Tùy chọn ngày</option></select></label><div class="pgb-range-pair" id="pgBuildCustomFields" hidden><label class="pgb-label">Từ ngày<input id="pgBuildTimeFrom" type="date"></label><label class="pgb-label">Đến ngày<input id="pgBuildTimeTo" type="date"></label></div><button type="submit" class="primary" id="pgBuildApplyTime">Áp dụng</button></form>
+    <div class="pgb-progress-caption"><span class="pgb-period-chip" id="pgBuildProgressRange"></span><span id="pgBuildObservedNote"></span></div>
+  </div>
+  <div id="pgBuildAllocation" role="tabpanel">
+    <div class="pgb-cards" id="pgBuildAllocationCards"></div>
+    <div class="pgb-stage-line"><strong>Giai đoạn mục tiêu</strong><select id="pgBuildStage"><option value="__month__">Theo tháng đang xem</option></select><span class="pgb-period-chip" id="pgBuildPeriod"></span></div>
+    <section class="pgb-section"><div class="pgb-section-head"><div><h3>Phân bổ đội ngũ</h3><p>Độ phủ và hiệu quả kênh theo khu vực, Trainer hoặc Sale.</p></div><div class="pgb-group-modes" id="pgBuildGroupModes"><button type="button" data-pgb-group="region" class="active">Khu vực</button><button type="button" data-pgb-group="trainer">Trainer</button><button type="button" data-pgb-group="sale">Sale</button></div></div><p class="pgb-group-count" id="pgBuildGroupCount"></p><div class="pgb-scroll" data-mobile-scroll tabindex="0"><div id="pgBuildGroups"></div></div><div class="pagination-bar" id="pgBuildGroupPagination"></div></section>
+    <details id="pgBuildSettings" class="pgb-section pgb-stage-settings" hidden><summary>Mục tiêu theo giai đoạn · Admin lưu và sửa</summary><form id="pgBuildStageForm"><input id="pgBuildStageId" type="hidden"><div class="pgb-phase-form"><label class="pgb-label wide">Tên giai đoạn<input id="pgBuildStageName" maxlength="80" required placeholder="Tên giai đoạn xây kênh"></label><label class="pgb-label">Từ ngày<input id="pgBuildStageFrom" type="date" required></label><label class="pgb-label">Đến ngày<input id="pgBuildStageTo" type="date" required></label><label class="pgb-label">Mục tiêu video / PG<input id="pgBuildStageTarget" type="number" min="1" max="5000" step="1" required placeholder="Anh tự nhập"></label><label class="pgb-label wide">Hashtag tính tiến độ · tùy chọn<input id="pgBuildStageTags" placeholder="Để trống để tính mọi video công khai"></label></div><div class="pgb-phase-actions"><button type="submit" class="primary" id="pgBuildSaveStage">Lưu giai đoạn</button><button type="button" class="secondary" id="pgBuildEditStage">Sửa giai đoạn</button><button type="button" class="secondary" id="pgBuildNewStage">Tạo giai đoạn mới</button></div></form><div class="pgb-phase-actions"><label><input type="checkbox" id="pgBuildAutoScan"> Tự quét lúc 06:00 giờ Việt Nam</label><button type="button" class="secondary" id="pgBuildSaveAuto">Lưu lịch quét</button></div><p class="pgb-help">Mục tiêu áp dụng cho toàn bộ giai đoạn. Video vượt chỉ tiêu của một PG không bù cho PG khác.</p></details>
+  </div>
+  <div id="pgBuildProgress" role="tabpanel" hidden>
+    <div class="pgb-cards pgb-metrics" id="pgBuildProgressCards"></div>
+    <section class="pgb-section pgb-growth-section" id="pgBuildGrowthSection" aria-labelledby="pgBuildGrowthTitle"><div class="pgb-section-head"><div><h3 id="pgBuildGrowthTitle">Tăng trưởng so với tháng trước</h3><p id="pgBuildGrowthPeriod"></p></div><span class="pgb-growth-label">VIDEO &amp; TƯƠNG TÁC</span></div><div id="pgBuildGrowthCharts" class="pgb-growth-charts"></div><p id="pgBuildGrowthNote" class="pgb-growth-note"></p></section>
+    <section class="pgb-section"><div class="pgb-section-head"><div><h3>Nhịp đăng video</h3><p>Số video ghi nhận theo ngày đăng trong khoảng đang xem.</p></div></div><div id="pgBuildTimeline"></div></section>
+  </div>
+  <div id="pgBuildRanking" role="tabpanel" hidden>
+    <div class="pgb-ranking-intro"><div><span class="pgb-board-kicker">THE LEADERBOARD</span><h3>Bảng Xếp Hạng</h3><p id="pgBuildRankingCaption"></p></div><div class="pgb-ranking-formula"><span>LIKE + SHARE + COMMENT</span><strong>Sức lan tỏa từ tương tác</strong></div></div>
+    <div id="pgBuildRankingBoards" class="pgb-leaderboards"></div>
+    <p class="pgb-ranking-footnote">Các bảng tính theo dữ liệu đã ghi nhận. Cùng tổng tương tác: ưu tiên tỷ lệ tương tác/View, rồi View. “Một phần” nghĩa là còn thiếu số liệu; dấu — chưa được xếp hạng.</p>
+  </div>
+  <section class="pgb-section" id="pgBuildPeopleSection"><div class="pgb-section-head"><div><h3 id="pgBuildPeopleTitle">Danh sách phân bổ PGs</h3><p id="pgBuildPeopleNote"></p></div><select id="pgBuildPeopleState" aria-label="Lọc tình trạng PGs" style="width:auto;max-width:100%;"><option value="">Tất cả PGs</option><option value="missing">Chưa có kênh</option><option value="pending">Chưa đọc đủ số liệu</option><option value="complete">Đạt mục tiêu</option><option value="remaining">Chưa đạt mục tiêu</option><option value="shared">Kênh trùng nhiều Code</option></select></div><div class="pgb-people-scroll" data-mobile-scroll tabindex="0"><div id="pgBuildPeople" class="pgb-people-table"></div></div><div class="pagination-bar" id="pgBuildPagination"></div></section>
+  <p id="pgBuildFooter"></p>
+</section>
+
   <!-- ============ 3. CÀI ĐẶT ============ -->
   <section id="tab-settings" class="maintab">
     <div class="olie-all-pages-banner" aria-label="Olie đồng hành - Cài đặt">
@@ -3375,6 +3642,7 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
           <option value="trainer">Trainer</option>
           <option value="ganshop">Gán Shop</option>
           <option value="doitac">Đối tác</option>
+          <option value="pgtiktok">Kênh TikTok</option>
         </select>
       </div>
 
@@ -3466,6 +3734,66 @@ nav.tabs .nav-ic svg{display:block;width:100%;height:100%;flex-shrink:0;}
           <tbody id="partnerBody"></tbody>
         </table></div>
         <div class="pagination-bar" id="partnerPagination"></div>
+      </div>
+      <style>
+        #dataSub-pgtiktok{min-width:0;}
+        #dataSub-pgtiktok .pgtt-table{min-width:1280px;}
+        #dataSub-pgtiktok .pgtt-table th,#dataSub-pgtiktok .pgtt-table td{width:auto;max-width:320px;white-space:normal;overflow-wrap:anywhere;vertical-align:top;}
+        #dataSub-pgtiktok .pgtt-filters input,#dataSub-pgtiktok .pgtt-filters select{font:inherit;font-size:var(--cap);padding:8px 10px;max-width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;background:#fff;}
+        #dataSub-pgtiktok .pgtt-table a{color:var(--green-dark);text-decoration:underline;}
+        #dataSub-pgtiktok .pgtt-filters input{min-width:220px;flex:1;}
+        #dataSub-pgtiktok .pagination-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+        .mobile-layout #dataSub-pgtiktok .pgtt-filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto!important;}
+        .mobile-layout #dataSub-pgtiktok .pgtt-filters #pgTikTokSearch{grid-column:1/-1!important;}
+        .mobile-layout #dataSub-pgtiktok .pgtt-filters :is(input,select){width:100%!important;max-width:100%!important;min-width:0!important;font-size:12px!important;}
+        .mobile-layout #dataSub-pgtiktok .pgtt-table tr.mobile-pg-row{grid-template-rows:minmax(32px,auto)!important;}
+        .mobile-layout #dataSub-pgtiktok .pgtt-table td[data-mobile-full-label="Kênh TikTok"]{height:auto!important;line-height:18px!important;align-self:center;white-space:normal!important;overflow-wrap:anywhere;}
+      </style>
+      <div id="dataSub-pgtiktok" style="display:none;">
+        <div class="form-card" style="max-width:none;margin-bottom:16px;">
+          <h3 style="margin:0 0 10px;color:var(--green-dark);">Kênh TikTok PGs</h3>
+          <p class="section-desc">Danh sách PGs OPPO Đang làm trong tháng đang xem, theo dữ liệu nhân sự Dashboard. Kênh TikTok được ghép chính xác theo Code; một PG có thể có nhiều kênh.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <button type="button" class="primary" id="pgTikTokSyncBtn">↻ Cập nhật kênh TikTok nhân sự</button>
+            <button type="button" class="secondary" id="pgTikTokExportBtn" disabled>⬇ Xuất Excel toàn miền Trung</button>
+            <button type="button" class="secondary" id="pgTikTokReloadBtn">↻ Tải dữ liệu đã lưu</button>
+          </div>
+          <p id="pgTikTokMessage" role="status" aria-live="polite" style="margin:12px 0 6px;color:var(--muted);"></p>
+          <p id="pgTikTokUpdated" class="section-desc" style="margin:6px 0 0;"></p>
+          <details id="pgTikTokConnectionDetails" style="margin-top:12px;">
+            <summary>Kết nối nguồn TikTok — đăng nhập một lần</summary>
+            <p id="pgTikTokConnectionStatus" class="section-desc" style="margin:10px 0;">Lưu tài khoản nguồn một lần để tự đăng nhập lại khi phiên hết hạn.</p>
+            <p class="section-desc">Dùng tài khoản miền Trung trên cổng cập nhật nhân sự khu vực. Thông tin được mã hóa trên máy chủ; lần sau chỉ cần bấm cập nhật.</p>
+            <a href="https://script.google.com/macros/s/AKfycbzvnvg6Tclc-hDskmpokoOSzN2d-9K-K5djaQpW9_dtNkzwrPwzvmdhwCx9YJWkJSBL/exec" target="_blank" rel="noopener noreferrer">Mở cổng cập nhật nhân sự khu vực ↗</a>
+            <form id="pgTikTokLoginForm" style="display:grid;gap:10px;margin-top:12px;max-width:480px;">
+              <label for="pgTikTokSourceUsername">Tên đăng nhập cổng nhân sự</label>
+              <input id="pgTikTokSourceUsername" type="text" autocomplete="off" aria-label="Tên đăng nhập cổng nhân sự" placeholder="Tài khoản miền Trung" required maxlength="200" style="width:100%;box-sizing:border-box;">
+              <label for="pgTikTokSourcePassword">Mật khẩu cổng nhân sự</label>
+              <input id="pgTikTokSourcePassword" type="password" autocomplete="new-password" aria-label="Mật khẩu cổng nhân sự" placeholder="Chỉ nhập khi lưu hoặc đổi kết nối" required maxlength="512" style="width:100%;box-sizing:border-box;">
+              <button type="submit" class="secondary" id="pgTikTokLoginBtn">Lưu đăng nhập tự động &amp; cập nhật</button>
+            </form>
+            <details style="margin-top:14px;">
+              <summary>Khôi phục bằng mã phiên</summary>
+              <p class="section-desc">Chỉ dùng cho kết nối bằng phiên. Để tự đăng nhập lại khi hết hạn, lưu tài khoản nguồn ở phía trên.</p>
+              <form id="pgTikTokConnectForm" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+                <input id="pgTikTokSourceSession" type="password" autocomplete="off" aria-label="Mã phiên ứng dụng TikTok" placeholder="Mã phiên ứng dụng mới" required minlength="64" maxlength="64" style="width:min(360px,100%);box-sizing:border-box;">
+                <button type="submit" class="secondary" id="pgTikTokConnectBtn">Lưu kết nối &amp; cập nhật</button>
+              </form>
+            </details>
+          </details>
+        </div>
+        <div class="scope-filters pgtt-filters" style="flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+          <input id="pgTikTokSearch" type="search" aria-label="Tìm PG hoặc kênh TikTok" placeholder="Tìm Code, tên, shop, kênh TikTok…">
+          <select id="pgTikTokRegion" aria-label="Khu vực"><option value="">Tất cả khu vực</option></select>
+          <select id="pgTikTokTrainer" aria-label="Trainer"><option value="">Tất cả Trainer</option></select>
+          <select id="pgTikTokChannelState" aria-label="Tình trạng kênh"><option value="">Tất cả tình trạng kênh</option><option value="has">Đã có kênh</option><option value="none">Chưa có kênh hợp lệ</option><option value="unmatched">Code chưa khớp nguồn</option><option value="invalid">Kênh cần kiểm tra</option></select>
+        </div>
+        <p id="pgTikTokSummary" class="section-desc"></p>
+        <div class="table-scroll"><table class="pgtt-table">
+          <thead><tr><th>Code</th><th>Họ và Tên</th><th>Khu vực</th><th>Shop</th><th>Ngày vào</th><th>Thâm niên</th><th>Kênh TikTok</th><th>Trainer</th><th>Sale</th></tr></thead>
+          <tbody id="pgTikTokBody"><tr><td colspan="9" class="empty">Chọn Kênh TikTok để tải dữ liệu đã lưu.</td></tr></tbody>
+        </table></div>
+        <div id="pgTikTokPagination" class="pagination-bar"></div>
       </div>
     </div>
 
@@ -6228,6 +6556,7 @@ async function bootApp(){
   document.getElementById('currentUserRole').textContent=session.role==='admin'?'ADMIN':(session.role==='trainer'?'TRAINER':'VIEWER');
   document.getElementById('navSettingsBtn').style.display=isAdmin()?'':'none';
   document.getElementById('navDataBtn').style.display=isAdmin()?'':'none';
+  document.getElementById('navPgBuildBtn').style.display=(isAdmin()||isTrainer())?'':'none';
   document.querySelectorAll('.admin-only-gsheet').forEach(el=>{ el.style.display=isAdmin()?'':'none'; });
   document.getElementById('adminAccountCard').style.display=isAdmin()?'':'none';
   document.getElementById('backupCard').style.display=isAdmin()?'':'none';
@@ -15168,7 +15497,480 @@ document.getElementById('dataSubSelect').addEventListener('change', (e)=>{
   document.getElementById('dataSub-ganshop').style.display = val==='ganshop' ? '' : 'none';
   const dt=document.getElementById('dataSub-doitac'); if(dt) dt.style.display = val==='doitac' ? '' : 'none';
   if(val==='doitac'){ try{ renderPartnerList_(); }catch(e){} }
+  document.getElementById('dataSub-pgtiktok').style.display=val==='pgtiktok'?'':'none';
+  if(val==='pgtiktok')pgTikTokLoad_(true);
 });
+/* Main PG channel workspace. Source roster and TikTok observations are served by a role-scoped API. */
+const PG_BUILD_PAGE_SIZE_=10;
+const pgBuildState_={context:'',report:null,scopePeople:null,reportKey:'',cache:new Map(),tab:'allocation',group:'region',stageId:'',time:null,busy:false,mutating:false,mutationJob:0,job:0,pages:{allocation:1,progress:1,groups:1},kinds:{allocation:'',progress:''},timer:null,controller:null,authCancel:null};
+const pgBuildNorm_=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+const pgBuildContext_=()=>JSON.stringify([session?.userId,session?.role,session?.trainerId,session?.region,currentMonth]);
+const pgBuildAllowed_=()=>isAdmin()||isTrainer();
+const pgb_=id=>document.getElementById(id);
+const pgBuildKnown_=v=>typeof v==='number'&&Number.isFinite(v);
+const pgBuildNumber_=v=>pgBuildKnown_(v)?v.toLocaleString('vi-VN'):'—';
+const pgBuildPercent_=v=>pgBuildKnown_(v)?v.toLocaleString('vi-VN',{maximumFractionDigits:2})+'%':'—';
+const pgBuildDate_=v=>v&&Number.isFinite(Date.parse(v))?new Date(v).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'Chưa có';
+const pgBuildDay_=v=>/^\d{4}-\d{2}-\d{2}$/.test(v||'')?v.slice(8,10)+'/'+v.slice(5,7)+'/'+v.slice(0,4):'—';
+const pgBuildToday_=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const pgBuildMonthRange_=month=>({from:month+'-01',to:new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10)});
+function pgBuildValidDay_(s){return /^20\d{2}-\d{2}-\d{2}$/.test(s||'')&&Number.isFinite(Date.parse(s))&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;}
+function pgBuildIsoWeek_(day){const date=new Date(day+'T00:00:00Z');date.setUTCDate(date.getUTCDate()+4-(date.getUTCDay()||7));const year=date.getUTCFullYear(),start=new Date(Date.UTC(year,0,1)),week=Math.ceil((((date-start)/86400000)+1)/7);return year+'-W'+String(week).padStart(2,'0');}
+function pgBuildWeekRange_(week){
+  const m=String(week).match(/^(20\d{2})-W(\d{2})$/);if(!m)throw Error('Chọn tuần cần xem.');
+  const jan4=new Date(Date.UTC(Number(m[1]),0,4)),start=new Date(+jan4-((jan4.getUTCDay()||7)-1)*86400000+(Number(m[2])-1)*7*86400000),from=start.toISOString().slice(0,10);
+  if(pgBuildIsoWeek_(from)!==week)throw Error('Tuần không hợp lệ.');return {from,to:new Date(+start+6*86400000).toISOString().slice(0,10)};
+}
+function pgBuildIcon_(name){const paths={video:'<rect x="3" y="4" width="18" height="16" rx="4"/><path d="m10 8 6 4-6 4Z"/>',view:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',like:'<path d="m12 20-8-8a5 5 0 0 1 8-6 5 5 0 0 1 8 6Z"/>',share:'<path d="m14 3 7 7-7 7v-5C8 12 5 15 3 20c0-9 4-13 11-13Z"/>',comment:'<path d="M21 11.5a8.5 8.5 0 0 1-12.7 7.4L3 21l1.8-5.5A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 11h8M8 8h5"/>',engagement:'<path d="m3 13 4-4 4 6 5-10 5 6M17 11h4V7"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5"/>',coverage:'<path d="M4 7h6l2 3h8v9H4Z"/><path d="m8 14 3 3 5-6"/>',missing:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16v1"/>',change:'<path d="m3 8 4-4 4 4M7 4v14M13 16l4 4 4-4M17 20V6"/>'};return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[name]||paths.video)+'</svg>';}
+function pgBuildStatus_(text,error=false){pgb_('pgBuildStatus').textContent=text;pgb_('pgBuildStatus').style.color=error?'var(--red)':'var(--pgb-muted)';}
+function pgBuildQuery_(){
+  const st=pgBuildState_;if(st.tab==='allocation')return {stageId:st.stageId};
+  const time=st.time||{mode:'month',...pgBuildMonthRange_(currentMonth)};
+  return {stageId:time.stageId||'__month__',range:{from:time.from,to:time.to},...(st.tab==='ranking'?{includeTopVideos:true,filters:pgBuildFilters_()}:st.tab==='progress'?{includeGrowth:true,growthMonth:time.to.slice(0,7)}:{})};
+}
+const pgBuildQueryKey_=()=>JSON.stringify([pgBuildContext_(),pgBuildState_.tab,pgBuildQuery_()]);
+function pgBuildButtons_(){
+  const st=pgBuildState_,allowed=pgBuildAllowed_(),ready=allowed&&st.context===pgBuildContext_()&&st.report&&st.reportKey===pgBuildQueryKey_();
+  for(const id of ['pgBuildRefresh','pgBuildScan'])pgb_(id).disabled=!allowed||st.busy;
+  pgb_('pgBuildExport').disabled=!ready||st.busy;pgb_('pgBuildApplyTime').disabled=!allowed||st.mutating;pgb_('pgBuildSettings').hidden=!isAdmin();
+  for(const id of ['pgBuildSaveStage','pgBuildEditStage','pgBuildNewStage','pgBuildSaveAuto'])pgb_(id).disabled=!isAdmin()||st.busy||!ready;
+  document.querySelectorAll('[data-pg-build-tab]').forEach(b=>b.disabled=st.mutating);
+}
+async function pgBuildToken_(){
+  let auth;try{auth=JSON.parse(sessionStorage.getItem('workshop_private_session')||'null');}catch{}
+  if(auth?.token&&auth.userId===session?.userId&&auth.expires>Date.now()+30000)return auth.token;
+  if(pgBuildState_.authCancel)pgBuildState_.authCancel();
+  return new Promise((resolve,reject)=>{
+    const owner=pgBuildContext_(),ov=document.createElement('div');ov.className='pgb-detail-overlay';ov.id='pgBuildAuthOverlay';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.innerHTML='<form class="pgb-detail-dialog" style="max-width:390px"><h3>Xác thực XÂY KÊNH</h3><p>Nhập mật khẩu Dashboard để đọc dữ liệu theo quyền của anh.</p><input type="password" autocomplete="current-password" required aria-label="Mật khẩu Dashboard" style="width:100%;box-sizing:border-box;padding:10px"><p role="alert" style="color:var(--red)"></p><div class="pgb-actions"><button type="submit" class="primary">Xác thực</button><button type="button" class="secondary">Hủy</button></div></form>';
+    const cancel=()=>{ov.remove();if(pgBuildState_.authCancel===cancel)pgBuildState_.authCancel=null;reject(Error('Đã hủy xác thực XÂY KÊNH.'));};pgBuildState_.authCancel=cancel;ov.querySelector('[type=button]').onclick=cancel;
+    ov.querySelector('form').onsubmit=async e=>{e.preventDefault();const input=ov.querySelector('input'),btn=ov.querySelector('[type=submit]');btn.disabled=true;try{const token=await authorizeWorkshopNoibo_(session?.username,input.value);if(!pgBuildAllowed_()||owner!==pgBuildContext_()||!ov.isConnected)throw Error('Tài khoản đã thay đổi.');ov.remove();pgBuildState_.authCancel=null;resolve(token);}catch(error){if(ov.isConnected){ov.querySelector('[role=alert]').textContent=error.message;btn.disabled=false;}}finally{input.value='';}};
+    document.body.appendChild(ov);ov.querySelector('input').focus();
+  });
+}
+
+
+async function pgBuildApi_(action,extra={},signal,query=pgBuildQuery_()){
+  const owner=pgBuildContext_(),token=await pgBuildToken_();if(!pgBuildAllowed_()||owner!==pgBuildContext_())throw Error('Tài khoản đã thay đổi.');
+  const response=await fetch(SUPABASE_URL+'/functions/v1/pg-channel-tracking-test',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify({action,dashboardToken:token,month:currentMonth,...query,...extra}),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(60000)]):AbortSignal.timeout(60000)});
+  const out=await response.json().catch(()=>null);if(response.status===401)sessionStorage.removeItem('workshop_private_session');if(!response.ok||!out?.ok)throw Error(out?.error||'Chưa đọc được dữ liệu Xây Kênh.');return out;
+}
+function pgBuildFilters_(){return {search:pgBuildNorm_(pgb_('pgBuildSearch').value),region:pgb_('pgBuildRegion').value,trainer:pgb_('pgBuildTrainer').value,sale:pgb_('pgBuildSale').value};}
+function pgBuildMatches_(p,f){return (!f.region||pgBuildNorm_(p.region)===f.region)&&(!f.trainer||(p.trainerId||'__none__')===f.trainer)&&(!f.sale||(p.sale||'__none__')===f.sale)&&(!f.search||pgBuildNorm_([p.code,p.name,p.shop,p.sale,p.trainerName,...(p.channels||[])].join(' ')).includes(f.search));}
+function pgBuildRows_(){const f=pgBuildFilters_();return (pgBuildState_.report?.people||[]).filter(p=>pgBuildMatches_(p,f));}
+function pgBuildCascade_(){
+  const people=pgBuildState_.scopePeople||pgBuildState_.report?.people||[],fill=(id,label,rows,key,name)=>{
+    const el=pgb_(id),old=el.value,values=[...new Map(rows.map(p=>[key(p),name(p)])).entries()];
+    if(id==='pgBuildRegion'&&isTrainer()&&!values.some(([v])=>v===pgBuildNorm_(session.region)))values.push([pgBuildNorm_(session.region),session.region]);
+    el.innerHTML='<option value="">'+label+'</option>'+values.sort((a,b)=>a[1].localeCompare(b[1],'vi')).map(([v,l])=>'<option value="'+escapeHtml(v)+'">'+escapeHtml(l)+'</option>').join('');
+    el.value=values.some(([v])=>v===old)?old:'';el.disabled=id==='pgBuildRegion'&&isTrainer();if(el.disabled)el.value=pgBuildNorm_(session.region);
+  };
+  fill('pgBuildRegion','Tất cả khu vực',people,p=>pgBuildNorm_(p.region),p=>p.region);
+  const region=pgb_('pgBuildRegion').value,regional=people.filter(p=>!region||pgBuildNorm_(p.region)===region);
+  fill('pgBuildTrainer','Tất cả Trainer',regional,p=>p.trainerId||'__none__',p=>p.trainerName||'Chưa gán Trainer');
+  const trainer=pgb_('pgBuildTrainer').value,assigned=regional.filter(p=>!trainer||(p.trainerId||'__none__')===trainer);
+  fill('pgBuildSale','Tất cả Sale',assigned,p=>p.sale||'__none__',p=>p.sale||'Chưa xác minh Sale');
+}
+function pgBuildOptions_(){
+  const data=pgBuildState_.report;pgBuildCascade_();
+  const options=data.settings.stages.map(s=>'<option value="'+escapeHtml(s.id)+'">'+escapeHtml(s.name)+' · '+s.targetPerPg+' video/PG</option>').join('');
+  pgb_('pgBuildStage').innerHTML='<option value="__month__">Theo tháng · chưa chọn mục tiêu</option>'+options;pgb_('pgBuildStage').value=pgBuildState_.stageId||'__month__';
+  const preset=pgb_('pgBuildTimeStage').value;pgb_('pgBuildTimeStage').innerHTML='<option value="">Tùy chọn ngày</option>'+options;if(data.settings.stages.some(s=>s.id===preset))pgb_('pgBuildTimeStage').value=preset;
+  pgb_('pgBuildAutoScan').checked=data.settings.automaticDaily===true;
+}
+function pgBuildTotals_(rows){
+  const observed=rows.filter(p=>p.stats.observedChannels>0),sum=key=>{const values=observed.map(p=>p.stats[key]).filter(pgBuildKnown_);return values.length?values.reduce((a,b)=>a+b,0):null;};
+  const handles=new Set(rows.flatMap(p=>p.channels)),target=pgBuildState_.report?.stage?.targetPerPg??null,views=sum('views'),likes=sum('likes'),shares=sum('shares'),comments=sum('comments');
+  const completeInteractions=observed.length>0&&observed.every(p=>['likes','shares','comments'].every(k=>pgBuildKnown_(p.stats[k])));
+  const engagement=completeInteractions?likes+shares+comments:null,engagementRate=engagement!==null&&views>0&&observed.every(p=>pgBuildKnown_(p.stats.views))?engagement/views*100:null;
+  const noChannelVideo=!observed.length&&rows.length>0&&rows.every(p=>p.sourceReady&&!p.channels.length)?0:null;
+  return {total:rows.length,has:rows.filter(p=>p.channels.length).length,channels:handles.size,missing:rows.filter(p=>!p.channels.length).length,coverage:rows.length?rows.filter(p=>p.channels.length).length/rows.length*100:null,hrCoverage:rows.length?rows.filter(p=>p.channels.length).length/rows.length*100:null,observed:observed.length,full:rows.filter(p=>p.stats.complete).length,video:sum('videoCount')??noChannelVideo,views,likes,shares,comments,engagement,engagementRate,completed:target===null?null:rows.filter(p=>p.stats.completed).length,target:target===null?null:target*rows.length,credited:target===null?null:rows.reduce((n,p)=>n+Math.min(p.stats.videoCount??0,target),0)};
+}
+function pgBuildPerformanceCompare_(a,b){
+  const value=v=>pgBuildKnown_(v)?v:-1;
+  for(const key of ['videoCount','engagementRate','engagement','views']){const diff=value(b.stats[key])-value(a.stats[key]);if(diff)return diff;}
+  return a.name.localeCompare(b.name,'vi')||a.code.localeCompare(b.code);
+}
+function pgBuildVisiblePeople_(rows){
+  const kind=pgBuildState_.kinds[pgBuildState_.tab],list=rows.filter(p=>!kind||kind==='missing'&&!p.channels.length||kind==='pending'&&p.channels.length&&!p.stats.complete||kind==='complete'&&p.stats.completed||kind==='remaining'&&p.stats.target!==null&&!p.stats.completed||kind==='shared'&&p.sharedChannels.length);
+  return list.sort(pgBuildState_.tab==='ranking'?(a,b)=>pgBuildRankingCompare_({label:a.name,...a.stats},{label:b.name,...b.stats}):pgBuildState_.tab==='progress'?pgBuildPerformanceCompare_:(a,b)=>a.name.localeCompare(b.name,'vi')||a.code.localeCompare(b.code));
+}
+function pgBuildMeter_(actual,target){const pct=target>0&&actual!==null?Math.min(100,actual/target*100):0;return '<div class="pgb-meter"><i style="width:'+pct.toFixed(2)+'%"></i></div>';}
+function pgBuildPagination_(id,total,page,key,label){
+  const box=pgb_(id);if(!total){box.innerHTML='';return;}
+  const pages=Math.max(1,Math.ceil(total/PG_BUILD_PAGE_SIZE_));page=Math.max(1,Math.min(page,pages));const from=(page-1)*PG_BUILD_PAGE_SIZE_+1,to=Math.min(page*PG_BUILD_PAGE_SIZE_,total);
+  let start=Math.max(1,page-3),end=Math.min(pages,start+6);start=Math.max(1,end-6);
+  const button=(n,text,disabled=false)=>'<button type="button" class="secondary '+(n===page&&String(text)===String(n)?'active':'')+'" data-pgb-page="'+n+'" data-pgb-list="'+key+'" '+(disabled?'disabled':'')+' '+(n===page&&String(text)===String(n)?'aria-current="page"':'')+'>'+text+'</button>';
+  let html='<span class="pagination-info">Hiển thị '+from+'–'+to+' / '+total+' '+label+'</span>'+button(page-1,'‹',page<=1);
+  if(start>1)html+=button(1,'1')+(start>2?'<span aria-hidden="true">…</span>':'');for(let i=start;i<=end;i++)html+=button(i,String(i));if(end<pages)html+=(end<pages-1?'<span aria-hidden="true">…</span>':'')+button(pages,String(pages));box.innerHTML=html+button(page+1,'›',page>=pages);
+}
+function pgBuildTrend_(rows){
+  const data=pgBuildState_.report;if(!data.changes?.available)return {available:false};const f=pgBuildFilters_();if(f.search)return {available:false};
+  const events=data.changes.events.filter(e=>(!f.region||pgBuildNorm_(e.region)===f.region)&&(!f.trainer||e.trainerId===f.trainer)&&(!f.sale||(e.sale||'__none__')===f.sale));
+  return {available:true,added:events.filter(e=>e.kind==='added').length,off:events.filter(e=>e.kind==='off').length,other:events.filter(e=>e.kind==='other_removed').length,fromAt:data.changes.fromAt};
+}
+function pgBuildCard_(label,value,note,icon,cls=''){return '<article class="pgb-card '+cls+'" data-pgb-card="'+icon+'"><div class="pgb-card-head"><span class="pgb-card-icon">'+pgBuildIcon_(icon)+'</span><span class="label">'+label+'</span></div><div class="value '+(String(value).length>8?'long-value':'')+'">'+value+'</div><small>'+note+'</small></article>';}
+function pgBuildGroupRows_(rows){
+  return pgBuildGroupBy_(rows,pgBuildState_.group);
+}
+function pgBuildGroupBy_(rows,kind){
+  const map=new Map();for(const p of rows){const key=kind==='trainer'?p.trainerId||pgBuildNorm_(p.region)+'|none':kind==='sale'?pgBuildNorm_(p.region)+'|'+(p.sale||'__none__'):pgBuildNorm_(p.region),label=kind==='trainer'?p.trainerName||'Chưa gán Trainer':kind==='sale'?p.sale||'Chưa xác minh Sale':p.region;if(!map.has(key))map.set(key,{key,label,region:p.region,rows:[]});map.get(key).rows.push(p);}return [...map.values()].sort((a,b)=>a.label.localeCompare(b.label,'vi'));
+}
+function pgBuildRenderGroups_(rows){
+  const st=pgBuildState_,groups=pgBuildGroupRows_(rows),full=st.group==='trainer';st.groups=groups;st.pages.groups=Math.min(st.pages.groups,Math.max(1,Math.ceil(groups.length/PG_BUILD_PAGE_SIZE_)));const start=(st.pages.groups-1)*PG_BUILD_PAGE_SIZE_,visible=full?groups:groups.slice(start,start+PG_BUILD_PAGE_SIZE_);
+  pgb_('pgBuildGroupCount').textContent=groups.length+' '+({region:'khu vực',trainer:'Trainer · hiển thị đầy đủ',sale:'Sale'}[st.group]);
+  pgb_('pgBuildGroups').innerHTML=groups.length?'<table class="pgb-grid"><thead><tr><th>Nhóm</th><th>HR / Kênh</th><th>Còn thiếu</th><th>Độ phủ kênh/HR</th><th>Video / Mục tiêu</th><th>Hiệu quả kênh</th></tr></thead><tbody>'+visible.map(g=>{const t=pgBuildTotals_(g.rows);return '<tr data-pgb-group-row="'+escapeHtml(g.key)+'"><td class="pgb-owner">'+escapeHtml(g.label)+(st.group==='sale'?'<small>'+escapeHtml(g.region)+'</small>':'')+'</td><td><b>'+t.total+' HR</b><small>'+t.has+' HR có '+t.channels+' kênh</small></td><td>'+t.missing+' HR</td><td>'+pgBuildPercent_(t.coverage)+pgBuildMeter_(t.has,t.total)+'</td><td class="pgb-total-cell"><b>'+pgBuildNumber_(t.video)+'</b> / '+pgBuildNumber_(t.target)+pgBuildMeter_(t.credited,t.target)+'<small>'+(t.completed===null?'Chưa chọn mục tiêu':t.completed+'/'+t.total+' PG đạt')+'</small></td><td><b>'+pgBuildNumber_(t.views)+' view</b><div class="pgb-mini-metrics"><span>'+pgBuildIcon_('like')+' '+pgBuildNumber_(t.likes)+'</span><span>'+pgBuildIcon_('share')+' '+pgBuildNumber_(t.shares)+'</span><span>'+pgBuildIcon_('comment')+' '+pgBuildNumber_(t.comments)+'</span></div><small>'+pgBuildNumber_(t.engagement)+' tương tác · '+pgBuildPercent_(t.engagementRate)+'</small></td></tr>';}).join('')+'</tbody></table>':'<div class="pgb-empty">Không có PGs phù hợp bộ lọc.</div>';
+  pgb_('pgBuildGroupPagination').hidden=full;if(full)pgb_('pgBuildGroupPagination').innerHTML='';else pgBuildPagination_('pgBuildGroupPagination',groups.length,st.pages.groups,'groups','nhóm');
+}
+function pgBuildRenderTimeline_(rows){
+  const daily=new Map();for(const p of rows)for(const d of p.stats.dailyPosts||[])daily.set(d.day,(daily.get(d.day)||0)+d.count);const entries=[...daily].sort((a,b)=>a[0].localeCompare(b[0])),max=Math.max(1,...entries.map(e=>e[1]));
+  pgb_('pgBuildTimeline').innerHTML=entries.length?'<div class="pgb-timeline">'+entries.map(([day,count])=>'<div class="pgb-day" title="'+escapeHtml(pgBuildDay_(day))+': '+count+' video"><div><b>'+count+'</b><i style="height:'+Math.max(3,count/max*90)+'px"></i></div><span>'+day.slice(8,10)+'/'+day.slice(5,7)+'</span></div>').join('')+'</div>':'<div class="pgb-empty">'+(rows.some(p=>p.stats.observedChannels)?'Chưa ghi nhận video trong khoảng thời gian này.':'Chưa có đủ số liệu TikTok trong khoảng đang xem.')+'</div>';
+}
+function pgBuildGrowthData_(rows){
+  const growth=pgBuildState_.report?.growth;if(!growth||!Array.isArray(growth.people)||!growth.currentRange||!growth.previousRange)return null;
+  const byId=new Map(growth.people.map(p=>[p.rowId,p])),entries=rows.map(p=>byId.get(p.rowId)).filter(Boolean),sum=(items,period,key)=>{const values=items.map(p=>p[period]?.[key]).filter(pgBuildKnown_);return values.length?values.reduce((n,v)=>n+v,0):null;};
+  const metrics=[['videoCount','Video','video'],['engagement','Tương tác','engagement']].map(([key,label,icon])=>{
+    const pairs=entries.filter(p=>pgBuildKnown_(p.current?.[key])&&pgBuildKnown_(p.previous?.[key])),comparable=pairs.length>0&&(pairs.some(p=>p.hasChannels)||pairs.length===rows.length);
+    const recorded=period=>{const known=entries.filter(p=>pgBuildKnown_(p[period]?.[key]));return known.length===rows.length||known.some(p=>p.hasChannels)?sum(known,period,key):null;};
+    const current=comparable?sum(pairs,'current',key):recorded('current'),previous=comparable?sum(pairs,'previous',key):recorded('previous');
+    const delta=comparable?current-previous:null,percent=delta===null?null:previous>0?delta/previous*100:current===0?0:null;
+    return {key,label,icon,current,previous,delta,percent,comparable,matched:comparable?pairs.length:0,total:rows.length,complete:comparable&&pairs.length===rows.length&&pairs.every(p=>p.current.complete&&p.previous.complete)};
+  });return {...growth,metrics,total:rows.length};
+}
+function pgBuildGrowthTrend_(m){
+  if(!m.comparable)return {text:'Chưa đủ dữ liệu',tone:'unknown',change:'Chưa tính tăng/giảm'};
+  const sign=m.delta>0?'+':m.delta<0?'−':'',amount=pgBuildNumber_(Math.abs(m.delta)),unit=m.key==='videoCount'?'video':'tương tác';
+  return {text:m.previous===0&&m.current>0?'Mới phát sinh':(m.percent>0?'+':m.percent<0?'−':'')+pgBuildPercent_(Math.abs(m.percent)),tone:m.delta>0?'up':m.delta<0?'down':'flat',change:m.delta===0?'Không đổi':sign+amount+' '+unit};
+}
+function pgBuildRenderGrowth_(rows){
+  const box=pgb_('pgBuildGrowthCharts'),data=pgBuildGrowthData_(rows);if(!data){box.innerHTML='<div class="pgb-empty">Chưa có dữ liệu so sánh tháng. Anh bấm Cập nhật phân bổ để tải lại.</div>';pgb_('pgBuildGrowthPeriod').textContent='';pgb_('pgBuildGrowthNote').textContent='';return;}
+  const month=m=>m.split('-').reverse().join('/'),range=r=>pgBuildDay_(r.from)+' – '+pgBuildDay_(r.to);
+  pgb_('pgBuildGrowthPeriod').textContent=month(data.month)+' so với '+month(data.previousMonth)+' · '+({mtd:'Lũy kế cùng kỳ',full:'Toàn tháng',future:'Tháng chưa bắt đầu'}[data.mode]||'Theo tháng');
+  if(!rows.length){box.innerHTML='<div class="pgb-empty">Không có PGs phù hợp bộ lọc để so sánh.</div>';pgb_('pgBuildGrowthNote').textContent='';return;}
+  box.innerHTML=data.metrics.map(m=>{
+    const trend=pgBuildGrowthTrend_(m),maximum=Math.max(1,m.current||0,m.previous||0),bar=(key,value,date,rangeValue)=>{const known=pgBuildKnown_(value),height=known?Math.max(2,value/maximum*142):28;
+      return '<div class="pgb-growth-column '+key+'"><div class="pgb-growth-track"><div class="pgb-growth-stick '+(known?'':'unknown')+'" style="height:'+height.toFixed(2)+'px" title="'+escapeHtml(month(date)+': '+pgBuildNumber_(value)+' · '+range(rangeValue))+'"><b>'+pgBuildNumber_(value)+'</b></div></div><strong>'+month(date)+'</strong><small>'+pgBuildDay_(rangeValue.from).slice(0,5)+' – '+pgBuildDay_(rangeValue.to).slice(0,5)+'</small></div>';
+    };
+    const sample=m.comparable?'Cùng '+m.matched+' / '+m.total+' PGs có số liệu hai kỳ':'Chưa có đủ dữ liệu cùng PGs ở hai kỳ';
+    return '<article class="pgb-growth-metric '+m.icon+'" data-pgb-growth="'+m.key+'"><div class="pgb-growth-metric-head"><h4>'+pgBuildIcon_(m.icon)+m.label+'</h4><span class="pgb-growth-trend '+trend.tone+'">'+trend.text+'</span></div><div class="pgb-growth-plot" role="img" aria-label="'+escapeHtml(m.label+': '+month(data.previousMonth)+' có '+pgBuildNumber_(m.previous)+', '+month(data.month)+' có '+pgBuildNumber_(m.current))+'">'+bar('previous',m.previous,data.previousMonth,data.previousRange)+bar('current',m.current,data.month,data.currentRange)+'</div><div class="pgb-growth-result"><b>'+trend.change+'</b><span>'+sample+'</span></div></article>';
+  }).join('');
+  const partial=data.metrics.some(m=>!m.complete),tags=(data.hashtags||[]).map(t=>'#'+t).join(', ');
+  pgb_('pgBuildGrowthNote').textContent='Đối chiếu trên PGs Đang làm của tháng HR '+month(pgBuildState_.report.month)+', theo bộ lọc hiện tại. Tương tác = Like + Share + Comment của video đăng trong mỗi kỳ, tính tại lần cập nhật gần nhất. '+(partial?'Số ghi nhận có thể chưa đầy đủ; chỉ tính tăng trưởng trên cùng PGs có số liệu ở cả hai kỳ. ':'')+(tags?'Hashtag áp dụng cho cả hai kỳ: '+tags+'.':'');
+}
+function pgBuildRankingCompare_(a,b){
+  const n=v=>pgBuildKnown_(v)?v:-1;return n(b.engagement)-n(a.engagement)||n(b.engagementRate)-n(a.engagementRate)||n(b.views)-n(a.views)||String(a.label||a.name||'').localeCompare(String(b.label||b.name||''),'vi');
+}
+function pgBuildRankingGroups_(rows,kind){
+  return pgBuildGroupBy_(rows,kind).map(g=>{
+    const known=g.rows.filter(p=>pgBuildKnown_(p.stats.engagement)),sum=k=>known.length&&known.every(p=>pgBuildKnown_(p.stats[k]))?known.reduce((n,p)=>n+p.stats[k],0):null;
+    const engagement=known.length?known.reduce((n,p)=>n+p.stats.engagement,0):null,views=sum('views');
+    return {...g,total:g.rows.length,observed:known.length,partial:known.length<g.rows.length||known.some(p=>!p.stats.complete),engagement,views,engagementRate:engagement!==null&&views>0?engagement/views*100:null,videoCount:sum('videoCount')};
+  }).sort(pgBuildRankingCompare_);
+}
+function pgBuildRankingBoard_(kind,title,rows){
+  const pg=kind==='pg',list=pg?rows.map(p=>({...p,...p.stats,label:p.name,total:1,observed:pgBuildKnown_(p.stats.engagement)?1:0,partial:!p.stats.complete})).sort(pgBuildRankingCompare_):pgBuildRankingGroups_(rows,kind),max=Math.max(1,...list.map(p=>p.engagement||0));
+  return '<section class="pgb-leaderboard" data-pgb-board="'+kind+'"><div class="pgb-board-heading"><div><span class="pgb-board-kicker">'+(pg?'CREATOR':'TEAM')+' RANKING</span><h3>'+title+'</h3></div><span class="pgb-board-count">'+list.length+' '+({region:'khu vực',trainer:'Trainer',sale:'Sale',pg:'PGs'}[kind])+'</span></div><div class="pgb-board-cols"><span>Thứ hạng</span><span>Tương tác / View</span></div><div class="pgb-board-list" tabindex="0" aria-label="'+title+'">'+(list.length?list.map((r,i)=>{
+    const has=pgBuildKnown_(r.engagement),rank=has?i+1:'—',sub=pg?r.code+' · '+r.region:(kind==='region'?'':r.region+' · ')+r.observed+'/'+r.total+' PGs có số',owner=pg?' data-pgb-detail="'+escapeHtml(r.rowId)+'"':' data-pgb-rank-kind="'+kind+'" data-pgb-rank-key="'+escapeHtml(r.key)+'"';
+    return '<div class="pgb-leader-row '+(has&&i<3?'podium place-'+(i+1):'')+'" data-pgb-rank-row="'+escapeHtml(pg?r.rowId:r.key)+'"><span class="pgb-place">'+rank+'</span><div class="pgb-leader-owner"><button type="button"'+owner+'>'+escapeHtml(r.label||'Chưa xác định')+'</button><small>'+escapeHtml(sub)+(r.partial?' · Một phần':'')+'</small><div class="pgb-leader-bar" aria-hidden="true"><i style="width:'+(has?Math.max(1,r.engagement/max*100):0)+'%"></i></div></div><div class="pgb-leader-score"><b>'+pgBuildNumber_(r.engagement)+'</b><small>'+pgBuildPercent_(r.engagementRate)+'</small></div></div>';
+  }).join(''):'<div class="pgb-empty">Không có PGs phù hợp bộ lọc.</div>')+'</div>'+(list.length>5?'<div class="pgb-board-footer"><span>Cuộn danh sách để xem tiếp</span><button type="button" data-pgb-expand="'+kind+'" aria-expanded="false" data-pgb-count="'+list.length+'">Xem tất cả ('+list.length+')</button></div>':'')+'</section>';
+}
+function pgBuildVideoUrl_(v){return 'https://www.tiktok.com/@'+encodeURIComponent(v.handle)+'/video/'+encodeURIComponent(v.id);}
+function pgBuildRenderRanking_(rows){
+  const top=pgBuildState_.report.topVideos;if(!top||!Array.isArray(top.videos)){pgb_('pgBuildRankingBoards').innerHTML='<div class="pgb-empty">Chưa đọc được bảng xếp hạng. Anh bấm Cập nhật phân bổ để tải lại.</div>';return;}
+  pgb_('pgBuildRankingCaption').textContent=rows.length+' PGs trong bộ lọc · Xếp theo tổng tương tác đã ghi nhận, giảm dần.';
+  const boards=[['region','Khu vực'],['trainer','Trainer'],['sale','Sale'],['pg','PGs']].map(([kind,title])=>pgBuildRankingBoard_(kind,title,rows)).join('');
+  const cards=top.videos.slice(0,3).map((v,i)=>'<a class="pgb-viral-card place-'+(i+1)+'" href="'+pgBuildVideoUrl_(v)+'" target="_blank" rel="noopener noreferrer"><div class="pgb-viral-art"><span class="pgb-viral-place">#'+(i+1)+'</span><span class="pgb-viral-play">'+pgBuildIcon_('video')+'</span><span class="pgb-viral-day">'+pgBuildDay_(v.day)+'</span></div><div class="pgb-viral-copy"><strong>'+escapeHtml(v.name)+'</strong><small>@'+escapeHtml(v.handle)+'</small><div class="pgb-viral-score"><b>'+pgBuildNumber_(v.engagement)+'<small>tương tác</small></b><span>'+pgBuildNumber_(v.views)+' view<small>'+pgBuildPercent_(v.engagementRate)+' tương tác / view</small></span></div><small>'+escapeHtml(v.region)+' · '+escapeHtml(v.trainerName||'Chưa gán Trainer')+'</small></div></a>').join('');
+  const rest=top.videos.slice(3).map((v,i)=>'<a class="pgb-viral-row" href="'+pgBuildVideoUrl_(v)+'" target="_blank" rel="noopener noreferrer"><span class="pgb-place">'+(i+4)+'</span><div><strong>'+escapeHtml(v.name)+'</strong><small>@'+escapeHtml(v.handle)+' · '+pgBuildDay_(v.day)+'</small></div><div class="pgb-leader-score"><b>'+pgBuildNumber_(v.engagement)+'</b><small>'+pgBuildNumber_(v.views)+' view · '+pgBuildPercent_(v.engagementRate)+'</small></div></a>').join('');
+  pgb_('pgBuildRankingBoards').innerHTML=boards+'<section class="pgb-leaderboard pgb-viral-board"><div class="pgb-board-heading"><div><span class="pgb-board-kicker">VIDEO SPOTLIGHT</span><h3>TOP Video viral</h3></div><span class="pgb-board-count">'+top.videos.length+' / '+top.totalRanked+' video</span></div>'+(cards?'<div class="pgb-viral-podium">'+cards+'</div><div class="pgb-viral-list" tabindex="0" aria-label="Video viral từ hạng 4">'+rest+'</div>':'<div class="pgb-empty">Chưa có video đủ Like, Share và Comment trong khoảng đang xem.</div>')+'<p class="pgb-ranking-footnote">Top '+top.limit+' video theo tổng Like + Share + Comment. Bấm video để mở TikTok.'+(top.missingMetrics?' '+top.missingMetrics+' video chưa đủ chỉ số để xếp hạng.':'')+'</p></section>';
+}
+function pgBuildPersonState_(p){if(!p.sourceReady)return 'Nguồn kênh chưa đồng bộ';if(p.duplicateCode)return 'Code trùng trong HR';if(p.sharedChannels.length)return 'Kênh trùng Code';if(!p.channels.length)return p.sourceMatched?'Chưa có kênh':'Code chưa khớp nguồn';if(!p.stats.observedChannels)return p.stats.channels.some(c=>c.status==='failed')?'Lượt quét chưa đọc được':'Chưa có số liệu';if(!p.stats.complete)return 'Số đã đọc · chưa đầy đủ';return p.stats.completed?'Đạt mục tiêu':'Đã cập nhật';}
+function pgBuildChannelLinks_(p){return p.channels.map(h=>/^[a-z0-9_.]{2,24}$/.test(h)?'<a href="https://www.tiktok.com/@'+encodeURIComponent(h)+'" target="_blank" rel="noopener noreferrer">@'+escapeHtml(h)+'</a>':'').join('<br>')||'<small>Chưa có kênh</small>';}
+function pgBuildProfile_(p,index,progress){
+  const initials=String(p.name||'PG').trim().split(/\s+/).slice(-2).map(s=>s[0]||'').join('').toUpperCase(),rank=progress&&!p.stats.observedChannels?'—':String(index);
+  return '<div class="pgb-profile" title="'+escapeHtml(p.shop+' · Trainer: '+(p.trainerName||'Chưa gán')+' · Sale: '+(p.sale||'Chưa xác minh'))+'"><span class="pgb-avatar">'+escapeHtml(initials)+'<b class="pgb-rank '+(progress&&index<=3&&p.stats.observedChannels?'top':'')+'">'+rank+'</b></span><div class="pgb-profile-copy"><strong>'+escapeHtml(p.name||'Chưa có tên')+'</strong><small>'+escapeHtml(p.code||'Chưa có Code')+' · '+escapeHtml(p.region)+'</small>'+(progress?pgBuildChannelLinks_(p):'')+'<span class="pgb-tag '+(p.sharedChannels.length?'error':p.stats.completed?'good':'')+'">'+pgBuildPersonState_(p)+'</span></div></div>';
+}
+function pgBuildRenderPeople_(rows){
+  const st=pgBuildState_,progress=st.tab==='progress',list=pgBuildVisiblePeople_(rows),key=st.tab;
+  st.pages[key]=Math.min(Math.max(st.pages[key],1),Math.max(1,Math.ceil(list.length/PG_BUILD_PAGE_SIZE_)));const start=(st.pages[key]-1)*PG_BUILD_PAGE_SIZE_;
+  pgb_('pgBuildPeopleTitle').textContent=progress?'Tiến độ từng PGs':'Danh sách phân bổ PGs';pgb_('pgBuildPeopleState').value=st.kinds[key];
+  pgb_('pgBuildPeopleNote').textContent=progress?'Ưu tiên nhiều video; cùng số video xếp theo tỷ lệ tương tác/View.':list.length+' PGs · Sale theo Data HR, đối chiếu cùng shop · '+list.filter(p=>!p.sale).length+' PGs chưa xác minh Sale.';
+  const heads=progress?['PGs / Kênh','Video','View','Like','Share','Comment','Tương tác','']:['PGs','Shop','Phụ trách','Kênh TikTok',''];
+  pgb_('pgBuildPeople').innerHTML=list.length?'<div class="pgb-person pgb-person-head '+(progress?'':'allocation')+'" role="row">'+heads.map(h=>'<div role="columnheader">'+h+'</div>').join('')+'</div>'+list.slice(start,start+PG_BUILD_PAGE_SIZE_).map((p,i)=>{
+    const detail='<div'+(progress?'':' class="pgb-row-actions"')+'><button type="button" class="secondary" data-pgb-detail="'+escapeHtml(p.rowId)+'">Chi tiết</button>'+(!progress?'<a class="pgb-update-channel" href="https://script.google.com/macros/s/AKfycbzvnvg6Tclc-hDskmpokoOSzN2d-9K-K5djaQpW9_dtNkzwrPwzvmdhwCx9YJWkJSBL/exec" target="_blank" rel="noopener noreferrer" aria-label="Mở trang cập nhật kênh TikTok (tab mới)">Cập nhật</a>':'')+'</div>';
+    const beginning='<div class="pgb-person '+(progress?'':'allocation')+'" role="row" data-pgb-person="'+escapeHtml(p.rowId)+'"><div>'+pgBuildProfile_(p,start+i+1,progress)+'</div>';
+    if(!progress)return beginning+'<div data-pgb-label="Shop"><strong>'+escapeHtml(p.shop||'Chưa có shop')+'</strong><small>'+escapeHtml(p.region)+'</small></div><div data-pgb-label="Phụ trách"><strong>'+escapeHtml(p.trainerName||'Chưa gán Trainer')+'</strong><small>Sale: '+escapeHtml(p.sale||'Chưa xác minh')+'</small></div><div data-pgb-label="Kênh TikTok">'+pgBuildChannelLinks_(p)+'</div>'+detail+'</div>';
+    return beginning+'<div data-pgb-label="Video"><strong>'+pgBuildNumber_(p.stats.videoCount)+'</strong>'+(p.stats.target!==null?'<small>/ '+p.stats.target+' mục tiêu</small>'+pgBuildMeter_(p.stats.videoCount,p.stats.target):'<small>video</small>')+'</div>'+[['views','View'],['likes','Like'],['shares','Share'],['comments','Comment']].map(([k,label])=>'<div class="pgb-number" data-pgb-label="'+label+'">'+pgBuildNumber_(p.stats[k])+'</div>').join('')+'<div class="pgb-engagement-cell" data-pgb-label="Tương tác"><strong>'+pgBuildNumber_(p.stats.engagement)+'</strong><small class="pgb-rate">'+pgBuildPercent_(p.stats.engagementRate)+'</small><small>tương tác / view</small></div>'+detail+'</div>';
+  }).join(''):'<div class="pgb-empty">Không có PGs phù hợp bộ lọc.</div>';
+  pgb_('pgBuildPeople').setAttribute('role','table');pgb_('pgBuildPeople').setAttribute('aria-label',progress?'Tiến độ từng PGs':'Phân bổ PGs');
+  pgBuildPagination_('pgBuildPagination',list.length,st.pages[key],key,'PGs');
+}
+function pgBuildRender_(){
+  const st=pgBuildState_,data=st.report;pgBuildButtons_();pgb_('pgBuildAllocation').hidden=st.tab!=='allocation';pgb_('pgBuildProgress').hidden=st.tab!=='progress';pgb_('pgBuildRanking').hidden=st.tab!=='ranking';pgb_('pgBuildActivityFilters').hidden=st.tab==='allocation';pgb_('pgBuildPeopleSection').hidden=st.tab==='ranking';
+  document.querySelectorAll('[data-pg-build-tab]').forEach(b=>{const active=b.dataset.pgBuildTab===st.tab;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active));});document.querySelectorAll('[data-pgb-group]').forEach(b=>b.classList.toggle('active',b.dataset.pgbGroup===st.group));
+  if(!data||st.context!==pgBuildContext_()||st.reportKey!==pgBuildQueryKey_()){
+    pgb_('pgBuildRankingCaption').textContent=st.busy?'Đang tải bảng xếp hạng theo bộ lọc…':'';
+    for(const id of ['pgBuildAllocationCards','pgBuildProgressCards','pgBuildGroups','pgBuildPeople','pgBuildTimeline','pgBuildRankingBoards','pgBuildGrowthCharts'])pgb_(id).innerHTML='<div class="pgb-empty">'+(st.busy?'Đang tải số liệu…':'Chọn bộ lọc để xem số liệu.')+'</div>';
+    pgb_('pgBuildGrowthPeriod').textContent='';pgb_('pgBuildGrowthNote').textContent='';
+    for(const id of ['pgBuildPagination','pgBuildGroupPagination'])pgb_(id).innerHTML='';return;
+  }
+  const rows=pgBuildRows_(),t=pgBuildTotals_(rows),change=pgBuildTrend_(rows),rangeLabel=pgBuildDay_(data.displayRange.from)+' – '+pgBuildDay_(data.displayRange.to);
+  pgb_('pgBuildPeriod').textContent=rangeLabel+(data.stage?' · '+data.stage.targetPerPg+' video/PG':'');
+  pgb_('pgBuildProgressRange').textContent=rangeLabel+(data.stage?' · '+data.stage.name:'');pgb_('pgBuildObservedNote').textContent=t.observed+'/'+t.total+' PGs có số ghi nhận · HR '+data.month.split('-').reverse().join('/');
+  pgb_('pgBuildAllocationCards').innerHTML=pgBuildCard_('Total HR',pgBuildNumber_(t.total),'PGs OPPO Đang làm','people')+pgBuildCard_('Độ phủ kênh/HR',data.source.ready?pgBuildPercent_(t.coverage):'—',t.has+' / '+t.total+' HR có kênh<br>Tổng '+t.channels+' kênh','coverage','cyan')+pgBuildCard_('Còn thiếu',data.source.ready?pgBuildNumber_(t.missing):'—','HR chưa có kênh khớp Code','missing','pink')+pgBuildCard_('Tăng / Giảm',change.available?'+'+change.added+' / −'+change.off:'—',change.available?'Kênh mới / giảm do PGs OFF<br>'+change.other+' thay đổi kênh hoặc phạm vi':'Chờ mốc phân bổ để so sánh','change','purple');
+  const rateNote=t.engagementRate!==null?'<span class="pgb-rate">'+pgBuildPercent_(t.engagementRate)+' tương tác / view</span>':t.engagement===null?'Chưa đủ Like, Share, Comment':t.views===0?'Chưa có view để tính tỷ lệ':'Chưa đủ view để tính tỷ lệ';
+  pgb_('pgBuildProgressCards').innerHTML=pgBuildCard_('Video',pgBuildNumber_(t.video),t.completed===null?'Video trong khoảng đang xem':t.completed+'/'+t.total+' PG đạt mục tiêu','video')+pgBuildCard_('View',pgBuildNumber_(t.views),'Tại lần cập nhật gần nhất','view','cyan')+pgBuildCard_('Like',pgBuildNumber_(t.likes),'Lượt thích đã ghi nhận','like','pink')+pgBuildCard_('Share',pgBuildNumber_(t.shares),'Lượt chia sẻ đã ghi nhận','share','cyan')+pgBuildCard_('Comment',pgBuildNumber_(t.comments),'Bình luận đã ghi nhận','comment','purple')+pgBuildCard_('Tương Tác',pgBuildNumber_(t.engagement),rateNote,'engagement','pink engagement');
+  if(st.tab==='ranking')pgBuildRenderRanking_(rows);else{pgBuildRenderGroups_(rows);pgBuildRenderTimeline_(rows);pgBuildRenderPeople_(rows);}
+  if(st.tab==='progress')pgBuildRenderGrowth_(rows);
+  const job=data.job;pgb_('pgBuildJob').hidden=!job;if(job){const label={pending:'Đã xếp lượt quét · kiểm tra mỗi 15 phút',running:'Đang cập nhật TikTok',success:'Đã hoàn tất cập nhật',partial:'Còn kênh chưa đọc được',failed:'Lượt cập nhật chưa hoàn tất'}[job.status]||'Trạng thái cập nhật';pgb_('pgBuildJob').textContent=label+(job.total?' · '+job.processed+'/'+job.total+' kênh':'')+(job.finishedAt?' · '+pgBuildDate_(job.finishedAt):'');}
+  pgb_('pgBuildFooter').textContent='Nguồn kênh cập nhật: '+pgBuildDate_(data.source.updatedAt)+' · '+rows.filter(p=>!p.sourceMatched).length+' Code chưa khớp nguồn. Lọc video theo ngày đăng; view và tương tác là số ghi nhận tại lần cập nhật gần nhất. Dấu — là chưa đủ dữ liệu. Tương tác = Like + Share + Comment; tỷ lệ = Tương tác / View × 100%.';
+}
+function pgBuildCloseDetail_(){const ov=pgb_('pgBuildDetail');if(ov){ov.remove();pgBuildState_.detailController?.abort();pgBuildState_.detailOwner?.focus?.();}}
+async function pgBuildOpenDetail_(rowId,button){
+  if(!pgBuildAllowed_()||!pgBuildState_.report)return;pgBuildCloseDetail_();const context=pgBuildContext_(),queryKey=pgBuildQueryKey_(),query=pgBuildQuery_(),ov=document.createElement('div');ov.id='pgBuildDetail';ov.className='pgb-detail-overlay';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.innerHTML='<div class="pgb-detail-dialog"><div class="pgb-section-head"><h3>Chi tiết video PGs</h3><button type="button" class="secondary" data-pgb-close>Đóng</button></div><div id="pgBuildDetailBody" role="status">Đang tải video đã ghi nhận…</div></div>';document.body.appendChild(ov);pgBuildState_.detailOwner=button;const controller=new AbortController();pgBuildState_.detailController=controller;ov.querySelector('[data-pgb-close]').onclick=pgBuildCloseDetail_;ov.onclick=e=>{if(e.target===ov)pgBuildCloseDetail_();};ov.querySelector('button').focus();
+  try{
+    const out=await pgBuildApi_('videos',{rowId},controller.signal,query);if(!ov.isConnected||context!==pgBuildContext_()||queryKey!==pgBuildQueryKey_())return;const p=out.person;
+    const states=out.stats.channels.map(c=>'@'+c.handle+': '+(c.lastSuccessAt?'số lúc '+pgBuildDate_(c.lastSuccessAt):'chưa có số')+(c.status==='failed'?' · chưa đọc được lần mới':c.status==='shared'?' · kênh trùng Code':'')).join(' · ');
+    pgb_('pgBuildDetailBody').innerHTML='<h3>'+escapeHtml(p.name)+' · '+escapeHtml(p.code)+'</h3><p>'+escapeHtml(p.region)+' · '+escapeHtml(p.shop)+'<br>Trainer: '+escapeHtml(p.trainerName||'Chưa gán')+' · Sale: '+escapeHtml(p.sale||'Chưa xác minh')+'</p><p>'+escapeHtml(pgBuildDay_(out.range.from)+' – '+pgBuildDay_(out.range.to))+' · '+pgBuildNumber_(out.stats.videoCount)+' video · '+pgBuildNumber_(out.stats.engagement)+' tương tác · '+pgBuildPercent_(out.stats.engagementRate)+'</p><p>'+escapeHtml(states||'PG chưa có kênh được ghép.')+'</p>'+(out.videos.length?'<div class="pgb-scroll" data-mobile-scroll tabindex="0"><table class="pgb-grid"><thead><tr><th>Video / Ngày đăng</th><th>View</th><th>Like</th><th>Share</th><th>Comment</th><th>Tương tác</th></tr></thead><tbody>'+out.videos.map(v=>{const engagement=[v.likes,v.shares,v.comments].every(pgBuildKnown_)?v.likes+v.shares+v.comments:null,rate=engagement!==null&&v.views>0?engagement/v.views*100:null;return '<tr><td><a href="https://www.tiktok.com/@'+encodeURIComponent(v.handle)+'/video/'+encodeURIComponent(v.id)+'" target="_blank" rel="noopener noreferrer">@'+escapeHtml(v.handle)+'</a><small>'+pgBuildDay_(v.day)+' · '+escapeHtml(v.id)+'</small></td><td>'+pgBuildNumber_(v.views)+'</td><td>'+pgBuildNumber_(v.likes)+'</td><td>'+pgBuildNumber_(v.shares)+'</td><td>'+pgBuildNumber_(v.comments)+'</td><td>'+pgBuildNumber_(engagement)+'<small>'+pgBuildPercent_(rate)+'</small></td></tr>';}).join('')+'</tbody></table></div>':'<p>Chưa ghi nhận video trong khoảng thời gian này.</p>');
+  }catch(error){if(ov.isConnected&&error.name!=='AbortError')pgb_('pgBuildDetailBody').textContent=error.message;}
+}
+function pgBuildTimeFields_(){
+  const mode=pgb_('pgBuildTimeMode').value;for(const [id,key] of [['pgBuildDayField','day'],['pgBuildWeekField','week'],['pgBuildMonthField','month']])pgb_(id).hidden=mode!==key;
+  pgb_('pgBuildCustomFields').hidden=mode!=='custom';pgb_('pgBuildStagePresetField').hidden=mode!=='custom';
+}
+function pgBuildApplyTime_(){
+  const st=pgBuildState_,mode=pgb_('pgBuildTimeMode').value;let range,stageId='__month__';
+  try{
+    if(mode==='day'){const day=pgb_('pgBuildTimeDay').value;range={from:day,to:day};}
+    else if(mode==='week')range=pgBuildWeekRange_(pgb_('pgBuildTimeWeek').value);
+    else if(mode==='month'){const month=pgb_('pgBuildTimeMonth').value;if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month))throw Error('Chọn tháng cần xem.');range=pgBuildMonthRange_(month);}
+    else{range={from:pgb_('pgBuildTimeFrom').value,to:pgb_('pgBuildTimeTo').value};const id=pgb_('pgBuildTimeStage').value,stage=st.report?.settings.stages.find(s=>s.id===id);if(stage&&stage.from===range.from&&stage.to===range.to)stageId=stage.id;}
+    if(!pgBuildValidDay_(range.from)||!pgBuildValidDay_(range.to)||range.to<range.from||Date.parse(range.to)-Date.parse(range.from)>366*86400000)throw Error('Chọn khoảng ngày hợp lệ, tối đa 366 ngày.');
+    st.time={mode,...range,stageId};st.pages.progress=1;pgBuildCloseDetail_();pgBuildLoad_(false);
+  }catch(error){pgBuildStatus_(error.message,true);}
+}
+function pgBuildResetContext_(){
+  const st=pgBuildState_,today=pgBuildToday_(),range=pgBuildMonthRange_(currentMonth);st.report=null;st.scopePeople=null;st.reportKey='';st.cache.clear();clearTimeout(st.filterTimer);st.stageId='';st.time={mode:'month',...range,stageId:'__month__'};st.pages={allocation:1,progress:1,groups:1};st.kinds={allocation:'',progress:''};
+  for(const id of ['pgBuildSearch','pgBuildRegion','pgBuildTrainer','pgBuildSale','pgBuildPeopleState'])pgb_(id).value='';pgb_('pgBuildStageForm').reset();delete pgb_('pgBuildStageForm').dataset.version;
+  pgb_('pgBuildTimeMode').value='month';pgb_('pgBuildTimeDay').value=today;pgb_('pgBuildTimeWeek').value=pgBuildIsoWeek_(today);pgb_('pgBuildTimeMonth').value=currentMonth;pgb_('pgBuildTimeFrom').value=range.from;pgb_('pgBuildTimeTo').value=range.to;pgBuildTimeFields_();
+}
+function pgBuildResetStageForm_(edit=false){
+  const data=pgBuildState_.report;if(!isAdmin()||!data)return;const stage=edit?data.stage:null;if(edit&&!stage){pgBuildStatus_('Chọn một giai đoạn đã tạo để sửa.',true);return;}
+  pgb_('pgBuildStageId').value=stage?.id||'';pgb_('pgBuildStageName').value=stage?.name||'';pgb_('pgBuildStageFrom').value=stage?.from||data.month+'-01';pgb_('pgBuildStageTo').value=stage?.to||pgBuildMonthRange_(data.month).to;pgb_('pgBuildStageTarget').value=stage?.targetPerPg??'';pgb_('pgBuildStageTags').value=(stage?.hashtags||[]).map(t=>'#'+t).join(', ');pgb_('pgBuildStageForm').dataset.version=String(data.settings.version);pgb_('pgBuildSaveStage').textContent=edit?'Lưu thay đổi':'Lưu giai đoạn';pgb_('pgBuildSettings').open=true;
+}
+async function pgBuildLoad_(force=false,action='read'){
+  const st=pgBuildState_;if(!pgBuildAllowed_())return;const context=pgBuildContext_();
+  if(st.context!==context){st.mutationJob++;st.mutating=false;pgBuildCloseDetail_();st.controller?.abort();pgBuildResetContext_();st.context=context;}
+  if(st.mutating)return;
+  const query=pgBuildQuery_(),queryKey=pgBuildQueryKey_(),cached=st.cache.get(queryKey);
+  if(!force&&action==='read'&&cached&&Date.now()-cached.at<60000){st.controller?.abort();st.job++;st.busy=false;st.report=cached.data;st.scopePeople=cached.data.people;st.reportKey=queryKey;pgBuildOptions_();pgBuildRender_();pgBuildSchedulePoll_();return;}
+  clearTimeout(st.timer);st.controller?.abort();const controller=new AbortController();st.controller=controller;const job=++st.job;st.busy=true;
+  if(st.reportKey!==queryKey)st.report=null;pgBuildRender_();pgBuildStatus_('Đang tải số liệu trong khoảng đã chọn…');
+  try{
+    const out=await pgBuildApi_(action,{},controller.signal,query);if(!pgBuildAllowed_()||job!==st.job||context!==pgBuildContext_()||queryKey!==pgBuildQueryKey_())return;
+    if(out.month!==currentMonth||!Array.isArray(out.people)||!Array.isArray(out.settings?.stages)||!out.source)throw Error('Dữ liệu Xây Kênh chưa đúng mẫu.');
+    if(st.tab==='allocation')st.stageId=out.stage?.id||'__month__';st.report=out;st.scopePeople=out.people;pgBuildOptions_();
+    if(st.tab==='ranking'&&queryKey!==pgBuildQueryKey_()){st.report=null;st.reportKey='';setTimeout(()=>pgBuildLoad_(false),0);return;}
+    st.reportKey=pgBuildQueryKey_();st.cache.set(st.reportKey,{data:out,at:Date.now()});while(st.cache.size>6)st.cache.delete(st.cache.keys().next().value);
+    if(!pgb_('pgBuildStageForm').dataset.version)pgb_('pgBuildStageForm').dataset.version=String(out.settings.version);pgBuildStatus_('HR '+out.month.split('-').reverse().join('/')+' · '+(isTrainer()?session.region:'Miền Trung')+' · Chỉ PGs Đang làm.');
+  }catch(error){if(error.name!=='AbortError'&&job===st.job&&context===pgBuildContext_())pgBuildStatus_(error.message,true);}
+  finally{if(job===st.job){st.busy=false;pgBuildRender_();pgBuildSchedulePoll_();}}
+}
+function pgBuildSchedulePoll_(){const st=pgBuildState_;clearTimeout(st.timer);if(currentTabId_()==='pgbuild'&&['running','pending'].includes(st.report?.job?.status))st.timer=setTimeout(()=>pgBuildLoad_(true),30000);}
+function pgBuildMount_(){
+  const allowed=pgBuildAllowed_(),st=pgBuildState_;pgb_('navPgBuildBtn').style.display=allowed?'':'none';
+  if(!allowed){st.job++;st.mutationJob++;st.mutating=false;st.controller?.abort();clearTimeout(st.timer);clearTimeout(st.filterTimer);st.report=null;st.scopePeople=null;st.context='';st.cache.clear();st.busy=false;if(st.authCancel)st.authCancel();pgBuildCloseDetail_();for(const id of ['pgBuildAllocationCards','pgBuildProgressCards','pgBuildGroups','pgBuildPeople','pgBuildTimeline','pgBuildPagination','pgBuildGroupPagination','pgBuildRankingBoards','pgBuildGrowthCharts'])pgb_(id).innerHTML='';pgb_('pgBuildGrowthPeriod').textContent='';pgb_('pgBuildGrowthNote').textContent='';pgBuildButtons_();return;}
+  if(st.context&&st.context!==pgBuildContext_()){st.job++;st.mutationJob++;st.mutating=false;st.busy=false;st.controller?.abort();if(st.authCancel)st.authCancel();pgBuildCloseDetail_();pgBuildResetContext_();st.context=pgBuildContext_();pgBuildRender_();}
+  if(currentTabId_()==='pgbuild')pgBuildLoad_();else clearTimeout(st.timer);
+}
+async function pgBuildMutate_(action,extra){
+  const st=pgBuildState_;if(st.busy||st.mutating||!pgBuildAllowed_()||action==='save_settings'&&!isAdmin())return;const owner=pgBuildContext_(),mutation=++st.mutationJob;st.mutating=true;st.busy=true;pgBuildButtons_();
+  try{const out=await pgBuildApi_(action,extra);if(owner!==pgBuildContext_())return;if(out.stageId)st.stageId=out.stageId;st.cache.clear();if(action==='save_settings'){delete pgb_('pgBuildStageForm').dataset.version;pgb_('pgBuildStageForm').reset();pgb_('pgBuildStageId').value='';}st.mutating=false;st.busy=false;await pgBuildLoad_(true);if(owner===pgBuildContext_())pgBuildStatus_(out.message||(action==='save_settings'?'Đã lưu mục tiêu giai đoạn.':'Đã cập nhật yêu cầu.'));}
+  catch(error){if(owner===pgBuildContext_())pgBuildStatus_(error.message,true);}
+  finally{if(mutation===st.mutationJob){st.mutating=false;if(owner===pgBuildContext_()){st.busy=false;pgBuildButtons_();}}}
+}
+function pgBuildExport_(){
+  const st=pgBuildState_;if(!pgBuildAllowed_()||st.busy||!st.report||st.context!==pgBuildContext_()||st.reportKey!==pgBuildQueryKey_())return;if(typeof XLSX==='undefined'){pgBuildStatus_('Thư viện Excel chưa tải xong. Anh thử lại sau ít giây.',true);return;}
+  if(st.tab==='ranking'){pgBuildExportRankings_();return;}
+  const rows=pgBuildVisiblePeople_(pgBuildRows_()),data=st.report,heads=['Code','Họ và tên','Khu vực','Shop','Trainer','Sale','Kênh TikTok','Video ghi nhận','Mục tiêu video/PG','Đạt mục tiêu','View','Like','Share','Comment','Tương tác','Tỷ lệ tương tác/View','Tình trạng số liệu'];
+  const values=rows.map(p=>[p.code,p.name,p.region,p.shop,p.trainerName,p.sale,p.channels.map(h=>'https://www.tiktok.com/@'+h).join(', '),p.stats.videoCount??'',p.stats.target??'',p.stats.target===null?'Chưa đặt mục tiêu':p.stats.completed?'Đạt':'Chưa đạt',p.stats.views??'',p.stats.likes??'',p.stats.shares??'',p.stats.comments??'',p.stats.engagement??'',p.stats.engagementRate===null||p.stats.engagementRate===undefined?'':p.stats.engagementRate/100,pgBuildPersonState_(p)]);
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([heads,...values]);ws['!autofilter']={ref:ws['!ref']};ws['!cols']=heads.map((h,i)=>({wch:[1,3,6].includes(i)?36:20}));for(let i=1;i<=values.length;i++){const cell=ws[XLSX.utils.encode_cell({r:i,c:15})];if(cell&&typeof cell.v==='number')cell.z='0.00%';}XLSX.utils.book_append_sheet(wb,ws,'PGs');
+  const groups=pgBuildGroupRows_(rows).map(g=>{const t=pgBuildTotals_(g.rows);return [g.label,g.region,t.total,t.has,t.channels,t.missing,t.coverage===null?'':t.coverage/100,t.video??'',t.target??'',t.completed??'',t.views??'',t.likes??'',t.shares??'',t.comments??'',t.engagement??'',t.engagementRate===null?'':t.engagementRate/100];});
+  const groupSheet=XLSX.utils.aoa_to_sheet([['Nhóm','Khu vực','Total HR','HR có kênh','Tổng kênh','Còn thiếu','Độ phủ','Video ghi nhận','Mục tiêu tổng','PG đạt','View','Like','Share','Comment','Tương tác','Tỷ lệ tương tác/View'],...groups]);for(let i=1;i<=groups.length;i++)for(const c of [6,15]){const cell=groupSheet[XLSX.utils.encode_cell({r:i,c})];if(cell&&typeof cell.v==='number')cell.z='0.00%';}XLSX.utils.book_append_sheet(wb,groupSheet,'Phan bo');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Thông tin','Giá trị'],['Giai đoạn',data.stage?.name||'Khoảng thời gian đã chọn'],['Từ ngày',data.displayRange.from],['Đến ngày',data.displayRange.to],['Tháng HR',data.month],['Kênh cập nhật lúc',data.source.updatedAt||''],['Phạm vi','Theo bộ lọc và quyền được xem; xuất toàn bộ danh sách, không giới hạn trang.'],['Nguồn HR','Chỉ PGs OPPO Đang làm; Sale theo HR, đối chiếu cùng shop.'],['Độ phủ kênh/HR','Số HR có ít nhất một kênh / Total HR × 100%. Mỗi HR chỉ tính một lần.'],['Tương tác','Like + Share + Comment; tỷ lệ bằng Tương tác / View. Thiếu số liệu hoặc 0 view thì để trống tỷ lệ.'],['Thời gian','Lọc theo ngày đăng video; view/tương tác là số tại lần cập nhật gần nhất.'],['Mục tiêu','Chỉ áp dụng khi chọn đúng toàn bộ giai đoạn đã lưu; không tự chia mục tiêu cho ngày hoặc tuần.']]),'Thong tin');
+  if(st.tab==='progress'){
+    const growth=pgBuildGrowthData_(pgBuildRows_());if(growth){const sheet=XLSX.utils.aoa_to_sheet([['Chỉ số','Tháng đang xem','Tháng trước','Số tháng đang xem','Số tháng trước','Tăng/giảm','Tăng trưởng %','PGs đối chiếu','Total PGs theo bộ lọc','Tình trạng'],...growth.metrics.map(m=>[m.label,growth.month,growth.previousMonth,m.current??'',m.previous??'',m.delta??'',m.percent===null?'':m.percent/100,m.matched,m.total,pgBuildGrowthTrend_(m).text]),[],['Kỳ đang xem',growth.currentRange.from,growth.currentRange.to],['Kỳ trước',growth.previousRange.from,growth.previousRange.to],['Phạm vi','Cùng PGs có số liệu hai kỳ; theo bộ lọc Khu vực, Trainer, Sale và tìm kiếm.'],['Cách tính','Tương tác của video đăng trong mỗi kỳ, tại lần cập nhật gần nhất; thiếu số không thay bằng 0.']]);for(let r=1;r<=2;r++){const cell=sheet[XLSX.utils.encode_cell({r,c:6})];if(cell?.t==='n')cell.z='0.00%';}sheet['!cols']=[24,22,22,22,22,20,20,18,25,25].map(wch=>({wch}));XLSX.utils.book_append_sheet(wb,sheet,'Tang truong');}
+  }
+  XLSX.writeFile(wb,'Xay_Kenh_PGs_'+data.displayRange.from+'_'+data.displayRange.to+'.xlsx');pgBuildStatus_('Đã xuất '+rows.length+' PGs của toàn bộ bộ lọc. File nằm trong Tải xuống của trình duyệt.');
+}
+function pgBuildExportRankings_(){
+  const data=pgBuildState_.report,rows=pgBuildRows_(),wb=XLSX.utils.book_new();
+  const add=(name,values,percent)=>{const ws=XLSX.utils.aoa_to_sheet(values);ws['!autofilter']={ref:ws['!ref']};ws['!cols']=values[0].map((_,i)=>({wch:i===1?34:21}));if(percent!==undefined)for(let r=1;r<values.length;r++){const cell=ws[XLSX.utils.encode_cell({r,c:percent})];if(cell?.t==='n')cell.z='0.00%';}XLSX.utils.book_append_sheet(wb,ws,name);return ws;};
+  for(const [kind,name]of [['region','Khu vuc'],['trainer','Trainer'],['sale','Sale']])add(name,[['Hạng','Tên','Khu vực','PGs','PGs có số tương tác','Tương tác ghi nhận','View cùng nhóm có số','Tỷ lệ tương tác/View','Video cùng nhóm có số','Tình trạng'],...pgBuildRankingGroups_(rows,kind).map((r,i)=>[r.engagement===null?'':i+1,r.label,r.region,r.total,r.observed,r.engagement??'',r.views??'',r.engagementRate===null?'':r.engagementRate/100,r.videoCount??'',r.partial?'Một phần':'Đã ghi nhận'])],7);
+  const pgs=rows.map(p=>({...p,label:p.name,...p.stats})).sort(pgBuildRankingCompare_);
+  add('PGs',[['Hạng','Code','Họ và tên','Khu vực','Trainer','Sale','Shop','Video','Like','Share','Comment','Tương tác','View','Tỷ lệ tương tác/View','Tình trạng'],...pgs.map((p,i)=>[pgBuildKnown_(p.engagement)?i+1:'',p.code,p.name,p.region,p.trainerName,p.sale,p.shop,p.videoCount??'',p.likes??'',p.shares??'',p.comments??'',p.engagement??'',p.views??'',p.engagementRate===null?'':p.engagementRate/100,pgBuildPersonState_(p)])],13);
+  add('Top video viral',[['Hạng','Code','PGs','Khu vực','Trainer','Sale','Ngày đăng','TikTok URL','View','Like','Share','Comment','Tương tác','Tỷ lệ tương tác/View'],...(data.topVideos?.videos||[]).map((v,i)=>[i+1,v.code,v.name,v.region,v.trainerName,v.sale,v.day,pgBuildVideoUrl_(v),v.views??'',v.likes,v.shares,v.comments,v.engagement,v.engagementRate===null?'':v.engagementRate/100])],13);
+  add('Thong tin',[['Thông tin','Giá trị'],['Tháng HR',data.month],['Từ ngày',data.displayRange.from],['Đến ngày',data.displayRange.to],['Cách xếp hạng','Tổng Like + Share + Comment giảm dần; hòa thì xét tỷ lệ tương tác/View, rồi View.'],['Phạm vi','Theo quyền và bộ lọc Khu vực, Trainer, Sale, tìm kiếm; chỉ PGs OPPO Đang làm.'],['Số liệu','Chỉ cộng tương tác đã ghi nhận; một phần nghĩa là còn thiếu dữ liệu. View và tương tác là số tại lần cập nhật gần nhất.'],['TOP Video viral','Top 20 video đủ chỉ số tương tác trong khoảng ngày đăng được chọn.']]);
+  XLSX.writeFile(wb,'Xep_Hang_Xay_Kenh_'+data.displayRange.from+'_'+data.displayRange.to+'.xlsx');pgBuildStatus_('Đã xuất 5 bảng xếp hạng theo bộ lọc. File nằm trong Tải xuống của trình duyệt.');
+}
+document.querySelectorAll('[data-pg-build-tab]').forEach(b=>b.onclick=()=>{if(pgBuildState_.mutating)return;pgBuildState_.tab=b.dataset.pgBuildTab;pgBuildCloseDetail_();pgBuildLoad_();});
+document.querySelectorAll('[data-pgb-group]').forEach(b=>b.onclick=()=>{pgBuildState_.group=b.dataset.pgbGroup;pgBuildState_.pages.groups=1;pgBuildRender_();});
+function pgBuildFilterChanged_(){
+  clearTimeout(pgBuildState_.filterTimer);pgBuildCascade_();pgBuildState_.pages={allocation:1,progress:1,groups:1};pgBuildCloseDetail_();if(pgBuildState_.tab==='ranking')pgBuildLoad_(false);else pgBuildRender_();
+}
+for(const id of ['pgBuildRegion','pgBuildTrainer','pgBuildSale'])pgb_(id).onchange=pgBuildFilterChanged_;
+pgb_('pgBuildPeopleState').onchange=()=>{pgBuildState_.kinds[pgBuildState_.tab]=pgb_('pgBuildPeopleState').value;pgBuildState_.pages[pgBuildState_.tab]=1;pgBuildRenderPeople_(pgBuildRows_());};
+pgb_('pgBuildSearch').oninput=()=>{pgBuildState_.pages={allocation:1,progress:1,groups:1};clearTimeout(pgBuildState_.filterTimer);if(pgBuildState_.tab==='ranking'){pgBuildRender_();pgBuildState_.filterTimer=setTimeout(()=>pgBuildLoad_(false),250);}else pgBuildRender_();};
+pgb_('pgBuildStage').onchange=()=>{pgBuildState_.stageId=pgb_('pgBuildStage').value;pgBuildState_.pages.allocation=1;pgBuildCloseDetail_();pgBuildLoad_();};
+pgb_('pgBuildTimeMode').onchange=pgBuildTimeFields_;pgb_('pgBuildTimeForm').onsubmit=e=>{e.preventDefault();pgBuildApplyTime_();};
+pgb_('pgBuildTimeStage').onchange=()=>{const stage=pgBuildState_.report?.settings.stages.find(s=>s.id===pgb_('pgBuildTimeStage').value);if(stage){pgb_('pgBuildTimeFrom').value=stage.from;pgb_('pgBuildTimeTo').value=stage.to;}};
+pgb_('pgBuildRefresh').onclick=()=>pgBuildLoad_(true,'refresh_roster');pgb_('pgBuildScan').onclick=()=>pgBuildMutate_('request_scan',{});pgb_('pgBuildExport').onclick=pgBuildExport_;
+pgb_('pgBuildPeople').onclick=e=>{const b=e.target.closest('[data-pgb-detail]');if(b)pgBuildOpenDetail_(b.dataset.pgbDetail,b);};
+pgb_('pgBuildRankingBoards').onclick=e=>{const expand=e.target.closest('[data-pgb-expand]');if(expand){const list=expand.closest('.pgb-leaderboard').querySelector('.pgb-board-list'),open=list.classList.toggle('expanded');expand.setAttribute('aria-expanded',String(open));expand.textContent=open?'Thu gọn':'Xem tất cả ('+expand.dataset.pgbCount+')';return;}const detail=e.target.closest('[data-pgb-detail]');if(detail){pgBuildOpenDetail_(detail.dataset.pgbDetail,detail);return;}const b=e.target.closest('[data-pgb-rank-kind]');if(!b)return;const kind=b.dataset.pgbRankKind,key=b.dataset.pgbRankKey;if(kind==='region'){pgb_('pgBuildRegion').value=key;pgBuildCascade_();}else if(kind==='trainer'){const group=pgBuildGroupBy_(pgBuildRows_(),'trainer').find(g=>g.key===key);if(group){pgb_('pgBuildTrainer').value=group.rows[0].trainerId||'__none__';pgBuildCascade_();}}else{const group=pgBuildGroupBy_(pgBuildRows_(),'sale').find(g=>g.key===key);if(group){pgb_('pgBuildRegion').value=pgBuildNorm_(group.region);pgBuildCascade_();pgb_('pgBuildSale').value=group.rows[0].sale||'__none__';}}pgBuildFilterChanged_();};
+for(const id of ['pgBuildPagination','pgBuildGroupPagination'])pgb_(id).onclick=e=>{const b=e.target.closest('[data-pgb-page]');if(b&&!b.disabled){pgBuildState_.pages[b.dataset.pgbList]=Number(b.dataset.pgbPage);if(b.dataset.pgbList==='groups')pgBuildRenderGroups_(pgBuildRows_());else pgBuildRenderPeople_(pgBuildRows_());}};
+pgb_('pgBuildNewStage').onclick=()=>pgBuildResetStageForm_(false);pgb_('pgBuildEditStage').onclick=()=>pgBuildResetStageForm_(true);
+pgb_('pgBuildStageForm').onsubmit=e=>{e.preventDefault();if(!isAdmin())return;const stage={id:pgb_('pgBuildStageId').value,name:pgb_('pgBuildStageName').value.trim(),from:pgb_('pgBuildStageFrom').value,to:pgb_('pgBuildStageTo').value,targetPerPg:Number(pgb_('pgBuildStageTarget').value),hashtags:pgb_('pgBuildStageTags').value.split(/[,;\s]+/).map(t=>t.replace(/^#/,'' )).filter(Boolean)};pgBuildMutate_('save_settings',{stage,expectedVersion:Number(pgb_('pgBuildStageForm').dataset.version)});};
+pgb_('pgBuildSaveAuto').onclick=()=>pgBuildMutate_('save_settings',{automaticDaily:pgb_('pgBuildAutoScan').checked,expectedVersion:pgBuildState_.report?.settings.version});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')pgBuildCloseDetail_();});
+
+
+/* PG TikTok directory: a separate snapshot; never writes HR or Trainer channel settings. */
+const PG_TIKTOK_KEY_='pgTikTokChannels:test';
+const PG_TIKTOK_FN_='pg-tiktok-directory-test';
+const pgTikTokState_={context:'',job:0,busy:false,ready:false,snapshot:null,rows:[],page:1,authCancel:null};
+const pgTikTokNorm_=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+const pgTikTokCode_=v=>String(v??'').normalize('NFKC').trim().replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/^(\d+)\.0+$/,'$1');
+function pgTikTokContext_(){return JSON.stringify([session?.userId,session?.role,currentMonth]);}
+function pgTikTokSnapshot_(value){
+  if(value===null)return null;
+  if(!value||value.version!==1||value.source!=='pg-tiktok-regional-export'||value.scope!=='MIEN TRUNG'||!Array.isArray(value.rows)||!value.rows.length||!Number.isFinite(Date.parse(value.updatedAt))||!Number.isSafeInteger(value.audit?.pgRows)||value.audit.pgRows<1)throw Error('Dữ liệu kênh TikTok đã lưu không đúng mẫu.');
+  const codes=new Set();
+  for(const r of value.rows){if(!r||!r.code||pgTikTokCode_(r.code)!==r.code||codes.has(r.code)||!Array.isArray(r.channels)||!Array.isArray(r.invalidChannels)||r.channels.some(x=>typeof x!=='string'||!/^[a-z0-9_.]{2,24}$/.test(x))||r.invalidChannels.some(x=>typeof x!=='string'))throw Error('Dữ liệu kênh TikTok có Code hoặc kênh không hợp lệ.');codes.add(r.code);}
+  return value;
+}
+function pgTikTokRows_(personnel,cfg,snapshot){
+  if(!Array.isArray(personnel)||!cfg||!Array.isArray(cfg.trainers))throw Error('Chưa đọc đủ dữ liệu nhân sự Dashboard.');
+  const trainers=new Map(cfg.trainers.map(t=>[String(t.id),t])),channels=new Map((snapshot?.rows||[]).map(r=>[r.code,r]));
+  const regions=new Set(['binhdinh','danang','hue','nhatrang','vungtau','taynguyen']);
+  return personnel.filter(p=>p.brand==='OPPO'&&p.status==='Đang làm').map(p=>{
+    const trainer=trainers.get(String(p.trainerId)),region=String(p.area||trainer?.region||'').trim(),code=pgTikTokCode_(p.code),source=code?channels.get(code):null;
+    const joined=p.joinedAt?new Date(p.joinedAt):null;
+    return {code,name:String(p.name||''),region,shop:String(p.shop||''),joinedAt:joined&&Number.isFinite(joined.getTime())?joined.toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'',
+      seniority:p.seniority!==null&&p.seniority!==undefined&&String(p.seniority).trim()!==''&&Number.isFinite(Number(p.seniority))?Number(p.seniority)+' tháng':'',
+      trainerId:String(p.trainerId||''),trainerName:String(trainer?.name||''),sale:String(p.sale||''),channels:source?.channels||[],invalidChannels:source?.invalidChannels||[],matched:!!source};
+  }).filter(p=>regions.has(pgTikTokNorm_(p.region))).sort((a,b)=>a.region.localeCompare(b.region,'vi')||a.name.localeCompare(b.name,'vi')||a.code.localeCompare(b.code));
+}
+function pgTikTokMessage_(text,error=false){const el=document.getElementById('pgTikTokMessage');el.textContent=text;el.style.color=error?'var(--red)':'var(--muted)';}
+function pgTikTokButtons_(){
+  const st=pgTikTokState_,admin=isAdmin();
+  for(const id of ['pgTikTokSyncBtn','pgTikTokReloadBtn','pgTikTokConnectBtn','pgTikTokLoginBtn'])document.getElementById(id).disabled=!admin||st.busy;
+  document.getElementById('pgTikTokExportBtn').disabled=!admin||st.busy||!st.ready||!st.snapshot||!st.rows.length||st.context!==pgTikTokContext_();
+}
+function pgTikTokRender_(){
+  const st=pgTikTokState_;if(!isAdmin()||st.context!==pgTikTokContext_()){pgTikTokButtons_();return;}
+  const get=id=>document.getElementById(id),search=pgTikTokNorm_(get('pgTikTokSearch').value),region=get('pgTikTokRegion').value,trainer=get('pgTikTokTrainer').value,channel=get('pgTikTokChannelState').value;
+  const rows=st.rows.filter(p=>(!region||pgTikTokNorm_(p.region)===region)&&(!trainer||p.trainerId===trainer)&&(!search||pgTikTokNorm_([p.code,p.name,p.shop,...p.channels].join(' ')).includes(search))&&
+    (!channel||channel==='has'&&p.channels.length||channel==='none'&&!p.channels.length||channel==='unmatched'&&!p.matched||channel==='invalid'&&p.invalidChannels.length));
+  const total=st.rows.length,has=st.rows.filter(p=>p.channels.length).length,missing=st.rows.filter(p=>!p.matched).length;
+  get('pgTikTokSummary').textContent=st.ready?`${total} PGs Đang làm · ${has} PGs có kênh · ${total-has} PGs chưa có kênh hợp lệ${missing?' · '+missing+' Code chưa khớp nguồn':''}. Đang hiển thị ${rows.length} PGs.`:'';
+  get('pgTikTokUpdated').textContent=st.snapshot?'Kênh cập nhật: '+new Date(st.snapshot.updatedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})+' · Hồ sơ nhân sự: '+currentMonth.split('-').reverse().join('/')+'.':st.ready?'Chưa có lần cập nhật kênh. Bấm “Cập nhật kênh TikTok nhân sự” để lấy dữ liệu nguồn.':'';
+  pgTikTokConnectionStatus_();
+  const pages=Math.max(1,Math.ceil(rows.length/25));st.page=Math.min(Math.max(1,st.page),pages);const start=(st.page-1)*25;
+  get('pgTikTokBody').innerHTML=rows.length?rows.slice(start,start+25).map(p=>{
+    const links=p.channels.map(id=>`<a href="https://www.tiktok.com/@${encodeURIComponent(id)}" target="_blank" rel="noopener noreferrer">@${escapeHtml(id)} ↗</a>`).join('<br>');
+    const issues=p.invalidChannels.map(raw=>`<span style="color:var(--red)">Cần kiểm tra: ${escapeHtml(raw)}</span>`).join('<br>');
+    const empty=p.matched?'Chưa có kênh':st.snapshot?'Code chưa khớp nguồn':'Chưa cập nhật kênh';
+    return `<tr><td>${escapeHtml(p.code||'Chưa có Code')}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.region)}</td><td>${escapeHtml(p.shop)}</td><td>${escapeHtml(p.joinedAt||'—')}</td><td>${escapeHtml(p.seniority||'—')}</td><td>${[links,issues].filter(Boolean).join('<br>')||'<span class="muted">'+empty+'</span>'}</td><td>${escapeHtml(p.trainerName||'—')}</td><td>${escapeHtml(p.sale||'—')}</td></tr>`;
+  }).join(''):`<tr><td colspan="9" class="empty">${st.busy?'Đang tải dữ liệu đã lưu…':st.ready?'Không có PGs phù hợp bộ lọc.':'Chưa đọc được dữ liệu.'}</td></tr>`;
+  get('pgTikTokPagination').innerHTML=rows.length?`<button type="button" class="secondary" data-pgtt-page="${st.page-1}" ${st.page===1?'disabled':''}>‹ Trước</button><span>Trang ${st.page}/${pages} · ${start+1}–${Math.min(start+25,rows.length)}/${rows.length}</span><button type="button" class="secondary" data-pgtt-page="${st.page+1}" ${st.page===pages?'disabled':''}>Sau ›</button>`:'';
+  pgTikTokButtons_();
+}
+function pgTikTokOptions_(){
+  const st=pgTikTokState_;
+  for(const [id,first,values] of [
+    ['pgTikTokRegion','Tất cả khu vực',Array.from(new Map(st.rows.map(p=>[pgTikTokNorm_(p.region),p.region])).entries())],
+    ['pgTikTokTrainer','Tất cả Trainer',Array.from(new Map(st.rows.filter(p=>p.trainerId).map(p=>[p.trainerId,p.trainerName||'Chưa xác định Trainer'])).entries())]]){
+    const el=document.getElementById(id),old=el.value;el.innerHTML='<option value="">'+first+'</option>'+values.sort((a,b)=>a[1].localeCompare(b[1],'vi')).map(([v,l])=>`<option value="${escapeHtml(v)}">${escapeHtml(l)}</option>`).join('');if(values.some(([v])=>v===old))el.value=old;
+  }
+}
+async function pgTikTokLoad_(force=false){
+  if(!isAdmin())return;
+  const st=pgTikTokState_,context=pgTikTokContext_();if(st.busy&&st.context===context)return;
+  if(!force&&st.ready&&st.context===context){pgTikTokRender_();return;}
+  const month=currentMonth,job=++st.job;
+  if(st.context!==context){st.rows=[];st.snapshot=null;st.ready=false;st.page=1;}
+  st.context=context;st.busy=true;pgTikTokMessage_('Đang tải hồ sơ và kênh đã lưu…');pgTikTokRender_();
+  try{
+    const keys=[PG_TIKTOK_KEY_,'pgs:'+month,'config'],saved=await dbGetMulti(keys);
+    if(!isAdmin()||context!==pgTikTokContext_()||job!==st.job)return;
+    if(keys.some(k=>!Object.hasOwn(saved,k)))throw Error('Chưa đọc đủ dữ liệu đã lưu. Hãy tải lại.');
+    const snapshot=pgTikTokSnapshot_(saved[PG_TIKTOK_KEY_]),rows=pgTikTokRows_(saved['pgs:'+month],saved.config,snapshot);
+    st.snapshot=snapshot;st.rows=rows;st.ready=true;pgTikTokOptions_();pgTikTokMessage_('Hồ sơ lấy từ Data nhân sự Dashboard. Nút xuất Excel luôn lấy toàn miền Trung, không theo bộ lọc trên bảng.');
+  }catch(err){if(context===pgTikTokContext_()&&job===st.job){st.ready=false;pgTikTokMessage_(err.message,true);}}
+  finally{if(job===st.job){st.busy=false;pgTikTokRender_();}}
+}
+async function pgTikTokToken_(){
+  let auth;try{auth=JSON.parse(sessionStorage.getItem('workshop_private_session')||'null');}catch{}
+  if(auth?.token&&auth.userId===session?.userId&&auth.expires>Date.now()+30000)return auth.token;
+  if(pgTikTokState_.authCancel)pgTikTokState_.authCancel();
+  return new Promise((resolve,reject)=>{
+    const context=pgTikTokContext_(),ov=document.createElement('div');ov.className='modal-overlay';ov.id='pgTikTokAuthOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:260;background:#143a2b66;display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML='<form style="background:#fff;border-radius:14px;padding:22px;width:min(380px,100%);box-sizing:border-box"><h3>Xác thực cập nhật kênh TikTok</h3><p>Nhập mật khẩu Dashboard của anh để cập nhật danh sách.</p><input type="password" autocomplete="current-password" aria-label="Mật khẩu Dashboard" required style="width:100%;box-sizing:border-box"><p role="alert" style="color:var(--red)"></p><button type="submit" class="primary">Xác thực</button> <button type="button" class="secondary">Hủy</button></form>';
+    const cancel=()=>{ov.remove();if(pgTikTokState_.authCancel===cancel)pgTikTokState_.authCancel=null;reject(Error('Đã hủy cập nhật kênh TikTok.'));};pgTikTokState_.authCancel=cancel;
+    ov.querySelector('[type=button]').onclick=cancel;
+    ov.querySelector('form').onsubmit=async e=>{e.preventDefault();const input=ov.querySelector('input'),btn=ov.querySelector('[type=submit]');btn.disabled=true;try{const token=await authorizeWorkshopNoibo_(session?.username,input.value);if(!isAdmin()||context!==pgTikTokContext_()||!ov.isConnected)throw Error('Tài khoản hoặc tháng đã thay đổi.');ov.remove();pgTikTokState_.authCancel=null;resolve(token);}catch(err){if(ov.isConnected){ov.querySelector('[role=alert]').textContent=err.message;btn.disabled=false;}}finally{input.value='';}};
+    document.body.appendChild(ov);ov.querySelector('input').focus();
+  });
+}
+function pgTikTokConnectionStatus_(){
+  const automatic=pgTikTokState_.snapshot?.connection?.automaticLogin===true;
+  const el=document.getElementById('pgTikTokConnectionStatus');
+  el.textContent=automatic?'Đã lưu đăng nhập tự động. Khi phiên nguồn hết hạn, hệ thống tự đăng nhập lại; anh không cần lấy mã phiên. Chỉ lưu lại nếu đổi mật khẩu hoặc tài khoản nguồn.':'Chưa lưu tài khoản để tự đăng nhập lại. Kết nối bằng phiên hiện tại vẫn được dùng; hãy lưu tài khoản nguồn một lần ở dưới.';
+}
+async function pgTikTokSync_(sourceSession,sourceLogin){
+  const st=pgTikTokState_;if(!isAdmin()||st.busy)return;
+  const context=pgTikTokContext_(),job=++st.job;st.context=context;st.busy=true;pgTikTokButtons_();pgTikTokMessage_('Đang cập nhật kênh TikTok từ nguồn miền Trung…');
+  try{
+    const token=await pgTikTokToken_();if(!isAdmin()||context!==pgTikTokContext_()||job!==st.job)return;
+    const res=await fetch(SUPABASE_URL+'/functions/v1/'+PG_TIKTOK_FN_,{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+OTRAINING_ANON_KEY_},body:JSON.stringify({action:sourceLogin?'connect':'sync',dashboardToken:token,...(sourceSession?{sourceSession}:{}),...(sourceLogin?{sourceLogin}:{})}),signal:AbortSignal.timeout(110000)});
+    let out;try{out=await res.json();}catch{throw Error('Chưa đọc được phản hồi cập nhật TikTok. Hãy tải lại dữ liệu đã lưu để kiểm tra.');}
+    if(!isAdmin()||context!==pgTikTokContext_()||job!==st.job)return;
+    if(res.status===401)sessionStorage.removeItem('workshop_private_session');
+    if(!res.ok||!out.ok)throw Error(out.error||'Chưa cập nhật được kênh TikTok.');
+    const snapshot=pgTikTokSnapshot_(out.snapshot);
+    const month=currentMonth,saved=await dbGetMulti(['pgs:'+month,'config']);
+    if(!isAdmin()||context!==pgTikTokContext_()||job!==st.job)return;
+    st.rows=pgTikTokRows_(saved['pgs:'+month],saved.config,snapshot);st.snapshot=snapshot;st.ready=true;st.page=1;pgTikTokOptions_();
+    if(sourceLogin)document.getElementById('pgTikTokConnectionDetails').open=false;
+    pgTikTokMessage_((sourceLogin?'Đã lưu đăng nhập tự động và cập nhật kênh TikTok. ':out.connection?.sessionRenewed?'Đã tự đăng nhập lại nguồn và cập nhật kênh TikTok. ':'Đã cập nhật và lưu kênh TikTok thành công. ')+snapshot.audit.pgRows+' hồ sơ PG nguồn; '+st.rows.filter(p=>p.channels.length).length+'/'+st.rows.length+' PGs Đang làm trong Dashboard có kênh.');
+  }catch(err){if(context===pgTikTokContext_()&&job===st.job)pgTikTokMessage_(err.name==='TimeoutError'?'Chưa nhận được xác nhận cập nhật. Bấm Tải dữ liệu đã lưu để kiểm tra.':err.message,true);}
+  finally{document.getElementById('pgTikTokSourceSession').value='';document.getElementById('pgTikTokSourcePassword').value='';if(job===st.job){st.busy=false;pgTikTokRender_();}}
+}
+function pgTikTokExport_(){
+  const st=pgTikTokState_;if(!isAdmin()||st.busy||!st.ready||!st.snapshot||!st.rows.length||st.context!==pgTikTokContext_())return;
+  if(typeof XLSX==='undefined'){pgTikTokMessage_('Thư viện Excel chưa tải xong. Anh thử lại sau ít giây.',true);return;}
+  const heads=['Code','Họ và Tên','Khu vực','Shop','Ngày vào','Thâm niên','Kênh TikTok','Trainer','Sale'];
+  const values=st.rows.map(p=>[p.code,p.name,p.region,p.shop,p.joinedAt,p.seniority,[...p.channels.map(x=>'https://www.tiktok.com/@'+x),...p.invalidChannels.map(x=>'Cần kiểm tra: '+x)].join(', '),p.trainerName,p.sale]);
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([heads,...values]);ws['!cols']=[{wch:15},{wch:28},{wch:18},{wch:52},{wch:14},{wch:15},{wch:65},{wch:25},{wch:25}];ws['!autofilter']={ref:ws['!ref']};
+  // Explicit string cells preserve leading-zero staff codes and never create Excel formulas.
+  XLSX.utils.book_append_sheet(wb,ws,'Kenh TikTok PGs');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+    ['Thông tin','Giá trị'],['Phạm vi','PGs OPPO Đang làm · toàn miền Trung'],['Tháng hồ sơ',currentMonth],['Nguồn hồ sơ','Data nhân sự Dashboard'],['Nguồn kênh','Cổng cập nhật nhân sự khu vực · ghép chính xác theo Code'],['Kênh cập nhật lúc',st.snapshot.updatedAt],['Số PGs',st.rows.length],['PGs có kênh',st.rows.filter(p=>p.channels.length).length],['Code chưa khớp nguồn',st.rows.filter(p=>!p.matched).length],['Bộ lọc trên bảng','Không áp dụng cho file toàn miền Trung']
+  ]),'Thong tin');
+  XLSX.writeFile(wb,'Kenh_TikTok_PGs_Mien_Trung_'+currentMonth+'.xlsx');
+  pgTikTokMessage_('Đã xuất Excel '+st.rows.length+' PGs toàn miền Trung. Kiểm tra mục Tải xuống của trình duyệt.');
+}
+function pgTikTokEnsure_(){
+  if(!isAdmin()){if(pgTikTokState_.authCancel)pgTikTokState_.authCancel();pgTikTokState_.job++;pgTikTokState_.busy=false;pgTikTokState_.ready=false;pgTikTokState_.rows=[];pgTikTokState_.snapshot=null;pgTikTokState_.context='';document.getElementById('pgTikTokBody').innerHTML='';pgTikTokButtons_();return;}
+  if(document.getElementById('dataSubSelect').value==='pgtiktok')pgTikTokLoad_();
+}
+document.getElementById('pgTikTokLoginForm').onsubmit=e=>{e.preventDefault();if(!isAdmin()||pgTikTokState_.busy)return;const username=document.getElementById('pgTikTokSourceUsername').value.trim(),field=document.getElementById('pgTikTokSourcePassword'),password=field.value;field.value='';if(!username||!password){pgTikTokMessage_('Nhập tài khoản và mật khẩu của cổng nhân sự TikTok.',true);return;}pgTikTokSync_(undefined,{username,password});};
+document.getElementById('pgTikTokSyncBtn').onclick=()=>pgTikTokSync_();
+document.getElementById('pgTikTokReloadBtn').onclick=()=>pgTikTokLoad_(true);
+document.getElementById('pgTikTokExportBtn').onclick=pgTikTokExport_;
+document.getElementById('pgTikTokConnectForm').onsubmit=e=>{e.preventDefault();const input=document.getElementById('pgTikTokSourceSession'),value=input.value.trim();input.value='';if(!/^[a-fA-F0-9]{64}$/.test(value)){pgTikTokMessage_('Mã phiên ứng dụng cần đúng 64 ký tự. Không nhập Cookie Google.',true);return;}pgTikTokSync_(value);};
+for(const id of ['pgTikTokSearch','pgTikTokRegion','pgTikTokTrainer','pgTikTokChannelState'])document.getElementById(id).addEventListener(id==='pgTikTokSearch'?'input':'change',()=>{pgTikTokState_.page=1;pgTikTokRender_();});
+document.getElementById('pgTikTokPagination').addEventListener('click',e=>{const btn=e.target.closest('[data-pgtt-page]');if(btn&&!btn.disabled){pgTikTokState_.page=Number(btn.dataset.pgttPage);pgTikTokRender_();}});
+
 /* ===== DANH SÁCH ĐỐI TÁC (PG đối tác) từ otraining ===== */
 let partnerList = [];           // [{code,name,region,province,shop,channel,shopSize,trainerName,saleName}]
 let partnerPage = 1;
@@ -18121,6 +18923,7 @@ function renderTabContent_(tabId){
     case 'kpi': renderKpiAll(); break;
     case 'settings': renderSettingsConfig(); break;
     case 'so': renderSoActiveTab_(); break;
+    case 'pgbuild': pgBuildMount_(); break;
     case 'data': renderSettingsConfig();if(document.getElementById('panel-data-so')?.classList.contains('active'))loadSoData_().then(loaded=>{if(loaded)renderSoSummary_();});break;
     case 'extensions': renderChannelTool_(); break;
     case 'account': if(isAdmin()){ renderAccountList(); renderLoginStatsBox_(); } break;
@@ -18133,6 +18936,8 @@ function currentTabId_(){
   return b ? b.dataset.tab : 'home';
 }
 function renderAll(){
+  pgTikTokEnsure_();
+  pgBuildMount_();
   if(typeof centerHrMount_==='function')centerHrMount_();
   // Tối ưu: CHỈ render tab đang xem (thay vì render mọi tab mỗi lần) -> nhanh hơn nhiều.
   const keepX = window.scrollX || 0;
